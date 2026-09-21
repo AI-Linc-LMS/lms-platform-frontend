@@ -903,6 +903,7 @@ export default function CommunityPage() {
                 {FILTER_CONFIG.map((f) => renderFilterChip(f, activeFilter === f.key, true))}
               </ScrollRow>
               <Box
+                data-testid="filter-chips-wrap"
                 sx={{
                   display: { xs: "none", sm: "flex" },
                   gap: 0.75,
@@ -1138,58 +1139,126 @@ export default function CommunityPage() {
           />
         )}
 
-        {/* Offer Bounty - a sheet on a phone, the same small centred dialog on desktop. It used
-            to be a hand-rolled fixed overlay with a hardcoded 340px card, which left 25px of
-            margin on a 390px screen and put its two buttons out at the right edge. */}
-        <ResponsiveDialog
-          open={bountyDialog.open}
-          onClose={() => setBountyDialog((p) => ({ ...p, open: false }))}
-          maxWidth="xs"
-          data-testid="bounty-sheet"
-          title={
-            <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}>
-              <IconWrapper icon="mdi:fire" size={20} color="#f59e0b" />
-              Offer a Bounty
-            </Box>
-          }
-          description="Set an IP reward to attract quality answers. The best answer you accept earns the points."
-          footer={
-            <>
-              <Button
+        {/* Offer Bounty - a sheet on a phone. The desktop keeps the small centred card it always
+            had; on a phone that card was a hardcoded 340px wide, which left 25px of margin on a
+            390px screen and put its two buttons out at the right edge. */}
+        {isPhone ? (
+          <ResponsiveDialog
+            open={bountyDialog.open}
+            onClose={() => setBountyDialog((p) => ({ ...p, open: false }))}
+            maxWidth="xs"
+            data-testid="bounty-sheet"
+            title={
+              <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 1 }}>
+                <IconWrapper icon="mdi:fire" size={20} color="#f59e0b" />
+                Offer a Bounty
+              </Box>
+            }
+            description="Set an IP reward to attract quality answers. The best answer you accept earns the points."
+            footer={
+              <>
+                <Button
+                  onClick={() => setBountyDialog((p) => ({ ...p, open: false }))}
+                  sx={{ textTransform: "none", color: "var(--font-secondary)", minHeight: 44 }}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={handleSubmitBounty}
+                  disabled={!bountyDialog.points || parseInt(bountyDialog.points) <= 0}
+                  sx={{
+                    textTransform: "none", fontWeight: 600, borderRadius: "8px",
+                    minHeight: 44,
+                    backgroundColor: "#f59e0b", boxShadow: "none",
+                    "&:hover": { backgroundColor: "#d97706", boxShadow: "none" },
+                  }}
+                >
+                  Place Bounty
+                </Button>
+              </>
+            }
+          >
+            <TextField
+              label="Points (IP)"
+              type="number"
+              value={bountyDialog.points}
+              onChange={(e) => setBountyDialog((p) => ({ ...p, points: e.target.value }))}
+              fullWidth
+              size="small"
+              autoFocus
+              inputProps={{ min: 1 }}
+              onKeyDown={(e) => { if (e.key === "Enter") handleSubmitBounty(); }}
+              sx={{ mb: 1, "& .MuiOutlinedInput-root": { minHeight: 48 } }}
+            />
+          </ResponsiveDialog>
+        ) : (
+          <>
+            {bountyDialog.open && (
+              <Box
                 onClick={() => setBountyDialog((p) => ({ ...p, open: false }))}
-                sx={{ textTransform: "none", color: "var(--font-secondary)", minHeight: { xs: 44, sm: "auto" } }}
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="contained"
-                onClick={handleSubmitBounty}
-                disabled={!bountyDialog.points || parseInt(bountyDialog.points) <= 0}
                 sx={{
-                  textTransform: "none", fontWeight: 600, borderRadius: "8px",
-                  minHeight: { xs: 44, sm: "auto" },
-                  backgroundColor: "#f59e0b", boxShadow: "none",
-                  "&:hover": { backgroundColor: "#d97706", boxShadow: "none" },
+                  position: "fixed", inset: 0, zIndex: 1300,
+                  backgroundColor: "rgba(0,0,0,0.45)",
+                  display: "flex", alignItems: "center", justifyContent: "center",
                 }}
               >
-                Place Bounty
-              </Button>
-            </>
-          }
-        >
-          <TextField
-            label="Points (IP)"
-            type="number"
-            value={bountyDialog.points}
-            onChange={(e) => setBountyDialog((p) => ({ ...p, points: e.target.value }))}
-            fullWidth
-            size="small"
-            autoFocus
-            inputProps={{ min: 1 }}
-            onKeyDown={(e) => { if (e.key === "Enter") handleSubmitBounty(); }}
-            sx={{ mb: 1, "& .MuiOutlinedInput-root": { minHeight: { xs: 48, sm: "auto" } } }}
-          />
-        </ResponsiveDialog>
+                <Box
+                  onClick={(e) => e.stopPropagation()}
+                  sx={{
+                    backgroundColor: "var(--card-bg)", borderRadius: "14px",
+                    p: 3, width: 340, border: "1px solid var(--border-default)",
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.18)",
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.5 }}>
+                    <IconWrapper icon="mdi:fire" size={20} color="#f59e0b" />
+                    <Typography variant="subtitle1" fontWeight={700} sx={{ color: "var(--font-primary)" }}>
+                      Offer a Bounty
+                    </Typography>
+                  </Box>
+                  <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 2, lineHeight: 1.6 }}>
+                    Set an IP reward to attract quality answers. The best answer you accept earns the points.
+                  </Typography>
+                  <TextField
+                    label="Points (IP)"
+                    type="number"
+                    value={bountyDialog.points}
+                    onChange={(e) => setBountyDialog((p) => ({ ...p, points: e.target.value }))}
+                    fullWidth
+                    size="small"
+                    autoFocus
+                    inputProps={{ min: 1 }}
+                    onKeyDown={(e) => { if (e.key === "Enter") handleSubmitBounty(); }}
+                    sx={{ mb: 2 }}
+                  />
+                  <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+                    <Button
+                      size="small"
+                      onClick={() => setBountyDialog((p) => ({ ...p, open: false }))}
+                      sx={{ textTransform: "none", color: "var(--font-secondary)" }}
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      size="small"
+                      variant="contained"
+                      onClick={handleSubmitBounty}
+                      disabled={!bountyDialog.points || parseInt(bountyDialog.points) <= 0}
+                      sx={{
+                        textTransform: "none", fontWeight: 600, borderRadius: "8px",
+                        backgroundColor: "#f59e0b", boxShadow: "none",
+                        "&:hover": { backgroundColor: "#d97706", boxShadow: "none" },
+                      }}
+                    >
+                      Place Bounty
+                    </Button>
+                  </Box>
+                </Box>
+              </Box>
+            )}
+          </>
+        )}
 
         </Box>{/* end main content */}
 

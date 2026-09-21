@@ -176,8 +176,9 @@ export default function BountiesPage() {
                 textTransform: "none",
                 fontWeight: 600,
                 // Three tabs at MUI's 90px floor plus the row padding is wider than a phone.
+                // No min-height here: MUI's own 48px Tab floor is already a thumb target, and
+                // overriding it at sm+ would shrink the desktop tabs.
                 minWidth: { xs: "auto", sm: 90 },
-                minHeight: { xs: 48, sm: "auto" },
                 px: { xs: 1.25, sm: 2 },
                 fontSize: { xs: "0.82rem", sm: "0.875rem" },
               },

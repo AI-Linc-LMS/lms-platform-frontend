@@ -4,6 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
+  Dialog,
+  DialogContent,
+  DialogActions,
   TextField,
   Button,
   Box,
@@ -15,6 +18,8 @@ import {
   Autocomplete,
   createFilterOptions,
   Popover,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
@@ -175,6 +180,8 @@ export function CreateThreadDialog({
   initialPostType = "question",
 }: CreateThreadDialogProps) {
   const { t } = useTranslation("common");
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const [postType, setPostType] = useState<PostType>(initialPostType);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -401,66 +408,10 @@ export function CreateThreadDialog({
     "& img": { maxWidth: "100%", borderRadius: "8px", mt: 1 },
   };
 
-  return (
-    <ResponsiveDialog
-      open={open}
-      onClose={onClose}
-      maxWidth="md"
-      maxHeightVh={92}
-      title="New post"
-      data-testid="composer-sheet"
-      footer={
-        <>
-          {/* The running character/option count is context, not an action - it would take a
-              full-width slot away from Cancel and Post on a phone. */}
-          <Box sx={{ flex: 1, display: { xs: "none", sm: "block" } }}>
-            <Typography variant="caption" color="var(--font-tertiary)">
-              {BODY_LABEL[postType]} · {body.length} chars
-              {postType === "poll" && ` · ${pollOptions.filter((o) => o.trim()).length} options`}
-              {postType === "humorous" && humorTone && ` · ${HUMOR_TONES.find((t) => t.key === humorTone)?.label}`}
-              {postType === "discussion" && stance && ` · ${STANCES.find((s) => s.key === stance)?.label}`}
-              {attachedFiles.length > 0 && ` · ${attachedFiles.length} file${attachedFiles.length > 1 ? "s" : ""}`}
-            </Typography>
-          </Box>
-          <Button
-            onClick={onClose}
-            disabled={submitting}
-            sx={{ textTransform: "none", color: "var(--font-secondary)", minHeight: { xs: 48, sm: "auto" } }}
-          >
-            Cancel
-          </Button>
-          <LoadingButton
-            variant="contained"
-            onClick={handleSubmit}
-            disabled={isSubmitDisabled}
-            loading={submitting}
-            loadingText={t("common.posting")}
-            startIcon={<IconWrapper icon="mdi:send" size={15} />}
-            sx={{
-              textTransform: "none", fontWeight: 600, borderRadius: "8px", px: 2.5,
-              minHeight: { xs: 48, sm: "auto" },
-              backgroundColor: typeConfig.color, boxShadow: "none",
-              "&:hover": { backgroundColor: typeConfig.color, filter: "brightness(0.9)", boxShadow: "none" },
-              "&.Mui-disabled": { backgroundColor: "var(--border-default)", color: "var(--font-tertiary)" },
-            }}
-          >
-            {anyUploading ? "Uploading images..." : `Post ${typeConfig.label}`}
-          </LoadingButton>
-        </>
-      }
-    >
-      {/* ── Type Selector Header ──────────────────────────────────────────── */}
-      <Box
-        sx={{
-          // Bleeds to the edges of the sheet so it still reads as a band above the form.
-          mx: { xs: -2, sm: -3 },
-          px: { xs: 2, sm: 3 },
-          pt: { xs: 1, sm: 1.5 },
-          pb: 2,
-          borderBottom: "1px solid var(--border-default)",
-          backgroundColor: "var(--surface)",
-        }}
-      >
+  // One set of type chips and one form, two frames. The desktop keeps the composer it had
+  // (16px paper, bordered selector band, footer band with the running count); a phone gets the
+  // bottom sheet, where the count would steal a full-width slot from Cancel and Post.
+  const typeChips = (
         <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap" }}>
           {POST_TYPES.map((type) => {
             const cfg = POST_TYPE_CONFIG[type];
@@ -488,9 +439,10 @@ export function CreateThreadDialog({
             );
           })}
         </Box>
-      </Box>
+  );
 
-      <Box sx={{ pt: 2.5, pb: 1 }}>
+  const formFields = (
+    <>
 
           {/* ── Title ──────────────────────────────────────────────────── */}
           <TextField
@@ -1008,57 +960,167 @@ export function CreateThreadDialog({
               </Box>
             </Box>
           )}
-      </Box>
+    </>
+  );
 
-      {/* Emoji picker popover */}
-      <Popover
-        open={Boolean(emojiAnchor)}
-        anchorEl={emojiAnchor}
-        onClose={() => setEmojiAnchor(null)}
-        anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
-        PaperProps={{
-          sx: {
-            mt: 0.5,
-            p: 1,
-            borderRadius: "10px",
-            border: "1px solid var(--border-default)",
-            maxWidth: 296,
-          },
+  const emojiPopover = (
+    <Popover
+      open={Boolean(emojiAnchor)}
+      anchorEl={emojiAnchor}
+      onClose={() => setEmojiAnchor(null)}
+      anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
+      PaperProps={{
+        sx: {
+          mt: 0.5,
+          p: 1,
+          borderRadius: "10px",
+          border: "1px solid var(--border-default)",
+          maxWidth: 296,
+        },
+      }}
+    >
+      <Box
+        sx={{
+          display: "grid",
+          gridTemplateColumns: "repeat(8, 1fr)",
+          gap: 0.25,
         }}
       >
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(8, 1fr)",
-            gap: 0.25,
-          }}
-        >
-          {EMOJI_SET.map((emoji) => (
-            <Box
-              key={emoji}
-              onMouseDown={(e) => e.preventDefault()}
-              onClick={() => {
-                insertAtCursor(emoji, "", emoji);
-                setEmojiAnchor(null);
-              }}
-              sx={{
-                width: 32,
-                height: 32,
-                fontSize: "1.2rem",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                borderRadius: "6px",
-                cursor: "pointer",
-                userSelect: "none",
-                "&:hover": { backgroundColor: "var(--surface)" },
-              }}
+        {EMOJI_SET.map((emoji) => (
+          <Box
+            key={emoji}
+            onMouseDown={(e) => e.preventDefault()}
+            onClick={() => {
+              insertAtCursor(emoji, "", emoji);
+              setEmojiAnchor(null);
+            }}
+            sx={{
+              width: 32,
+              height: 32,
+              fontSize: "1.2rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              borderRadius: "6px",
+              cursor: "pointer",
+              userSelect: "none",
+              "&:hover": { backgroundColor: "var(--surface)" },
+            }}
+          >
+            {emoji}
+          </Box>
+        ))}
+      </Box>
+    </Popover>
+  );
+
+  const submitLabel = anyUploading ? "Uploading images..." : `Post ${typeConfig.label}`;
+  const submitSx = {
+    textTransform: "none", fontWeight: 600, borderRadius: "8px", px: 2.5,
+    backgroundColor: typeConfig.color, boxShadow: "none",
+    "&:hover": { backgroundColor: typeConfig.color, filter: "brightness(0.9)", boxShadow: "none" },
+    "&.Mui-disabled": { backgroundColor: "var(--border-default)", color: "var(--font-tertiary)" },
+  } as const;
+
+  if (isPhone) {
+    return (
+      <ResponsiveDialog
+        open={open}
+        onClose={onClose}
+        maxWidth="md"
+        maxHeightVh={92}
+        title="New post"
+        hideCloseButton={submitting}
+        data-testid="composer-sheet"
+        footer={
+          <>
+            <Button onClick={onClose} disabled={submitting} sx={{ textTransform: "none", color: "var(--font-secondary)", minHeight: 48 }}>
+              Cancel
+            </Button>
+            <LoadingButton
+              variant="contained"
+              onClick={handleSubmit}
+              disabled={isSubmitDisabled}
+              loading={submitting}
+              loadingText={t("common.posting")}
+              startIcon={<IconWrapper icon="mdi:send" size={15} />}
+              sx={{ ...submitSx, minHeight: 48 }}
             >
-              {emoji}
-            </Box>
-          ))}
+              {submitLabel}
+            </LoadingButton>
+          </>
+        }
+      >
+        {/* Bleeds to the edges of the sheet so it still reads as a band above the form. */}
+        <Box sx={{ mx: -2, px: 2, pt: 1, pb: 2, borderBottom: "1px solid var(--border-default)", backgroundColor: "var(--surface)" }}>
+          {typeChips}
         </Box>
-      </Popover>
-    </ResponsiveDialog>
+        <Box sx={{ pt: 2.5, pb: 1 }}>{formFields}</Box>
+        {emojiPopover}
+      </ResponsiveDialog>
+    );
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+      PaperProps={{
+        sx: {
+          borderRadius: "16px",
+          border: "1px solid var(--border-default)",
+          boxShadow: "0 24px 64px rgba(0,0,0,0.13)",
+          overflow: "hidden",
+        },
+      }}
+    >
+      {/* ── Type Selector Header ──────────────────────────────────────────── */}
+      <Box
+        sx={{
+          px: 3,
+          pt: 2.5,
+          pb: 2,
+          borderBottom: "1px solid var(--border-default)",
+          backgroundColor: "var(--surface)",
+        }}
+      >
+        {typeChips}
+      </Box>
+
+      <DialogContent sx={{ p: 0 }}>
+        <Box sx={{ px: 3, pt: 2.5, pb: 1 }}>{formFields}</Box>
+      </DialogContent>
+
+      {/* ── Footer ─────────────────────────────────────────────────────────── */}
+      <DialogActions sx={{ px: 3, py: 2, borderTop: "1px solid var(--border-default)", backgroundColor: "var(--surface)", gap: 1 }}>
+        <Box sx={{ flex: 1 }}>
+          <Typography variant="caption" color="var(--font-tertiary)">
+            {BODY_LABEL[postType]} · {body.length} chars
+            {postType === "poll" && ` · ${pollOptions.filter((o) => o.trim()).length} options`}
+            {postType === "humorous" && humorTone && ` · ${HUMOR_TONES.find((t) => t.key === humorTone)?.label}`}
+            {postType === "discussion" && stance && ` · ${STANCES.find((s) => s.key === stance)?.label}`}
+            {attachedFiles.length > 0 && ` · ${attachedFiles.length} file${attachedFiles.length > 1 ? "s" : ""}`}
+          </Typography>
+        </Box>
+        <Button onClick={onClose} disabled={submitting} sx={{ textTransform: "none", color: "var(--font-secondary)" }}>
+          Cancel
+        </Button>
+        <LoadingButton
+          variant="contained"
+          onClick={handleSubmit}
+          disabled={isSubmitDisabled}
+          loading={submitting}
+          loadingText={t("common.posting")}
+          startIcon={<IconWrapper icon="mdi:send" size={15} />}
+          sx={submitSx}
+        >
+          {submitLabel}
+        </LoadingButton>
+      </DialogActions>
+
+      {emojiPopover}
+    </Dialog>
   );
 }

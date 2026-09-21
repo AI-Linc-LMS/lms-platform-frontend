@@ -14,6 +14,8 @@ import { VoteButtons } from "./VoteButtons";
 import { PollWidget } from "./PollWidget";
 import { QuickCommentBar } from "./QuickCommentBar";
 import { ImageGallery } from "./ImageGallery";
+import { PostActionsMenu } from "./PostActionsMenu";
+import { PHONE, TOUCH } from "./phone";
 
 import { formatDistanceToNow } from "@/lib/utils/date-utils";
 
@@ -46,15 +48,6 @@ const CARD_MD_SX = {
   "& table": { borderCollapse: "collapse", width: "100%", mb: 0.75 },
   "& th, & td": { border: "1px solid var(--border-default)", px: 1, py: 0.4, fontSize: "0.8rem" },
 };
-
-/**
- * A thumb needs 44px of target; the desktop row is deliberately dense, so the step-up is xs-only.
- * Applied to every control in the card's action row, which the audit found at 28-34px.
- */
-const TOUCH = {
-  minWidth: { xs: 44, sm: "auto" },
-  minHeight: { xs: 44, sm: "auto" },
-} as const;
 
 interface ThreadCardProps {
   thread: Thread;
@@ -315,7 +308,7 @@ export function ThreadCard({
             {/* Meta row: author + stats.
                 On a phone the author line and the action row are two rows: side by side they add
                 up to more than the card is wide, which is what was being clipped. */}
-            <Box sx={{ display: "flex", alignItems: "center", flexWrap: "wrap", rowGap: 1 }}>
+            <Box sx={{ display: "flex", alignItems: "center", [PHONE]: { flexWrap: "wrap", rowGap: 1 } }}>
               <Box
                 onClick={
                   onAuthorClick && thread.author.id
@@ -369,18 +362,20 @@ export function ThreadCard({
               <Box
                 data-testid="thread-actions"
                 sx={{
-                  ml: { xs: 0, sm: "auto" },
-                  width: { xs: "100%", sm: "auto" },
+                  ml: "auto",
                   display: "flex",
                   alignItems: "center",
-                  flexWrap: "wrap",
-                  rowGap: 0.5,
                   gap: 0.5,
-                  justifyContent: { xs: "space-between", sm: "flex-end" },
+                  // One row on a phone: votes on the left, the rest grouped on the right. Share,
+                  // report and bounty fold into the "more" menu there, so it never wraps.
+                  [PHONE]: { ml: 0, width: "100%", flexWrap: "nowrap" },
                 }}
               >
                 {/* The vote rail is hidden on a phone, so the votes live here instead. */}
-                <Box data-testid="thread-vote-inline" sx={{ display: { xs: "flex", sm: "none" } }}>
+                <Box
+                  data-testid="thread-vote-inline"
+                  sx={{ display: { xs: "flex", sm: "none" }, [PHONE]: { mr: "auto", flexShrink: 0 } }}
+                >
                   <VoteButtons
                     upvotes={thread.upvotes}
                     downvotes={thread.downvotes}
@@ -406,9 +401,9 @@ export function ThreadCard({
                     <Box
                       onClick={() => onOfferBounty(thread.id)}
                       sx={{
-                        ...TOUCH,
-                        display: "flex", alignItems: "center", justifyContent: "center", gap: 0.4, cursor: "pointer",
+                        display: "flex", alignItems: "center", gap: 0.4, cursor: "pointer",
                         px: 0.9, py: 0.3, borderRadius: "6px",
+                        [PHONE]: { display: "none" },
                         "&:hover": { backgroundColor: "rgba(245,158,11,0.08)" },
                       }}
                     >
@@ -425,8 +420,8 @@ export function ThreadCard({
                       size="small"
                       onClick={() => onShare(thread.id)}
                       sx={{
-                        ...TOUCH,
                         color: "var(--font-secondary)",
+                        [PHONE]: { display: "none" },
                         "&:hover": { color: "var(--accent-indigo)", backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)" },
                       }}
                     >
@@ -440,8 +435,8 @@ export function ThreadCard({
                       size="small"
                       onClick={() => onReport(thread.id)}
                       sx={{
-                        ...TOUCH,
                         color: "var(--font-secondary)",
+                        [PHONE]: { display: "none" },
                         "&:hover": { color: "#ef4444", backgroundColor: "rgba(239,68,68,0.08)" },
                       }}
                     >
@@ -467,6 +462,20 @@ export function ThreadCard({
                       {thread.bookmarks_count}
                     </Typography>
                   </Box>
+                )}
+                {!isSaving && (
+                  <PostActionsMenu
+                    testId="thread-more"
+                    actions={[
+                      ...(canOfferBounty && onOfferBounty
+                        ? [{ key: "bounty", label: "Offer a bounty", icon: "mdi:fire-outline", onClick: () => onOfferBounty(thread.id) }]
+                        : []),
+                      ...(onShare ? [{ key: "share", label: "Share", icon: "mdi:share-variant-outline", onClick: () => onShare(thread.id) }] : []),
+                      ...(onReport && !isAuthor
+                        ? [{ key: "report", label: "Report", icon: "mdi:flag-outline", color: "#ef4444", onClick: () => onReport(thread.id) }]
+                        : []),
+                    ]}
+                  />
                 )}
               </Box>
             </Box>

@@ -12,6 +12,7 @@ import {
   Chip,
   Avatar,
   Button,
+  IconButton,
   TextField,
   CircularProgress,
   Breadcrumbs,
@@ -20,6 +21,8 @@ import {
 import { MainLayout } from "@/components/layout/MainLayout";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { VoteButtons } from "@/components/community/VoteButtons";
+import { PostActionsMenu } from "@/components/community/PostActionsMenu";
+import { PHONE } from "@/components/community/phone";
 import { CommentItem } from "@/components/community/CommentItem";
 import {
   communityService,
@@ -735,8 +738,10 @@ export default function ThreadDetailPage() {
                           "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
                         color: "var(--accent-indigo)",
                         fontWeight: 500,
-                        height: { xs: 40, sm: "auto" },
                         cursor: "pointer",
+                        // A tag is how you filter the feed, so on a phone it is a real tap target.
+                        // Phone-only: a small Chip is 24px on desktop and stays that way.
+                        [PHONE]: { height: 40 },
                         "&:hover": {
                           backgroundColor:
                             "color-mix(in srgb, var(--accent-indigo) 22%, var(--surface) 78%)",
@@ -856,10 +861,11 @@ export default function ThreadDetailPage() {
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  flexWrap: "wrap",
-                  rowGap: 1.5,
                   pt: 2,
                   borderTop: "1px solid #e5e7eb",
+                  // On a phone the author and the actions are two rows; side by side they are
+                  // wider than the screen.
+                  [PHONE]: { flexWrap: "wrap", rowGap: 1.5 },
                 }}
               >
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
@@ -893,18 +899,21 @@ export default function ThreadDetailPage() {
                 </Box>
 
                 <Box
+                  data-testid="detail-actions"
                   sx={{
                     display: "flex",
                     alignItems: "center",
-                    flexWrap: "wrap",
                     gap: 0.5,
-                    width: { xs: "100%", sm: "auto" },
-                    justifyContent: { xs: "space-between", sm: "flex-end" },
-                    "& .MuiButton-root": { minHeight: { xs: 44, sm: "auto" } },
+                    // One row on a phone: votes on the left, bookmark and "more" on the right.
+                    // Share and Report fold into "more" there, so the row never wraps.
+                    [PHONE]: { width: "100%", flexWrap: "nowrap" },
                   }}
                 >
                   {/* The rail is hidden on a phone, so this is where the post gets voted on. */}
-                  <Box data-testid="detail-vote-inline" sx={{ display: { xs: "flex", sm: "none" } }}>
+                  <Box
+                    data-testid="detail-vote-inline"
+                    sx={{ display: { xs: "flex", sm: "none" }, [PHONE]: { mr: "auto", flexShrink: 0 } }}
+                  >
                     <VoteButtons
                       upvotes={thread.upvotes}
                       downvotes={thread.downvotes}
@@ -924,6 +933,7 @@ export default function ThreadDetailPage() {
                         color: "var(--accent-indigo)",
                         backgroundColor: "color-mix(in srgb, var(--accent-indigo) 8%, transparent)",
                       },
+                      [PHONE]: { display: "none" },
                     }}
                   >
                     Share
@@ -938,6 +948,7 @@ export default function ThreadDetailPage() {
                         color: "#ef4444",
                         backgroundColor: "rgba(239,68,68,0.08)",
                       },
+                      [PHONE]: { display: "none" },
                     }}
                   >
                     Report
@@ -959,11 +970,34 @@ export default function ThreadDetailPage() {
                       "&:hover": {
                         backgroundColor: "rgba(0, 0, 0, 0.04)",
                       },
+                      [PHONE]: { display: "none" },
                     }}
                   >
                     {thread.user_bookmarked ? t("community.bookmarked") : t("community.bookmark")} (
                     {thread.bookmarks_count})
                   </Button>
+                  {/* Phone bookmark: the icon and the count, without the label that would push
+                      the row past the screen. */}
+                  <Box sx={{ display: { xs: "flex", sm: "none" }, alignItems: "center", flexShrink: 0 }}>
+                    <IconButton
+                      onClick={handleBookmark}
+                      aria-label={thread.user_bookmarked ? t("community.removeBookmark") : t("community.bookmark")}
+                      aria-pressed={!!thread.user_bookmarked}
+                      sx={{ width: 44, height: 44, color: "var(--font-secondary)" }}
+                    >
+                      <IconWrapper icon={thread.user_bookmarked ? "mdi:bookmark" : "mdi:bookmark-outline"} size={20} />
+                    </IconButton>
+                    <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontSize: "0.78rem" }}>
+                      {thread.bookmarks_count}
+                    </Typography>
+                  </Box>
+                  <PostActionsMenu
+                    testId="detail-more"
+                    actions={[
+                      { key: "share", label: "Share", icon: "mdi:share-variant-outline", onClick: () => setShareOpen(true) },
+                      { key: "report", label: "Report", icon: "mdi:flag-outline", color: "#ef4444", onClick: () => setReportOpen(true) },
+                    ]}
+                  />
                 </Box>
               </Box>
             </Box>

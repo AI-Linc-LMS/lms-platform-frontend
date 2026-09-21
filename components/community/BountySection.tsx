@@ -6,6 +6,8 @@ import { Box, Typography, Avatar, Button } from "@mui/material";
 
 import type { BountyItem } from "@/lib/services/community.service";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { ScrollRow } from "@/components/common/mobile/ScrollRow";
+import { PHONE } from "./phone";
 
 interface BountySectionProps {
   bounties: BountyItem[];
@@ -83,24 +85,22 @@ export function BountySection({ bounties }: BountySectionProps) {
       </Box>
 
       {/* Horizontal scroll row */}
-      <Box
+      {/* On a phone the row bleeds into the page gutter, snaps and fades at the edge (ScrollRow).
+          The overrides keep the desktop row exactly as it was: no snap, and its thin scrollbar. */}
+      <ScrollRow
+        gap={2}
         sx={{
-          display: "flex",
-          gap: 2,
-          overflowX: "auto",
-          pb: 0.5,
-          // On a phone the row bleeds into the page gutter and snaps, so it reads as "there is
-          // more this way" instead of ending in a hard cut at the screen edge.
-          mx: { xs: -2, sm: 0 },
-          px: { xs: 2, sm: 0 },
-          scrollSnapType: { xs: "x proximity", sm: "none" },
-          WebkitOverflowScrolling: "touch",
-          "& > *": { scrollSnapAlign: { xs: "start", sm: "none" } },
-          maskImage: {
-            xs: "linear-gradient(to right, transparent 0, #000 12px, #000 calc(100% - 12px), transparent 100%)",
-            sm: "none",
+          overflowY: "auto",
+          scrollSnapType: "none",
+          scrollbarWidth: "auto",
+          "& > *": { flexShrink: 0 },
+          [PHONE]: {
+            overflowY: "hidden",
+            scrollSnapType: "x proximity",
+            scrollbarWidth: "none",
+            "& > *": { scrollSnapAlign: "start" },
           },
-          "&::-webkit-scrollbar": { height: 4 },
+          "&::-webkit-scrollbar": { height: 4, [PHONE]: { display: "none" } },
           "&::-webkit-scrollbar-track": { background: "transparent" },
           "&::-webkit-scrollbar-thumb": { background: "var(--border-default)", borderRadius: 2 },
         }}
@@ -207,7 +207,7 @@ export function BountySection({ bounties }: BountySectionProps) {
             </Box>
           );
         })}
-      </Box>
+      </ScrollRow>
     </Box>
   );
 }

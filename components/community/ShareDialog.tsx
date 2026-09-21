@@ -1,7 +1,18 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Box, Button, TextField, Tooltip } from "@mui/material";
+import {
+  Box,
+  Button,
+  Dialog,
+  DialogContent,
+  IconButton,
+  TextField,
+  Tooltip,
+  Typography,
+  useMediaQuery,
+  useTheme,
+} from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
 
@@ -13,6 +24,8 @@ interface ShareDialogProps {
 }
 
 export function ShareDialog({ open, onClose, url, title }: ShareDialogProps) {
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const [copied, setCopied] = useState(false);
   const [canNativeShare, setCanNativeShare] = useState(false);
 
@@ -77,15 +90,8 @@ export function ShareDialog({ open, onClose, url, title }: ShareDialogProps) {
     },
   ];
 
-  return (
-    <ResponsiveDialog
-      open={open}
-      onClose={onClose}
-      maxWidth="xs"
-      title="Share this post"
-      data-testid="share-sheet"
-    >
-      <Box sx={{ pt: { xs: 1, sm: 0 } }}>
+  const content = (
+      <>
         <Box sx={{ display: "flex", gap: 1, mb: 2.5 }}>
           {targets.map((t) => (
             <Tooltip key={t.key} title={t.label}>
@@ -168,7 +174,40 @@ export function ShareDialog({ open, onClose, url, title }: ShareDialogProps) {
             More options…
           </Button>
         )}
-      </Box>
-    </ResponsiveDialog>
+      </>
+  );
+
+  // A bottom sheet on a phone; on desktop the small centred dialog it always was, unchanged.
+  if (isPhone) {
+    return (
+      <ResponsiveDialog open={open} onClose={onClose} maxWidth="xs" title="Share this post" data-testid="share-sheet">
+        <Box sx={{ pt: 1 }}>{content}</Box>
+      </ResponsiveDialog>
+    );
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="xs"
+      fullWidth
+      PaperProps={{
+        sx: { borderRadius: "14px", border: "1px solid var(--border-default)" },
+      }}
+    >
+      <DialogContent sx={{ p: 3 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+          <IconWrapper icon="mdi:share-variant" size={20} color="var(--accent-indigo)" />
+          <Typography variant="subtitle1" fontWeight={700}>
+            Share this post
+          </Typography>
+          <IconButton size="small" onClick={onClose} sx={{ ml: "auto" }}>
+            <IconWrapper icon="mdi:close" size={18} color="var(--font-secondary)" />
+          </IconButton>
+        </Box>
+        {content}
+      </DialogContent>
+    </Dialog>
   );
 }

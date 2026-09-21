@@ -3,16 +3,14 @@
 import { useState } from "react";
 import { Box, IconButton, Typography, CircularProgress } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "./phone";
 
 /**
  * A vote button is the single most-tapped control in Community, and the audit measured it at
  * 30px on a phone - small enough that a miss lands on the card and opens the thread instead.
- * MUI's `size="small"` keeps the desktop density; the floor only applies on xs.
+ * MUI's `size="small"` keeps the desktop density; the floor only applies on a phone.
  */
-const TOUCH = {
-  width: { xs: 44, sm: "auto" },
-  height: { xs: 44, sm: "auto" },
-} as const;
+const TOUCH = { [PHONE]: { width: 44, height: 44 } } as const;
 
 interface VoteButtonsProps {
   upvotes: number;
@@ -57,6 +55,9 @@ export function VoteButtons({
         flexDirection: isVertical ? "column" : "row",
         alignItems: "center",
         gap: isVertical ? 0.5 : 2,
+        // A horizontal pair sits in a phone's action row: count beside its button rather than
+        // under it, so the row stays one 44px line instead of a 64px block.
+        ...(!isVertical && { [PHONE]: { gap: 0.5 } }),
       }}
     >
       <Box
@@ -65,6 +66,7 @@ export function VoteButtons({
           flexDirection: "column",
           alignItems: "center",
           gap: 0.25,
+          ...(!isVertical && { [PHONE]: { flexDirection: "row", gap: 0 } }),
         }}
       >
         <IconButton
@@ -113,6 +115,7 @@ export function VoteButtons({
           flexDirection: "column",
           alignItems: "center",
           gap: 0.25,
+          ...(!isVertical && { [PHONE]: { flexDirection: "row", gap: 0 } }),
         }}
       >
         <IconButton
