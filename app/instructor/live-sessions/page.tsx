@@ -295,6 +295,8 @@ export default function InstructorLiveSessionsPage() {
             options={[{ key: "", label: "All batches" }, ...facetOptions]}
             value={facetFilter ?? ""}
             onChange={(k) => setFacetFilter(k === "" ? null : k)}
+            scrollOnPhone
+            ariaLabel="Batches"
           />
         </Box>
       )}

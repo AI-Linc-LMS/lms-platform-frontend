@@ -476,7 +476,7 @@ export default function InstructorStudentsPage() {
         accent="purple"
         icon="mdi:chart-box-outline"
         action={
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={1} sx={{ [PHONE]: { flexWrap: "wrap", gap: 1, "& > :not(style) ~ :not(style)": { ml: 0 } } }}>
             <HeaderActionButton icon="mdi:message-text-outline" variant="ghost" onClick={() => setMsgOpen(true)}>
               Message cohort
             </HeaderActionButton>

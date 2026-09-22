@@ -101,7 +101,7 @@ export default function InstructorCoursePage() {
         accent="purple"
         icon="mdi:book-education"
         action={
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={1} sx={{ [PHONE]: { flexWrap: "wrap", gap: 1, "& > :not(style) ~ :not(style)": { ml: 0 } } }}>
             {/* The material itself, as a learner sees it. Staff preview works end-to-end on
                 locked courses now, so this needs neither an enrollment nor edit rights. */}
             <HeaderActionButton
