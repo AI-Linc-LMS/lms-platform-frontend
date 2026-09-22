@@ -14,13 +14,18 @@ import {
   TableHead,
   TableRow,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { useTranslation } from "react-i18next";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { useToast } from "@/components/common/Toast";
 import { config } from "@/lib/config";
 import { formatMoney } from "@/lib/utils/money";
+import { PHONE } from "@/components/common/mobile/phone";
+import { phoneText } from "@/components/common/mobile/phoneText";
 import {
   paymentService,
   type MyTransaction,
@@ -49,7 +54,7 @@ function StatusChip({ txn }: { txn: MyTransaction }) {
       label={txn.status_display}
       sx={{
         fontWeight: 700,
-        fontSize: "0.72rem",
+        fontSize: phoneText(0.72),
         color: hue,
         bgcolor: `color-mix(in srgb, ${hue} 14%, transparent)`,
         border: `1px solid color-mix(in srgb, ${hue} 30%, transparent)`,
@@ -96,7 +101,59 @@ function AccessNote({ txn }: { txn: MyTransaction }) {
   );
 }
 
+function formatDate(iso: string) {
+  return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
+}
+
+/**
+ * One payment as a card, for a phone.
+ *
+ * Five table columns do not fit in 390px: the reference column wraps to one character per line
+ * and the status chip is pushed off screen. The card keeps the same order of questions ("what",
+ * "how much", "did it go through") and puts the reference, which support asks for, on its own line.
+ */
+function PurchaseCard({ txn }: { txn: MyTransaction }) {
+  const { t } = useTranslation("common");
+  return (
+    <Box
+      data-testid="purchase-card"
+      sx={{ p: 2, border: "1px solid var(--border-default)", borderRadius: 3, bgcolor: "var(--card-bg)", minWidth: 0 }}
+    >
+      <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
+        <Box sx={{ flex: 1, minWidth: 0 }}>
+          <Typography sx={{ fontWeight: 700, fontSize: "0.95rem", overflowWrap: "anywhere" }}>{txn.product_title}</Typography>
+          <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>{txn.payment_type_display}</Typography>
+        </Box>
+        <Box sx={{ textAlign: "end", flexShrink: 0 }}>
+          <Typography sx={{ fontWeight: 800, fontSize: "0.95rem" }}>{formatMoney(txn.amount, txn.currency)}</Typography>
+          {txn.refunded_amount && (
+            <Typography sx={{ fontSize: "0.8rem", color: "#f59e0b" }}>
+              {formatMoney(txn.refunded_amount, txn.currency)} refunded
+            </Typography>
+          )}
+        </Box>
+      </Box>
+      <AccessNote txn={txn} />
+      {txn.error_message && (
+        <Typography sx={{ fontSize: "0.8rem", color: "#ef4444", mt: 0.5 }}>{txn.error_message}</Typography>
+      )}
+      <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1, mt: 1.5 }}>
+        <StatusChip txn={txn} />
+        <Typography sx={{ fontSize: "0.85rem", color: "text.secondary" }}>{formatDate(txn.created_at)}</Typography>
+      </Box>
+      {txn.razorpay_payment_id && (
+        <Typography sx={{ mt: 1, fontSize: "0.8rem", color: "text.secondary", overflowWrap: "anywhere" }}>
+          {t("purchases.reference")}:{" "}
+          <Box component="span" sx={{ fontFamily: "monospace" }}>{txn.razorpay_payment_id}</Box>
+        </Typography>
+      )}
+    </Box>
+  );
+}
+
 export default function PurchasesPage() {
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const { showToast } = useToast();
   const [rows, setRows] = useState<MyTransaction[]>([]);
   const [count, setCount] = useState(0);
@@ -158,9 +215,17 @@ export default function PurchasesPage() {
         </Box>
       )}
 
+      {!loading && rows.length > 0 && isPhone && (
+        <Stack spacing={1.5} data-testid="purchase-cards">
+          {rows.map((txn) => (
+            <PurchaseCard key={txn.id} txn={txn} />
+          ))}
+        </Stack>
+      )}
+
       {!loading && rows.length > 0 && (
         <>
-          <TableContainer
+          {!isPhone && <TableContainer
             sx={{
               border: "1px solid var(--border-default)",
               borderRadius: 3,
@@ -234,7 +299,7 @@ export default function PurchasesPage() {
                 ))}
               </TableBody>
             </Table>
-          </TableContainer>
+          </TableContainer>}
 
           {pageCount > 1 && (
             <Stack alignItems="center" sx={{ mt: 3 }}>
@@ -243,6 +308,8 @@ export default function PurchasesPage() {
                 page={page}
                 onChange={(_e, p) => setPage(p)}
                 color="primary"
+                siblingCount={isPhone ? 0 : 1}
+                sx={{ [PHONE]: { "& .MuiPaginationItem-root": { minWidth: 44, height: 44, borderRadius: "22px" } } }}
               />
             </Stack>
           )}

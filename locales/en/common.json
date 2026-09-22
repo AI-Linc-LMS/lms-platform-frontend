@@ -3009,5 +3009,8 @@
     "cancel": "Cancel",
     "deleteProjectTitle": "Delete this project?",
     "deleteProjectBody": "Assessments that use it will lose the section. This cannot be undone."
+  },
+  "purchases": {
+    "reference": "Reference"
   }
 }
