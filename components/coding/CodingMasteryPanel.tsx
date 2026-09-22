@@ -9,6 +9,7 @@ import {
   adaptiveCodingService,
   type CodingStudentModel,
 } from "@/lib/services/adaptive-coding.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The learner's durable, cross-session coding mastery - the coding analogue of
@@ -76,7 +77,7 @@ export function CodingMasteryPanel({ refreshKey = 0 }: { refreshKey?: number }) 
         }}
       >
         <AIPill icon={<Icon icon="mdi:chart-donut" width={12} />}>Your coding mastery</AIPill>
-        <Typography sx={{ fontSize: "0.72rem", color: "text.secondary", flex: 1, minWidth: 180 }}>
+        <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", flex: 1, minWidth: 180 }}>
           Updates when you <strong>Submit</strong> - up on a pass, down on a fail. Hints nudge it down.
         </Typography>
       </Box>
@@ -94,7 +95,7 @@ export function CodingMasteryPanel({ refreshKey = 0 }: { refreshKey?: number }) 
               </Typography>
               <Box
                 sx={{
-                  px: 0.85, py: 0.2, borderRadius: 999, fontSize: "0.64rem", fontWeight: 800, textTransform: "uppercase",
+                  px: 0.85, py: 0.2, borderRadius: 999, fontSize: "0.64rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, textTransform: "uppercase",
                   letterSpacing: "0.04em", color, background: `color-mix(in srgb, ${color} 12%, transparent)`, minWidth: 78, textAlign: "center",
                 }}
               >
@@ -106,7 +107,7 @@ export function CodingMasteryPanel({ refreshKey = 0 }: { refreshKey?: number }) 
       </Box>
       {model.open_misconceptions.length > 0 && (
         <Box sx={{ px: 2, pb: 2, mt: -0.5 }}>
-          <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, color: "text.secondary", textTransform: "uppercase", letterSpacing: "0.05em", mb: 0.5 }}>
+          <Typography sx={{ fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, color: "text.secondary", textTransform: "uppercase", letterSpacing: "0.05em", mb: 0.5 }}>
             To re-test
           </Typography>
           <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
@@ -114,7 +115,7 @@ export function CodingMasteryPanel({ refreshKey = 0 }: { refreshKey?: number }) 
               <Box
                 key={`${m.tag}-${i}`}
                 sx={{
-                  px: 0.9, py: 0.3, borderRadius: 999, fontSize: "0.7rem", fontWeight: 700,
+                  px: 0.9, py: 0.3, borderRadius: 999, fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 700,
                   color: "#f59e0b", background: "color-mix(in srgb, #f59e0b 12%, transparent)",
                 }}
               >

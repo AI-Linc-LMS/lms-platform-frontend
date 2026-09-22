@@ -2582,5 +2582,12 @@
     "adminInterviewSessions": "Review realtime interview sittings, grades and integrity flags.",
     "adminInterviewSetup": "أنشئ المقابلات وحدد مواعيدها واطلع على المرشحين ونتائجهم.",
     "projectLibrary": "مشاريع عملية ينفذها المتعلمون داخل المتصفح."
+  },
+  "learningPlayerMobile": {
+    "workspaceTabs": "مساحة البرمجة",
+    "problemTab": "المسألة",
+    "codeTab": "الكود",
+    "resultsTab": "النتائج",
+    "noResultsYet": "شغّل الكود لترى نتائج الاختبارات وملاحظات المرشد هنا."
   }
 }

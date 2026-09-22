@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Box, LinearProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type { CodingPointsDecay } from "@/lib/services/adaptive-coding.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /** Mirror of engine.points_after_decay - keep in lockstep so the live number matches the award. */
 function pointsAfterDecay(elapsedSec: number, d: CodingPointsDecay): number {
@@ -91,7 +92,7 @@ export function CodingTimerPoints({
       <Stack alignItems="center" sx={{ minWidth: 78 }}>
         <Stack direction="row" spacing={0.4} alignItems="center" sx={{ color: "text.secondary" }}>
           <Icon icon="mdi:timer-outline" width={13} />
-          <Typography sx={{ fontSize: "0.58rem", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+          <Typography sx={{ fontSize: "0.58rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" }}>
             {submitted ? "Time" : "On the clock"}
           </Typography>
         </Stack>
@@ -107,7 +108,7 @@ export function CodingTimerPoints({
         <Stack direction="row" alignItems="baseline" justifyContent="space-between">
           <Stack direction="row" spacing={0.4} alignItems="center" sx={{ color: "text.secondary" }}>
             <Icon icon="mdi:star-four-points" width={12} color="#7c3aed" />
-            <Typography sx={{ fontSize: "0.58rem", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" }}>
+            <Typography sx={{ fontSize: "0.58rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase" }}>
               {submitted ? "Earned" : "Points on offer"}
             </Typography>
           </Stack>
@@ -115,7 +116,7 @@ export function CodingTimerPoints({
             <Typography component="span" sx={{ fontWeight: 900, fontSize: "1.4rem", color, fontVariantNumeric: "tabular-nums", transition: "color .3s" }}>
               {pts}
             </Typography>
-            <Typography component="span" sx={{ fontSize: "0.72rem", fontWeight: 700, color: "text.secondary", ml: 0.4 }}>
+            <Typography component="span" sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 700, color: "text.secondary", ml: 0.4 }}>
               / {decay.base}
             </Typography>
           </Box>
@@ -126,7 +127,7 @@ export function CodingTimerPoints({
           sx={{ mt: 0.6, height: 6, borderRadius: 4, bgcolor: "rgba(148,163,184,0.2)",
             "& .MuiLinearProgress-bar": { bgcolor: color, borderRadius: 4, transition: "transform .4s ease, background-color .3s" } }}
         />
-        <Typography sx={{ fontSize: "0.68rem", fontWeight: 700, mt: 0.5,
+        <Typography sx={{ fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 700, mt: 0.5,
           color: submitted ? "#6d28d9" : inGrace ? "#15803d" : atFloor ? "#b91c1c" : "#b45309" }}>
           {submitted
             ? "Locked in on submit"
