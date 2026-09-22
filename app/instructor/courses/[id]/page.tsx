@@ -12,6 +12,8 @@ import { StudentDetailDrawer } from "@/components/instructor/StudentDetailDrawer
 import { RosterRow } from "@/components/instructor/RosterRow";
 import { instructorService, type CourseStudentRow } from "@/lib/services/instructor.service";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { pf, PHONE_CHIP } from "@/components/instructor/phoneSx";
+import { PHONE } from "@/components/common/mobile/phone";
 
 export default function InstructorCoursePage() {
   const params = useParams();
@@ -136,7 +138,7 @@ export default function InstructorCoursePage() {
             placeholder="Search students…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            sx={{ maxWidth: 380, mb: 2, "& .MuiOutlinedInput-root": { borderRadius: 2, bgcolor: "var(--surface)" } }}
+            sx={{ maxWidth: 380, mb: 2, "& .MuiOutlinedInput-root": { borderRadius: 2, bgcolor: "var(--surface)" }, [PHONE]: { "& .MuiOutlinedInput-root": { minHeight: 44 } } }}
             InputProps={{ startAdornment: <Icon icon="mdi:magnify" width={18} style={{ marginRight: 6, opacity: 0.6 }} /> }}
           />
 
@@ -155,6 +157,7 @@ export default function InstructorCoursePage() {
                 name={r.name}
                 email={r.email}
                 onClick={() => setSelected(r.student_id)}
+                phoneMeta={`${Math.round(r.progress_percentage || 0)}% · ${r.completed}/${r.total}`}
                 right={
                   <Stack direction="row" spacing={1.5} alignItems="center">
                     <Box sx={{ width: 92, display: { xs: "none", sm: "block" } }}>
@@ -163,7 +166,7 @@ export default function InstructorCoursePage() {
                         value={Math.max(0, Math.min(100, r.progress_percentage || 0))}
                         sx={{ height: 6, borderRadius: 3 }}
                       />
-                      <Typography sx={{ fontSize: "0.68rem", color: "text.secondary", mt: 0.25 }}>
+                      <Typography sx={{ ...pf(0.68), color: "text.secondary", mt: 0.25 }}>
                         {Math.round(r.progress_percentage || 0)}% · {r.completed}/{r.total}
                       </Typography>
                     </Box>
@@ -176,7 +179,7 @@ export default function InstructorCoursePage() {
                       }}
                       disabled={removing === r.student_id}
                       sx={{ fontWeight: 700, cursor: "pointer", color: "#ef4444",
-                        bgcolor: "color-mix(in srgb, #ef4444 12%, transparent)" }}
+                        bgcolor: "color-mix(in srgb, #ef4444 12%, transparent)", ...PHONE_CHIP }}
                     />
                   </Stack>
                 }

@@ -15,6 +15,7 @@ import {
   type InstructorRecentSubmission,
 } from "@/lib/services/instructor.service";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { pf, PHONE_CHIP, PHONE_TAP } from "@/components/instructor/phoneSx";
 
 function greeting(): string {
   const h = new Date().getHours();
@@ -122,7 +123,7 @@ export default function InstructorDashboardPage() {
             <Box sx={{ p: { xs: 2.5, md: 3.5 } }}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.5, gap: 1 }}>
                 <Box sx={{ px: 1.25, py: 0.5, borderRadius: 999, border: "1px solid rgba(255,255,255,0.2)",
-                  display: "inline-flex", alignItems: "center", gap: 0.75, fontSize: "0.66rem", fontWeight: 800,
+                  display: "inline-flex", alignItems: "center", gap: 0.75, ...pf(0.66), fontWeight: 800,
                   letterSpacing: 0.6, textTransform: "uppercase", color: "rgba(255,255,255,0.9)" }}>
                   <Icon icon="mdi:sparkles" width={13} /> Your teaching briefing
                 </Box>
@@ -130,12 +131,12 @@ export default function InstructorDashboardPage() {
                   sx={{ px: 1.1, py: 0.5, borderRadius: 999, bgcolor: "rgba(0,0,0,0.28)", border: "1px solid rgba(255,255,255,0.14)",
                     display: "inline-flex", alignItems: "center", gap: 0.75, cursor: dash?.instructor_code ? "pointer" : "default" }}>
                   <Icon icon="mdi:shield-account-outline" width={13} style={{ opacity: 0.75 }} />
-                  <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: 1.5 }}>{dash?.instructor_code || "no code"}</Typography>
+                  <Typography sx={{ ...pf(0.72), fontWeight: 800, letterSpacing: 1.5 }}>{dash?.instructor_code || "no code"}</Typography>
                   {dash?.instructor_code && <Icon icon="mdi:content-copy" width={12} style={{ opacity: 0.7 }} />}
                 </Box>
               </Stack>
 
-              <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase", color: "rgba(255,255,255,0.6)" }}>
+              <Typography sx={{ ...pf(0.72), fontWeight: 800, letterSpacing: 0.8, textTransform: "uppercase", color: "rgba(255,255,255,0.6)" }}>
                 Welcome back, {dash?.instructor_name || "Instructor"}
               </Typography>
 
@@ -222,7 +223,7 @@ export default function InstructorDashboardPage() {
             <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 0.5 }}>
               <Typography sx={{ fontWeight: 800, fontSize: "1.15rem" }}>Your cohorts</Typography>
               <Button onClick={() => push("/instructor/cohorts")} endIcon={<Icon icon="mdi:chevron-right" width={18} />}
-                sx={{ textTransform: "none", fontWeight: 700, color: "#6366f1" }}>All cohorts</Button>
+                sx={{ textTransform: "none", fontWeight: 700, color: "#6366f1", ...PHONE_TAP }}>All cohorts</Button>
             </Stack>
             <Typography sx={{ color: "text.secondary", fontSize: "0.82rem", mb: 1.5 }}>Assigned by admin · you own delivery & reporting</Typography>
             <Stack spacing={1.5}>
@@ -243,7 +244,7 @@ export default function InstructorDashboardPage() {
             <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 1.5 }}>
               <Typography sx={{ fontWeight: 800, fontSize: "1.15rem" }}>Recent submissions</Typography>
               <Button onClick={() => push("/instructor/assessments")} endIcon={<Icon icon="mdi:chevron-right" width={18} />}
-                sx={{ textTransform: "none", fontWeight: 700, color: "#6366f1" }}>Gradebook</Button>
+                sx={{ textTransform: "none", fontWeight: 700, color: "#6366f1", ...PHONE_TAP }}>Gradebook</Button>
             </Stack>
             <Box sx={{ borderRadius: 3, border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)", overflow: "hidden" }}>
               {(dash?.recent_submissions ?? []).length === 0 ? (
@@ -286,12 +287,12 @@ export default function InstructorDashboardPage() {
                   sx={{ display: "flex", alignItems: "center", gap: 1.25, p: 1, borderRadius: 2, cursor: "pointer",
                     "&:hover": { bgcolor: "color-mix(in srgb, #ef4444 6%, transparent)" } }}>
                   <Box sx={{ width: 30, height: 30, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center",
-                    color: "#fff", fontWeight: 800, fontSize: "0.72rem", background: "linear-gradient(135deg,#6366f1,#a855f7)" }}>
+                    color: "#fff", fontWeight: 800, ...pf(0.72), background: "linear-gradient(135deg,#6366f1,#a855f7)" }}>
                     {(s.name || s.email || "?").slice(0, 1).toUpperCase()}
                   </Box>
                   <Box sx={{ minWidth: 0, flex: 1 }}>
                     <Typography sx={{ fontWeight: 700, fontSize: "0.85rem" }} noWrap>{s.name || s.email}</Typography>
-                    <Typography sx={{ color: "#ef4444", fontSize: "0.74rem" }}>{fmtPct(s.progress)} progress · low</Typography>
+                    <Typography sx={{ color: "#ef4444", ...pf(0.74) }}>{fmtPct(s.progress)} progress · low</Typography>
                   </Box>
                   <Icon icon="mdi:chevron-right" width={18} style={{ color: "var(--font-tertiary)" }} />
                 </Box>
@@ -303,7 +304,7 @@ export default function InstructorDashboardPage() {
             {dash && dash.at_risk.length > 0 && (
               <Button fullWidth onClick={() => push("/instructor/students?status=at_risk")}
                 sx={{ mt: 1.5, py: 0.9, borderRadius: 2, fontWeight: 800, textTransform: "none", color: "#ef4444",
-                  bgcolor: "color-mix(in srgb,#ef4444 8%,transparent)" }}>
+                  bgcolor: "color-mix(in srgb,#ef4444 8%,transparent)", ...PHONE_TAP }}>
                 Review all at-risk
               </Button>
             )}
@@ -359,9 +360,9 @@ function HeroTask({ eyebrow, icon, title, sub, onClick }: {
         <Icon icon={icon} width={19} />
       </Box>
       <Box sx={{ minWidth: 0 }}>
-        <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.6, textTransform: "uppercase", color: "rgba(255,255,255,0.55)" }}>{eyebrow}</Typography>
+        <Typography sx={{ ...pf(0.6), fontWeight: 800, letterSpacing: 0.6, textTransform: "uppercase", color: "rgba(255,255,255,0.55)" }}>{eyebrow}</Typography>
         <Typography sx={{ fontWeight: 800, fontSize: "0.9rem" }} noWrap>{title}</Typography>
-        <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.6)" }} noWrap>{sub}</Typography>
+        <Typography sx={{ ...pf(0.72), color: "rgba(255,255,255,0.6)" }} noWrap>{sub}</Typography>
       </Box>
     </Box>
   );
@@ -382,17 +383,17 @@ function TodayCard({ onTrackPct, liveNow, pending, atRisk, nextSession, onGrade,
       <Box sx={{ p: 2.5, display: "flex", gap: 2, alignItems: "center" }}>
         <Ring pct={onTrackPct} size={100} grad={["#34d399", "#10b981"]}>
           <Typography sx={{ fontWeight: 900, fontSize: "1.35rem", lineHeight: 1 }}>{fmtPct(onTrackPct)}</Typography>
-          <Typography sx={{ fontSize: "0.56rem", color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 0.5 }}>on track</Typography>
+          <Typography sx={{ ...pf(0.56), color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 0.5 }}>on track</Typography>
         </Ring>
         <Box sx={{ minWidth: 0 }}>
-          <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: 0.7, textTransform: "uppercase", color: "rgba(255,255,255,0.6)" }}>Today's focus</Typography>
+          <Typography sx={{ ...pf(0.66), fontWeight: 800, letterSpacing: 0.7, textTransform: "uppercase", color: "rgba(255,255,255,0.6)" }}>Today's focus</Typography>
           <Typography sx={{ fontWeight: 900, fontSize: "1.05rem", mt: 0.25, lineHeight: 1.25 }}>
             {liveNow > 0 ? "You're live now" : atRisk > 0 || pending > 0 ? "A few things to clear" : "You're all caught up"}
           </Typography>
           {nextSession && (
             <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.75, color: "rgba(255,255,255,0.7)" }}>
               <Icon icon="mdi:calendar-clock" width={13} />
-              <Typography sx={{ fontSize: "0.74rem" }} noWrap>
+              <Typography sx={{ ...pf(0.74) }} noWrap>
                 Next: {nextSession.topic} · {new Date(nextSession.datetime).toLocaleString(undefined, { weekday: "short", hour: "numeric", minute: "2-digit" })}
               </Typography>
             </Stack>
@@ -403,7 +404,7 @@ function TodayCard({ onTrackPct, liveNow, pending, atRisk, nextSession, onGrade,
         {items.map((it) => (
           <Box key={it.label} onClick={it.onClick} role="button" tabIndex={0} onKeyDown={(e) => { if (e.key === "Enter") it.onClick(); }}
             sx={{ display: "flex", alignItems: "center", gap: 1, p: 1, borderRadius: 2, cursor: "pointer",
-              bgcolor: "rgba(255,255,255,0.05)", "&:hover": { bgcolor: "rgba(255,255,255,0.1)" } }}>
+              bgcolor: "rgba(255,255,255,0.05)", "&:hover": { bgcolor: "rgba(255,255,255,0.1)" }, ...PHONE_TAP }}>
             <Icon icon={it.done ? "mdi:check-circle" : "mdi:circle-outline"} width={18}
               style={{ color: it.done ? "#34d399" : "rgba(255,255,255,0.5)", flexShrink: 0 }} />
             <Typography sx={{ fontSize: "0.84rem", fontWeight: 600, color: it.done ? "rgba(255,255,255,0.6)" : "#fff",
@@ -422,7 +423,7 @@ function Kpi({ label, value, sub, icon, tint = "#6366f1" }: {
     <Box sx={{ borderRadius: 3, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)", borderTop: `3px solid ${tint}`, overflow: "hidden" }}>
       <Box sx={{ p: 2.25 }}>
         <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-          <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: 0.6, textTransform: "uppercase", color: "text.secondary" }}>{label}</Typography>
+          <Typography sx={{ ...pf(0.68), fontWeight: 800, letterSpacing: 0.6, textTransform: "uppercase", color: "text.secondary" }}>{label}</Typography>
           <Box sx={{ width: 30, height: 30, borderRadius: 2, display: "grid", placeItems: "center", color: tint, bgcolor: `color-mix(in srgb, ${tint} 12%, transparent)` }}>
             <Icon icon={icon} width={17} />
           </Box>
@@ -452,11 +453,11 @@ function ReadinessCard({ ready, engagement, progress, completion, onTrack }: {
             <Box sx={{ width: 26, height: 26, borderRadius: 1.5, display: "grid", placeItems: "center", background: AI_GRAD }}>
               <Icon icon="mdi:shield-star-outline" width={15} />
             </Box>
-            <Typography sx={{ fontWeight: 800, fontSize: "0.72rem", letterSpacing: 0.6, textTransform: "uppercase", color: "rgba(255,255,255,0.7)" }}>Cohort readiness</Typography>
+            <Typography sx={{ fontWeight: 800, ...pf(0.72), letterSpacing: 0.6, textTransform: "uppercase", color: "rgba(255,255,255,0.7)" }}>Cohort readiness</Typography>
           </Box>
           <Ring pct={ready} size={128} grad={["#8b5cf6", "#ec4899"]}>
             <Typography sx={{ fontWeight: 900, fontSize: "1.6rem", lineHeight: 1 }}>{fmtPct(ready)}</Typography>
-            <Typography sx={{ fontSize: "0.56rem", color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 0.5 }}>ready</Typography>
+            <Typography sx={{ ...pf(0.56), color: "rgba(255,255,255,0.6)", textTransform: "uppercase", letterSpacing: 0.5 }}>ready</Typography>
           </Ring>
         </Stack>
         <Box sx={{ display: "grid", gap: 1.5 }}>
@@ -467,10 +468,10 @@ function ReadinessCard({ ready, engagement, progress, completion, onTrack }: {
                 <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 0.5 }}>
                   <Box>
                     <Typography component="span" sx={{ fontWeight: 800, fontSize: "0.86rem" }}>{s.label}</Typography>
-                    <Typography component="span" sx={{ ml: 1, fontSize: "0.72rem", color: "rgba(255,255,255,0.5)" }}>{s.hint}</Typography>
+                    <Typography component="span" sx={{ ml: 1, ...pf(0.72), color: "rgba(255,255,255,0.5)" }}>{s.hint}</Typography>
                   </Box>
                   <Stack direction="row" spacing={1} alignItems="center">
-                    <Box sx={{ px: 0.9, py: 0.2, borderRadius: 999, fontSize: "0.62rem", fontWeight: 800, color: b.color, bgcolor: b.bg }}>{b.label}</Box>
+                    <Box sx={{ px: 0.9, py: 0.2, borderRadius: 999, ...pf(0.62), fontWeight: 800, color: b.color, bgcolor: b.bg }}>{b.label}</Box>
                     <Typography sx={{ fontWeight: 900, fontSize: "0.9rem", minWidth: 44, textAlign: "right" }}>{fmtPct(s.pct)}</Typography>
                   </Stack>
                 </Stack>
@@ -496,16 +497,16 @@ function CohortHealthCard({ cohorts, avg, onReport }: { cohorts: InstructorCohor
             <Icon icon="mdi:heart-pulse" width={17} />
           </Box>
           <Box>
-            <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.6, textTransform: "uppercase", color: "text.secondary" }}>Cohort</Typography>
+            <Typography sx={{ ...pf(0.62), fontWeight: 800, letterSpacing: 0.6, textTransform: "uppercase", color: "text.secondary" }}>Cohort</Typography>
             <Typography sx={{ fontWeight: 800, fontSize: "0.98rem", lineHeight: 1 }}>Health</Typography>
           </Box>
         </Stack>
         <Button onClick={onReport} endIcon={<Icon icon="mdi:arrow-right" width={15} />}
-          sx={{ textTransform: "none", fontWeight: 700, color: "#6366f1", minWidth: 0, fontSize: "0.8rem" }}>Full report</Button>
+          sx={{ textTransform: "none", fontWeight: 700, color: "#6366f1", minWidth: 0, fontSize: "0.8rem", ...PHONE_TAP }}>Full report</Button>
       </Stack>
 
       <Box sx={{ p: 1.75, borderRadius: 3, bgcolor: "color-mix(in srgb,#6366f1 7%,transparent)", mb: 2 }}>
-        <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "text.secondary" }}>Avg progress · your cohorts</Typography>
+        <Typography sx={{ ...pf(0.62), fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "text.secondary" }}>Avg progress · your cohorts</Typography>
         <Stack direction="row" alignItems="baseline" spacing={0.75}>
           <Typography sx={{ fontWeight: 900, fontSize: "2rem", color: "#6366f1", letterSpacing: "-0.01em" }}>{fmtPct(avg)}</Typography>
           <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>{cohorts.length} cohort{cohorts.length === 1 ? "" : "s"} tracked</Typography>
@@ -520,7 +521,7 @@ function CohortHealthCard({ cohorts, avg, onReport }: { cohorts: InstructorCohor
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.4 }}>
                 <Typography sx={{ fontWeight: 700, fontSize: "0.84rem" }} noWrap>{c.name}</Typography>
                 <Stack direction="row" spacing={0.75} alignItems="center">
-                  <Box sx={{ px: 0.8, py: 0.15, borderRadius: 999, fontSize: "0.6rem", fontWeight: 800, color: b.color, bgcolor: b.bg }}>{b.label}</Box>
+                  <Box sx={{ px: 0.8, py: 0.15, borderRadius: 999, ...pf(0.6), fontWeight: 800, color: b.color, bgcolor: b.bg }}>{b.label}</Box>
                   <Typography sx={{ fontWeight: 800, fontSize: "0.82rem", minWidth: 42, textAlign: "right" }}>{fmtPct(c.progress)}</Typography>
                 </Stack>
               </Stack>
@@ -566,7 +567,7 @@ function RowCascade({ count, grad }: { count: number; grad: string }) {
       ))}
       {extra > 0 && (
         <Box sx={{ minWidth: 34, height: 34, px: 0.5, borderRadius: 999, display: "grid", placeItems: "center",
-          bgcolor: "color-mix(in srgb,#6366f1 16%,transparent)", color: "#4f46e5", border: "2px solid var(--card-bg)", ml: "-12px", fontWeight: 900, fontSize: "0.66rem" }}>
+          bgcolor: "color-mix(in srgb,#6366f1 16%,transparent)", color: "#4f46e5", border: "2px solid var(--card-bg)", ml: "-12px", fontWeight: 900, ...pf(0.66) }}>
           +{extra}
         </Box>
       )}
@@ -606,7 +607,7 @@ function Stat({ n, label, danger }: { n: React.ReactNode; label: string; danger?
   return (
     <Box sx={{ textAlign: "center" }}>
       <Typography sx={{ fontWeight: 900, fontSize: "1.05rem", color: danger ? "#f59e0b" : "var(--font-primary)" }}>{n}</Typography>
-      <Typography sx={{ fontSize: "0.62rem", color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.4 }}>{label}</Typography>
+      <Typography sx={{ ...pf(0.62), color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.4 }}>{label}</Typography>
     </Box>
   );
 }
@@ -617,7 +618,7 @@ function SchedulePanel({ items, onSchedule }: { items: InstructorScheduleItem[];
       <Stack direction="row" justifyContent="space-between" alignItems="baseline" sx={{ mb: 1.5 }}>
         <Typography sx={{ fontWeight: 800, fontSize: "1.05rem" }}>Schedule</Typography>
         <Button onClick={onSchedule} endIcon={<Icon icon="mdi:arrow-right" width={16} />}
-          sx={{ textTransform: "none", fontWeight: 700, color: "#6366f1", minWidth: 0 }}>All</Button>
+          sx={{ textTransform: "none", fontWeight: 700, color: "#6366f1", minWidth: 0, ...PHONE_TAP }}>All</Button>
       </Stack>
       <Stack spacing={1}>
         {items.length === 0 && <Typography sx={{ color: "text.secondary", fontSize: "0.84rem", py: 1 }}>No upcoming sessions.</Typography>}
@@ -630,7 +631,7 @@ function SchedulePanel({ items, onSchedule }: { items: InstructorScheduleItem[];
                 <Chip size="small" label={live ? "● Live" : "Scheduled"}
                   sx={{ fontWeight: 800, height: 20, color: live ? "#059669" : "#6366f1",
                     bgcolor: live ? "color-mix(in srgb,#10b981 16%,transparent)" : "color-mix(in srgb,#6366f1 12%,transparent)" }} />
-                <Typography sx={{ fontSize: "0.72rem", color: "text.secondary", fontWeight: 600 }}>
+                <Typography sx={{ ...pf(0.72), color: "text.secondary", fontWeight: 600 }}>
                   {new Date(s.datetime).toLocaleString(undefined, { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
                 </Typography>
               </Stack>
@@ -643,7 +644,7 @@ function SchedulePanel({ items, onSchedule }: { items: InstructorScheduleItem[];
         })}
       </Stack>
       <Button fullWidth onClick={onSchedule} startIcon={<Icon icon="mdi:plus" width={18} />}
-        sx={{ mt: 1.5, py: 1, borderRadius: 2, fontWeight: 800, textTransform: "none", color: "#fff", background: AI_GRAD, "&:hover": { filter: "brightness(1.06)" } }}>
+        sx={{ mt: 1.5, py: 1, borderRadius: 2, fontWeight: 800, textTransform: "none", color: "#fff", background: AI_GRAD, "&:hover": { filter: "brightness(1.06)" }, ...PHONE_TAP }}>
         Schedule session
       </Button>
     </Box>
@@ -663,14 +664,14 @@ function SubmissionRow({ s, first, onGrade }: { s: InstructorRecentSubmission; f
         <Typography sx={{ color: "text.secondary", fontSize: "0.8rem" }} noWrap>{s.assessment_title}</Typography>
       </Box>
       {s.completed_at && (
-        <Typography sx={{ fontSize: "0.74rem", color: "text.secondary", display: { xs: "none", sm: "block" } }}>
+        <Typography sx={{ ...pf(0.74), color: "text.secondary", display: { xs: "none", sm: "block" } }}>
           {new Date(s.completed_at).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
         </Typography>
       )}
       {graded && s.score != null ? (
         <Chip size="small" label={`${Math.round(s.score)}`} sx={{ fontWeight: 800, color: "#059669", bgcolor: "color-mix(in srgb,#10b981 14%,transparent)" }} />
       ) : (
-        <Chip size="small" label="Grade" onClick={onGrade} sx={{ fontWeight: 800, color: "#6366f1", cursor: "pointer", bgcolor: "color-mix(in srgb,#6366f1 12%,transparent)" }} />
+        <Chip size="small" label="Grade" onClick={onGrade} sx={{ fontWeight: 800, color: "#6366f1", cursor: "pointer", bgcolor: "color-mix(in srgb,#6366f1 12%,transparent)", ...PHONE_CHIP }} />
       )}
     </Box>
   );
