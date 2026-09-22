@@ -2997,5 +2997,17 @@
   "mobileChrome": {
     "more": "More",
     "platformGuide": "Platform guide"
+  },
+  "adminPeoplePhone": {
+    "moreActions": "More actions for {{name}}",
+    "instructorCode": "Instructor code",
+    "moreCourses_one": "+{{count}} more",
+    "moreCourses_other": "+{{count}} more",
+    "view": "View",
+    "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "deleteProjectTitle": "Delete this project?",
+    "deleteProjectBody": "Assessments that use it will lose the section. This cannot be undone."
   }
 }
