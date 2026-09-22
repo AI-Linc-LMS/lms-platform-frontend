@@ -3,6 +3,7 @@
 import { Box, Paper, Typography, Button, Chip, IconButton, Tooltip, Skeleton } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
 import { useToast } from "@/components/common/Toast";
 
 export interface ZoomSetupStatus {
@@ -184,7 +185,7 @@ export function ZoomSetupCard({ status, onConfigure, onConnect, onDisconnect, co
             </Typography>
           </Box>
         </Box>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, [PHONE]: { flexWrap: "wrap", "& .MuiButtonBase-root": { minHeight: 44, minWidth: 44 } } }}>
           {status.webhookUrl && (
             <Tooltip title={t("adminLiveSessions.copyWebhookUrl", "Copy webhook URL")}>
               <IconButton size="small" onClick={copyWebhook} aria-label={t("adminLiveSessions.copyWebhookUrl", "Copy webhook URL")}>
@@ -239,7 +240,8 @@ export function ZoomSetupCard({ status, onConfigure, onConnect, onDisconnect, co
       }}
     >
       <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
-        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, flex: "1 1 320px" }}>
+        {/* PHONE: the 320px basis and the nowrap webhook URL made this row wider than the card. */}
+        <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, flex: "1 1 320px", [PHONE]: { flexBasis: "100%", minWidth: 0 } }}>
           <Box
             sx={{
               width: 40,
@@ -254,7 +256,7 @@ export function ZoomSetupCard({ status, onConfigure, onConnect, onDisconnect, co
           >
             <IconWrapper icon="mdi:video-account" size={22} color={accent} />
           </Box>
-          <Box>
+          <Box sx={{ [PHONE]: { minWidth: 0, flex: 1 } }}>
             <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
               <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
                 {status.configured
@@ -264,7 +266,7 @@ export function ZoomSetupCard({ status, onConfigure, onConnect, onDisconnect, co
               <Chip
                 label={t("adminLiveSessions.setupProgress", "{{done}}/{{total}} done", { done: doneCount, total: steps.length })}
                 size="small"
-                sx={{ height: 20, fontSize: "0.68rem", fontWeight: 600, bgcolor: `color-mix(in srgb, ${accent} 18%, var(--card-bg) 82%)`, color: accent }}
+                sx={{ height: 20, fontSize: "0.68rem", fontWeight: 600, bgcolor: `color-mix(in srgb, ${accent} 18%, var(--card-bg) 82%)`, color: accent, [PHONE]: { height: 24, fontSize: "0.75rem" } }}
               />
             </Box>
             <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 0.25, mb: 1.5 }}>
@@ -291,12 +293,12 @@ export function ZoomSetupCard({ status, onConfigure, onConnect, onDisconnect, co
               ))}
             </Box>
             {status.configured && status.webhookUrl && (
-              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
-                <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontFamily: "monospace", fontSize: "0.72rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 320 }}>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5, [PHONE]: { minWidth: 0 } }}>
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontFamily: "monospace", fontSize: "0.72rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 320, [PHONE]: { fontSize: "0.75rem", minWidth: 0 } }}>
                   {status.webhookUrl}
                 </Typography>
                 <Tooltip title={t("adminLiveSessions.copyWebhookUrl", "Copy webhook URL")}>
-                  <IconButton size="small" onClick={copyWebhook}>
+                  <IconButton size="small" onClick={copyWebhook} aria-label={t("adminLiveSessions.copyWebhookUrl", "Copy webhook URL")} sx={{ [PHONE]: { width: 44, height: 44, flexShrink: 0 } }}>
                     <IconWrapper icon="mdi:content-copy" size={16} />
                   </IconButton>
                 </Tooltip>
@@ -313,6 +315,7 @@ export function ZoomSetupCard({ status, onConfigure, onConnect, onDisconnect, co
             color: "var(--font-light)",
             whiteSpace: "nowrap",
             "&:hover": { bgcolor: "var(--accent-indigo-dark)" },
+            [PHONE]: { width: "100%", minHeight: 44 },
           }}
         >
           {status.configured

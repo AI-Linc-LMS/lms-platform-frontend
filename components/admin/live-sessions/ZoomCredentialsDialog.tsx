@@ -24,6 +24,7 @@ import { useToast } from "@/components/common/Toast";
 import { zoomService, ZoomCredentials } from "@/lib/services/zoom.service";
 import { config } from "@/lib/config";
 import { ZoomSetupGuide } from "./ZoomSetupGuide";
+import { phoneSheetSx } from "./livePhone";
 
 interface ZoomCredentialsDialogProps {
   /** Run the connection check as soon as the dialog opens (from the card's Check button). */
@@ -176,7 +177,7 @@ export function ZoomCredentialsDialog({ open, onClose, autoCheck, onAutoCheckHan
   ).trim();
 
   return (
-    <Dialog
+    <Dialog sx={phoneSheetSx}
       open={open}
       onClose={onClose}
       maxWidth="sm"

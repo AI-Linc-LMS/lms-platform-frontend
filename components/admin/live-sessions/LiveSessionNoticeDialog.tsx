@@ -19,6 +19,7 @@ import {
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { adminLiveActivitiesService } from "@/lib/services/admin/admin-live-activities.service";
 import { timezoneOptions, toLocalInputInZone, viewerTimeZone } from "@/lib/utils/session-time";
+import { phoneSheetSx } from "./livePhone";
 
 export interface NoticeDialogSession {
   id: number;
@@ -125,7 +126,7 @@ export function LiveSessionNoticeDialog({ open, session, onClose, onSaved }: Pro
   };
 
   return (
-    <Dialog open={open} onClose={saving ? undefined : onClose} fullWidth maxWidth="sm">
+    <Dialog sx={phoneSheetSx} open={open} onClose={saving ? undefined : onClose} fullWidth maxWidth="sm">
       <DialogTitle sx={{ fontWeight: 800, display: "flex", alignItems: "center", gap: 1 }}>
         <IconWrapper icon="mdi:calendar-alert" size={22} color="#f59e0b" />
         {session?.topic_name || "Live session"}

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Chip, MenuItem, Radio, TextField, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
 import type { LiveSessionRecurrence } from "@/lib/services/admin/admin-live-activities.service";
 import { expandRecurrence, summarizeRecurrence } from "@/lib/utils/live-session-recurrence";
 
@@ -67,7 +68,20 @@ export function RecurrenceControls({ startDatetime, onChange }: RecurrenceContro
   const unitLabel = freq === "daily" ? "day" : freq === "weekly" ? "week" : "month";
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: 1.75 }}>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        gap: 1.75,
+        // PHONE: the weekday chips were 24px, the radios 38px and the small fields 40px - every
+        // control in a recurring rule was under a thumb. All 44px on a phone.
+        [PHONE]: {
+          "& .MuiInputBase-root": { minHeight: 44 },
+          "& .MuiRadio-root": { width: 44, height: 44 },
+          "& .MuiChip-root": { height: 44, minWidth: 44, borderRadius: 999 },
+        },
+      }}
+    >
       <TextField
         select size="small" label={t("adminLiveSessions.repeat", "Repeat")}
         value={freq} onChange={(e) => setFreq(e.target.value as Freq)}

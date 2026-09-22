@@ -18,6 +18,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { RichTextEditor } from "@/components/common/RichTextEditor";
 import { useToast } from "@/components/common/Toast";
 import { adminLiveActivitiesService } from "@/lib/services/admin/admin-live-activities.service";
+import { phoneSheetSx } from "./livePhone";
 
 /**
  * Edit the invite before sending it.
@@ -108,7 +109,7 @@ export function InviteEditorDialog({
   }, [liveClassId, subject, bodyHtml, onSent, onClose, showToast]);
 
   return (
-    <Dialog open={open} onClose={sending ? undefined : onClose} maxWidth="md" fullWidth>
+    <Dialog sx={phoneSheetSx} open={open} onClose={sending ? undefined : onClose} maxWidth="md" fullWidth>
       <DialogTitle sx={{ fontWeight: 800, pb: 0.5 }}>
         Edit the invite
         <Typography sx={{ fontSize: "0.82rem", color: "text.secondary", fontWeight: 500, mt: 0.5 }}>

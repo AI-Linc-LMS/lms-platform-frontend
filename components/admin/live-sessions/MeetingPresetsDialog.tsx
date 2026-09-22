@@ -30,6 +30,7 @@ import {
 } from "@/lib/services/admin/admin-live-activities.service";
 import { getZoomApiErrorMessage } from "@/lib/utils/live-session-errors";
 import { InfoCallout } from "@/components/live-sessions/ui/LiveSessionUI";
+import { phoneSheetSx } from "./livePhone";
 
 interface MeetingPresetsDialogProps {
   open: boolean;
@@ -132,7 +133,7 @@ export function MeetingPresetsDialog({ open, onClose }: MeetingPresetsDialogProp
   };
 
   return (
-    <Dialog
+    <Dialog sx={phoneSheetSx}
       open={open}
       onClose={onClose}
       maxWidth="sm"
