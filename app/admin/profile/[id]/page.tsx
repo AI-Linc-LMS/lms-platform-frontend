@@ -13,6 +13,7 @@ import { adminProfileService } from "@/lib/services/admin/admin-profile.service"
 import { useToast } from "@/components/common/Toast";
 import type { UserProfile } from "@/lib/services/profile.service";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
+import { PHONE } from "@/components/common/mobile/phone";
 
 export default function AdminProfilePage() {
   const router = useRouter();
@@ -81,7 +82,7 @@ export default function AdminProfilePage() {
           </Typography>
           <Button
             onClick={() => router.back()}
-            sx={{ mt: 2 }}
+            sx={{ mt: 2, [PHONE]: { minHeight: 44 } }}
           >
             {t("common.back")}
           </Button>
@@ -119,6 +120,7 @@ export default function AdminProfilePage() {
             mb: 2,
             px: 1.5,
             "&:hover": { backgroundColor: "#eef2f7" },
+            [PHONE]: { minHeight: 44 },
           }}
         >
           {t("common.back")}
