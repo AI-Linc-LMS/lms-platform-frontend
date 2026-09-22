@@ -1207,7 +1207,8 @@
       "codingAutosaveHint": "Your work syncs with your attempt automatically. Code is also kept in this browser while you type.",
       "codingAutosaveSaving": "Saving progress…",
       "codingAutosaveSaved": "Progress autosaved",
-      "codingAutosaveError": "Could not sync - will retry automatically"
+      "codingAutosaveError": "Could not sync - will retry automatically",
+      "phoneSubmit": "Submit"
     },
     "submitChecklist": {
       "title": "Review before you submit",
