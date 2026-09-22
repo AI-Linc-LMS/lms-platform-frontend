@@ -8,6 +8,7 @@ import { AIPill } from "../shared/AIPill";
 import { AdaptiveInfoTip } from "../shared/AdaptiveInfoTip";
 import { certaintyBand } from "@/lib/utils/adaptive-confidence";
 import { prettySkill } from "@/lib/utils/skill-label.utils";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface DifficultyPulseProps {
   /** Selector's predicted P(correct) for the *current* question. 0..1. */
@@ -189,16 +190,16 @@ export function DifficultyPulse({
         </Box>
 
         <Box sx={{ display: "flex", justifyContent: "space-between", mt: 0.25 }}>
-          <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "text.secondary" }}>
+          <Typography sx={{ fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "text.secondary" }}>
             Easy
           </Typography>
-          <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "text.secondary" }}>
+          <Typography sx={{ fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "text.secondary" }}>
             Hard
           </Typography>
         </Box>
 
         {/* Always-visible reminder of which way the bar moves and why. */}
-        <Typography sx={{ fontSize: "0.7rem", color: "text.secondary", textAlign: "center", mt: 0.5, lineHeight: 1.45 }}>
+        <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", textAlign: "center", mt: 0.5, lineHeight: 1.45 }}>
           Answer <Box component="span" sx={{ fontWeight: 800, color: "#10b981" }}>correctly</Box> → steps up toward Hard ·{" "}
           <Box component="span" sx={{ fontWeight: 800, color: "#ef4444" }}>miss one</Box> → eases toward Easy
         </Typography>

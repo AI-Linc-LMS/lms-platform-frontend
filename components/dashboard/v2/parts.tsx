@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Box, LinearProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type { ReadinessBand } from "@/lib/types/dashboard";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 // --- band → color (single source) ---
 export const BAND_STYLE: Record<ReadinessBand, { color: string; bg: string; label: string; bar: string }> = {
@@ -84,7 +85,7 @@ export function SectionHeader({
       </Box>
       <Box sx={{ minWidth: 0, flex: 1 }}>
         <Typography sx={{ fontWeight: 800, color: "#0f172a", fontSize: "0.95rem", lineHeight: 1.2 }}>{title}</Typography>
-        {subtitle && <Typography sx={{ fontSize: "0.72rem", color: "#64748b" }}>{subtitle}</Typography>}
+        {subtitle && <Typography sx={{ fontSize: phoneText(0.72), color: "#64748b" }}>{subtitle}</Typography>}
       </Box>
       {action}
     </Stack>
@@ -103,10 +104,10 @@ export function StatBox({
         <Box sx={{ minWidth: 0 }}>
           <Typography sx={{ fontWeight: 900, fontSize: "1.5rem", color: "#0f172a", lineHeight: 1 }}>{value}</Typography>
           <Stack direction="row" spacing={0.25} alignItems="center" sx={{ mt: 0.5 }}>
-            <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "#64748b" }}>{label}</Typography>
+            <Typography sx={{ fontSize: phoneText(0.6), fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "#64748b" }}>{label}</Typography>
             {info}
           </Stack>
-          {sub != null && <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color: subColor, mt: 0.25 }}>{sub}</Typography>}
+          {sub != null && <Typography sx={{ fontSize: phoneText(0.72), fontWeight: 700, color: subColor, mt: 0.25 }}>{sub}</Typography>}
         </Box>
         {icon && <Icon icon={icon} width={20} color={accent} style={{ flexShrink: 0, opacity: 0.85 }} />}
       </Stack>
@@ -120,7 +121,7 @@ export function BandPill({ band, dark = false }: { band: ReadinessBand; dark?: b
     <Box
       component="span"
       sx={{
-        px: 0.85, py: 0.2, borderRadius: 999, fontSize: "0.62rem", fontWeight: 800,
+        px: 0.85, py: 0.2, borderRadius: 999, fontSize: phoneText(0.62), fontWeight: 800,
         color: dark ? s.bar : s.color,
         bgcolor: dark ? "rgba(255,255,255,0.1)" : s.bg,
       }}
@@ -147,7 +148,7 @@ export function SignalBar({
         </Box>
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography sx={{ fontWeight: 700, fontSize: "0.85rem", color: textColor, lineHeight: 1.2 }}>{label}</Typography>
-          {sub && <Typography sx={{ fontSize: "0.66rem", color: subColor }}>{sub}</Typography>}
+          {sub && <Typography sx={{ fontSize: phoneText(0.66), color: subColor }}>{sub}</Typography>}
         </Box>
         <BandPill band={band} dark={dark} />
         <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: percent == null ? subColor : textColor, minWidth: 42, textAlign: "right" }}>

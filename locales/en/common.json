@@ -2983,6 +2983,21 @@
     "downloadLocked": "Download is locked",
     "sidebarTooltip": "Complete your profile to unlock"
   },
+  "learningPlayerMobile": {
+    "workspaceTabs": "Coding workspace",
+    "problemTab": "Problem",
+    "codeTab": "Code",
+    "resultsTab": "Results",
+    "noResultsYet": "Run your code to see the test results and the mentor's read here.",
+    "resultsReady": "New results are ready"
+  },
+  "roadmapsMobile": {
+    "mapHint": "Tap a step to open it. Press and hold to mark it done, in progress or skipped."
+  },
+  "mobileChrome": {
+    "more": "More",
+    "platformGuide": "Platform guide"
+  },
   "adminPeoplePhone": {
     "moreActions": "More actions for {{name}}",
     "instructorCode": "Instructor code",
@@ -2994,13 +3009,6 @@
     "cancel": "Cancel",
     "deleteProjectTitle": "Delete this project?",
     "deleteProjectBody": "Assessments that use it will lose the section. This cannot be undone."
-  },
-  "roadmapsMobile": {
-    "mapHint": "Tap a step to open it. Press and hold to mark it done, in progress or skipped."
-  },
-  "mobileChrome": {
-    "more": "More",
-    "platformGuide": "Platform guide"
   },
   "adminAssessMobile": {
     "colAnswerMode": "Answer mode",
@@ -3022,5 +3030,8 @@
     "colSection": "Section",
     "colTags": "Tags",
     "colTitle": "Title"
+  },
+  "purchases": {
+    "reference": "Reference"
   }
 }

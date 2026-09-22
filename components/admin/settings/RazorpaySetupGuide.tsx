@@ -2,6 +2,7 @@
 
 import { Box, Typography, Link } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 /** Inline monospace value token. */
 function Code({ children }: { children: React.ReactNode }) {
@@ -10,7 +11,7 @@ function Code({ children }: { children: React.ReactNode }) {
       component="code"
       sx={{
         fontFamily: "monospace",
-        fontSize: "0.72rem",
+        fontSize: phoneText(0.72),
         bgcolor: "var(--surface)",
         border: "1px solid var(--border-default)",
         borderRadius: 0.5,

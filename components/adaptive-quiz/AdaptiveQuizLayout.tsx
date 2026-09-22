@@ -19,6 +19,7 @@ import { LiveQuizPoints } from "./mid/LiveQuizPoints";
 import { PointsRewardBurst } from "./mid/PointsRewardBurst";
 import { AdaptiveSessionSkeleton } from "@/components/courses/CourseSkeletons";
 import { withFrom } from "@/lib/utils/return-to";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface AdaptiveQuizLayoutProps {
   sessionId: string;
@@ -123,7 +124,7 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
       <Box
         component="button"
         onClick={() => router.back()}
-        sx={{ all: "unset", cursor: "pointer", color: "#6366f1", fontWeight: 700, fontSize: "0.85rem", display: "inline-flex", alignItems: "center", gap: 0.5, mb: 1.5 }}
+        sx={{ all: "unset", cursor: "pointer", color: "#6366f1", fontWeight: 700, fontSize: "0.85rem", display: "inline-flex", alignItems: "center", gap: 0.5, mb: 1.5, [PHONE]: { minHeight: 44, mb: 0.5 } }}
       >
         <Icon icon="mdi:arrow-left" width={16} /> Back · your timer keeps running
       </Box>
@@ -176,8 +177,9 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
           alignItems: "flex-start",
         }}
       >
-        {/* LEFT RAIL */}
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        {/* LEFT RAIL - on a phone it follows the question and the tutor (see `order`), so the
+            learner lands on the question instead of scrolling past a timer and a skills card. */}
+        <Box data-testid="quiz-left-rail" sx={{ display: "flex", flexDirection: "column", gap: 2, [PHONE]: { order: 2 } }}>
           <Box
             sx={{
               p: 2,
@@ -195,7 +197,7 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
             <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.6, px: 1.5, py: 0.6, borderRadius: 999, bgcolor: "color-mix(in srgb, #7c3aed 12%, transparent)", color: "#6d28d9", fontSize: "0.82rem", fontWeight: 900 }}>
               <Icon icon="mdi:star-four-points" width={15} />
               <AnimatedPointsCounter value={ctx.sessionPoints} boltSize={16} />
-              <Typography component="span" sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", opacity: 0.85 }}>
+              <Typography component="span" sx={{ fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", opacity: 0.85 }}>
                 pts this quiz
               </Typography>
             </Box>
@@ -217,7 +219,7 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
         </Box>
 
         {/* CENTER - the begin gate (fresh session) sits in the question slot, then the question */}
-        <Box sx={{ position: "relative" }}>
+        <Box data-testid="quiz-question-slot" sx={{ position: "relative", [PHONE]: { order: 0, minWidth: 0 } }}>
           <PointsRewardBurst reward={ctx.lastReward} />
           {notStarted ? (
             <BeginGate
@@ -245,8 +247,8 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
           )}
         </Box>
 
-        {/* RIGHT RAIL - AI tutor */}
-        <Box>
+        {/* RIGHT RAIL - AI tutor (second on a phone, right under the question it helps with) */}
+        <Box data-testid="quiz-tutor-rail" sx={{ [PHONE]: { order: 1, minWidth: 0 } }}>
           <AITutorSidecar
             hintTeaser={ctx.hintTeaser || defaultHintTeaser(q.target_skill)}
             hintRevealed={ctx.hintRevealed ?? undefined}
@@ -295,14 +297,14 @@ function BeginGate({ minQ, maxQ, onBegin }: { minQ: number; maxQ: number; onBegi
         each answer, and each one is worth more the faster you nail it. Your timer + points start
         when you click begin - take a breath first.
       </Typography>
-      <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, mt: 2, px: 1.5, py: 0.6, borderRadius: 999, bgcolor: "color-mix(in srgb, #6366f1 10%, transparent)", color: "#6366f1", fontSize: "0.74rem", fontWeight: 800 }}>
+      <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, mt: 2, px: 1.5, py: 0.6, borderRadius: 999, bgcolor: "color-mix(in srgb, #6366f1 10%, transparent)", color: "#6366f1", fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800 }}>
         <Icon icon="mdi:timer-sand" width={14} /> Timer starts on “Begin”
       </Box>
       <Button
         variant="contained"
         onClick={onBegin}
         endIcon={<Icon icon="mdi:arrow-right" width={20} />}
-        sx={{ mt: 2.5, px: 4, py: 1.2, borderRadius: 2.5, textTransform: "none", fontWeight: 800, fontSize: "0.95rem", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)" }}
+        sx={{ mt: 2.5, px: 4, py: 1.2, borderRadius: 2.5, textTransform: "none", fontWeight: 800, fontSize: "0.95rem", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)", [PHONE]: { minHeight: 48, width: "100%" } }}
       >
         Begin quiz
       </Button>

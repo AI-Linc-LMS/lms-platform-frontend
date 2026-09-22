@@ -19,6 +19,8 @@ import {
   CERT_CTA_SHADOW,
 } from "@/lib/certificates/ui-tokens";
 import type { CertificateRenderPayload } from "@/lib/certificates/types";
+import { phoneText } from "@/components/common/mobile/phoneText";
+import { PHONE } from "@/components/common/mobile/phone";
 
 type LoadState = "loading" | "ok" | "notfound";
 
@@ -238,7 +240,7 @@ export function CredentialView({ credentialId }: { credentialId: string }) {
                   px: 1.1,
                   py: 0.45,
                   borderRadius: 999,
-                  fontSize: "0.7rem",
+                  fontSize: phoneText(0.7),
                   fontWeight: 800,
                   letterSpacing: 0.4,
                   textTransform: "uppercase",
@@ -467,7 +469,7 @@ const cardSx = {
 
 /** Hero eyebrow tier, in the certificate violet. */
 const eyebrowSx = {
-  fontSize: "0.7rem",
+  fontSize: phoneText(0.7),
   fontWeight: 800,
   letterSpacing: "0.16em",
   textTransform: "uppercase" as const,
@@ -476,7 +478,7 @@ const eyebrowSx = {
 } as const;
 
 const metaLabelSx = {
-  fontSize: "0.6rem",
+  fontSize: phoneText(0.6),
   fontWeight: 800,
   letterSpacing: 0.5,
   textTransform: "uppercase" as const,
@@ -495,6 +497,7 @@ const primaryButtonSx = {
   boxShadow: CERT_CTA_SHADOW,
   width: { xs: "100%", sm: "auto" },
   "&:hover": { background: CERT_CTA_GRADIENT, filter: "brightness(1.06)", boxShadow: CERT_CTA_SHADOW },
+  [PHONE]: { minHeight: 44 },
 } as const;
 
 const secondaryButtonSx = {
@@ -508,6 +511,7 @@ const secondaryButtonSx = {
   width: { xs: "100%", sm: "auto" },
   "&:hover": { borderColor: "#c4b5fd", bgcolor: CERT.violetSoft },
   "&.Mui-disabled": { borderColor: CERT.hairlineSoft, color: CERT.inkDim },
+  [PHONE]: { minHeight: 44 },
 } as const;
 
 function Meta({ label, value }: { label: string; value: string }) {

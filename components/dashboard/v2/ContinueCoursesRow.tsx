@@ -6,6 +6,8 @@ import { Icon } from "@iconify/react";
 import { Reveal } from "@/components/scorecard/shared";
 import type { DashboardCourse } from "@/lib/types/dashboard";
 import { SectionHeader, daysLeft, fmtDate } from "./parts";
+import { phoneText } from "@/components/common/mobile/phoneText";
+import { PHONE } from "@/components/common/mobile/phone";
 
 const ACCENTS = [
   { bar: "linear-gradient(90deg,#7c3aed,#a855f7)", btn: "linear-gradient(135deg,#7c3aed,#a855f7)" },
@@ -49,12 +51,12 @@ export function ContinueCoursesRow({ courses }: { courses: DashboardCourse[] }) 
                   <Typography sx={{ fontWeight: 800, fontSize: "1rem", color: "#0f172a", lineHeight: 1.25 }}>{c.title}</Typography>
 
                   <Box sx={{ mt: 1.25, p: 1.25, borderRadius: 2.5, bgcolor: "#f8fafc", border: "1px solid #eef2f7" }}>
-                    <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.5, color: "#94a3b8", textTransform: "uppercase" }}>You left at</Typography>
+                    <Typography sx={{ fontSize: phoneText(0.6), fontWeight: 800, letterSpacing: 0.5, color: "#94a3b8", textTransform: "uppercase" }}>You left at</Typography>
                     <Typography sx={{ fontWeight: 700, fontSize: "0.88rem", color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{left}</Typography>
                   </Box>
 
                   <Stack direction="row" justifyContent="space-between" sx={{ mt: 1.5, mb: 0.5 }}>
-                    <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color: "#64748b" }}>Progress</Typography>
+                    <Typography sx={{ fontSize: phoneText(0.72), fontWeight: 700, color: "#64748b" }}>Progress</Typography>
                     <Typography sx={{ fontSize: "0.78rem", fontWeight: 800, color: "#0f172a" }}>{c.completionPct}%</Typography>
                   </Stack>
                   <LinearProgress variant="determinate" value={c.completionPct} sx={{ height: 7, borderRadius: 4, bgcolor: "#eef2f7", "& .MuiLinearProgress-bar": { borderRadius: 4, background: accent.bar } }} />
@@ -70,7 +72,7 @@ export function ContinueCoursesRow({ courses }: { courses: DashboardCourse[] }) 
                   {c.due?.penaltyNote && (
                     <Stack direction="row" spacing={0.5} alignItems="flex-start" sx={{ mt: 0.5 }}>
                       <Icon icon="mdi:alert" width={13} color={overdue || soon ? "#dc2626" : "#94a3b8"} style={{ flexShrink: 0, marginTop: 2 }} />
-                      <Typography sx={{ fontSize: "0.72rem", color: overdue || soon ? "#dc2626" : "#94a3b8", lineHeight: 1.4 }}>{c.due.penaltyNote}</Typography>
+                      <Typography sx={{ fontSize: phoneText(0.72), color: overdue || soon ? "#dc2626" : "#94a3b8", lineHeight: 1.4 }}>{c.due.penaltyNote}</Typography>
                     </Stack>
                   )}
 
@@ -79,7 +81,7 @@ export function ContinueCoursesRow({ courses }: { courses: DashboardCourse[] }) 
                     onMouseEnter={() => prefetch(resume)}
                     onFocus={() => prefetch(resume)}
                     onClick={() => push(resume)}
-                    sx={{ mt: 1.75, py: 1.1, borderRadius: 2.5, fontWeight: 800, fontSize: "0.88rem", color: "white", gap: 0.5, background: accent.btn }}
+                    sx={{ mt: 1.75, py: 1.1, borderRadius: 2.5, fontWeight: 800, fontSize: "0.88rem", color: "white", gap: 0.5, background: accent.btn, [PHONE]: { minHeight: 44 } }}
                   >
                     Continue <Icon icon="mdi:arrow-right" width={16} />
                   </ButtonBase>

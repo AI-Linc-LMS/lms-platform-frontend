@@ -12,6 +12,7 @@ import {
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
 
 type AspectVariant = "square" | "landscape";
 
@@ -80,7 +81,12 @@ export function MediaField({
         },
       }}
     >
-      <Stack direction="row" spacing={1.75} alignItems="stretch">
+      <Stack
+        direction="row"
+        spacing={1.75}
+        alignItems="stretch"
+        sx={{ [PHONE]: { flexDirection: "column", alignItems: "flex-start", gap: 1.5, "& > :not(style) ~ :not(style)": { m: 0 } } }}
+      >
         {/* Thumbnail preview tile */}
         <Box
           sx={{
@@ -119,6 +125,15 @@ export function MediaField({
                 color: "var(--font-secondary)",
                 opacity: 0.7,
                 pointerEvents: "none",
+                // 8.8px is unreadable on a phone; 12px with an ellipsis keeps it inside the tile.
+                [PHONE]: {
+                  fontSize: "0.75rem",
+                  left: 4,
+                  whiteSpace: "nowrap",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  textAlign: "end",
+                },
               }}
             >
               {brandText}
@@ -126,7 +141,7 @@ export function MediaField({
           ) : null}
         </Box>
 
-        <Stack spacing={0.75} sx={{ flex: 1, minWidth: 0 }}>
+        <Stack spacing={0.75} sx={{ flex: 1, minWidth: 0, [PHONE]: { width: "100%" } }}>
           <Stack direction="row" alignItems="center" spacing={0.75}>
             <Typography
               variant="subtitle2"
@@ -145,6 +160,8 @@ export function MediaField({
                     height: 22,
                     color: "var(--font-tertiary)",
                     "&:hover": { color: "var(--error-500)" },
+                    // A 44px hit area on a phone; the negative margin keeps the label row height.
+                    [PHONE]: { width: 44, height: 44, my: -1.25 },
                   }}
                   aria-label={`Clear ${label}`}
                 >
@@ -183,6 +200,7 @@ export function MediaField({
                 borderRadius: 1.25,
                 backgroundColor: "var(--surface)",
               },
+              [PHONE]: { "& .MuiOutlinedInput-root": { minHeight: 44 } },
             }}
           />
 

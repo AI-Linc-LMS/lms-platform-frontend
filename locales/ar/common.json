@@ -2583,6 +2583,21 @@
     "adminInterviewSetup": "أنشئ المقابلات وحدد مواعيدها واطلع على المرشحين ونتائجهم.",
     "projectLibrary": "مشاريع عملية ينفذها المتعلمون داخل المتصفح."
   },
+  "learningPlayerMobile": {
+    "workspaceTabs": "مساحة البرمجة",
+    "problemTab": "المسألة",
+    "codeTab": "الكود",
+    "resultsTab": "النتائج",
+    "noResultsYet": "شغّل الكود لترى نتائج الاختبارات وملاحظات المرشد هنا.",
+    "resultsReady": "النتائج الجديدة جاهزة"
+  },
+  "roadmapsMobile": {
+    "mapHint": "اضغط على خطوة لفتحها. اضغط مطولاً لتحديدها كمكتملة أو قيد التعلّم أو متخطاة."
+  },
+  "mobileChrome": {
+    "more": "المزيد",
+    "platformGuide": "دليل المنصة"
+  },
   "adminPeoplePhone": {
     "moreActions": "إجراءات إضافية لـ {{name}}",
     "instructorCode": "رمز المدرّب",
@@ -2598,13 +2613,6 @@
     "cancel": "إلغاء",
     "deleteProjectTitle": "حذف هذا المشروع؟",
     "deleteProjectBody": "ستفقد التقييمات التي تستخدمه هذا القسم. لا يمكن التراجع عن هذا الإجراء."
-  },
-  "roadmapsMobile": {
-    "mapHint": "اضغط على خطوة لفتحها. اضغط مطولاً لتحديدها كمكتملة أو قيد التعلّم أو متخطاة."
-  },
-  "mobileChrome": {
-    "more": "المزيد",
-    "platformGuide": "دليل المنصة"
   },
   "adminAssessMobile": {
     "colAnswerMode": "طريقة الإجابة",
@@ -2626,5 +2634,8 @@
     "colSection": "القسم",
     "colTags": "الوسوم",
     "colTitle": "العنوان"
+  },
+  "purchases": {
+    "reference": "المرجع"
   }
 }

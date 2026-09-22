@@ -4,6 +4,7 @@ import { Box, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { AnimatedRing } from "@/components/scorecard/shared";
 import type { TodayGoal } from "@/lib/types/dashboard";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 const GOAL_ICON: Record<string, string> = {
   lesson: "mdi:book-open-page-variant-outline",
@@ -32,7 +33,7 @@ export function TodayGoalPanel({ goal }: { goal: TodayGoal }) {
         boxShadow: "0 18px 40px -24px rgba(76,29,149,0.6)",
       }}
     >
-      <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: "0.18em", color: "rgba(255,255,255,0.55)", mb: 1.5 }}>
+      <Typography sx={{ fontSize: phoneText(0.68), fontWeight: 800, letterSpacing: "0.18em", color: "rgba(255,255,255,0.55)", mb: 1.5 }}>
         TODAY&apos;S GOAL
       </Typography>
 
@@ -50,7 +51,7 @@ export function TodayGoalPanel({ goal }: { goal: TodayGoal }) {
           />
           <Box sx={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
             <Typography sx={{ fontWeight: 900, fontSize: "1.5rem", lineHeight: 1 }}>{percent}%</Typography>
-            <Typography sx={{ fontSize: "0.66rem", color: "rgba(255,255,255,0.55)", mt: 0.25 }}>
+            <Typography sx={{ fontSize: phoneText(0.66), color: "rgba(255,255,255,0.55)", mt: 0.25 }}>
               {completedCount} of {totalCount}
             </Typography>
           </Box>
@@ -76,14 +77,14 @@ export function TodayGoalPanel({ goal }: { goal: TodayGoal }) {
                     {g.label}
                   </Typography>
                   {showPractice && (
-                    <Typography sx={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.45)" }}>
+                    <Typography sx={{ fontSize: phoneText(0.68), color: "rgba(255,255,255,0.45)" }}>
                       {g.minutes} / {g.targetMinutes} min
                     </Typography>
                   )}
                   {/* "15-min practice" could be read as time in the app; the server now measures
                       time on learning content, so say which. */}
                   {!g.done && g.hint && (
-                    <Typography sx={{ fontSize: "0.66rem", color: "rgba(255,255,255,0.35)" }}>
+                    <Typography sx={{ fontSize: phoneText(0.66), color: "rgba(255,255,255,0.35)" }}>
                       {g.hint}
                     </Typography>
                   )}
@@ -124,7 +125,7 @@ export function TodayGoalPanel({ goal }: { goal: TodayGoal }) {
                   <Box sx={{ width: 4, height: 4, borderRadius: "50%", bgcolor: d.isToday ? "#a855f7" : "rgba(255,255,255,0.25)" }} />
                 )}
               </Box>
-              <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: "0.06em", color: d.isToday ? "#c4b5fd" : "rgba(255,255,255,0.45)" }}>
+              <Typography sx={{ fontSize: phoneText(0.6), fontWeight: 800, letterSpacing: "0.06em", color: d.isToday ? "#c4b5fd" : "rgba(255,255,255,0.45)" }}>
                 {d.label}
               </Typography>
             </Box>

@@ -11,6 +11,7 @@ import type {
   MentorDiagnosis,
   OptimizationChallenge,
 } from "@/lib/services/adaptive-coding.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The mentor's left-panel analysis surface. Two outcomes, never just "pass/fail":
@@ -113,7 +114,7 @@ export function MentorAnalysisCard({
           <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", lineHeight: 1.2 }}>
             {failedCount} of {totalCount} test cases failed
           </Typography>
-          <Typography sx={{ fontSize: "0.74rem", color: "text.secondary" }}>
+          <Typography sx={{ fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary" }}>
             AI Mentor read your code · line-level diagnosis below
           </Typography>
         </Box>
@@ -134,7 +135,7 @@ export function MentorAnalysisCard({
           >
             <Typography sx={{ fontSize: "0.86rem", lineHeight: 1.5 }}>{diagnosis.whats_wrong}</Typography>
             {diagnosis.root_cause_line != null && (
-              <Typography sx={{ mt: 0.75, fontSize: "0.74rem", color: "text.secondary", fontFamily: "monospace" }}>
+              <Typography sx={{ mt: 0.75, fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", fontFamily: "monospace" }}>
                 ↳ line {diagnosis.root_cause_line}
                 {diagnosis.root_cause_excerpt ? `:  ${diagnosis.root_cause_excerpt}` : ""}
               </Typography>
@@ -187,7 +188,7 @@ export function MentorAnalysisCard({
                 {hintsRevealed === 0 ? "Reveal a hint - it guides, never solves" : `Reveal hint ${hintsRevealed + 1}`}
               </Button>
             )}
-            <Typography sx={{ fontSize: "0.7rem", color: "text.secondary", mt: 0.25 }}>
+            <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", mt: 0.25 }}>
               Each rung reveals strictly more · the last stops at a skeleton you complete yourself.
             </Typography>
           </Box>
@@ -201,7 +202,7 @@ function Section({ label, children }: { label: string; children: React.ReactNode
   return (
     <Box>
       <Typography
-        sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "text.secondary", mb: 0.75 }}
+        sx={{ fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "text.secondary", mb: 0.75 }}
       >
         {label}
       </Typography>
@@ -239,7 +240,7 @@ function HintRung({ hint }: { hint: HintResult }) {
         background: `color-mix(in srgb, ${isSkeleton ? "#a855f7" : "#10b981"} 7%, transparent)`,
       }}
     >
-      <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", color: "text.secondary" }}>
+      <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", color: "text.secondary" }}>
         Hint {hint.layer} {isSkeleton ? "· skeleton" : ""}
       </Typography>
       <Typography sx={{ fontSize: "0.86rem", fontWeight: 700, mt: 0.25 }}>{hint.title}</Typography>
@@ -279,7 +280,7 @@ function MasteryDeltaSection({ delta }: { delta?: MasteryDelta | null }) {
               <Box
                 sx={{
                   display: "inline-flex", alignItems: "center", gap: 0.25, px: 0.75, py: 0.2, borderRadius: 999,
-                  fontSize: "0.7rem", fontWeight: 800, color: up ? "#10b981" : "#ef4444",
+                  fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, color: up ? "#10b981" : "#ef4444",
                   background: `color-mix(in srgb, ${up ? "#10b981" : "#ef4444"} 12%, transparent)`,
                 }}
               >
@@ -288,7 +289,7 @@ function MasteryDeltaSection({ delta }: { delta?: MasteryDelta | null }) {
               </Box>
               <Box
                 sx={{
-                  px: 0.75, py: 0.2, borderRadius: 999, fontSize: "0.66rem", fontWeight: 800, textTransform: "uppercase",
+                  px: 0.75, py: 0.2, borderRadius: 999, fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, textTransform: "uppercase",
                   letterSpacing: "0.04em", color, background: `color-mix(in srgb, ${color} 12%, transparent)`,
                 }}
               >
@@ -330,7 +331,7 @@ function ChallengePanel({
           <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", lineHeight: 1.2 }}>
             All {totalCount} passed - clean &amp; correct
           </Typography>
-          <Typography sx={{ fontSize: "0.74rem", color: "text.secondary" }}>Now let&apos;s push you further</Typography>
+          <Typography sx={{ fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary" }}>Now let&apos;s push you further</Typography>
         </Box>
         <AIPill variant="solid" icon={<Icon icon="mdi:rocket-launch-outline" width={12} />}>Challenge</AIPill>
       </Box>

@@ -6,6 +6,7 @@ import { Icon } from "@iconify/react";
 import { CountUp } from "@/components/scorecard/shared/CountUp";
 import { prettySkill } from "@/lib/utils/skill-label.utils";
 import type { AdaptiveAINarration } from "@/lib/types/adaptive-quiz";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface SkillMasteryHeatmapProps {
   skills: AdaptiveAINarration["skill_mastery"];
@@ -31,7 +32,7 @@ function BandPill({ band }: { band: string }) {
   return (
     <Box
       sx={{
-        px: 0.9, py: 0.25, borderRadius: 999, fontSize: "0.6rem", fontWeight: 800,
+        px: 0.9, py: 0.25, borderRadius: 999, fontSize: "0.6rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800,
         letterSpacing: "0.06em", textTransform: "uppercase", whiteSpace: "nowrap",
         color, bgcolor: `color-mix(in srgb, ${color} 13%, transparent)`,
         border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
@@ -64,12 +65,12 @@ export function SkillMasteryHeatmap({ skills }: SkillMasteryHeatmapProps) {
           </Box>
           <Box>
             <Typography sx={{ fontWeight: 800, fontSize: "1.1rem", letterSpacing: "-0.01em", lineHeight: 1.15 }}>Skill mastery</Typography>
-            <Typography sx={{ fontSize: "0.74rem", color: "text.secondary" }}>Where each sub-skill landed this attempt</Typography>
+            <Typography sx={{ fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary" }}>Where each sub-skill landed this attempt</Typography>
           </Box>
         </Stack>
         <Stack direction="row" spacing={0.5} alignItems="center" sx={{ color: "text.secondary" }}>
           <Box sx={{ width: 14, borderTop: "2px dashed currentColor" }} />
-          <Typography sx={{ fontSize: "0.68rem", fontWeight: 600 }}>= last attempt</Typography>
+          <Typography sx={{ fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 600 }}>= last attempt</Typography>
         </Stack>
       </Stack>
 
@@ -102,10 +103,10 @@ export function SkillMasteryHeatmap({ skills }: SkillMasteryHeatmapProps) {
                   {hasBaseline && delta !== 0 ? (
                     <Stack direction="row" spacing={0.2} alignItems="center" sx={{ color: delta > 0 ? "#15803d" : "#b91c1c" }}>
                       <Icon icon={delta > 0 ? "mdi:arrow-up" : "mdi:arrow-down"} width={13} />
-                      <Typography sx={{ fontSize: "0.72rem", fontWeight: 800 }}>{Math.abs(delta)}</Typography>
+                      <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800 }}>{Math.abs(delta)}</Typography>
                     </Stack>
                   ) : !hasBaseline ? (
-                    <Box sx={{ px: 0.7, py: 0.15, borderRadius: 999, fontSize: "0.58rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "#a855f7", bgcolor: "color-mix(in srgb, #a855f7 12%, transparent)", border: "1px solid color-mix(in srgb, #a855f7 25%, transparent)" }}>
+                    <Box sx={{ px: 0.7, py: 0.15, borderRadius: 999, fontSize: "0.58rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "#a855f7", bgcolor: "color-mix(in srgb, #a855f7 12%, transparent)", border: "1px solid color-mix(in srgb, #a855f7 25%, transparent)" }}>
                       New
                     </Box>
                   ) : null}
@@ -129,7 +130,7 @@ export function SkillMasteryHeatmap({ skills }: SkillMasteryHeatmapProps) {
                 )}
               </Box>
 
-              <Typography sx={{ fontSize: "0.62rem", color: "text.secondary", mt: 0.6 }}>
+              <Typography sx={{ fontSize: "0.62rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", mt: 0.6 }}>
                 {previousMastery !== null ? `Was ${previousMastery}%` : "First attempt"}
                 <Box component="span" sx={{ opacity: 0.6 }}> · confidence {row.se < 0.5 ? "high" : row.se < 0.9 ? "building" : "early"}</Box>
               </Typography>

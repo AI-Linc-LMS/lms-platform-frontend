@@ -7,6 +7,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { UserProfile, Certification } from "@/lib/services/profile.service";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { PROFILE, TILE_GRADIENT } from "./theme/profileTokens";
+import { phoneSheetDialogSx } from "@/components/profile/phoneSheet";
 
 function getCredentialLinkUrl(url: string | undefined): string | null {
   if (typeof url !== "string" || !url.trim()) return null;
@@ -476,7 +477,8 @@ export function CertificationsSection({
         )}
       </Paper>
 
-      <Dialog 
+      <Dialog
+        sx={phoneSheetDialogSx}
         open={dialogOpen} 
         onClose={() => setDialogOpen(false)} 
         maxWidth="sm" 

@@ -6,6 +6,7 @@ import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { assessmentService, type Assessment } from "@/lib/services/assessment.service";
 import { ModuleEmpty, ModuleHeader, ModulePanel, ModuleRowsSkeleton, Pill, fmtDateTime, timeUntil } from "./shared";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 const GRADIENT = "linear-gradient(135deg, #6366f1, #8b5cf6)";
 
@@ -87,7 +88,7 @@ export function UpcomingAssessmentsPanel() {
                   <Typography noWrap sx={{ fontWeight: 700, fontSize: "0.86rem", color: "#0f172a" }}>{a.title}</Typography>
                   <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt: 0.4 }}>
                     <TimingChip a={a} />
-                    <Typography sx={{ fontSize: "0.68rem", color: "#94a3b8", fontWeight: 600 }}>
+                    <Typography sx={{ fontSize: phoneText(0.68), color: "#94a3b8", fontWeight: 600 }}>
                       {a.duration_minutes}m · {a.number_of_questions} Q
                     </Typography>
                   </Stack>

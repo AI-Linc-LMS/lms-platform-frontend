@@ -5,6 +5,7 @@ import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
 import { AdaptiveCardBackdrop } from "./shared/AdaptiveCardBackdrop";
 import { asStringList } from "@/lib/utils/as-list";
+import { PHONE } from "@/components/common/mobile/phone";
 
 export interface AdaptiveQuizCardData {
   config_id: number;
@@ -168,7 +169,7 @@ export function AdaptiveQuizCard({ data, onStart }: AdaptiveQuizCardProps) {
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Typography
               sx={{
-                fontSize: "0.62rem",
+                fontSize: "0.62rem", [PHONE]: { fontSize: "0.75rem" },
                 fontWeight: 800,
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
@@ -207,7 +208,7 @@ export function AdaptiveQuizCard({ data, onStart }: AdaptiveQuizCardProps) {
                   px: 0.9,
                   py: 0.3,
                   borderRadius: 999,
-                  fontSize: "0.68rem",
+                  fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" },
                   fontWeight: 700,
                   color: accentEnd,
                   bgcolor: `color-mix(in srgb, ${accentEnd} 9%, transparent)`,
@@ -223,7 +224,7 @@ export function AdaptiveQuizCard({ data, onStart }: AdaptiveQuizCardProps) {
                   px: 0.9,
                   py: 0.3,
                   borderRadius: 999,
-                  fontSize: "0.68rem",
+                  fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" },
                   fontWeight: 700,
                   color: "text.secondary",
                   bgcolor: "color-mix(in srgb, currentColor 6%, transparent)",

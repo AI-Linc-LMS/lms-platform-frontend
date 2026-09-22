@@ -12,6 +12,7 @@ import {
   MODULE_HERO_BG,
   MODULE_HERO_SHADOW,
 } from "@/lib/theme/gradients";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 const ACTION_ICON: Record<string, string> = {
   topic: "mdi:book-open-page-variant",
@@ -41,9 +42,9 @@ function ActionCard({
         <Icon icon={icon} width={20} />
       </Box>
       <Box sx={{ minWidth: 0 }}>
-        <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.6, color: "rgba(255,255,255,0.6)" }}>{eyebrow}</Typography>
+        <Typography sx={{ fontSize: phoneText(0.6), fontWeight: 800, letterSpacing: 0.6, color: "rgba(255,255,255,0.6)" }}>{eyebrow}</Typography>
         <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: "#fff", lineHeight: 1.2 }}>{title}</Typography>
-        {sub && <Typography sx={{ fontSize: "0.74rem", color: "rgba(255,255,255,0.7)", mt: 0.25 }}>{sub}</Typography>}
+        {sub && <Typography sx={{ fontSize: phoneText(0.74), color: "rgba(255,255,255,0.7)", mt: 0.25 }}>{sub}</Typography>}
       </Box>
     </ButtonBase>
   );
@@ -117,7 +118,7 @@ export function AiBriefingHero({
           </Box>
         </Box>
 
-        <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: 1.2, color: "rgba(255,255,255,0.7)", mb: 1 }}>
+        <Typography sx={{ fontSize: phoneText(0.72), fontWeight: 800, letterSpacing: 1.2, color: "rgba(255,255,255,0.7)", mb: 1 }}>
           WELCOME BACK, {profile.name.toUpperCase()}
         </Typography>
 
