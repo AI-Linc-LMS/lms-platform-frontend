@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Alert, Box, Button, Typography } from "@mui/material";
 import { PageShell } from "@/components/common/PageShell";
+import { PHONE } from "@/components/common/mobile/phone";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useAuth } from "@/lib/auth/auth-context";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
@@ -255,6 +256,7 @@ export default function AdminDashboardPage() {
                 borderRadius: 999,
                 px: 1.75,
                 "&:hover": { background: "rgba(255,255,255,0.16)" },
+                [PHONE]: { minHeight: 44, flexShrink: 0 },
               }}
             >
               {exporting ? "Building…" : "Export"}

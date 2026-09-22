@@ -15,6 +15,8 @@ import {
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { PeoplePayload } from "@/lib/services/admin/admin-insights.service";
 import { DefinitionMark, EmptyState, INSIGHT, Panel, SERIES_COLORS } from "./primitives";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_TARGET, phoneFont } from "./phoneType";
 
 /**
  * People: cohorts, support load, instructor feedback.
@@ -158,7 +160,7 @@ function StatBlock({
         </Box>
         <Typography
           sx={{
-            fontSize: "0.66rem",
+            ...phoneFont(0.66),
             fontWeight: 800,
             letterSpacing: "0.05em",
             textTransform: "uppercase",
@@ -176,7 +178,7 @@ function StatBlock({
         {value}
       </Typography>
       {hint && (
-        <Typography sx={{ fontSize: "0.7rem", color: "var(--font-secondary)", lineHeight: 1.3 }}>
+        <Typography sx={{ ...phoneFont(0.7), color: "var(--font-secondary)", lineHeight: 1.3 }}>
           {hint}
         </Typography>
       )}
@@ -195,7 +197,7 @@ function RatingCell({ label, value }: { label: string; value: number | null; }) 
     <Box sx={{ minWidth: 62 }}>
       <Typography
         sx={{
-          fontSize: "0.62rem",
+          ...phoneFont(0.62),
           fontWeight: 800,
           letterSpacing: "0.05em",
           textTransform: "uppercase",
@@ -215,7 +217,7 @@ function RatingCell({ label, value }: { label: string; value: number | null; }) 
           {missing ? EM_DASH : (value as number).toFixed(1)}
         </Typography>
         {!missing && (
-          <Typography sx={{ fontSize: "0.68rem", color: "var(--font-secondary)" }}>/5</Typography>
+          <Typography sx={{ ...phoneFont(0.68), color: "var(--font-secondary)" }}>/5</Typography>
         )}
       </Box>
     </Box>
@@ -338,7 +340,7 @@ export function PeopleSection({ data, loading }: { data: PeoplePayload | null; l
                           size="small"
                           sx={{
                             height: 20,
-                            fontSize: "0.66rem",
+                            ...phoneFont(0.66),
                             fontWeight: 800,
                             textTransform: "capitalize",
                             color: tone,
@@ -388,7 +390,7 @@ export function PeopleSection({ data, loading }: { data: PeoplePayload | null; l
                           sx={{
                             display: "flex",
                             justifyContent: "space-between",
-                            fontSize: "0.72rem",
+                            ...phoneFont(0.72),
                             color: "var(--font-secondary)",
                             mb: 0.5,
                           }}
@@ -399,7 +401,7 @@ export function PeopleSection({ data, loading }: { data: PeoplePayload | null; l
                           {over && (
                             <Typography
                               component="span"
-                              sx={{ fontSize: "0.72rem", fontWeight: 800, color: INSIGHT.red }}
+                              sx={{ ...phoneFont(0.72), fontWeight: 800, color: INSIGHT.red }}
                             >
                               over capacity
                             </Typography>
@@ -448,6 +450,7 @@ export function PeopleSection({ data, loading }: { data: PeoplePayload | null; l
                     border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
                     backgroundColor: "transparent",
                     "&:hover": { backgroundColor: "color-mix(in srgb, var(--border-default) 28%, transparent)" },
+                    [PHONE]: { minHeight: PHONE_TARGET },
                   }}
                 >
                   <IconWrapper icon={allCohorts ? "mdi:chevron-up" : "mdi:chevron-down"} size={15} />
@@ -517,7 +520,7 @@ export function PeopleSection({ data, loading }: { data: PeoplePayload | null; l
 
         <Typography
           sx={{
-            fontSize: "0.72rem",
+            ...phoneFont(0.72),
             fontWeight: 800,
             letterSpacing: "0.05em",
             textTransform: "uppercase",
@@ -610,7 +613,7 @@ export function PeopleSection({ data, loading }: { data: PeoplePayload | null; l
                   >
                     {r.instructor}
                   </Typography>
-                  <Typography sx={{ fontSize: "0.74rem", color: "var(--font-secondary)" }}>
+                  <Typography sx={{ ...phoneFont(0.74), color: "var(--font-secondary)" }}>
                     {r.responses.toLocaleString()}{" "}
                     {r.responses === 1 ? "response" : "responses"}
                   </Typography>

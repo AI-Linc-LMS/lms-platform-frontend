@@ -19,6 +19,7 @@ import {
   EmptyState,
   INSIGHT,
 } from "./primitives";
+import { phoneFont } from "./phoneType";
 
 /**
  * Bucket labels arrive as ISO dates ("2026-03-12").
@@ -96,7 +97,7 @@ function TrendStat({
         <IconWrapper icon={icon} size={14} />
         <Typography
           sx={{
-            fontSize: "0.62rem",
+            ...phoneFont(0.62),
             fontWeight: 800,
             letterSpacing: "0.05em",
             textTransform: "uppercase",
@@ -110,7 +111,7 @@ function TrendStat({
         {value}
       </Typography>
       {hint && (
-        <Typography sx={{ fontSize: "0.68rem", color: "var(--font-secondary)" }}>{hint}</Typography>
+        <Typography sx={{ ...phoneFont(0.68), color: "var(--font-secondary)" }}>{hint}</Typography>
       )}
     </Box>
   );
@@ -270,7 +271,7 @@ export function PulseTrendPanel({ data, loading }: { data: PulsePayload | null; 
             </ComposedChart>
           </ResponsiveContainer>
 
-          <Typography sx={{ fontSize: "0.74rem", color: "var(--font-secondary)", mt: 1 }}>
+          <Typography sx={{ ...phoneFont(0.74), color: "var(--font-secondary)", mt: 1 }}>
             These two count different things, so each has its own scale. The purple area is how
             much work was finished; the green line is how many students showed up. Where they
             cross means nothing.
@@ -447,7 +448,7 @@ export function AtRiskPanel({
                         // tooltip: on a touch screen a tooltip on a chip is unreachable.
                         sx={{
                           height: 22,
-                          fontSize: "0.7rem",
+                          ...phoneFont(0.7),
                           fontWeight: 700,
                           color: "var(--font-primary)",
                           backgroundColor:
@@ -472,7 +473,7 @@ export function AtRiskPanel({
             >
               <Typography
                 sx={{
-                  fontSize: "0.7rem",
+                  ...phoneFont(0.7),
                   fontWeight: 800,
                   letterSpacing: "0.06em",
                   textTransform: "uppercase",
@@ -495,7 +496,7 @@ export function AtRiskPanel({
                       label={prettifyRule(rule)}
                       sx={{
                         height: 20,
-                        fontSize: "0.68rem",
+                        ...phoneFont(0.68),
                         fontWeight: 700,
                         color: "var(--font-primary)",
                         backgroundColor:

@@ -18,6 +18,8 @@ import {
   type AdaptiveCourseOption,
   type RangeKey,
 } from "@/lib/services/admin/admin-insights.service";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_HIT_AREA, PHONE_TARGET, phoneFont } from "@/components/admin/insights/phoneType";
 
 /**
  * The admin dashboard's own surfaces, in the profile design language.
@@ -95,7 +97,7 @@ export function DashboardHero({
         <Box sx={{ minWidth: 0, flex: 1 }}>
           <Typography
             sx={{
-              fontSize: "0.66rem",
+              ...phoneFont(0.66),
               fontWeight: 800,
               letterSpacing: "0.1em",
               textTransform: "uppercase",
@@ -129,7 +131,7 @@ export function DashboardHero({
                     px: 1.25,
                     py: 0.4,
                     borderRadius: 999,
-                    fontSize: "0.74rem",
+                    ...phoneFont(0.74),
                     fontWeight: 700,
                     color: ON_DARK.textSoft,
                     background: ON_DARK.fill,
@@ -183,6 +185,9 @@ export function DashboardHero({
                   outline: "none",
                   boxShadow: `0 0 0 2px ${PROFILE.night}, 0 0 0 4px ${PROFILE.violetLight}`,
                 },
+                // Six equal pills share the first row on a phone, each a full thumb tall; the
+                // course picker and Export wrap together onto the row below.
+                [PHONE]: { flex: "1 1 40px", minHeight: PHONE_TARGET, px: 0.5 },
               }}
             >
               {opt.short}
@@ -190,7 +195,7 @@ export function DashboardHero({
           );
         })}
 
-        <Box sx={{ flex: 1, minWidth: 8 }} />
+        <Box sx={{ flex: 1, minWidth: 8, [PHONE]: { display: "none" } }} />
 
         <Box
           component="button"
@@ -204,6 +209,7 @@ export function DashboardHero({
             maxWidth: 320,
             px: 1.6,
             py: 0.7,
+            [PHONE]: { flex: "1 1 60%", maxWidth: "none", minWidth: 0, minHeight: PHONE_TARGET },
             borderRadius: 999,
             cursor: disabled ? "default" : "pointer",
             fontFamily: "inherit",
@@ -257,7 +263,7 @@ export function DashboardHero({
                   <Box
                     component="span"
                     sx={{
-                      fontSize: "0.62rem",
+                      ...phoneFont(0.62),
                       fontWeight: 800,
                       px: 0.75,
                       py: 0.2,
@@ -315,7 +321,7 @@ export function HeroKpi({
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
         <Typography
           sx={{
-            fontSize: "0.62rem",
+            ...phoneFont(0.62),
             fontWeight: 800,
             letterSpacing: "0.07em",
             textTransform: "uppercase",
@@ -328,7 +334,7 @@ export function HeroKpi({
         <Tooltip title={definition} arrow enterTouchDelay={0} describeChild>
           <Box
             component="span"
-            sx={{ display: "inline-flex", color: ON_DARK.textFaint, cursor: "help" }}
+            sx={{ display: "inline-flex", color: ON_DARK.textFaint, cursor: "help", ...PHONE_HIT_AREA }}
           >
             <IconWrapper icon="mdi:information-outline" size={13} />
           </Box>
@@ -353,7 +359,7 @@ export function HeroKpi({
 
       {delta ? (
         flat ? (
-          <Typography sx={{ fontSize: "0.72rem", color: ON_DARK.textFaint }}>
+          <Typography sx={{ ...phoneFont(0.72), color: ON_DARK.textFaint }}>
             No change vs previous
           </Typography>
         ) : (
@@ -364,7 +370,7 @@ export function HeroKpi({
               color={up ? "#4ade80" : "#fca5a5"}
             />
             <Typography
-              sx={{ fontSize: "0.72rem", fontWeight: 700, color: up ? "#4ade80" : "#fca5a5" }}
+              sx={{ ...phoneFont(0.72), fontWeight: 700, color: up ? "#4ade80" : "#fca5a5" }}
             >
               {up ? "+" : ""}
               {delta.diff.toLocaleString()}
@@ -376,7 +382,7 @@ export function HeroKpi({
         )
       ) : (
         footnote && (
-          <Typography sx={{ fontSize: "0.72rem", color: ON_DARK.textFaint }}>{footnote}</Typography>
+          <Typography sx={{ ...phoneFont(0.72), color: ON_DARK.textFaint }}>{footnote}</Typography>
         )
       )}
     </Box>
@@ -399,7 +405,7 @@ export function DeckSection({ title, hint }: { title: string; hint?: string }) {
       <Box sx={{ minWidth: 0 }}>
       <Typography
         sx={{
-          fontSize: "0.66rem",
+          ...phoneFont(0.66),
           fontWeight: 800,
           letterSpacing: "0.09em",
           textTransform: "uppercase",
