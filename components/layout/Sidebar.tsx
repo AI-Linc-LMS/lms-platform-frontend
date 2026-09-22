@@ -57,6 +57,7 @@ import { useTenantShellTheme } from "@/lib/theme/useTenantShellTheme";
 import { normalizeThemeSettings } from "@/lib/theme/normalizeThemeSettings";
 import { buildSidebarLogoBrandingUi } from "@/lib/theme/authHeroBranding";
 import { resolveClientLogoUrl } from "@/lib/utils/resolveClientLogoUrl";
+import { TenantLogo } from "@/components/common/TenantLogo";
 
 const DRAWER_WIDTH = 264;
 const DRAWER_WIDTH_COLLAPSED = 64;
@@ -689,11 +690,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Box sx={sidebarLogoBoxSx}>
               {/* Plain <img>, NOT next/image: client-provided branding logos are often SVG or on
                   hosts the optimizer 400s on, which next/image silently dropped. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              {/* A failed load (DNS, an expired signed url) shows the tenant name, not a broken
+                  image. */}
+              <TenantLogo
                 src={sidebarLogoUrl}
-                alt={clientInfo?.app_name || "Logo"}
-                style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                name={clientInfo?.app_name || clientInfo?.name || "Logo"}
+                imgStyle={{ width: "100%", height: "100%", objectFit: "contain" }}
+                wordmarkSx={{
+                  height: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontSize: "1.05rem",
+                  color: shell.nav,
+                }}
               />
             </Box>
           ) : (
