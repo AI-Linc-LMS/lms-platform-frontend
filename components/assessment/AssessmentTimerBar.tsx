@@ -6,6 +6,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
 import type { LiveStreamStatus } from "@/lib/hooks/useLiveProctoringPublisher";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface AssessmentTimerBarProps {
   title: string;
@@ -60,15 +61,35 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
         display: "flex",
         alignItems: "center",
         justifyContent: "space-between",
+        // Phone: the title takes its own line (clamped to two), and the timer, camera and tools
+        // share the second line. In one row a long title wrapped to 3+ lines and pushed the
+        // tools and Submit off the right edge. Submit moves to the bottom bar on a phone.
+        [PHONE]: { flexWrap: "wrap", rowGap: 0.75, columnGap: 1, p: 1, px: 1.5 },
       }}
     >
       <Typography
         variant="h6"
-        style={{ margin: 0, fontSize: "1.5rem", fontWeight: 700 }}
+        data-testid="assessment-title"
+        sx={{
+          m: 0,
+          fontSize: "1.5rem",
+          fontWeight: 700,
+          [PHONE]: {
+            flex: "1 1 100%",
+            minWidth: 0,
+            fontSize: "1rem",
+            lineHeight: 1.3,
+            display: "-webkit-box",
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: "vertical",
+            overflow: "hidden",
+            overflowWrap: "anywhere",
+          },
+        }}
       >
         {title}
       </Typography>
-        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 2, md: 3 } }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 1, sm: 2, md: 3 }, [PHONE]: { flex: "1 1 auto", minWidth: 0 } }}>
         {liveStreamStatus && liveStreamStatus !== "idle" && (
           <Chip
             size="small"
@@ -105,7 +126,10 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
           />
         )}
         {/* Timer */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box
+          data-testid="assessment-timer"
+          sx={{ display: "flex", alignItems: "center", gap: 1, [PHONE]: { gap: 0.5, flexShrink: 0, "& svg": { width: 18, height: 18 } } }}
+        >
           <IconWrapper icon="mdi:timer-outline" size={24} color="var(--font-secondary)" />
           <Typography
             variant="h6"
@@ -113,6 +137,7 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
               fontWeight: 600,
               color: "var(--font-muted)",
               fontFamily: "monospace",
+              [PHONE]: { fontSize: "1.05rem", whiteSpace: "nowrap" },
             }}
           >
             {formattedTime}
@@ -133,6 +158,14 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
               backgroundColor: "var(--font-primary-dark)",
               borderRadius: 1,
               border: `2px solid ${getStatusColor()}`,
+              // Proctoring preview stays visible on a phone, just smaller.
+              [PHONE]: {
+                px: 0.75,
+                py: 0.5,
+                gap: 0.75,
+                flexShrink: 0,
+                "& video": { width: "48px !important", height: "36px !important" },
+              },
             }}
           >
             <video
@@ -174,7 +207,7 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
                 />
                 <Typography
                   variant="caption"
-                  sx={{ color: "var(--font-light)", fontWeight: 600, fontSize: "0.65rem" }}
+                  sx={{ color: "var(--font-light)", fontWeight: 600, fontSize: "0.65rem", [PHONE]: { fontSize: "0.75rem" } }}
                 >
                   REC
                 </Typography>
@@ -185,6 +218,7 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
                   color: getStatusColor(),
                   fontWeight: 600,
                   fontSize: "0.65rem",
+                  [PHONE]: { fontSize: "0.75rem", whiteSpace: "nowrap" },
                 }}
               >
                 {faceCount === 0
@@ -204,10 +238,12 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
           alignItems: "center",
           gap: { xs: 0.75, sm: 1 },
           flexShrink: 0,
+          [PHONE]: { gap: 0.5, "& button": { minWidth: 44, minHeight: 44 } },
         }}
       >
         {assessmentToolsSlot}
         <LoadingButton
+        data-testid="assessment-submit"
         variant="contained"
         onClick={onSubmit}
         loading={submitting}
@@ -240,6 +276,8 @@ export const AssessmentTimerBar = memo(function AssessmentTimerBar({
             transform: "none",
             cursor: "not-allowed",
           },
+          // On a phone Submit lives in the bottom action bar (same handler), always on-screen.
+          [PHONE]: { display: "none" },
         }}
       >
         {isLastQuestion ? "Submit Assessment" : "Submit Early"}
