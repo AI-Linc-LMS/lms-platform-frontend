@@ -32,6 +32,8 @@ export const phoneSheetSx = {
     "& .MuiDialogActions-root": { px: 2, py: 1.5, gap: 1, flexWrap: "wrap" },
     "& .MuiDialogActions-root .MuiButton-root": { minHeight: 44, flex: "1 1 auto" },
     "& .MuiDialogContent-root .MuiButton-root": { minHeight: 44 },
+    "& .MuiDialogContent-root .MuiInputBase-root": { minHeight: 44 },
+    "& .MuiDialogContent-root .MuiChip-root": { fontSize: "0.75rem" },
     "& .MuiIconButton-root": { minWidth: 44, minHeight: 44 },
   },
 } as const;
