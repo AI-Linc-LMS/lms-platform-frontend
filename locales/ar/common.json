@@ -2617,5 +2617,8 @@
   "adminEngagementMobile": {
     "statusFilterLabel": "تصفية الجلسات حسب الحالة",
     "facetFilterLabel": "تصفية حسب الدفعة والدورة"
+  },
+  "purchases": {
+    "reference": "المرجع"
   }
 }

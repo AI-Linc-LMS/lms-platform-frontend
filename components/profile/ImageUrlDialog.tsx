@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
+import { phoneSheetDialogSx, usePhoneSheetClose } from "@/components/profile/phoneSheet";
 
 interface ImageUrlDialogProps {
   open: boolean;
@@ -111,10 +112,14 @@ export function ImageUrlDialog({
     }
   };
 
+  // On a phone, a swipe or backdrop tap must not drop a save or upload that is still running.
+  const sheetClose = usePhoneSheetClose(onClose, saving || uploading);
+
   return (
     <Dialog
+      sx={phoneSheetDialogSx}
       open={open}
-      onClose={onClose}
+      onClose={sheetClose}
       maxWidth="sm"
       fullWidth
       PaperProps={{
