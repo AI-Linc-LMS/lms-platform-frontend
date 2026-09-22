@@ -299,7 +299,7 @@ export function MockInterviewStudentTable({
                         {formatDate(row.last_interview_date)}
                       </Typography>
                     </TableCell>
-                    <TableCell data-label={t("adminMockInterview.actions")}>
+                    <TableCell>
                       <Button
                         variant="outlined"
                         size="small"

@@ -508,7 +508,7 @@ export default function AdminMockInterviewStudentDetailPage() {
                           {i.overall_score != null ? `${i.overall_score}%` : "-"}
                         </TableCell>
                         <TableCell data-label={t("adminMockInterview.date")} sx={{ color: "var(--font-secondary)" }}>{formatDate(i.created_at)}</TableCell>
-                        <TableCell data-label={t("adminMockInterview.action")} align="right">
+                        <TableCell align="right">
                           <Button
                             size="small"
                             onClick={() => handleViewInterview(i.id)}

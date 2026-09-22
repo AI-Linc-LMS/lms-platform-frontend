@@ -106,7 +106,7 @@ export const PHONE_TABLE_CARD_RULES = {
     marginBottom: "2px",
   },
   '[dir="rtl"] & tbody td[data-label]::before': { letterSpacing: "normal", textTransform: "none" },
-  "& tbody td:last-of-type:not(:first-of-type)": {
+  "& tbody td:last-of-type:not(:first-of-type):not([data-label])": {
     display: "flex",
     flexWrap: "wrap",
     justifyContent: "flex-end",
@@ -116,8 +116,9 @@ export const PHONE_TABLE_CARD_RULES = {
     marginTop: "6px",
     paddingTop: "8px",
   },
-  // The first cell is the card's title and the last its action bar: neither needs a caption.
-  "& tbody td:first-of-type::before, & tbody td:last-of-type:not(:first-of-type)::before": {
+  // The first cell is the card's title and an unlabelled last cell its action bar: neither needs
+  // a caption. A labelled last cell is data (Max marks, Status, Submitted) and keeps its caption.
+  "& tbody td:first-of-type::before, & tbody td:last-of-type:not(:first-of-type):not([data-label])::before": {
     display: "none",
   },
   // A cell that is only empty padding on a phone (an empty action column, a spacer).

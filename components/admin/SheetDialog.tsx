@@ -14,7 +14,8 @@ import { PHONE_FLOOR_RULES } from "@/components/admin/phoneFloor";
  * above the home indicator, and the admin phone floor (44px controls, 12px captions) inside.
  * The markup inside - DialogTitle, DialogContent, DialogActions - is the caller's own, so every
  * action the desktop dialog offers is the same element on the phone. Dismissal still goes
- * through the caller's onClose, which is where each dialog already refuses to close mid-request.
+ * through the caller's onClose. This component adds no guard of its own: a caller whose dialog
+ * sends a request must refuse to close while it runs (onClose ignores it, Cancel is disabled).
  * ======================================================================== */
 
 const SHEET_SX = {

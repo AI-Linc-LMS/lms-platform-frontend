@@ -1277,7 +1277,7 @@ export default function AdminInterviewTemplatesPage() {
         {/* Delete confirm dialog */}
         <SheetDialog
           open={pendingDelete !== null}
-          onClose={() => setPendingDelete(null)}
+          onClose={() => { if (deletingId === null) setPendingDelete(null); }}
         >
           <DialogTitle>Delete this interview?</DialogTitle>
           <DialogContent>

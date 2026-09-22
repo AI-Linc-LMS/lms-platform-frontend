@@ -575,7 +575,7 @@ export function TemplateEditorDialog({
   return (
     <SheetDialog
       open={open}
-      onClose={() => onClose()}
+      onClose={() => { if (!save.isPending) onClose(); }}
       maxWidth="xl"
       fullWidth
       slotProps={{
@@ -1237,7 +1237,7 @@ export function TemplateEditorDialog({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={() => onClose()} sx={quietButtonSx}>
+        <Button onClick={() => onClose()} disabled={save.isPending} sx={quietButtonSx}>
           {t("common.cancel", "Cancel")}
         </Button>
         <LoadingButton

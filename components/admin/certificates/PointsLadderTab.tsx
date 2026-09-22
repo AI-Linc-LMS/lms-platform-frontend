@@ -719,7 +719,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                         />
                       </Tooltip>
                     </TableCell>
-                    <TableCell data-label={t("certificatesUpload.colActions", "Actions")} align="right">
+                    <TableCell align="right">
                       <Stack direction="row" spacing={0} justifyContent="flex-end">
                         <IconButton
                           size="small"
