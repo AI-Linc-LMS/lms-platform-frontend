@@ -12,6 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { phoneSheetDialogSx } from "./coursePhone";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { useToast } from "@/components/common/Toast";
 import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
@@ -115,6 +116,7 @@ export function ManualCourseDialog({
       onClose={saving ? undefined : onClose}
       fullWidth
       maxWidth="sm"
+      sx={phoneSheetDialogSx}
       PaperProps={{
         sx: {
           borderRadius: 3,

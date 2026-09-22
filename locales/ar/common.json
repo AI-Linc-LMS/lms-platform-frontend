@@ -2589,5 +2589,8 @@
   "mobileChrome": {
     "more": "المزيد",
     "platformGuide": "دليل المنصة"
+  },
+  "adaptiveCoursesAdmin": {
+    "deleteCourse": "حذف {{title}}"
   }
 }

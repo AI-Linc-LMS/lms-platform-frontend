@@ -7,6 +7,15 @@ import { PriceTag } from "@/components/common/PriceTag";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { useTranslation } from "react-i18next";
+import { PHONE } from "@/components/common/mobile/phone";
+import {
+  PHONE_TEXT,
+  TAP,
+  phoneIconTapSx,
+  phoneTapSx,
+  phoneTextFloor,
+} from "@/components/admin/adaptive-course/coursePhone";
 import { PageShell } from "@/components/common/PageShell";
 import { ManualCourseDialog } from "@/components/admin/adaptive-course/ManualCourseDialog";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
@@ -244,6 +253,7 @@ export default function AdminAdaptiveCoursesPage() {
                 px: 1.25, py: 0.5, borderRadius: 999,
                 background: "var(--gradient-ai)",
                 fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.1em", mb: 1.5,
+                ...phoneTextFloor,
               }}
             >
               <Icon icon="mdi:auto-fix" width={14} /> AI COURSE COMPOSER
@@ -261,6 +271,14 @@ export default function AdminAdaptiveCoursesPage() {
               puts an adaptive quiz on every topic. A super admin approves the brief first —
               nothing is generated, and nothing is charged, until then.
             </Typography>
+            <Box
+              sx={{
+                [PHONE]: {
+                  "& .MuiChip-root": { height: "auto", minHeight: TAP, maxWidth: "100%" },
+                  "& .MuiChip-label": { whiteSpace: "normal", py: 0.75 },
+                },
+              }}
+            >
             <AiPromptField
               value={brief}
               onChange={setBrief}
@@ -277,6 +295,7 @@ export default function AdminAdaptiveCoursesPage() {
                 "4-week Excel refresher · short articles, no coding",
               ]}
             />
+            </Box>
           </Box>
 
           <Box>
@@ -284,6 +303,7 @@ export default function AdminAdaptiveCoursesPage() {
               sx={{
                 fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.1em",
                 opacity: 0.75, mb: 1.5,
+                ...phoneTextFloor,
               }}
             >
               OR START ANOTHER WAY
@@ -307,7 +327,7 @@ export default function AdminAdaptiveCoursesPage() {
                   <Icon icon={b.icon} width={20} />
                   <Box sx={{ minWidth: 0 }}>
                     <Typography sx={{ fontWeight: 800, fontSize: "0.9rem" }}>{b.label}</Typography>
-                    <Typography sx={{ fontSize: "0.74rem", opacity: 0.75 }}>{b.hint}</Typography>
+                    <Typography sx={{ fontSize: "0.74rem", opacity: 0.75, ...phoneTextFloor }}>{b.hint}</Typography>
                   </Box>
                   <Box sx={{ flex: 1 }} />
                   <Icon icon="mdi:chevron-right" width={18} />
@@ -449,8 +469,21 @@ export default function AdminAdaptiveCoursesPage() {
           {!loading && courses.length > 0 && (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2.5 }}>
               <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
-                <SegmentedTabs<CourseTab> tabs={courseTabs} value={tab} onChange={setTab} />
-                <Box data-tour-id="adaptive-courses-view">
+                <Box
+                  sx={{
+                    display: "contents",
+                    [PHONE]: {
+                      "& [role=tab]": { minHeight: TAP },
+                      "& [role=tab] > .MuiBox-root": { fontSize: PHONE_TEXT },
+                    },
+                  }}
+                >
+                  <SegmentedTabs<CourseTab> tabs={courseTabs} value={tab} onChange={setTab} />
+                </Box>
+                <Box
+                  data-tour-id="adaptive-courses-view"
+                  sx={{ [PHONE]: { "& .MuiIconButton-root": { width: TAP, height: TAP } } }}
+                >
                   <ViewToggle value={viewMode} onChange={setViewMode} />
                 </Box>
               </Box>
@@ -515,6 +548,7 @@ export default function AdminAdaptiveCoursesPage() {
             : ""
         }
         confirmText={deleting ? "Deleting…" : "Delete"}
+        busy={deleting}
         cancelText="Cancel"
         confirmColor="error"
         onConfirm={() => void handleConfirmDelete()}
@@ -570,6 +604,7 @@ function CourseCard({
     course.authored_by.email.toLowerCase() === viewerEmail.toLowerCase();
   // An author may bin their own course right up until it is approved; after that it may have
   // students on it and removing it stops being their call alone. Mirrors `can_delete_course`.
+  const { t } = useTranslation("common");
   const canDelete =
     isReviewer ||
     (authoredByViewer &&
@@ -589,7 +624,7 @@ function CourseCard({
     >
       <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", mb: 1.25 }}>
         {/* Two pills of the same family — status and price read together at a glance. */}
-        <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.75, minWidth: 0 }}>
+        <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.75, minWidth: 0, [PHONE]: { "& > span": { fontSize: PHONE_TEXT } } }}>
           <Box
             component="span"
             sx={{
@@ -616,7 +651,11 @@ function CourseCard({
           />
         </Box>
         {canDelete && (
-          <ButtonBase onClick={onDelete} sx={{ p: 0.5, borderRadius: 2, color: "#ef4444" }}>
+          <ButtonBase
+            onClick={onDelete}
+            aria-label={t("adaptiveCoursesAdmin.deleteCourse", { title: course.title })}
+            sx={{ p: 0.5, borderRadius: 2, color: "#ef4444", ...phoneIconTapSx }}
+          >
             <Icon icon="mdi:trash-can-outline" width={18} />
           </ButtonBase>
         )}
@@ -632,7 +671,7 @@ function CourseCard({
             style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", opacity: course.card_image_hidden ? 0.45 : 1 }}
           />
           {course.card_image_hidden && (
-            <Box sx={{ position: "absolute", top: 6, left: 6, px: 0.9, py: 0.2, borderRadius: 999, fontSize: "0.6rem", fontWeight: 800, textTransform: "uppercase", color: "white", bgcolor: "rgba(15,23,42,0.72)", display: "flex", alignItems: "center", gap: 0.4 }}>
+            <Box sx={{ position: "absolute", top: 6, left: 6, px: 0.9, py: 0.2, borderRadius: 999, fontSize: "0.6rem", fontWeight: 800, textTransform: "uppercase", color: "white", bgcolor: "rgba(15,23,42,0.72)", display: "flex", alignItems: "center", gap: 0.4, ...phoneTextFloor }}>
               <Icon icon="mdi:eye-off-outline" width={11} /> Hidden
             </Box>
           )}
@@ -682,6 +721,7 @@ function CourseCard({
             border: course.is_published
               ? "1px solid color-mix(in srgb, var(--border-default) 75%, transparent)"
               : "1px solid transparent",
+            ...phoneTapSx,
           }}
         >
           {course.is_published ? "Unpublish" : "Publish"}
@@ -697,6 +737,7 @@ function CourseCard({
             fontSize: "0.82rem",
             color: "#6366f1",
             border: "1px solid color-mix(in srgb, #6366f1 40%, transparent)",
+            ...phoneTapSx,
           }}
         >
           Open
@@ -755,7 +796,7 @@ function CourseRow({
         <Typography sx={{ fontWeight: 800, fontSize: "0.98rem", lineHeight: 1.3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {course.title}
         </Typography>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, minWidth: 0 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, minWidth: 0, [PHONE]: { "& > span": { fontSize: PHONE_TEXT } } }}>
           {/* A real pill, not another "·" segment — price is a different kind of fact from a count. */}
           <PriceTag isPaid={course.is_paid} price={course.price} currency={course.currency} withAmount />
           <Typography sx={{ color: "var(--font-secondary)", fontSize: "0.82rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
@@ -907,7 +948,7 @@ function RequestTray({
                 </Box>
                 <ButtonBase
                   onClick={() => onOpen(job.job_id)}
-                  sx={{ px: 1.4, py: 0.5, borderRadius: 999, fontWeight: 800, fontSize: "0.75rem", color: "#6366f1" }}
+                  sx={{ px: 1.4, py: 0.5, borderRadius: 999, fontWeight: 800, fontSize: "0.75rem", color: "#6366f1", ...phoneTapSx }}
                 >
                   Details
                 </ButtonBase>
@@ -925,6 +966,7 @@ function RequestTray({
                     px: 1.4, py: 0.5, borderRadius: 999, fontWeight: 800, fontSize: "0.75rem",
                     color: "text.secondary", "&:hover": { color: "#ef4444" },
                     "&:disabled": { opacity: 0.5 },
+                    ...phoneTapSx,
                   }}
                 >
                   {isRejected ? "Dismiss" : "Withdraw"}
