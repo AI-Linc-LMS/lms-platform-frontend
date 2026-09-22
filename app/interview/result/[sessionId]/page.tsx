@@ -16,6 +16,7 @@ import interviewService, {
   type InterviewResult,
   type QuestionResult,
 } from "@/lib/services/interview.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The candidate's result: the mark, the words around the mark, and the review.
@@ -152,7 +153,7 @@ function McqReview({ mcq }: { mcq: NonNullable<QuestionResult["mcq"]> }) {
             border: "1px solid color-mix(in srgb, var(--accent-green, #16a34a) 22%, transparent)",
           }}
         >
-          <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--accent-green, #16a34a)", mb: 0.4 }}>
+          <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--accent-green, #16a34a)", mb: 0.4 }}>
             Why
           </Typography>
           <Typography sx={{ fontSize: "0.85rem", lineHeight: 1.6, color: "var(--font-secondary)" }}>
@@ -170,7 +171,7 @@ function McqReview({ mcq }: { mcq: NonNullable<QuestionResult["mcq"]> }) {
 function LooksFor({ items }: { items: string[] }) {
   return (
     <Box sx={{ mt: 1.5, px: 1.5, py: 1.25, borderRadius: 2, bgcolor: "color-mix(in srgb, var(--accent-indigo) 6%, transparent)", border: "1px solid color-mix(in srgb, var(--accent-indigo) 20%, transparent)" }}>
-      <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--accent-indigo)", mb: 0.6 }}>
+      <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "var(--accent-indigo)", mb: 0.6 }}>
         What a strong answer covers
       </Typography>
       <Box component="ul" sx={{ m: 0, pl: 2.25, display: "flex", flexDirection: "column", gap: 0.4 }}>
@@ -228,7 +229,7 @@ function CodingReview({ coding }: { coding: NonNullable<QuestionResult["coding"]
       )}
       <Button
         onClick={() => setShowProblem((was) => !was)}
-        sx={{ mt: 1, textTransform: "none", fontSize: "0.82rem", color: "var(--accent-purple)" }}
+        sx={{ mt: 1, textTransform: "none", fontSize: "0.82rem", color: "var(--accent-purple)", [PHONE]: { minHeight: 44 } }}
       >
         {showProblem ? "Hide the problem" : "Show the problem"}
       </Button>
@@ -248,6 +249,7 @@ function QuestionReview({ question }: { question: QuestionResult }) {
         <Typography
           sx={{
             fontSize: "0.72rem",
+            [PHONE]: { fontSize: "0.75rem" },
             fontWeight: 600,
             letterSpacing: "0.06em",
             textTransform: "uppercase",
@@ -279,6 +281,7 @@ function QuestionReview({ question }: { question: QuestionResult }) {
           <Typography
             sx={{
               fontSize: "0.72rem",
+              [PHONE]: { fontSize: "0.75rem" },
               fontWeight: 600,
               letterSpacing: "0.06em",
               textTransform: "uppercase",
@@ -382,7 +385,7 @@ export default function InterviewResultPage({
         action={
           <Button
             onClick={() => router.push("/interview")}
-            sx={{ textTransform: "none", color: "#fff", border: "1px solid rgba(255,255,255,0.35)", borderRadius: 2, px: 2 }}
+            sx={{ textTransform: "none", color: "#fff", border: "1px solid rgba(255,255,255,0.35)", borderRadius: 2, px: 2, [PHONE]: { minHeight: 44 } }}
           >
             All interviews
           </Button>
@@ -533,7 +536,7 @@ export default function InterviewResultPage({
                 disableElevation
                 onClick={() => router.push(`/interview/room?followUp=${sessionId}`)}
                 startIcon={<Icon icon="solar:microphone-3-bold" width={16} />}
-                sx={{ textTransform: "none", borderRadius: 2, fontWeight: 600, px: 2.5 }}
+                sx={{ textTransform: "none", borderRadius: 2, fontWeight: 600, px: 2.5, [PHONE]: { minHeight: 44 } }}
               >
                 Start follow-up
               </Button>

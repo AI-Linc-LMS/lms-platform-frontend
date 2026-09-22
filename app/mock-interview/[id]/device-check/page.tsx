@@ -36,6 +36,7 @@ import {
 } from "@/lib/utils/noise-suppression";
 import { Switch } from "@mui/material";
 import { CheckCircle, XCircle, AlertCircle } from "lucide-react";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface DeviceStatus {
   camera: boolean;
@@ -918,6 +919,7 @@ export default function MockInterviewDeviceCheckPage() {
                             backgroundColor: "var(--warning-amber)",
                             color: "var(--font-light)",
                             fontSize: "0.7rem",
+                            [PHONE]: { fontSize: "0.75rem" },
                             maxWidth: "200px",
                           }}
                         />
@@ -1160,6 +1162,7 @@ export default function MockInterviewDeviceCheckPage() {
                     borderColor: "#e5e7eb",
                     color: "#9ca3af",
                   },
+                  [PHONE]: { minHeight: 44 },
                 }}
               >
                 {isListening
@@ -1199,6 +1202,7 @@ export default function MockInterviewDeviceCheckPage() {
                   py: 1.5,
                   backgroundColor: "#6366f1",
                   "&:hover": { backgroundColor: "#4f46e5" },
+                  [PHONE]: { minHeight: 44 },
                 }}
               >
                 {checking
@@ -1226,6 +1230,7 @@ export default function MockInterviewDeviceCheckPage() {
                   backgroundColor: "#9ca3af",
                   color: "#ffffff",
                 },
+                [PHONE]: { minHeight: 44 },
               }}
             >
               {faceValidationPassed
@@ -1255,6 +1260,7 @@ export default function MockInterviewDeviceCheckPage() {
                 borderColor: "#d1d5db",
                 backgroundColor: "#f9fafb",
               },
+              [PHONE]: { minHeight: 44 },
             }}
           >
             {t("mockInterview.deviceCheck.cancel")}

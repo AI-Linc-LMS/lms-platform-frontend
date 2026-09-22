@@ -12,6 +12,7 @@ import {
   ROOM_VIOLET,
 } from "@/components/ai-tutor/room/roomTokens";
 import type { InterviewTranscriptEntry } from "@/lib/hooks/useRealtimeInterview";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * What has been said so far.
@@ -53,6 +54,7 @@ export function InterviewTranscript({
         <Typography
           sx={{
             fontSize: "0.74rem",
+            [PHONE]: { fontSize: "0.75rem" },
             fontWeight: 500,
             letterSpacing: "0.08em",
             textTransform: "uppercase",
@@ -77,6 +79,7 @@ export function InterviewTranscript({
               <Typography
                 sx={{
                   fontSize: "0.7rem",
+                  [PHONE]: { fontSize: "0.75rem" },
                   letterSpacing: "0.06em",
                   textTransform: "uppercase",
                   color: entry.role === "candidate" ? ROOM_VIOLET : ROOM_TEXT_FAINT,
@@ -96,6 +99,7 @@ export function InterviewTranscript({
             <Typography
               sx={{
                 fontSize: "0.7rem",
+                [PHONE]: { fontSize: "0.75rem" },
                 letterSpacing: "0.06em",
                 textTransform: "uppercase",
                 color: ROOM_TEXT_FAINT,

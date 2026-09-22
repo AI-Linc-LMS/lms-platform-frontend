@@ -3,10 +3,11 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
-import { Box, Dialog, Stack, Typography } from "@mui/material";
+import { Box, Dialog, Drawer, Stack, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { forgeKeys, forgeService, type ForgeJob } from "@/lib/services/roadmaps.service";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * Watching a course get built.
@@ -28,6 +29,8 @@ export function ForgeProgressDialog({
   onClose: () => void;
 }) {
   const { push } = useInstantNavigation();
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const jobId = job?.id ?? 0;
 
   const { data } = useQuery({
@@ -73,6 +76,259 @@ export function ForgeProgressDialog({
 
   if (!live) return null;
 
+  const content = (
+    <Box sx={{ p: { xs: 2.5, md: 3 } }}>
+      <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
+        <Box
+          sx={{
+            width: 40,
+            height: 40,
+            borderRadius: 2,
+            display: "grid",
+            placeItems: "center",
+            bgcolor: "color-mix(in srgb, var(--accent-purple) 12%, transparent)",
+            color: "var(--accent-purple)",
+          }}
+        >
+          <Icon
+            icon={
+              done || reused
+                ? "solar:check-circle-bold"
+                : failed
+                  ? "solar:danger-triangle-linear"
+                  : "solar:magic-stick-3-linear"
+            }
+            width={20}
+          />
+        </Box>
+        <Box sx={{ minWidth: 0 }}>
+          <Typography
+            sx={{ fontWeight: 600, fontSize: "1.05rem", color: "var(--font-primary)" }}
+          >
+            {reused
+              ? "You already have this course"
+              : done
+                ? "Your course is ready"
+                : failed
+                  ? "We could not finish this one"
+                  : "Building your course"}
+          </Typography>
+          <Typography sx={{ fontSize: "0.85rem", color: "var(--font-secondary)" }}>
+            {live.title}
+          </Typography>
+        </Box>
+      </Stack>
+
+      {!reused && (
+        <>
+          <Box
+            sx={{
+              height: 6,
+              borderRadius: 999,
+              bgcolor: "var(--surface)",
+              border: "1px solid var(--border-default)",
+              overflow: "hidden",
+              mb: 1,
+            }}
+          >
+            <Box
+              sx={{
+                width: `${live.percent}%`,
+                height: "100%",
+                bgcolor: "var(--accent-purple)",
+                transition: "width .4s ease",
+                backgroundImage: done
+                  ? "none"
+                  : "linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent)",
+                backgroundSize: "200% 100%",
+                animation: done ? "none" : "forgeShimmer 1.1s linear infinite",
+                "@keyframes forgeShimmer": {
+                  "0%": { backgroundPosition: "200% 0" },
+                  "100%": { backgroundPosition: "-200% 0" },
+                },
+              }}
+            />
+          </Box>
+          <Stack
+            direction="row"
+            alignItems="center"
+            justifyContent="space-between"
+            sx={{ mb: 2, minHeight: 22 }}
+          >
+            {done ? (
+              <Typography sx={{ fontSize: "0.82rem", color: "var(--font-secondary)" }}>
+                {live.completedItems} topics assembled from the verified bank
+              </Typography>
+            ) : (
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={stage}
+                  initial={{ y: 8, opacity: 0 }}
+                  animate={{ y: 0, opacity: 1 }}
+                  exit={{ y: -8, opacity: 0 }}
+                  transition={{ duration: 0.22 }}
+                >
+                  <Typography sx={{ fontSize: "0.82rem", color: "var(--font-secondary)" }}>
+                    {STAGES[stage]}...
+                  </Typography>
+                </motion.div>
+              </AnimatePresence>
+            )}
+            <Typography
+              sx={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--font-primary)" }}
+            >
+              {live.completedItems}/{live.totalItems}
+            </Typography>
+          </Stack>
+
+          <Stack spacing={0.5} sx={{ maxHeight: 240, overflowY: "auto", mb: 2 }}>
+            {live.items.map((it) => (
+              <Stack
+                key={it.order}
+                component={motion.div}
+                layout
+                animate={
+                  it.status === "done"
+                    ? { opacity: 1, x: 0 }
+                    : { opacity: 0.55, x: 0 }
+                }
+                transition={{ duration: 0.25 }}
+                direction="row"
+                spacing={1}
+                alignItems="center"
+                sx={{ py: 0.35 }}
+              >
+                <Icon
+                  icon={
+                    it.status === "done"
+                      ? "solar:check-circle-bold"
+                      : it.status === "failed"
+                        ? "solar:close-circle-linear"
+                        : it.status === "running"
+                          ? "svg-spinners:180-ring-with-bg"
+                          : "solar:record-linear"
+                  }
+                  width={15}
+                  color={
+                    it.status === "done"
+                      ? "var(--accent-green)"
+                      : it.status === "failed"
+                        ? "var(--accent-red)"
+                        : "var(--font-tertiary)"
+                  }
+                />
+                <Typography
+                  sx={{
+                    fontSize: "0.84rem",
+                    color:
+                      it.status === "pending"
+                        ? "var(--font-tertiary)"
+                        : "var(--font-primary)",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {it.title}
+                </Typography>
+              </Stack>
+            ))}
+          </Stack>
+        </>
+      )}
+
+      <Stack direction="row" spacing={1.25} justifyContent="flex-end">
+        {(terminal || reused) && (
+          <Box
+            component="button"
+            onClick={onClose}
+            sx={{
+              appearance: "none",
+              cursor: "pointer",
+              font: "inherit",
+              px: 2,
+              py: 1,
+              borderRadius: 999,
+              border: "1px solid var(--border-default)",
+              bgcolor: "var(--card-bg)",
+              color: "var(--font-primary)",
+              fontSize: "0.88rem",
+              fontWeight: 500,
+              [PHONE]: { flex: 1, minHeight: 44 },
+            }}
+          >
+            Stay here
+          </Box>
+        )}
+        {(done || reused) && live.courseId && (
+          <Box
+            component="button"
+            onClick={() => push(`/adaptive-courses/${live.courseId}`)}
+            sx={{
+              appearance: "none",
+              cursor: "pointer",
+              font: "inherit",
+              display: "flex",
+              alignItems: "center",
+              gap: 0.75,
+              px: 2.25,
+              py: 1,
+              borderRadius: 999,
+              border: "none",
+              bgcolor: "color-mix(in srgb, var(--accent-purple) 65%, #1e1b4b)",
+              color: "#fff",
+              fontSize: "0.88rem",
+              fontWeight: 600,
+              [PHONE]: { flex: 1, minHeight: 44, justifyContent: "center" },
+            }}
+          >
+            Start learning
+            <Icon icon="solar:alt-arrow-right-linear" width={16} />
+          </Box>
+        )}
+      </Stack>
+
+      {(done || reused) && (
+        <Typography
+          sx={{ mt: 1.5, fontSize: "0.78rem", color: "var(--font-tertiary)", textAlign: "right" }}
+        >
+          You will also find it in Courses.
+        </Typography>
+      )}
+    </Box>
+  );
+
+  // A phone gets a bottom sheet. It closes on the same terms as the dialog: never while the
+  // build is still running, since the only thing to come back to is this progress.
+  if (isPhone) {
+    return (
+      <Drawer
+        anchor="bottom"
+        open={open}
+        onClose={terminal || reused ? onClose : undefined}
+        slotProps={{
+          paper: {
+            sx: {
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              maxHeight: "88vh",
+              overflowY: "auto",
+              bgcolor: "var(--card-bg)",
+              backgroundImage: "none",
+              pb: "env(safe-area-inset-bottom)",
+            },
+          },
+        }}
+        data-testid="forge-progress-sheet"
+      >
+        <Box
+          sx={{ width: 40, height: 4, borderRadius: 999, bgcolor: "var(--border-default)", mx: "auto", mt: 1.25 }}
+        />
+        {content}
+      </Drawer>
+    );
+  }
+
   return (
     <Dialog
       open={open}
@@ -91,223 +347,7 @@ export function ForgeProgressDialog({
         },
       }}
     >
-      <Box sx={{ p: { xs: 2.5, md: 3 } }}>
-        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ mb: 2 }}>
-          <Box
-            sx={{
-              width: 40,
-              height: 40,
-              borderRadius: 2,
-              display: "grid",
-              placeItems: "center",
-              bgcolor: "color-mix(in srgb, var(--accent-purple) 12%, transparent)",
-              color: "var(--accent-purple)",
-            }}
-          >
-            <Icon
-              icon={
-                done || reused
-                  ? "solar:check-circle-bold"
-                  : failed
-                    ? "solar:danger-triangle-linear"
-                    : "solar:magic-stick-3-linear"
-              }
-              width={20}
-            />
-          </Box>
-          <Box sx={{ minWidth: 0 }}>
-            <Typography
-              sx={{ fontWeight: 600, fontSize: "1.05rem", color: "var(--font-primary)" }}
-            >
-              {reused
-                ? "You already have this course"
-                : done
-                  ? "Your course is ready"
-                  : failed
-                    ? "We could not finish this one"
-                    : "Building your course"}
-            </Typography>
-            <Typography sx={{ fontSize: "0.85rem", color: "var(--font-secondary)" }}>
-              {live.title}
-            </Typography>
-          </Box>
-        </Stack>
-
-        {!reused && (
-          <>
-            <Box
-              sx={{
-                height: 6,
-                borderRadius: 999,
-                bgcolor: "var(--surface)",
-                border: "1px solid var(--border-default)",
-                overflow: "hidden",
-                mb: 1,
-              }}
-            >
-              <Box
-                sx={{
-                  width: `${live.percent}%`,
-                  height: "100%",
-                  bgcolor: "var(--accent-purple)",
-                  transition: "width .4s ease",
-                  backgroundImage: done
-                    ? "none"
-                    : "linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent)",
-                  backgroundSize: "200% 100%",
-                  animation: done ? "none" : "forgeShimmer 1.1s linear infinite",
-                  "@keyframes forgeShimmer": {
-                    "0%": { backgroundPosition: "200% 0" },
-                    "100%": { backgroundPosition: "-200% 0" },
-                  },
-                }}
-              />
-            </Box>
-            <Stack
-              direction="row"
-              alignItems="center"
-              justifyContent="space-between"
-              sx={{ mb: 2, minHeight: 22 }}
-            >
-              {done ? (
-                <Typography sx={{ fontSize: "0.82rem", color: "var(--font-secondary)" }}>
-                  {live.completedItems} topics assembled from the verified bank
-                </Typography>
-              ) : (
-                <AnimatePresence mode="wait">
-                  <motion.div
-                    key={stage}
-                    initial={{ y: 8, opacity: 0 }}
-                    animate={{ y: 0, opacity: 1 }}
-                    exit={{ y: -8, opacity: 0 }}
-                    transition={{ duration: 0.22 }}
-                  >
-                    <Typography sx={{ fontSize: "0.82rem", color: "var(--font-secondary)" }}>
-                      {STAGES[stage]}...
-                    </Typography>
-                  </motion.div>
-                </AnimatePresence>
-              )}
-              <Typography
-                sx={{ fontSize: "0.82rem", fontWeight: 600, color: "var(--font-primary)" }}
-              >
-                {live.completedItems}/{live.totalItems}
-              </Typography>
-            </Stack>
-
-            <Stack spacing={0.5} sx={{ maxHeight: 240, overflowY: "auto", mb: 2 }}>
-              {live.items.map((it) => (
-                <Stack
-                  key={it.order}
-                  component={motion.div}
-                  layout
-                  animate={
-                    it.status === "done"
-                      ? { opacity: 1, x: 0 }
-                      : { opacity: 0.55, x: 0 }
-                  }
-                  transition={{ duration: 0.25 }}
-                  direction="row"
-                  spacing={1}
-                  alignItems="center"
-                  sx={{ py: 0.35 }}
-                >
-                  <Icon
-                    icon={
-                      it.status === "done"
-                        ? "solar:check-circle-bold"
-                        : it.status === "failed"
-                          ? "solar:close-circle-linear"
-                          : it.status === "running"
-                            ? "svg-spinners:180-ring-with-bg"
-                            : "solar:record-linear"
-                    }
-                    width={15}
-                    color={
-                      it.status === "done"
-                        ? "var(--accent-green)"
-                        : it.status === "failed"
-                          ? "var(--accent-red)"
-                          : "var(--font-tertiary)"
-                    }
-                  />
-                  <Typography
-                    sx={{
-                      fontSize: "0.84rem",
-                      color:
-                        it.status === "pending"
-                          ? "var(--font-tertiary)"
-                          : "var(--font-primary)",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    {it.title}
-                  </Typography>
-                </Stack>
-              ))}
-            </Stack>
-          </>
-        )}
-
-        <Stack direction="row" spacing={1.25} justifyContent="flex-end">
-          {(terminal || reused) && (
-            <Box
-              component="button"
-              onClick={onClose}
-              sx={{
-                appearance: "none",
-                cursor: "pointer",
-                font: "inherit",
-                px: 2,
-                py: 1,
-                borderRadius: 999,
-                border: "1px solid var(--border-default)",
-                bgcolor: "var(--card-bg)",
-                color: "var(--font-primary)",
-                fontSize: "0.88rem",
-                fontWeight: 500,
-              }}
-            >
-              Stay here
-            </Box>
-          )}
-          {(done || reused) && live.courseId && (
-            <Box
-              component="button"
-              onClick={() => push(`/adaptive-courses/${live.courseId}`)}
-              sx={{
-                appearance: "none",
-                cursor: "pointer",
-                font: "inherit",
-                display: "flex",
-                alignItems: "center",
-                gap: 0.75,
-                px: 2.25,
-                py: 1,
-                borderRadius: 999,
-                border: "none",
-                bgcolor: "color-mix(in srgb, var(--accent-purple) 65%, #1e1b4b)",
-                color: "#fff",
-                fontSize: "0.88rem",
-                fontWeight: 600,
-              }}
-            >
-              Start learning
-              <Icon icon="solar:alt-arrow-right-linear" width={16} />
-            </Box>
-          )}
-        </Stack>
-
-        {(done || reused) && (
-          <Typography
-            sx={{ mt: 1.5, fontSize: "0.78rem", color: "var(--font-tertiary)", textAlign: "right" }}
-          >
-            You will also find it in Courses.
-          </Typography>
-        )}
-      </Box>
+      {content}
     </Dialog>
   );
 }

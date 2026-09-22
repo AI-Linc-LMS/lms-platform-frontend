@@ -15,6 +15,7 @@ import { MockInterview } from "@/lib/services/mock-interview.service";
 import { memo, useCallback, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { cleanInterviewTitle } from "@/lib/utils/mock-interview-title";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface ScheduledInterviewsTableProps {
   interviews: MockInterview[];
@@ -152,6 +153,7 @@ const ScheduledInterviewsTableComponent = ({
               sx={{
                 p: 3,
                 borderRadius: 3,
+                [PHONE]: { p: 2 },
                 border:
                   "1px solid color-mix(in srgb, var(--warning-500) 35%, var(--border-default))",
                 backgroundColor:
@@ -165,13 +167,14 @@ const ScheduledInterviewsTableComponent = ({
                 },
               }}
             >
-              <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start" }}>
+              <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start", [PHONE]: { gap: 1.5 } }}>
                 {/* Date Box */}
                 <Box
                   sx={{
                     width: 80,
                     height: 80,
                     borderRadius: 2,
+                    [PHONE]: { width: 52, height: 52, "& .MuiTypography-h5": { fontSize: "1.2rem" }, "& svg": { width: 26, height: 26 } },
                     background:
                       "linear-gradient(135deg, var(--warning-500) 0%, color-mix(in srgb, var(--warning-500) 84%, var(--accent-indigo-dark)) 100%)",
                     display: "flex",
@@ -196,6 +199,7 @@ const ScheduledInterviewsTableComponent = ({
                     sx={{
                       color: "var(--font-light)",
                       fontSize: "0.7rem",
+                      [PHONE]: { fontSize: "0.75rem" },
                       textTransform: "uppercase",
                     }}
                   >
@@ -206,13 +210,14 @@ const ScheduledInterviewsTableComponent = ({
                 </Box>
 
                 {/* Main Content */}
-                <Box sx={{ flex: 1 }}>
+                <Box sx={{ flex: 1, [PHONE]: { minWidth: 0 } }}>
                   <Box
                     sx={{
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "flex-start",
                       mb: 2,
+                      [PHONE]: { flexWrap: "wrap", gap: 1, mb: 1.5 },
                     }}
                   >
                     <Box>
@@ -317,6 +322,7 @@ const ScheduledInterviewsTableComponent = ({
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
+                      [PHONE]: { flexDirection: "column", alignItems: "stretch", gap: 1.5, "& > * > *": { whiteSpace: "nowrap" } },
                     }}
                   >
                     <Box sx={{ display: "flex", gap: 2 }}>
@@ -360,7 +366,7 @@ const ScheduledInterviewsTableComponent = ({
                       </Box>
                     </Box>
 
-                    <Box sx={{ display: "flex", gap: 1 }}>
+                    <Box sx={{ display: "flex", gap: 1, [PHONE]: { "& > *": { flex: 1 } } }}>
                       <Button
                         variant="contained"
                         size="small"
@@ -378,6 +384,7 @@ const ScheduledInterviewsTableComponent = ({
                             backgroundColor:
                               "color-mix(in srgb, var(--warning-500) 84%, var(--accent-indigo-dark))",
                           },
+                          [PHONE]: { minHeight: 44 },
                         }}
                       >
                         Start Now

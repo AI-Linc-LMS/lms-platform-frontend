@@ -5,6 +5,7 @@ import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { TutorLevel, TutorQuota } from "@/lib/services/ai-tutor.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * "What do you want to learn today?" — rendered INSIDE the page header.
@@ -362,5 +363,6 @@ function chipSx(active: boolean) {
       outline: "none",
       boxShadow: "0 0 0 2px rgba(13,7,32,0.9), 0 0 0 4px #a855f7",
     },
+    [PHONE]: { minHeight: 44 },
   } as const;
 }

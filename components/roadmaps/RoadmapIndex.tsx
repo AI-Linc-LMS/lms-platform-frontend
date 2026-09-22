@@ -3,6 +3,7 @@
 import { Box, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type { RoadmapCard } from "@/lib/services/roadmaps.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The whole catalog, at a glance.
@@ -40,6 +41,7 @@ export function RoadmapIndex({
         <Typography
           sx={{
             fontSize: "0.74rem",
+            [PHONE]: { fontSize: "0.75rem" },
             fontWeight: 600,
             letterSpacing: "0.08em",
             textTransform: "uppercase",
@@ -101,6 +103,8 @@ export function RoadmapIndex({
                 borderBottomColor: "var(--border-default)",
                 transition: "background-color .12s ease",
                 "&:hover": { bgcolor: "var(--surface)" },
+                // A row is 38px on a desktop, where a pointer lands on it; a thumb needs 44.
+                [PHONE]: { minHeight: 44 },
                 "&:focus-visible": {
                   outline: "none",
                   boxShadow: "0 0 0 2px var(--surface), 0 0 0 4px var(--accent-purple)",

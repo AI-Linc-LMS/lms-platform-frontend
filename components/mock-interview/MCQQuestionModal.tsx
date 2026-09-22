@@ -12,6 +12,8 @@ import {
   Typography,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
+import { usePhoneSheet } from "@/components/mock-interview/usePhoneSheet";
 
 export interface MCQOption {
   id: string;
@@ -33,6 +35,7 @@ function MCQQuestionModalComponent({
   spokenIntro,
   onSubmit,
 }: MCQQuestionModalProps) {
+  const { sheetProps } = usePhoneSheet();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
 
   useEffect(() => {
@@ -64,6 +67,7 @@ function MCQQuestionModalComponent({
       maxWidth="sm"
       fullWidth
       disableEscapeKeyDown
+      {...sheetProps}
       PaperProps={{
         sx: {
           borderRadius: 3,
@@ -89,6 +93,7 @@ function MCQQuestionModalComponent({
                 backgroundColor: "var(--surface-indigo-light)",
                 color: "var(--accent-indigo)",
                 fontSize: "0.7rem",
+                [PHONE]: { fontSize: "0.75rem" },
                 fontWeight: 600,
               }}
             >
@@ -181,6 +186,7 @@ function MCQQuestionModalComponent({
               fontWeight: 600,
               backgroundColor: "var(--accent-indigo)",
               "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
+              [PHONE]: { minHeight: 44 },
             }}
           >
             Submit Answer

@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The roadmap module's surface primitives.
@@ -165,6 +166,7 @@ export function Metric({
             sx={{
               mt: 0.35,
               fontSize: "0.72rem",
+              [PHONE]: { fontSize: "0.75rem" },
               fontWeight: 600,
               letterSpacing: "0.06em",
               textTransform: "uppercase",

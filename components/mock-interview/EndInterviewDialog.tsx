@@ -12,6 +12,8 @@ import {
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { memo } from "react";
+import { PHONE } from "@/components/common/mobile/phone";
+import { usePhoneSheet } from "@/components/mock-interview/usePhoneSheet";
 
 interface EndInterviewDialogProps {
   open: boolean;
@@ -24,8 +26,9 @@ export const EndInterviewDialog = memo(function EndInterviewDialog({
   onConfirm,
   onCancel,
 }: EndInterviewDialogProps) {
+  const { sheetProps } = usePhoneSheet();
   return (
-    <Dialog open={open} onClose={onCancel} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={onCancel} maxWidth="sm" fullWidth {...sheetProps}>
       <DialogTitle>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <IconWrapper icon="mdi:alert-circle" size={24} color="var(--error-500, #ef4444)" />
@@ -58,6 +61,7 @@ export const EndInterviewDialog = memo(function EndInterviewDialog({
               borderColor: "var(--font-tertiary)",
               backgroundColor: "var(--surface)",
             },
+            [PHONE]: { minHeight: 44 },
           }}
         >
           Cancel
@@ -72,6 +76,7 @@ export const EndInterviewDialog = memo(function EndInterviewDialog({
             "&:hover": {
               backgroundColor: "var(--error-600, #dc2626)",
             },
+            [PHONE]: { minHeight: 44 },
           }}
           startIcon={<IconWrapper icon="mdi:check" size={20} />}
         >

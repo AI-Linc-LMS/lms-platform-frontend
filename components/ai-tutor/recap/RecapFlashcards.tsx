@@ -5,6 +5,7 @@ import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { TutorSurface } from "../shared/surfaces";
 import type { TutorNote } from "@/lib/services/ai-tutor.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The flashcards this lesson produced, presented as a deck you work through.
@@ -127,6 +128,7 @@ export function RecapFlashcards({ notes }: { notes: TutorNote[] }) {
                   outline: "none",
                   boxShadow: "0 0 0 2px var(--card-bg), 0 0 0 4px var(--ai-violet)",
                 },
+                [PHONE]: { minHeight: 44 },
               }}
             >
               Run the deck again
@@ -137,6 +139,7 @@ export function RecapFlashcards({ notes }: { notes: TutorNote[] }) {
             <Typography
               sx={{
                 fontSize: "0.74rem",
+                [PHONE]: { fontSize: "0.75rem" },
                 fontWeight: 600,
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
@@ -198,6 +201,7 @@ export function RecapFlashcards({ notes }: { notes: TutorNote[] }) {
                       outline: "none",
                       boxShadow: "0 0 0 2px var(--card-bg), 0 0 0 4px var(--ai-violet)",
                     },
+                    [PHONE]: { minHeight: 44 },
                   }}
                 >
                   <Icon icon="solar:eye-bold" width={16} />

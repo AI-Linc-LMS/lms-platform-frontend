@@ -15,6 +15,7 @@ import interviewService, {
   type InterviewHistory,
   type SessionRow,
 } from "@/lib/services/interview.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The interview hub: what you can sit, and how the ones you sat went.
@@ -109,6 +110,7 @@ function AvailableCard({ item }: { item: AvailableInterview }) {
             py: 0.25,
             borderRadius: 999,
             fontSize: "0.68rem",
+            [PHONE]: { fontSize: "0.75rem" },
             fontWeight: 700,
             letterSpacing: "0.04em",
             textTransform: "uppercase",
@@ -179,6 +181,7 @@ function AvailableCard({ item }: { item: AvailableInterview }) {
             fontWeight: 600,
             fontSize: "0.85rem",
             px: 2,
+            [PHONE]: { width: "100%", minHeight: 44 },
           }}
         >
           {starting ? "Opening the room" : "Start interview"}

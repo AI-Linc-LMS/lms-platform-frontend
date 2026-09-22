@@ -20,6 +20,7 @@ import {
   type SelfState,
 } from "@/lib/services/roadmaps.service";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The node drawer. Content is fetched per node rather than embedded in the graph payload, so
@@ -99,7 +100,17 @@ export function RoadmapNodeDrawer({
       anchor="right"
       open={Boolean(node)}
       onClose={onClose}
-      PaperProps={{ sx: { width: { xs: "100%", sm: 460 }, p: 0 } }}
+      // On a phone this drawer is the full screen, and the app bar (drawer z-index + 1) sat on
+      // top of its header, hiding the close button. Lift it to the modal layer there only.
+      sx={{ [PHONE]: { zIndex: 1300 } }}
+      PaperProps={{
+        sx: {
+          width: { xs: "100%", sm: 460 },
+          p: 0,
+          // Full screen on a phone, so it owns the notch and the home indicator too.
+          [PHONE]: { pt: "env(safe-area-inset-top)", pb: "env(safe-area-inset-bottom)" },
+        },
+      }}
     >
       {node && (
         <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
@@ -107,10 +118,14 @@ export function RoadmapNodeDrawer({
             direction="row"
             alignItems="center"
             justifyContent="space-between"
-            sx={{ px: 2.5, py: 1.75, borderBottom: "1px solid #e6e8ef" }}
+            sx={{ px: 2.5, py: 1.75, borderBottom: "1px solid #e6e8ef", [PHONE]: { px: 2, gap: 1 } }}
           >
             {node.isTrackable ? (
-              <Stack direction="row" spacing={0.75}>
+              <Stack
+                direction="row"
+                spacing={0.75}
+                sx={{ [PHONE]: { flexWrap: "wrap", rowGap: 0.75, minWidth: 0 } }}
+              >
                 {STATES.map((s) => {
                   const active = selfState === s.value;
                   return (
@@ -128,6 +143,7 @@ export function RoadmapNodeDrawer({
                         bgcolor: active ? "#7c3aed" : "transparent",
                         border: `1px solid ${active ? "#7c3aed" : "#e6e8ef"}`,
                         "&:hover": { bgcolor: active ? "#5b21b6" : "#f8fafc" },
+                        [PHONE]: { minHeight: 44 },
                       }}
                     >
                       {s.label}
@@ -138,7 +154,12 @@ export function RoadmapNodeDrawer({
             ) : (
               <Typography sx={{ fontSize: 13, color: "#64748b" }}>Section</Typography>
             )}
-            <IconButton onClick={onClose} size="small" aria-label="Close">
+            <IconButton
+              onClick={onClose}
+              size="small"
+              aria-label="Close"
+              sx={{ [PHONE]: { width: 44, height: 44, flexShrink: 0 } }}
+            >
               <Icon icon="solar:close-circle-linear" width={22} />
             </IconButton>
           </Stack>
@@ -184,6 +205,7 @@ export function RoadmapNodeDrawer({
                           sx={{
                             height: 24, fontSize: 11.5, fontWeight: 600,
                             bgcolor: "#ede9fe", color: "#5b21b6",
+                            [PHONE]: { height: 26, fontSize: 12 },
                           }}
                         />
                       ))}
@@ -214,6 +236,7 @@ export function RoadmapNodeDrawer({
                                 bgcolor: s.selfState === "done" ? "#059669" : "#ede9fe",
                                 color: s.selfState === "done" ? "#fff" : "#5b21b6",
                                 fontSize: 10.5, fontWeight: 700,
+                                [PHONE]: { width: 24, height: 24, fontSize: 12 },
                               }}
                             >
                               {s.selfState === "done" ? <Icon icon="mdi:check" width={13} /> : i + 1}
@@ -229,7 +252,11 @@ export function RoadmapNodeDrawer({
                                   {s.summary}
                                 </Typography>
                               )}
-                              <Stack direction="row" spacing={1.25} sx={{ mt: 0.6, color: "#94a3b8" }}>
+                              <Stack
+                                direction="row"
+                                spacing={1.25}
+                                sx={{ mt: 0.6, color: "#94a3b8", "& p": { [PHONE]: { fontSize: 12 } } }}
+                              >
                                 {s.readingMinutes > 0 && (
                                   <Typography sx={{ fontSize: 11 }}>{s.readingMinutes} min</Typography>
                                 )}
@@ -250,6 +277,7 @@ export function RoadmapNodeDrawer({
                                 sx={{
                                   textTransform: "none", fontWeight: 600, fontSize: 12,
                                   flexShrink: 0, minWidth: 0,
+                                  [PHONE]: { minHeight: 44, minWidth: 56 },
                                 }}
                               >
                                 Open
@@ -302,7 +330,9 @@ export function RoadmapNodeDrawer({
                                 <Typography sx={{ fontSize: 13.5, fontWeight: 600, color: "#0f172a" }}>
                                   {t.title}
                                 </Typography>
-                                <Typography sx={{ fontSize: 11.5, color: "#64748b" }}>
+                                <Typography
+                                  sx={{ fontSize: 11.5, color: "#64748b", [PHONE]: { fontSize: 12 } }}
+                                >
                                   {t.courseTitle}
                                 </Typography>
                                 {(c.articleSummary || t.description) && (
@@ -322,6 +352,7 @@ export function RoadmapNodeDrawer({
                                         sx={{
                                           height: 20, fontSize: 10.5, fontWeight: 600,
                                           bgcolor: "#f1f5f9", color: "#475569",
+                                          [PHONE]: { height: 24, fontSize: 12 },
                                         }}
                                       />
                                     ))}
@@ -338,7 +369,10 @@ export function RoadmapNodeDrawer({
                                         : `/adaptive-courses/${t.courseId}`
                                     )
                                   }
-                                  sx={{ textTransform: "none", fontWeight: 600, fontSize: 12.5, flexShrink: 0 }}
+                                  sx={{
+                                    textTransform: "none", fontWeight: 600, fontSize: 12.5, flexShrink: 0,
+                                    [PHONE]: { minHeight: 44 },
+                                  }}
                                 >
                                   Open
                                 </Button>
@@ -354,6 +388,8 @@ export function RoadmapNodeDrawer({
                                   sx={{
                                     height: 22, fontSize: 11, flexShrink: 0,
                                     cursor: t.selfEnrollable ? "pointer" : "default",
+                                    // "Join" is a button; "Locked" is only a label.
+                                    [PHONE]: { fontSize: 12, height: t.selfEnrollable ? 44 : 24 },
                                   }}
                                 />
                               )}
@@ -363,7 +399,7 @@ export function RoadmapNodeDrawer({
                       })}
                     </Stack>
                     {detail.opens.some((t) => !t.accessible) && (
-                      <Typography sx={{ mt: 1, fontSize: 11.5, color: "#94a3b8" }}>
+                      <Typography sx={{ mt: 1, fontSize: 11.5, color: "#94a3b8", [PHONE]: { fontSize: 12 } }}>
                         Locked steps need enrolment in the course that owns them.
                       </Typography>
                     )}
@@ -384,6 +420,7 @@ export function RoadmapNodeDrawer({
                             sx={{
                               height: 19,
                               fontSize: 10,
+                              [PHONE]: { height: 22, fontSize: 12 },
                               fontWeight: 600,
                               textTransform: "capitalize",
                               bgcolor: `${RESOURCE_TINT[r.type] ?? "#64748b"}14`,
@@ -400,6 +437,7 @@ export function RoadmapNodeDrawer({
                               color: "#7c3aed",
                               textDecoration: "underline",
                               "&:hover": { color: "#5b21b6" },
+                              [PHONE]: { minHeight: 44, display: "inline-flex", alignItems: "center" },
                             }}
                           >
                             {r.title}

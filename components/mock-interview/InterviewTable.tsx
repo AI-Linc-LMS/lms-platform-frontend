@@ -19,6 +19,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { MockInterview } from "@/lib/services/mock-interview.service";
 import { memo, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface InterviewTableProps {
   interviews: MockInterview[];
@@ -190,6 +191,7 @@ const InterviewTableComponent = ({
                       border: `1px solid ${statusColors.border}`,
                       fontWeight: 600,
                       fontSize: "0.7rem",
+                      [PHONE]: { fontSize: "0.75rem" },
                     }}
                   />
                 </TableCell>
@@ -238,6 +240,7 @@ const InterviewTableComponent = ({
                               backgroundColor:
                                 "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                             },
+                            [PHONE]: { minWidth: 44, minHeight: 44 },
                           }}
                         >
                           <IconWrapper
@@ -259,6 +262,7 @@ const InterviewTableComponent = ({
                               backgroundColor:
                                 "color-mix(in srgb, var(--success-500) 10%, transparent)",
                             },
+                            [PHONE]: { minWidth: 44, minHeight: 44 },
                           }}
                         >
                           <IconWrapper icon="mdi:play-circle" size={20} />
@@ -275,6 +279,7 @@ const InterviewTableComponent = ({
                             backgroundColor:
                               "color-mix(in srgb, var(--font-secondary) 10%, transparent)",
                           },
+                          [PHONE]: { minWidth: 44, minHeight: 44 },
                         }}
                       >
                         <IconWrapper icon="mdi:eye-outline" size={20} />
@@ -291,6 +296,7 @@ const InterviewTableComponent = ({
                               backgroundColor:
                                 "color-mix(in srgb, var(--error-500) 10%, transparent)",
                             },
+                            [PHONE]: { minWidth: 44, minHeight: 44 },
                           }}
                         >
                           <IconWrapper icon="mdi:delete-outline" size={20} />
