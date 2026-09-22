@@ -6,6 +6,8 @@ import { Box, Button, Chip, CircularProgress, Stack, Typography } from "@mui/mat
 import { Icon } from "@iconify/react";
 import { useToast } from "@/components/common/Toast";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_TEXT } from "./coursePhone";
 
 type CalibStatus = Awaited<ReturnType<typeof adaptiveJourneyService.getCalibration>>;
 
@@ -116,7 +118,7 @@ export function CalibrationAdminSection({ courseId }: { courseId: number }) {
         <Stack direction="row" spacing={1} alignItems="center">
           <Icon icon="mdi:shield-half-full" width={20} color="#6366f1" />
           <Typography sx={{ fontWeight: 800, fontSize: "1.05rem" }}>Calibration assessment</Typography>
-          <Chip label={chip.label} size="small" sx={{ height: 20, fontSize: "0.66rem", fontWeight: 800, color: chip.color, bgcolor: chip.bg }} />
+          <Chip label={chip.label} size="small" sx={{ height: 20, fontSize: "0.66rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 800, color: chip.color, bgcolor: chip.bg }} />
           {configured && <Typography sx={{ fontSize: "0.8rem", color: "#94a3b8" }}>{calib?.question_count ?? 0} questions</Typography>}
         </Stack>
         <Typography sx={{ fontSize: "0.8rem", color: "text.secondary", mt: 0.5 }}>

@@ -9,6 +9,8 @@ import type {
   AdaptiveCourseJobTreeModule,
   AdaptiveCourseSkill,
 } from "@/lib/services/admin/admin-adaptive-course.service";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_TEXT } from "./coursePhone";
 
 const DIFF: Record<string, string> = { Easy: "#10b981", Medium: "#f59e0b", Hard: "#ef4444" };
 const WORDS_PER_SEC = 9;
@@ -165,7 +167,7 @@ function HeroCard({
       {/* header chips */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.75, flexWrap: "wrap" }}>
         <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 1, py: 0.35, borderRadius: 999,
-          fontWeight: 800, fontSize: "0.64rem", letterSpacing: "0.1em",
+          fontWeight: 800, fontSize: "0.64rem", [PHONE]: { fontSize: PHONE_TEXT }, letterSpacing: "0.1em",
           color: done ? "#10b981" : "#6366f1",
           bgcolor: done ? "color-mix(in srgb, #10b981 12%, transparent)" : "color-mix(in srgb, #6366f1 12%, transparent)" }}>
           <Icon icon={done ? "mdi:check" : isArticle ? "mdi:book-open-variant" : isCoding ? "mdi:robot-happy-outline" : isVideo ? "mdi:play-circle-outline" : "mdi:fountain-pen-tip"} width={12} />
@@ -292,7 +294,7 @@ function TreeCard({ tree }: { tree: AdaptiveCourseJobTreeModule[] }) {
                   {row.title}
                 </Typography>
                 {row.ready && row.count > 0 && (
-                  <Typography sx={{ fontSize: "0.7rem", color: "#6366f1", fontWeight: 800, flexShrink: 0 }}>{row.count}</Typography>
+                  <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: PHONE_TEXT }, color: "#6366f1", fontWeight: 800, flexShrink: 0 }}>{row.count}</Typography>
                 )}
               </Box>
             )}
@@ -317,7 +319,7 @@ function SkillsCard({ skills }: { skills: AdaptiveCourseSkill[] }) {
         <Typography sx={{ fontWeight: 800, fontSize: "0.78rem", letterSpacing: "0.08em", textTransform: "uppercase", color: "#a855f7" }}>
           Skills this course builds
         </Typography>
-        <Typography sx={{ fontSize: "0.72rem", color: "text.secondary", fontWeight: 700 }}>
+        <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: PHONE_TEXT }, color: "text.secondary", fontWeight: 700 }}>
           · {skills.length} skill{skills.length === 1 ? "" : "s"} · {totalQ} questions{totalA > 0 ? ` · ${totalA} articles` : ""}
         </Typography>
       </Box>
@@ -339,7 +341,7 @@ function SkillsCard({ skills }: { skills: AdaptiveCourseSkill[] }) {
               {s.question_count > 0 && (
                 <Box component="span" title={`${s.question_count} quiz questions`} sx={{
                   display: "inline-flex", alignItems: "center", gap: 0.2, px: 0.7, py: 0.1, borderRadius: 999,
-                  fontSize: "0.68rem", fontWeight: 900, bgcolor: "rgba(255,255,255,0.25)",
+                  fontSize: "0.68rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 900, bgcolor: "rgba(255,255,255,0.25)",
                 }}>
                   <Icon icon="mdi:help-circle-outline" width={11} />{s.question_count}
                 </Box>
@@ -347,7 +349,7 @@ function SkillsCard({ skills }: { skills: AdaptiveCourseSkill[] }) {
               {s.article_count > 0 && (
                 <Box component="span" title={`${s.article_count} articles`} sx={{
                   display: "inline-flex", alignItems: "center", gap: 0.2, px: 0.7, py: 0.1, borderRadius: 999,
-                  fontSize: "0.68rem", fontWeight: 900, bgcolor: "rgba(255,255,255,0.25)",
+                  fontSize: "0.68rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 900, bgcolor: "rgba(255,255,255,0.25)",
                 }}>
                   <Icon icon="mdi:book-open-variant" width={11} />{s.article_count}
                 </Box>
@@ -384,9 +386,9 @@ function RecentCard({ entry }: { entry: AdaptiveCourseJobLogEntry }) {
           <Chip label={entry.difficulty} color={accent} small />
         )}
         {(isArticle || isCoding || isVideo) && entry.title ? (
-          <Typography sx={{ fontSize: "0.68rem", color: "text.secondary", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>· {entry.title}</Typography>
+          <Typography sx={{ fontSize: "0.68rem", [PHONE]: { fontSize: PHONE_TEXT }, color: "text.secondary", fontWeight: 700, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>· {entry.title}</Typography>
         ) : entry.skill ? (
-          <Typography sx={{ fontSize: "0.68rem", color: "text.secondary", fontWeight: 700 }}>· {entry.skill}</Typography>
+          <Typography sx={{ fontSize: "0.68rem", [PHONE]: { fontSize: PHONE_TEXT }, color: "text.secondary", fontWeight: 700 }}>· {entry.skill}</Typography>
         ) : null}
       </Box>
       <Typography sx={{ fontSize: "0.82rem", fontWeight: 600, lineHeight: 1.4,
@@ -402,6 +404,7 @@ function Chip({ label, color, subtle, small }: { label: string; color: string; s
     <Box component="span" sx={{
       px: small ? 0.7 : 0.9, py: 0.2, borderRadius: 999,
       fontSize: small ? "0.6rem" : "0.66rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase",
+      [PHONE]: { fontSize: PHONE_TEXT },
       color: subtle ? color : "white",
       background: subtle ? `color-mix(in srgb, ${color} 14%, transparent)` : color,
     }}>

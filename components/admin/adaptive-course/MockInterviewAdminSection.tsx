@@ -11,6 +11,8 @@ import type {
   CourseInterviewTemplate,
   CourseInterviewsResponse,
 } from "@/lib/types/adaptive-journey";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_TEXT } from "./coursePhone";
 
 const STATUS_CHIP: Record<string, { color: string; bg: string }> = {
   completed: { color: "#15803d", bg: "#dcfce7" },
@@ -83,7 +85,7 @@ export function MockInterviewAdminSection({ courseId }: { courseId: number }) {
               <Chip
                 label={calib?.exists ? "Ready" : "Not set up"}
                 size="small"
-                sx={{ height: 20, fontWeight: 800, fontSize: "0.66rem", color: calib?.exists ? "#15803d" : "#64748b", bgcolor: calib?.exists ? "#dcfce7" : "#f1f5f9" }}
+                sx={{ height: 20, fontWeight: 800, fontSize: "0.66rem", [PHONE]: { fontSize: PHONE_TEXT }, color: calib?.exists ? "#15803d" : "#64748b", bgcolor: calib?.exists ? "#dcfce7" : "#f1f5f9" }}
               />
             </Stack>
             <Typography sx={{ fontSize: "0.8rem", color: "text.secondary", mt: 0.25 }}>
@@ -146,7 +148,7 @@ function TemplateCard({ t }: { t: CourseInterviewTemplate }) {
     <Box sx={{ p: 2, borderRadius: 3, bgcolor: "var(--card-bg, #fff)", border: "1px solid var(--border-default, #ececf1)" }}>
       <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
         <Typography sx={{ fontWeight: 800, fontSize: "0.95rem" }}>{t.title}</Typography>
-        {t.is_level_gauge && <Chip label="Level gauge" size="small" sx={{ height: 20, fontSize: "0.62rem", fontWeight: 800, color: "#6d28d9", bgcolor: "#ede9fe" }} />}
+        {t.is_level_gauge && <Chip label="Level gauge" size="small" sx={{ height: 20, fontSize: "0.62rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 800, color: "#6d28d9", bgcolor: "#ede9fe" }} />}
       </Stack>
       <Typography sx={{ fontSize: "0.8rem", color: "text.secondary", mt: 0.25 }}>{t.topic}{t.subtopic ? ` · ${t.subtopic}` : ""}</Typography>
       <Stack direction="row" spacing={0.75} sx={{ mt: 1, gap: 0.75 }} flexWrap="wrap">

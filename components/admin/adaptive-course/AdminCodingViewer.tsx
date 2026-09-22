@@ -12,6 +12,8 @@ import {
 import { AdminSectionSkeleton } from "@/components/courses/CourseSkeletons";
 import { asStringList } from "@/lib/utils/as-list";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_TEXT } from "./coursePhone";
 
 /**
  * Admin review + edit surface for one generated coding problem - the coding
@@ -195,7 +197,7 @@ export function AdminCodingViewer({ problemId, onChanged, onDeleted }: AdminCodi
           <TextField size="small" label="Problem statement (HTML)" value={statement} onChange={(e) => setStatement(e.target.value)} multiline minRows={4} fullWidth />
           <TextField size="small" label="Constraints (HTML)" value={constraints} onChange={(e) => setConstraints(e.target.value)} multiline minRows={2} fullWidth />
           <TextField size="small" label="Target skills (comma-separated)" value={skills} onChange={(e) => setSkills(e.target.value)} fullWidth />
-          <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, color: "text.secondary", textTransform: "uppercase", mt: 0.5 }}>
+          <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 800, color: "text.secondary", textTransform: "uppercase", mt: 0.5 }}>
             Test cases
           </Typography>
           {cases.map((tc, i) => (
@@ -226,12 +228,12 @@ export function AdminCodingViewer({ problemId, onChanged, onDeleted }: AdminCodi
             <Field label="Misconception taxonomy" value={problem.misconception_taxonomy.map((t) => t.label).join(" · ")} />
           )}
 
-          <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, color: "text.secondary", textTransform: "uppercase" }}>
+          <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 800, color: "text.secondary", textTransform: "uppercase" }}>
             Test cases ({problem.test_cases?.length ?? 0})
           </Typography>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>
             {(problem.test_cases || []).map((tc, i) => (
-              <Box key={i} sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0.75, p: 1, borderRadius: 1.5, border: "1px solid color-mix(in srgb, var(--border-default) 60%, transparent)", fontFamily: "monospace", fontSize: "0.74rem" }}>
+              <Box key={i} sx={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 0.75, p: 1, borderRadius: 1.5, border: "1px solid color-mix(in srgb, var(--border-default) 60%, transparent)", fontFamily: "monospace", fontSize: "0.74rem", [PHONE]: { fontSize: PHONE_TEXT } }}>
                 <Box><b>in:</b> <span style={{ whiteSpace: "pre-wrap" }}>{tc.input}</span></Box>
                 <Box><b>out:</b> <span style={{ whiteSpace: "pre-wrap" }}>{tc.expected_output}</span></Box>
               </Box>
@@ -250,7 +252,7 @@ export function AdminCodingViewer({ problemId, onChanged, onDeleted }: AdminCodi
           {showSolution &&
             Object.entries(problem.solution || {}).map(([lang, code]) => (
               <Box key={lang}>
-                <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, color: "text.secondary", textTransform: "uppercase" }}>{lang}</Typography>
+                <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 800, color: "text.secondary", textTransform: "uppercase" }}>{lang}</Typography>
                 <Box component="pre" sx={{ mt: 0.25, p: 1, borderRadius: 1.5, overflowX: "auto", fontSize: "0.76rem", fontFamily: "monospace", background: "#0f1117", color: "#e6e6e6", whiteSpace: "pre-wrap" }}>
                   {code}
                 </Box>
@@ -265,7 +267,7 @@ export function AdminCodingViewer({ problemId, onChanged, onDeleted }: AdminCodi
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <Box>
-      <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, color: "text.secondary", textTransform: "uppercase" }}>{label}</Typography>
+      <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 800, color: "text.secondary", textTransform: "uppercase" }}>{label}</Typography>
       <Typography sx={{ fontSize: "0.82rem" }}>{value}</Typography>
     </Box>
   );

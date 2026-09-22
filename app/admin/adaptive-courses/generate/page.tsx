@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, Container, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { phoneTapSx } from "@/components/admin/adaptive-course/coursePhone";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
@@ -263,7 +264,7 @@ function GenerateAdaptiveCourseInner() {
       <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
         <ButtonBase
           onClick={() => push("/admin/adaptive-courses")}
-          sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}
+          sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem", ...phoneTapSx }}
         >
           <Icon icon="mdi:arrow-left" width={18} />
           Back to Adaptive Course Builder

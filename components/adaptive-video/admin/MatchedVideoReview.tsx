@@ -10,6 +10,8 @@ import {
 } from "@/lib/services/adaptive-video.service";
 import type { AdminAdaptiveCourseVideoCompanion } from "@/lib/services/admin/admin-adaptive-course.service";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_TEXT, TAP } from "@/components/admin/adaptive-course/coursePhone";
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
@@ -126,7 +128,7 @@ export function MatchedVideoReview({
             <Icon icon="mdi:play-circle" width={24} style={{ color: "rgba(255,255,255,0.92)" }} />
           </Box>
           {companion.duration_seconds > 0 && (
-            <Box sx={{ position: "absolute", bottom: 3, right: 3, px: 0.5, borderRadius: 0.75, bgcolor: "rgba(0,0,0,0.72)", color: "#fff", fontSize: "0.6rem", fontWeight: 700 }}>
+            <Box sx={{ position: "absolute", bottom: 3, right: 3, px: 0.5, borderRadius: 0.75, bgcolor: "rgba(0,0,0,0.72)", color: "#fff", fontSize: "0.6rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 700 }}>
               {fmt(companion.duration_seconds)}
             </Box>
           )}
@@ -218,10 +220,10 @@ export function MatchedVideoReview({
           {/* Header */}
           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.25 }}>
             <Icon icon="mdi:swap-horizontal" width={16} style={{ color: "#6366f1" }} />
-            <Typography sx={{ fontSize: "0.74rem", fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", color: "text.secondary" }}>
+            <Typography sx={{ fontSize: "0.74rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 800, letterSpacing: "0.05em", textTransform: "uppercase", color: "text.secondary" }}>
               Swap from catalog
             </Typography>
-            <Typography sx={{ ml: "auto", fontSize: "0.7rem", color: "text.disabled", display: "inline-flex", alignItems: "center", gap: 0.4 }}>
+            <Typography sx={{ ml: "auto", fontSize: "0.7rem", [PHONE]: { fontSize: PHONE_TEXT }, color: "text.disabled", display: "inline-flex", alignItems: "center", gap: 0.4 }}>
               <Icon icon="mdi:cloud-check-outline" width={13} /> auto-synced nightly
             </Typography>
           </Box>
@@ -256,12 +258,12 @@ export function MatchedVideoReview({
             component="button"
             onClick={() => setTranscribedOnly((v) => !v)}
             sx={{ all: "unset", cursor: "pointer", mt: 1, display: "inline-flex", alignItems: "center", gap: 0.6,
-              fontSize: "0.76rem", fontWeight: 600, color: "text.secondary" }}
+              fontSize: "0.76rem", fontWeight: 600, color: "text.secondary", [PHONE]: { minHeight: TAP, flexWrap: "wrap" } }}
           >
             <Icon icon={transcribedOnly ? "mdi:checkbox-marked" : "mdi:checkbox-blank-outline"} width={17}
               style={{ color: transcribedOnly ? "#6366f1" : "#94a3b8" }} />
             Transcribed only
-            <Typography component="span" sx={{ fontSize: "0.7rem", color: "text.disabled" }}>
+            <Typography component="span" sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: PHONE_TEXT }, color: "text.disabled" }}>
               (a companion needs a transcript)
             </Typography>
           </Box>
@@ -291,7 +293,7 @@ export function MatchedVideoReview({
                       // eslint-disable-next-line @next/next/no-img-element
                       <img src={v.thumbnail_url} alt="" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                     )}
-                    <Box sx={{ position: "absolute", bottom: 2, right: 2, px: 0.5, borderRadius: 0.75, bgcolor: "rgba(0,0,0,0.7)", color: "#fff", fontSize: "0.6rem", fontWeight: 700 }}>
+                    <Box sx={{ position: "absolute", bottom: 2, right: 2, px: 0.5, borderRadius: 0.75, bgcolor: "rgba(0,0,0,0.7)", color: "#fff", fontSize: "0.6rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 700 }}>
                       {fmt(v.duration_seconds)}
                     </Box>
                   </Box>
@@ -300,7 +302,7 @@ export function MatchedVideoReview({
                       {v.title}
                     </Typography>
                     <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, mt: 0.25,
-                      fontSize: "0.7rem", fontWeight: 700, color: v.has_text_track ? "#16a34a" : "#f59e0b" }}>
+                      fontSize: "0.7rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 700, color: v.has_text_track ? "#16a34a" : "#f59e0b" }}>
                       <Icon icon={v.has_text_track ? "mdi:closed-caption" : "mdi:closed-caption-outline"} width={13} />
                       {v.has_text_track ? "Transcript" : "No transcript"}
                     </Box>
@@ -311,7 +313,7 @@ export function MatchedVideoReview({
                     disabled={!!busy || !v.has_text_track}
                     onClick={() => run("swap", () => adaptiveVideoAdminService.swapVideo(companion.id, v.vimeo_id), "Video swapped.")}
                     sx={{ borderRadius: 999, textTransform: "none", fontWeight: 700, flexShrink: 0,
-                      ...(busy === "swap" ? {} : {}) }}
+                      ...(busy === "swap" ? {} : {}), [PHONE]: { minHeight: TAP } }}
                   >
                     {busy === "swap" ? <CircularProgress size={14} /> : "Use"}
                   </Button>
@@ -340,7 +342,7 @@ function StatusPill({ active }: { active: boolean }) {
       component="span"
       sx={{
         flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 0.4, px: 0.85, py: 0.25, borderRadius: 999,
-        fontSize: "0.62rem", fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase",
+        fontSize: "0.62rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase",
         color: active ? "#16a34a" : "#94a3b8",
         bgcolor: active ? "color-mix(in srgb, #16a34a 12%, transparent)" : "var(--bg-subtle, #f1f1f4)",
       }}
@@ -357,7 +359,7 @@ function MetaDot() {
 
 function MetaChip({ icon, label }: { icon: string; label: string }) {
   return (
-    <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.35, fontSize: "0.74rem", fontWeight: 700, color: "text.secondary" }}>
+    <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.35, fontSize: "0.74rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 700, color: "text.secondary" }}>
       <Icon icon={icon} width={13} style={{ color: "#6366f1" }} />
       {label}
     </Box>
@@ -404,6 +406,7 @@ function ToolbarButton({
           bgcolor: active ? "#5457e6" : danger ? "color-mix(in srgb, #dc2626 8%, transparent)" : "var(--bg-subtle, #f4f4f6)",
           borderColor: active ? "#5457e6" : danger ? "color-mix(in srgb, #dc2626 40%, transparent)" : "color-mix(in srgb, #6366f1 40%, transparent)",
         },
+        [PHONE]: { minHeight: TAP },
       }}
     >
       {children}
@@ -468,7 +471,7 @@ function CompanionPreview({ loading, data }: { loading: boolean; data: VideoComp
             <PreviewHeading icon="mdi:lightning-bolt" label={`Check-ins (${data.check_ins.length})`} />
             {data.check_ins.map((c) => (
               <Box key={c.id} sx={{ mb: 1, p: 1, borderRadius: 1.5, bgcolor: "color-mix(in srgb, #6366f1 6%, transparent)" }}>
-                <Typography sx={{ fontSize: "0.74rem", color: "text.secondary" }}>
+                <Typography sx={{ fontSize: "0.74rem", [PHONE]: { fontSize: PHONE_TEXT }, color: "text.secondary" }}>
                   @ {fmt(c.timestamp_seconds)} · {c.concept}
                 </Typography>
                 <Typography sx={{ fontSize: "0.82rem", fontWeight: 600 }}>{c.question_text}</Typography>
@@ -485,7 +488,7 @@ function PreviewHeading({ icon, label }: { icon: string; label: string }) {
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.75 }}>
       <Icon icon={icon} width={15} style={{ color: "#6366f1" }} />
-      <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "text.secondary" }}>
+      <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "text.secondary" }}>
         {label}
       </Typography>
     </Box>

@@ -2583,6 +2583,16 @@
     "adminInterviewSetup": "أنشئ المقابلات وحدد مواعيدها واطلع على المرشحين ونتائجهم.",
     "projectLibrary": "مشاريع عملية ينفذها المتعلمون داخل المتصفح."
   },
+  "roadmapsMobile": {
+    "mapHint": "اضغط على خطوة لفتحها. اضغط مطولاً لتحديدها كمكتملة أو قيد التعلّم أو متخطاة."
+  },
+  "mobileChrome": {
+    "more": "المزيد",
+    "platformGuide": "دليل المنصة"
+  },
+  "adaptiveCoursesAdmin": {
+    "deleteCourse": "حذف {{title}}"
+  },
   "learningPlayerMobile": {
     "workspaceTabs": "مساحة البرمجة",
     "problemTab": "المسألة",
@@ -2590,13 +2600,6 @@
     "resultsTab": "النتائج",
     "noResultsYet": "شغّل الكود لترى نتائج الاختبارات وملاحظات المرشد هنا.",
     "resultsReady": "النتائج الجديدة جاهزة"
-  },
-  "roadmapsMobile": {
-    "mapHint": "اضغط على خطوة لفتحها. اضغط مطولاً لتحديدها كمكتملة أو قيد التعلّم أو متخطاة."
-  },
-  "mobileChrome": {
-    "more": "المزيد",
-    "platformGuide": "دليل المنصة"
   },
   "adminPeoplePhone": {
     "moreActions": "إجراءات إضافية لـ {{name}}",

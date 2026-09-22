@@ -5,6 +5,8 @@ import { Box, ButtonBase, TextField, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { CsvAnalyzingProgress } from "./CsvAnalyzingProgress";
 import { CSV_ROW_CAP, type ParsedCsv } from "./types";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_TEXT } from "@/components/admin/adaptive-course/coursePhone";
 
 /**
  * The "Upload CSV" creation path. Parses the file in the browser (header mode) so
@@ -167,7 +169,7 @@ export function CsvUploadPanel({
                 key={c}
                 component="span"
                 sx={{
-                  px: 1, py: 0.25, borderRadius: 999, fontSize: "0.72rem", fontWeight: 700,
+                  px: 1, py: 0.25, borderRadius: 999, fontSize: "0.72rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 700,
                   color: "text.secondary",
                   bgcolor: "color-mix(in srgb, var(--card-bg) 70%, transparent)",
                   border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
