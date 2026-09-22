@@ -2620,5 +2620,12 @@
   },
   "purchases": {
     "reference": "المرجع"
+  },
+  "adaptiveCoursesAdmin": {
+    "deleteCourse": "حذف {{title}}"
+  },
+  "adminEngagementMobile": {
+    "statusFilterLabel": "تصفية الجلسات حسب الحالة",
+    "facetFilterLabel": "تصفية حسب الدفعة والدورة"
   }
 }

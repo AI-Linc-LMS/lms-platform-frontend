@@ -17,6 +17,8 @@ import {
   Typography,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { PHONE } from "@/components/common/mobile/phone";
+import { TAP, phoneIconTapSx, phoneSheetDialogSx, phoneTapSx, phoneTextFloor } from "./coursePhone";
 import { useToast } from "@/components/common/Toast";
 import {
   adminAdaptiveCourseService,
@@ -55,6 +57,7 @@ const gradientBtnSx = {
   background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)",
   boxShadow: "0 12px 24px -14px var(--module-tile-from, rgba(99,102,241,0.7))",
   "&:hover": { filter: "brightness(0.92)" },
+  [PHONE]: { minHeight: TAP, flex: "1 1 calc(50% - 12px)" },
 };
 
 const outlineBtnSx = {
@@ -65,6 +68,7 @@ const outlineBtnSx = {
   color: "#6366f1",
   borderColor: "color-mix(in srgb, #6366f1 40%, transparent)",
   "&:hover": { borderColor: "#6366f1", bgcolor: "color-mix(in srgb, #6366f1 6%, transparent)" },
+  [PHONE]: { minHeight: TAP, flex: "1 1 calc(50% - 12px)" },
 };
 
 function _fileSlug(text: string): string {
@@ -194,7 +198,7 @@ export function CourseStudentsPanel({ courseId, courseTitle }: Props) {
             Only enrolled students can see and open this adaptive course.
           </Typography>
         </Box>
-        <Box sx={{ flex: 1 }} />
+        <Box sx={{ flex: 1, [PHONE]: { display: "none" } }} />
         <Button
           variant="outlined"
           startIcon={<Icon icon="mdi:download-outline" width={18} />}
@@ -291,6 +295,7 @@ export function CourseStudentsPanel({ courseId, courseTitle }: Props) {
                 bgcolor: "var(--card-bg, #fff)",
                 border: "1px solid var(--border-default, #ececf1)",
                 transition: "transform 140ms ease, box-shadow 140ms ease, border-color 140ms ease",
+                [PHONE]: { flexWrap: "wrap", rowGap: 1 },
                 "&:hover": {
                   transform: "translateY(-1px)",
                   borderColor: "color-mix(in srgb, #6366f1 35%, transparent)",
@@ -299,7 +304,7 @@ export function CourseStudentsPanel({ courseId, courseTitle }: Props) {
               }}
             >
               <StudentAvatar name={s.name} email={s.email} />
-              <Box sx={{ minWidth: 0, flex: 1.4 }}>
+              <Box sx={{ minWidth: 0, flex: 1.4, [PHONE]: { flex: "1 1 calc(100% - 60px)" } }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, minWidth: 0 }}>
                   <Typography sx={{ fontWeight: 700, fontSize: "0.9rem" }} noWrap>
                     {s.name || s.email}
@@ -310,14 +315,14 @@ export function CourseStudentsPanel({ courseId, courseTitle }: Props) {
                   {s.email}
                 </Typography>
               </Box>
-              <Box sx={{ flex: 1.2, minWidth: 130 }}>
+              <Box sx={{ flex: 1.2, minWidth: 130, [PHONE]: { flex: "1 1 100%", minWidth: 0 } }}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
                   <GradientBar value={s.progress_percentage} height={7} />
                   <Typography sx={{ fontSize: "0.8rem", fontWeight: 800, minWidth: 38, textAlign: "right" }}>
                     {Math.round(s.progress_percentage)}%
                   </Typography>
                 </Box>
-                <Typography sx={{ fontSize: "0.7rem", color: "text.secondary", mt: 0.4 }}>
+                <Typography sx={{ fontSize: "0.7rem", color: "text.secondary", mt: 0.4, ...phoneTextFloor }}>
                   {s.completed}/{s.total} items
                 </Typography>
               </Box>
@@ -330,6 +335,7 @@ export function CourseStudentsPanel({ courseId, courseTitle }: Props) {
               <Tooltip title="Download report (CSV)" arrow>
                 <IconButton
                   size="small"
+                  sx={{ [PHONE]: { minWidth: TAP, minHeight: TAP, marginInlineStart: "auto" } }}
                   disabled={rowDownloading === s.student_id}
                   onClick={async () => {
                     setRowDownloading(s.student_id);
@@ -351,7 +357,7 @@ export function CourseStudentsPanel({ courseId, courseTitle }: Props) {
                 <IconButton
                   size="small"
                   onClick={() => setDetailId(s.student_id)}
-                  sx={{ color: "#6366f1", bgcolor: "color-mix(in srgb, #6366f1 8%, transparent)", "&:hover": { bgcolor: "color-mix(in srgb, #6366f1 16%, transparent)" } }}
+                  sx={{ color: "#6366f1", bgcolor: "color-mix(in srgb, #6366f1 8%, transparent)", "&:hover": { bgcolor: "color-mix(in srgb, #6366f1 16%, transparent)" }, ...phoneIconTapSx }}
                 >
                   <Icon icon="mdi:chart-box-outline" width={19} />
                 </IconButton>
@@ -362,7 +368,7 @@ export function CourseStudentsPanel({ courseId, courseTitle }: Props) {
                     size="small"
                     disabled={busyId === s.student_id}
                     onClick={() => void handleUnenroll(s)}
-                    sx={{ color: "#ef4444", bgcolor: "color-mix(in srgb, #ef4444 8%, transparent)", "&:hover": { bgcolor: "color-mix(in srgb, #ef4444 16%, transparent)" } }}
+                    sx={{ color: "#ef4444", bgcolor: "color-mix(in srgb, #ef4444 8%, transparent)", "&:hover": { bgcolor: "color-mix(in srgb, #ef4444 16%, transparent)" }, ...phoneIconTapSx }}
                   >
                     {busyId === s.student_id ? <CircularProgress size={16} /> : <Icon icon="mdi:account-remove-outline" width={19} />}
                   </IconButton>
@@ -377,6 +383,7 @@ export function CourseStudentsPanel({ courseId, courseTitle }: Props) {
         <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 2, mt: 2 }}>
           <Button
             size="small"
+            sx={phoneTapSx}
             disabled={page <= 1 || loading}
             onClick={() => {
               const p = page - 1;
@@ -391,6 +398,7 @@ export function CourseStudentsPanel({ courseId, courseTitle }: Props) {
           </Typography>
           <Button
             size="small"
+            sx={phoneTapSx}
             disabled={page >= totalPages || loading}
             onClick={() => {
               const p = page + 1;
@@ -449,7 +457,7 @@ function StatChip({ icon, accent, value, label }: { icon: string; accent: string
       </Box>
       <Box>
         <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", lineHeight: 1.1 }}>{value}</Typography>
-        <Typography sx={{ fontSize: "0.7rem", color: "text.secondary", fontWeight: 600 }}>{label}</Typography>
+        <Typography sx={{ fontSize: "0.7rem", color: "text.secondary", fontWeight: 600, ...phoneTextFloor }}>{label}</Typography>
       </Box>
     </Box>
   );
@@ -500,10 +508,10 @@ function StudentProgressDialog({
     : [];
 
   return (
-    <Dialog open={studentId != null} onClose={onClose} maxWidth="xs" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
+    <Dialog open={studentId != null} onClose={onClose} maxWidth="xs" fullWidth sx={phoneSheetDialogSx} PaperProps={{ sx: { borderRadius: 4 } }}>
       <DialogTitle sx={{ fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "space-between", pb: 1 }}>
         Student progress
-        <IconButton onClick={onClose} size="small">
+        <IconButton onClick={onClose} size="small" sx={phoneIconTapSx}>
           <Icon icon="mdi:close" width={20} />
         </IconButton>
       </DialogTitle>
@@ -551,7 +559,7 @@ function StudentProgressDialog({
                         <Typography sx={{ fontSize: "0.84rem", fontWeight: 700 }}>
                           {r.label}
                           {r.excluded && (
-                            <Typography component="span" sx={{ color: "text.disabled", fontSize: "0.7rem", ml: 0.5, fontWeight: 600 }}>
+                            <Typography component="span" sx={{ color: "text.disabled", fontSize: "0.7rem", ml: 0.5, fontWeight: 600, ...phoneTextFloor }}>
                               (not counted in %)
                             </Typography>
                           )}
@@ -658,6 +666,7 @@ function AccessSourceChip({ paid, source }: { paid?: boolean; source?: string })
         textTransform: "uppercase",
         letterSpacing: 0.4,
         color: hue,
+        ...phoneTextFloor,
         bgcolor: `color-mix(in srgb, ${hue} 15%, transparent)`,
       }}
     >

@@ -12,6 +12,7 @@ import {
   Typography,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
 import { useToast } from "@/components/common/Toast";
 import {
   adminLiveActivitiesService,
@@ -170,7 +171,7 @@ export function LiveSessionEmailPanel({
       </Typography>
 
       {/* Trigger controls */}
-      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2, flexWrap: "wrap" }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2, flexWrap: "wrap", [PHONE]: { "& .MuiButton-root": { minHeight: 44 }, "& .MuiInputBase-root": { minHeight: 44 }, "& .MuiTextField-root": { minWidth: 0, flex: "1 1 100%" } } }}>
         <Button
           size="small"
           variant="contained"

@@ -25,6 +25,7 @@ import { adminCohortsService } from "@/lib/services/admin/admin-cohorts.service"
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { InfoCallout } from "@/components/live-sessions/ui/LiveSessionUI";
 import { timezoneOptions, toLocalInputInZone } from "@/lib/utils/session-time";
+import { phoneSheetSx } from "./livePhone";
 
 interface Props {
   activity: LiveActivity;
@@ -149,7 +150,7 @@ export function EditSessionDialog({ activity, open, onClose, onSaved }: Props) {
     initialInstructorId != null && !instructors.some((i) => i.profile_id === initialInstructorId);
 
   return (
-    <Dialog
+    <Dialog sx={phoneSheetSx}
       open={open}
       onClose={saving ? undefined : onClose}
       maxWidth="sm"

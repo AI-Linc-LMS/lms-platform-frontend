@@ -18,6 +18,7 @@ import {
   Typography,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { phoneSheetDialogSx } from "./coursePhone";
 import { useRouter } from "next/navigation";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { formatMoney } from "@/lib/utils/money";
@@ -149,7 +150,7 @@ export function CoursePricingDialog({
 
   if (grandfathered !== null) {
     return (
-      <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm">
+      <Dialog open={open} onClose={onClose} fullWidth maxWidth="sm" sx={phoneSheetDialogSx}>
         <DialogTitle sx={{ fontWeight: 800 }}>Pricing saved</DialogTitle>
         <DialogContent>
           <Alert severity="info" sx={{ borderRadius: 2 }}>
@@ -170,7 +171,7 @@ export function CoursePricingDialog({
   }
 
   return (
-    <Dialog open={open} onClose={saving ? undefined : onClose} fullWidth maxWidth="sm">
+    <Dialog open={open} onClose={saving ? undefined : onClose} fullWidth maxWidth="sm" sx={phoneSheetDialogSx}>
       <DialogTitle sx={{ fontWeight: 800 }}>Course pricing</DialogTitle>
       <DialogContent>
         <Stack spacing={2.5} sx={{ pt: 0.5 }}>

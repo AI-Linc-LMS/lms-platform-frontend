@@ -4,6 +4,7 @@ import { useState } from "react";
 import {
   Box, Button, Checkbox, Dialog, DialogActions, DialogContent, DialogTitle, Stack, Typography,
 } from "@mui/material";
+import { phoneSheetDialogSx } from "./coursePhone";
 
 /**
  * Offer to clean module titles that are only a week label.
@@ -53,7 +54,7 @@ export function ModuleTitleCleanupDialog({
   const selected = proposals.filter((p) => !declined.has(p.module_id));
 
   return (
-    <Dialog open={open} onClose={applying ? undefined : onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={applying ? undefined : onClose} maxWidth="sm" fullWidth sx={phoneSheetDialogSx}>
       <DialogTitle sx={{ fontWeight: 800, pb: 0.5 }}>
         Tidy up module titles?
         <Typography sx={{ fontSize: "0.82rem", color: "text.secondary", fontWeight: 500, mt: 0.5 }}>

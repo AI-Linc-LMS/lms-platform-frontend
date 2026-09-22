@@ -3016,5 +3016,12 @@
   },
   "purchases": {
     "reference": "Reference"
+  },
+  "adaptiveCoursesAdmin": {
+    "deleteCourse": "Delete {{title}}"
+  },
+  "adminEngagementMobile": {
+    "statusFilterLabel": "Session status filter",
+    "facetFilterLabel": "Batch and course filter"
   }
 }

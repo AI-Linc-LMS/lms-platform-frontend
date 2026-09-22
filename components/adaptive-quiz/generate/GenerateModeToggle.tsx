@@ -2,6 +2,7 @@
 
 import { Box, ButtonBase } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { phoneTapSx } from "@/components/admin/adaptive-course/coursePhone";
 import type { GenerateMode } from "./types";
 
 const TABS: Array<{ key: GenerateMode; label: string; icon: string }> = [
@@ -50,6 +51,7 @@ export function GenerateModeToggle({
               fontWeight: 800,
               fontSize: "0.85rem",
               gap: 0.6,
+              ...phoneTapSx,
               color: active ? "white" : "text.secondary",
               background: active
                 ? "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)"

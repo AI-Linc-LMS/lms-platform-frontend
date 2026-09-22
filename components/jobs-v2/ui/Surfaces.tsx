@@ -12,7 +12,7 @@ import NextLink from "next/link";
 import { Box, Typography } from "@mui/material";
 import type { SxProps, Theme } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { J, MOTION, R, SHADOW, TYPE, cardInteraction, focusRing } from "./jobsTokens";
+import { J, MOTION, R, SHADOW, TYPE, adminPhone, cardInteraction, focusRing } from "./jobsTokens";
 import { useJobsSurface } from "./JobsScope";
 import { BulletList } from "./BulletList";
 
@@ -212,6 +212,19 @@ export function HairlineStrip({
           borderTop: `1px solid ${J.hairline}`,
           borderBottom: `1px solid ${J.hairline}`,
           bgcolor: "transparent",
+          // ADMIN, PHONE: one row that scrolls sideways. The 2-column grid stacked five or six
+          // counts three rows deep, so on /admin/jobs-v2 the strip alone filled the first
+          // screen and on the applicant pipeline the status filter pushed every applicant
+          // below the fold. As a row it is one thumb-swipe stage selector.
+          ...adminPhone({
+            display: "flex",
+            overflowX: "auto",
+            overflowY: "hidden",
+            WebkitOverflowScrolling: "touch",
+            scrollSnapType: "x proximity",
+            scrollbarWidth: "none",
+            "&::-webkit-scrollbar": { display: "none" },
+          }),
         },
         ...(Array.isArray(sx) ? sx : [sx]),
       ]}
@@ -270,6 +283,18 @@ export function HairlineStrip({
               transition: `background-color ${MOTION.micro}ms ${MOTION.ease}`,
               "&:hover": interactive ? { bgcolor: item.active ? J.azureSoft : J.surface2 } : undefined,
               ...(interactive ? focusRing : null),
+              // ADMIN, PHONE: a cell in the sideways row. Every cell after the first keeps its
+              // divider (the grid's per-row cancelling no longer applies) and none needs a top
+              // rule, since nothing wraps. 124px fits "Closing this week" on two lines.
+              ...adminPhone({
+                flex: "0 0 auto",
+                width: 124,
+                px: 1.75,
+                py: 1.5,
+                scrollSnapAlign: "start",
+                borderTopColor: "transparent",
+                "&:not(:first-of-type)": { borderInlineStartColor: J.hairline },
+              }),
             }}
           >
             <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mb: 0.25 }}>
@@ -290,7 +315,11 @@ export function HairlineStrip({
             </Box>
             <Typography
               component="div"
-              sx={{ ...TYPE.eyebrow, color: item.active ? J.azureDeep : J.ink3 }}
+              sx={{
+                ...TYPE.eyebrow,
+                color: item.active ? J.azureDeep : J.ink3,
+                ...adminPhone({ fontSize: "0.75rem", lineHeight: 1.2 }),
+              }}
             >
               {item.label}
             </Typography>

@@ -9,6 +9,8 @@ import {
   type CourseImageTarget,
 } from "@/lib/services/admin/admin-adaptive-course.service";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_TEXT, TAP } from "./coursePhone";
 
 type Device = "desktop" | "mobile";
 
@@ -210,7 +212,7 @@ function CoverSlot({
           <Typography sx={{ fontWeight: 700, fontSize: "0.78rem", color: "text.primary" }}>
             {cfg.label}
           </Typography>
-          <Typography sx={{ fontSize: "0.7rem", color: "text.secondary" }}>{cfg.caption}</Typography>
+          <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: PHONE_TEXT }, color: "text.secondary" }}>{cfg.caption}</Typography>
         </Box>
         {cfg.responsive && <DeviceToggle device={device} onChange={setDevice} />}
       </Box>
@@ -269,7 +271,7 @@ function CoverSlot({
                   px: 1,
                   py: 0.3,
                   borderRadius: 999,
-                  fontSize: "0.62rem",
+                  fontSize: "0.62rem", [PHONE]: { fontSize: PHONE_TEXT },
                   fontWeight: 800,
                   textTransform: "uppercase",
                   color: "white",
@@ -373,6 +375,7 @@ function DeviceToggle({ device, onChange }: { device: Device; onChange: (d: Devi
                 width: 26,
                 height: 22,
                 borderRadius: 999,
+                [PHONE]: { width: TAP, height: TAP },
                 color: active ? "white" : "text.secondary",
                 bgcolor: active ? "#6366f1" : "transparent",
                 transition: "background-color .15s ease, color .15s ease",
@@ -424,6 +427,7 @@ function SlotBtn({
           : "1px solid color-mix(in srgb, #6366f1 40%, transparent)",
         opacity: disabled && !loading ? 0.5 : 1,
         transition: "background-color .15s ease, opacity .15s ease",
+        [PHONE]: { minHeight: TAP },
         "&:hover": {
           bgcolor: primary
             ? "color-mix(in srgb, #6366f1 88%, black)"

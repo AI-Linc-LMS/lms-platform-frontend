@@ -3,6 +3,8 @@
 import { Box, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type { AdminAdaptiveCourseModule } from "@/lib/services/admin/admin-adaptive-course.service";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_TEXT, TAP } from "./coursePhone";
 
 /**
  * Index + pager for the course content tree.
@@ -60,19 +62,32 @@ export function ModuleNavigator({
             fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5,
             textTransform: "uppercase", color: "#64748b",
             '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" },
+            [PHONE]: { fontSize: PHONE_TEXT },
           }}
         >
           Jump to module
         </Typography>
         <Box sx={{ flex: 1 }} />
         {paged && (
-          <Typography sx={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 700 }}>
+          <Typography sx={{ fontSize: "0.72rem", color: "#94a3b8", fontWeight: 700, [PHONE]: { fontSize: PHONE_TEXT } }}>
             {modules.length} modules
           </Typography>
         )}
       </Stack>
 
-      <Stack direction="row" spacing={0.75} sx={{ flexWrap: "wrap", gap: 0.75 }}>
+      <Stack
+        direction="row"
+        spacing={0.75}
+        data-testid="module-index"
+        sx={{
+          flexWrap: "wrap",
+          gap: 0.75,
+          [PHONE]: {
+            flexWrap: "nowrap", overflowX: "auto", scrollSnapType: "x proximity", pb: 0.5,
+            scrollbarWidth: "none", "&::-webkit-scrollbar": { display: "none" },
+          },
+        }}
+      >
         {modules.map((m, i) => {
           const targetPage = Math.floor(i / MODULES_PER_PAGE);
           const active = activeModuleId === m.id;
@@ -94,6 +109,7 @@ export function ModuleNavigator({
                 transition: "background .12s, color .12s",
                 "&:hover": { bgcolor: active ? "#7c3aed" : "#f8fafc" },
                 "&:focus-visible": { outline: "none", boxShadow: "0 0 0 2px #fff, 0 0 0 4px #7c3aed" },
+                [PHONE]: { minHeight: TAP, flexShrink: 0, maxWidth: 220, scrollSnapAlign: "start" },
               }}
             >
               <Box
@@ -101,6 +117,7 @@ export function ModuleNavigator({
                 sx={{
                   flexShrink: 0, width: 18, height: 18, borderRadius: "50%",
                   display: "grid", placeItems: "center", fontSize: "0.62rem", fontWeight: 800,
+                  [PHONE]: { fontSize: PHONE_TEXT, width: 22, height: 22 },
                   bgcolor: active ? "rgba(255,255,255,0.22)" : "#f1f5f9",
                   color: active ? "#fff" : "#64748b",
                 }}
@@ -168,6 +185,7 @@ function PagerButton({
         cursor: disabled ? "default" : "pointer",
         "&:hover": { bgcolor: disabled ? "#fff" : "#f8fafc" },
         "&:focus-visible": { outline: "none", boxShadow: "0 0 0 2px #fff, 0 0 0 4px #7c3aed" },
+        [PHONE]: { minHeight: TAP },
       }}
     >
       {!trailingIcon && <Icon icon={icon} width={15} />}

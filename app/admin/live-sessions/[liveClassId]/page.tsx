@@ -25,6 +25,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
 import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
 import { useToast } from "@/components/common/Toast";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -61,6 +62,7 @@ import { EditWebinarDialog } from "@/components/admin/live-sessions/EditWebinarD
 import { EditSessionDialog } from "@/components/admin/live-sessions/EditSessionDialog";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { formatSessionTime } from "@/lib/utils/session-time";
+import { phoneSheetSx } from "@/components/admin/live-sessions/livePhone";
 
 function formatDateTime(s?: string | null, timezone?: string | null) {
   return formatSessionTime(s, timezone);
@@ -498,7 +500,21 @@ export default function LiveSessionDetailPage() {
     </ButtonBase>
   ) : null;
   const headerActions = (
-    <Box sx={{ display: "flex", gap: 1, alignItems: "center", flexWrap: "wrap" }}>
+    <Box
+      sx={{
+        display: "flex",
+        gap: 1,
+        alignItems: "center",
+        flexWrap: "wrap",
+        // PHONE: two even columns of 44px buttons instead of a ragged 38px wrap.
+        [PHONE]: {
+          display: "grid",
+          gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+          width: "100%",
+          "& > *": { minHeight: 44, justifyContent: "center", px: 1.5, textAlign: "center" },
+        },
+      }}
+    >
       {addDateButton}
       {editSessionButton}
       {noticeButton}
@@ -511,7 +527,8 @@ export default function LiveSessionDetailPage() {
 
   return (
     <MainLayout fullWidthContent>
-      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
+      {/* PHONE: the page gutter is MainLayout's alone. The Container's own 16px doubled it. */}
+      <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 }, [PHONE]: { px: 0, pt: 0 } }}>
         <AdaptiveSectionShell meshOpacity={0.3}>
           {loading && !activity ? (
             <Box sx={{ display: "flex", justifyContent: "center", py: 8 }}>
@@ -536,7 +553,7 @@ export default function LiveSessionDetailPage() {
               />
 
               <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
-                <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap" }}>
+                <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap", [PHONE]: { "& > .MuiBox-root": { fontSize: "0.75rem" } } }}>
                   <MeetingStatusChip status={activity.meeting_status} cancelled={isCancelled} />
                   <PlatformChip isZoom={activity.is_zoom} isGoogleMeet={activity.is_google_meet} zoomMeetingType={activity.zoom_meeting_type} />
                 </Box>
@@ -557,6 +574,7 @@ export default function LiveSessionDetailPage() {
                     "& .MuiTab-root": { minHeight: 40, textTransform: "none", fontWeight: 700, fontSize: "0.82rem", color: "var(--font-secondary)" },
                     "& .Mui-selected": { color: "var(--accent-indigo) !important" },
                     "& .MuiTabs-indicator": { backgroundColor: "var(--accent-indigo)" },
+                    [PHONE]: { minHeight: 44, "& .MuiTab-root": { minHeight: 44 } },
                   }}
                 >
                   {tabsWithFeedback.map((tb, i) => (
@@ -976,7 +994,7 @@ function AddDateDialog({ activity, onClose, onAdded }: {
   };
 
   return (
-    <Dialog open onClose={creating ? undefined : onClose} maxWidth="xs" fullWidth
+    <Dialog sx={phoneSheetSx} open onClose={creating ? undefined : onClose} maxWidth="xs" fullWidth
       PaperProps={{ sx: { borderRadius: "18px", border: "1px solid var(--border-default)", backgroundColor: "var(--card-bg)", backgroundImage: "none" } }}>
       <DialogTitle sx={{ fontWeight: 700, fontSize: "1.02rem", color: "var(--font-primary)" }}>
         {t("adminLiveSessions.addADate", "Add a date")}
@@ -1057,6 +1075,7 @@ function ControlButton({
         display: "inline-flex", alignItems: "center", gap: 0.6,
         opacity: loading ? 0.7 : 1,
         ...styles[tone],
+        [PHONE]: { minHeight: 44 },
       }}
     >
       {loading ? <CircularProgress size={15} color="inherit" /> : <IconWrapper icon={icon} size={16} color={tone === "primary" || tone === "success" ? "#fff" : undefined} />}

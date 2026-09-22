@@ -5,6 +5,7 @@ import NextLink from "next/link";
 import { Box, IconButton, Tooltip, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
 import {
   CompanyLogo,
   CountPill,
@@ -138,6 +139,8 @@ export function JobsTable({
         textDecoration: "none",
         borderRadius: 999,
         ...focusRing,
+        // The pill is 22px; on a phone the link around it is a 44px target.
+        [PHONE]: { minWidth: 44, minHeight: 44, alignItems: "center", justifyContent: "center" },
       }}
     >
       <CountPill value={job.applications_count ?? 0} tone="azure" />
@@ -200,7 +203,12 @@ export function JobsTable({
         title: job.job_title,
       }) as string}
       aria-haspopup="menu"
-      sx={{ color: J.ink3, "&:hover": { color: J.ink, bgcolor: J.surface2 }, ...focusRing }}
+      sx={{
+        color: J.ink3,
+        "&:hover": { color: J.ink, bgcolor: J.surface2 },
+        ...focusRing,
+        [PHONE]: { width: 44, height: 44 },
+      }}
     >
       <IconWrapper icon="mdi:dots-vertical" size={20} />
     </IconButton>
@@ -299,6 +307,16 @@ export function JobsTable({
                   textDecoration: "none",
                   "&:hover": { color: J.azure },
                   ...focusRing,
+                  // The title is the card's link: pad its hit area to 44px without moving it.
+                  // The clamp goes, because a clamped box would show a third line in the
+                  // padding; a job title is short enough to wrap in full on a phone.
+                  [PHONE]: {
+                    display: "block",
+                    WebkitLineClamp: "unset",
+                    overflow: "visible",
+                    py: "11px",
+                    my: "-11px",
+                  },
                 }}
                 title={job.job_title}
               >

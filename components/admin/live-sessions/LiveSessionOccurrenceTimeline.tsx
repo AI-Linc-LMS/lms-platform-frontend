@@ -41,6 +41,7 @@ import { formatDurationSeconds } from "@/lib/utils/date-utils";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { formatSessionTime, toLocalInputInZone } from "@/lib/utils/session-time";
 import { useToast } from "@/components/common/Toast";
+import { phoneSheetSx } from "./livePhone";
 
 const OCC_FORMAT: Intl.DateTimeFormatOptions = {
   weekday: "short",
@@ -797,7 +798,7 @@ function OccurrenceNotesDialog({
   }, [liveClassId, occ.id]);
 
   return (
-    <Dialog open onClose={onClose} maxWidth="sm" fullWidth>
+    <Dialog sx={phoneSheetSx} open onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ fontWeight: 700 }}>
         {occ.topic_name?.trim() || seriesTitle || t("adminLiveSessions.sessionNotes", "Session notes")}
         <Typography variant="caption" sx={{ display: "block", color: "var(--font-secondary)", fontWeight: 500 }}>
@@ -890,7 +891,7 @@ function EditOccurrenceDialog({ liveClassId, occ, mode, seriesTitle, timezone, o
   };
 
   return (
-    <Dialog
+    <Dialog sx={phoneSheetSx}
       open
       onClose={saving ? undefined : onClose}
       maxWidth="xs"

@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { Box, Menu, MenuItem, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
 import type { JobApplicationV2 } from "@/lib/services/jobs-v2.service";
 import { formatDate } from "@/lib/jobs-v2/format";
 import {
@@ -198,20 +199,20 @@ export function ApplicationsTable({
             </Box>
           </Box>
           <Box sx={{ mt: 1.25, display: "flex", flexDirection: "column", gap: 0.5 }}>
-            <Typography sx={TYPE.micro}>
+            <Typography sx={factSx(app.student_college)}>
               {t("jobsV2.candidate.college", "College")}: {app.student_college || "—"}
             </Typography>
-            <Typography sx={TYPE.micro}>
+            <Typography sx={factSx(app.student_phone)}>
               {t("jobsV2.candidate.phone", "Phone")}: {app.student_phone || "—"}
             </Typography>
-            <Typography sx={TYPE.micro}>
+            <Typography sx={factSx(app.student_yop ?? app.student_batch)}>
               {t("jobsV2.candidate.batch", "Batch / passout year")}:{" "}
               {app.student_yop ?? app.student_batch ?? "—"}
             </Typography>
-            <Typography sx={TYPE.micro}>
+            <Typography sx={factSx(app.student_degree)}>
               {t("jobsV2.candidate.degree", "Degree")}: {app.student_degree || "—"}
             </Typography>
-            <Typography sx={TYPE.micro}>
+            <Typography sx={factSx(app.student_location)}>
               {t("jobsV2.candidate.location", "Location")}: {app.student_location || "—"}
             </Typography>
             <Typography sx={TYPE.micro}>
@@ -250,6 +251,16 @@ export function ApplicationsTable({
       )}
     />
   );
+}
+
+/**
+ * A card fact line. On a phone an EMPTY fact ("College: —") is dropped: five dash lines made
+ * every applicant card ~190px taller than its content, so a ten-applicant pipeline was a
+ * 12,000px scroll of dashes. A fact with a value always shows, and above `sm` nothing changes.
+ */
+function factSx(value: unknown) {
+  const empty = value === null || value === undefined || value === "";
+  return empty ? { ...TYPE.micro, [PHONE]: { display: "none" } } : TYPE.micro;
 }
 
 function RowMenu({

@@ -13,10 +13,13 @@ import {
   LinearProgress,
   Pagination,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
 import { KpiRail, Reveal } from "@/components/scorecard/shared";
 import { AdminLiveSessionsEmptyState } from "@/components/admin/live-sessions/AdminLiveSessionsEmptyState";
 import { AdminLiveSessionsFeatureBlocked } from "@/components/admin/live-sessions/AdminLiveSessionsFeatureBlocked";
@@ -94,6 +97,9 @@ function sessionDayKeys(s: LiveActivity): string[] {
 
 export default function AdminLiveSessionsPage() {
   const { t } = useTranslation("common");
+  // scrollOnPhone also switches off label wrapping and chip shrinking, at every width. Passing it
+  // only on a phone keeps the desktop chip rows wrapping exactly as they did.
+  const isPhone = useMediaQuery(useTheme().breakpoints.down("sm"));
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
@@ -491,12 +497,12 @@ export default function AdminLiveSessionsPage() {
                 <Box sx={{ flex: 1 }} />
                 <Button size="small" onClick={(e) => { e.stopPropagation(); setPresetsDialogOpen(true); }}
                   startIcon={<IconWrapper icon="mdi:tune-variant" size={16} />}
-                  sx={{ textTransform: "none", color: "var(--font-secondary)" }}>
+                  sx={{ textTransform: "none", color: "var(--font-secondary)", [PHONE]: { minHeight: 44 } }}>
                   {t("adminLiveSessions.presets", "Presets")}
                 </Button>
                 <Button size="small" onClick={(e) => { e.stopPropagation(); setBackgroundsDialogOpen(true); }}
                   startIcon={<IconWrapper icon="mdi:image-outline" size={16} />}
-                  sx={{ textTransform: "none", color: "var(--font-secondary)" }}>
+                  sx={{ textTransform: "none", color: "var(--font-secondary)", [PHONE]: { minHeight: 44 } }}>
                   {t("adminLiveSessions.backgrounds", "Backgrounds")}
                 </Button>
                 <IconWrapper
@@ -543,10 +549,27 @@ export default function AdminLiveSessionsPage() {
                 </Box>
 
                 <Box data-tour-id="live-sessions-filters" sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1.5, flexWrap: "wrap" }}>
-                  <SessionFilterChips options={filterOptions} value={filter} onChange={setFilter} />
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  {/* PHONE: the status chips scroll sideways at 44px on a full-width row of their own;
+                      the view switches sit under them. Above `sm` this is the wrapping row it was. */}
+                  <Box sx={{ [PHONE]: { width: "100%", minWidth: 0 } }}>
+                    <SessionFilterChips
+                      scrollOnPhone={isPhone}
+                      ariaLabel={t("adminEngagementMobile.statusFilterLabel", "Session status filter")}
+                      options={filterOptions}
+                      value={filter}
+                      onChange={setFilter}
+                    />
+                  </Box>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      [PHONE]: { width: "100%", justifyContent: "space-between", "& .MuiIconButton-root": { width: 44, height: 44 } },
+                    }}
+                  >
                     {viewMode === "list" && <ViewToggle value={listView} onChange={setListView} />}
-                    <Box sx={{ display: "inline-flex", p: 0.375, borderRadius: 999, border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)" }}>
+                    <Box sx={{ display: "inline-flex", p: 0.375, borderRadius: 999, border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)", [PHONE]: { marginInlineStart: "auto" } }}>
                       {([
                         { key: "list", icon: "mdi:view-grid-outline", label: t("adminLiveSessions.viewList", "List") },
                         { key: "calendar", icon: "mdi:calendar-month-outline", label: t("adminLiveSessions.viewCalendar", "Calendar") },
@@ -559,6 +582,7 @@ export default function AdminLiveSessionsPage() {
                               border: "none", cursor: "pointer", fontSize: "0.8rem", fontWeight: 700, fontFamily: "inherit",
                               bgcolor: active ? "var(--accent-indigo)" : "transparent",
                               color: active ? "#fff" : "var(--font-secondary)",
+                              [PHONE]: { minHeight: 44, px: 2 },
                             }}>
                             <IconWrapper icon={v.icon} size={16} />
                             {v.label}
@@ -572,6 +596,8 @@ export default function AdminLiveSessionsPage() {
                 {/* Batch/course facet filter - only when the tenant actually spans several. */}
                 {facetOptions.length >= 2 && (
                   <SessionFilterChips
+                    scrollOnPhone={isPhone}
+                    ariaLabel={t("adminEngagementMobile.facetFilterLabel", "Batch and course filter")}
                     options={[
                       { key: "", label: t("adminLiveSessions.filterAllFacets", "All batches & courses") },
                       ...facetOptions.map((f) => ({ key: f.key, label: f.label })),

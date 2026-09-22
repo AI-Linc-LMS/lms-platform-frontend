@@ -15,7 +15,9 @@ import {
 import type { SxProps, Theme } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { J, R, SHADOW, TYPE, focusRing, tint } from "./jobsTokens";
+import { PHONE } from "@/components/common/mobile/phone";
+import { J, R, SHADOW, TYPE, adminPhone, focusRing, tint } from "./jobsTokens";
+import { useJobsSurface } from "./JobsScope";
 import { MicroRuleList } from "./Surfaces";
 import { JButton } from "./JButton";
 
@@ -76,6 +78,7 @@ export function JModal({
   // expressed in CSS, and a dialog is never server-rendered while closed.
   const isCompact = useMediaQuery(theme.breakpoints.down("md"));
   const [discardOpen, setDiscardOpen] = useState(false);
+  const { surface } = useJobsSurface();
 
   const auto = useId().replace(/:/g, "");
   const titleId = `jm-${auto}-title`;
@@ -103,6 +106,9 @@ export function JModal({
         aria-describedby={description ? descId : undefined}
         slotProps={{
           paper: {
+            // The dialog is portalled out of the JobsScope element, so the surface travels with
+            // it: admin phone rules (`adminPhone`) then reach a status pill inside a sheet too.
+            ...({ "data-jobs-surface": surface } as Record<string, string>),
             sx: [
               {
                 borderRadius: asFullscreen
@@ -174,7 +180,7 @@ export function JModal({
           )}
           <Box sx={{ minWidth: 0, flex: 1 }}>
             {eyebrow && (
-              <Typography sx={{ ...TYPE.eyebrow, color: J.ink3, mb: 0.5 }}>{eyebrow}</Typography>
+              <Typography sx={{ ...TYPE.eyebrow, color: J.ink3, mb: 0.5, ...adminPhone({ fontSize: "0.75rem" }) }}>{eyebrow}</Typography>
             )}
             <DialogTitle id={titleId} sx={{ ...TYPE.h3, p: 0, m: 0 }}>
               {title}
@@ -196,6 +202,9 @@ export function JModal({
               color: J.ink3,
               "&:hover": { bgcolor: J.surface3, color: J.ink },
               ...focusRing,
+              // Admin sheets on a phone: a 44px close. The dialog is portalled out of the
+              // JobsScope element, so the surface comes from context, not a CSS ancestor.
+              ...(surface === "admin" ? { [PHONE]: { width: 44, height: 44, top: 6, insetInlineEnd: 4 } } : null),
             }}
           >
             <IconWrapper icon="mdi:close" size={20} />
