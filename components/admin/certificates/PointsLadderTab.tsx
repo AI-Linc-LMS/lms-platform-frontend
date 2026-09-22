@@ -6,7 +6,6 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   Box,
   Button,
-  Dialog,
   DialogContent,
   IconButton,
   MenuItem,
@@ -48,6 +47,8 @@ import {
   quietButtonSx,
   slugify,
 } from "./shared";
+import { PHONE } from "@/components/common/mobile/phone";
+import { SheetDialog } from "@/components/admin/SheetDialog";
 
 /**
  * The points ladder: the rungs a learner climbs on total points, each bound to
@@ -427,7 +428,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                   <Stack key={row.key} spacing={0.75} alignItems="center" sx={{ width: 112 }}>
                     <Typography
                       sx={{
-                        fontSize: "0.72rem",
+                        fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                         fontWeight: 800,
                         fontFamily: "var(--font-mono)",
                         color: invalid ? "var(--error-500)" : "var(--font-primary)",
@@ -458,7 +459,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                     </Box>
                     <Typography
                       sx={{
-                        fontSize: "0.72rem",
+                        fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                         fontWeight: 700,
                         color: "var(--font-primary)",
                         textAlign: "center",
@@ -502,7 +503,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
               <TableRow
                 sx={{
                   "& th": {
-                    fontSize: "0.72rem",
+                    fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                     fontWeight: 600,
                     letterSpacing: "0.06em",
                     textTransform: "uppercase",
@@ -858,7 +859,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
         onCancel={() => setConfirmReset(false)}
       />
 
-      <Dialog
+      <SheetDialog
         open={Boolean(previewTemplate)}
         onClose={() => setPreviewTemplate(null)}
         maxWidth="md"
@@ -887,7 +888,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
             </Box>
           ) : null}
         </DialogContent>
-      </Dialog>
+      </SheetDialog>
     </Stack>
   );
 }

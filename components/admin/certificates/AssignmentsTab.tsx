@@ -46,6 +46,7 @@ import {
   fieldSx,
   quietButtonSx,
 } from "./shared";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * Which design a course or an assessment awards, and on what criterion.
@@ -396,7 +397,7 @@ export function AssignmentsTab({
                         },
                       }}
                       secondaryTypographyProps={{
-                        sx: { fontSize: "0.72rem", color: "var(--font-secondary)" },
+                        sx: { fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "var(--font-secondary)" },
                       }}
                     />
                     <Box sx={{ color: active ? "var(--ai-violet)" : "var(--font-tertiary)", display: "inline-flex" }}>

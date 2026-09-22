@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   Box,
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -36,6 +35,8 @@ import {
   type TemplatePreviewContext,
 } from "./previewPayload";
 import { MetaPill } from "./shared";
+import { PHONE } from "@/components/common/mobile/phone";
+import { SheetDialog } from "@/components/admin/SheetDialog";
 
 /**
  * Picking a certificate design, the same way in every module.
@@ -251,7 +252,7 @@ export function TemplatePickerField({
       {label ? (
         <Typography
           sx={{
-            fontSize: "0.72rem",
+            fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
             fontWeight: 800,
             letterSpacing: "0.08em",
             textTransform: "uppercase",
@@ -369,7 +370,7 @@ export function TemplatePickerField({
         </Box>
       </Box>
 
-      <Dialog
+      <SheetDialog
         open={galleryOpen}
         onClose={() => setGalleryOpen(false)}
         maxWidth="lg"
@@ -498,7 +499,7 @@ export function TemplatePickerField({
             </Button>
           </Stack>
         </DialogActions>
-      </Dialog>
+      </SheetDialog>
     </Box>
   );
 }

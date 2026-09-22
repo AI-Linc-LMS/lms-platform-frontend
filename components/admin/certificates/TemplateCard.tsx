@@ -38,6 +38,7 @@ const DEFAULT_FOR_FALLBACK: Record<CertificateSourceKind, string> = {
   points: "Points ladder",
 };
 import { MetaPill, Surface, mediaFrameSx, previewPayloadFromTemplate } from "./shared";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * One design in the library.
@@ -151,7 +152,7 @@ export function TemplateCard({
               sx={{
                 display: "block",
                 mt: 0.25,
-                fontSize: "0.72rem",
+                fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                 color: "var(--font-secondary)",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
