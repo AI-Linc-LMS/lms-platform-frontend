@@ -428,6 +428,37 @@ export interface AssessmentDetail extends Assessment {
   subjectiveQuestionSection?: AssessmentSubjectiveSectionWrite[];
 }
 
+/** What the builder must require of the current caller, from the rules create enforces. */
+export interface AssessmentBuilderConfig {
+  /** A new paper must be given to at least one batch. */
+  batch_required: boolean;
+  /** Always false since legacy course tags stopped targeting anything; kept for clarity. */
+  course_required: boolean;
+}
+
+/**
+ * The builder's required-field rules for the signed-in user. Returns null when the server cannot
+ * say (an older backend without the endpoint, or a failed request) so the caller falls back to
+ * its role rule instead of blocking the form.
+ */
+export const getAssessmentBuilderConfig = async (
+  clientId: string | number
+): Promise<AssessmentBuilderConfig | null> => {
+  try {
+    const response = await apiClient.get(
+      `/admin-dashboard/api/clients/${clientId}/assessment-builder-config/`
+    );
+    const data = response.data as Partial<AssessmentBuilderConfig> | undefined;
+    if (typeof data?.batch_required !== "boolean") return null;
+    return {
+      batch_required: data.batch_required,
+      course_required: data.course_required === true,
+    };
+  } catch {
+    return null;
+  }
+};
+
 /**
  * Get all assessments for a client
  */
@@ -1719,6 +1750,7 @@ export const revokeAssessmentRetake = async (
 };
 
 export const adminAssessmentService = {
+  getAssessmentBuilderConfig,
   getAssessments,
   getAssessmentById,
   createAssessment,

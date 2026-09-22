@@ -150,8 +150,13 @@ interface AssessmentSettingsSectionProps {
   /** Batches this paper is given to. Every ACTIVE member of each receives it. */
   cohortIds: number[];
   cohorts: { id: number; name: string }[];
-  /** Instructors author for their own batches, so the server refuses a paper with none. */
+  /**
+   * Non-admins author for their own batches, so the server refuses their paper with none. The
+   * caller takes this from the server's builder-config, not from the role string.
+   */
   batchRequired?: boolean;
+  /** Set once the author has tried to move on without a batch; shown as the field's error. */
+  batchError?: string | null;
   loadingCohorts?: boolean;
   colleges: string[];
   onDurationChange: (value: number) => void;
@@ -616,6 +621,7 @@ export function AssessmentSettingsSection({
   cohortIds,
   cohorts,
   batchRequired = false,
+  batchError = null,
   loadingCohorts = false,
   colleges,
   onDurationChange,
@@ -911,6 +917,7 @@ export function AssessmentSettingsSection({
               cohort_bindings and cohort.access gates the open - but the only way to create one
               was the cohort screen, one batch at a time. */}
           <Autocomplete
+            id="assessment-batches-field"
             multiple
             options={cohorts}
             getOptionLabel={(option: any) => option?.name ?? `Batch ${option?.id ?? ""}`}
@@ -932,13 +939,18 @@ export function AssessmentSettingsSection({
               <TextField
                 {...params}
                 label={batchRequired ? "Batches / cohorts" : "Batches / cohorts (optional)"}
+                // The asterisk, without `required` on the input itself: the chips are not the
+                // input's value, so a native required check would always read it as empty.
+                InputLabelProps={{ ...params.InputLabelProps, required: batchRequired }}
                 placeholder="Search and select batches"
                 helperText={
-                  batchRequired && cohortIds.length === 0
-                    ? "Pick at least one batch. You author for the batches you teach, not the whole institute."
-                    : "Everyone currently in a selected batch gets this assessment. Removing a batch takes it away from them."
+                  batchError
+                    ? batchError
+                    : batchRequired && cohortIds.length === 0
+                      ? "Required. Pick at least one batch. You author for the batches you teach, not the whole institute."
+                      : "Everyone currently in a selected batch gets this assessment. Removing a batch takes it away from them."
                 }
-                error={batchRequired && cohortIds.length === 0}
+                error={Boolean(batchError)}
                 FormHelperTextProps={helperFormProps}
               />
             )}
