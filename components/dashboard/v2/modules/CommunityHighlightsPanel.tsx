@@ -7,6 +7,7 @@ import { Icon } from "@iconify/react";
 import { communityService, type Thread } from "@/lib/services/community.service";
 import { avatarColor } from "../parts";
 import { ModuleEmpty, ModuleHeader, ModulePanel, ModuleRowsSkeleton } from "./shared";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 const GRADIENT = "linear-gradient(135deg, #a855f7, #ec4899)";
 
@@ -58,20 +59,20 @@ export function CommunityHighlightsPanel() {
                   </Box>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     {t.is_pinned && (
-                      <Typography component="span" sx={{ fontSize: "0.62rem", fontWeight: 800, color: "#c026d3", mr: 0.5 }}>
+                      <Typography component="span" sx={{ fontSize: phoneText(0.62), fontWeight: 800, color: "#c026d3", mr: 0.5 }}>
                         <Icon icon="mdi:pin" width={11} style={{ verticalAlign: "-2px" }} /> PINNED
                       </Typography>
                     )}
                     <Typography noWrap sx={{ fontWeight: 700, fontSize: "0.86rem", color: "#0f172a" }}>{t.title}</Typography>
                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 0.4 }}>
-                      <Typography noWrap sx={{ fontSize: "0.68rem", color: "#94a3b8", fontWeight: 600, maxWidth: 96 }}>{name}</Typography>
+                      <Typography noWrap sx={{ fontSize: phoneText(0.68), color: "#94a3b8", fontWeight: 600, maxWidth: 96 }}>{name}</Typography>
                       <Stack direction="row" spacing={0.3} alignItems="center">
                         <Icon icon="mdi:arrow-up-bold" width={13} color="#a855f7" />
-                        <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, color: "#7c3aed" }}>{netScore(t)}</Typography>
+                        <Typography sx={{ fontSize: phoneText(0.7), fontWeight: 800, color: "#7c3aed" }}>{netScore(t)}</Typography>
                       </Stack>
                       <Stack direction="row" spacing={0.3} alignItems="center">
                         <Icon icon="mdi:comment-outline" width={12} color="#94a3b8" />
-                        <Typography sx={{ fontSize: "0.7rem", fontWeight: 700, color: "#64748b" }}>{t.comments_count ?? 0}</Typography>
+                        <Typography sx={{ fontSize: phoneText(0.7), fontWeight: 700, color: "#64748b" }}>{t.comments_count ?? 0}</Typography>
                       </Stack>
                     </Stack>
                   </Box>

@@ -7,6 +7,7 @@ import { Icon } from "@iconify/react";
 import { jobsV2Service, type JobV2 } from "@/lib/services/jobs-v2.service";
 import { readProfileLock, useProfileGate } from "@/lib/contexts/ProfileGateContext";
 import { ModuleEmpty, ModuleHeader, ModulePanel, ModuleRowsSkeleton, Pill, timeUntil } from "./shared";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 const GRADIENT = "linear-gradient(135deg, #10b981, #0d9488)";
 const SOON_MS = 14 * 86_400_000;
@@ -96,7 +97,7 @@ export function JobOpeningsPanel() {
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography noWrap sx={{ fontWeight: 700, fontSize: "0.86rem", color: "#0f172a" }}>{j.job_title}</Typography>
                     <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt: 0.4 }}>
-                      <Typography noWrap sx={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 600, maxWidth: 120 }}>
+                      <Typography noWrap sx={{ fontSize: phoneText(0.72), color: "#64748b", fontWeight: 600, maxWidth: 120 }}>
                         {j.company_name}{j.location ? ` · ${j.location}` : ""}
                       </Typography>
                       {applied ? (

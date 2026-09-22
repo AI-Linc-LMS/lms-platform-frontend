@@ -6,6 +6,7 @@ import { Icon } from "@iconify/react";
 import { AnimatedRing } from "@/components/scorecard/shared";
 import type { DashboardCourse } from "@/lib/types/dashboard";
 import { BAND_STYLE, SignalBar } from "./parts";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 const SIGNALS: { key: "coverage" | "precision" | "craft" | "clutch"; icon: string; label: string; sub: string }[] = [
   { key: "coverage", icon: "mdi:book-open-variant", label: "Curriculum Coverage", sub: "topics & skills completed" },
@@ -78,14 +79,14 @@ export function CourseReadinessCard({
               {overall.percent == null ? (
                 <>
                   <Typography sx={{ fontWeight: 900, fontSize: "1.5rem", color: "rgba(255,255,255,0.9)", lineHeight: 1 }}>New</Typography>
-                  <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 1, color: "rgba(255,255,255,0.6)", mt: 0.4 }}>TO START</Typography>
+                  <Typography sx={{ fontSize: phoneText(0.62), fontWeight: 800, letterSpacing: 1, color: "rgba(255,255,255,0.6)", mt: 0.4 }}>TO START</Typography>
                 </>
               ) : (
                 <>
                   <Typography sx={{ fontWeight: 900, fontSize: "2rem", color: "#fff", lineHeight: 1 }}>
                     {overall.percent}<Box component="span" sx={{ fontSize: "1rem" }}>%</Box>
                   </Typography>
-                  <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 1, color: "rgba(255,255,255,0.6)", mt: 0.4 }}>READY</Typography>
+                  <Typography sx={{ fontSize: phoneText(0.62), fontWeight: 800, letterSpacing: 1, color: "rgba(255,255,255,0.6)", mt: 0.4 }}>READY</Typography>
                 </>
               )}
             </Box>
