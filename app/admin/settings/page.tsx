@@ -25,6 +25,8 @@ import {
   uploadFavicon,
 } from "@/lib/services/admin/branding.service";
 import { MediaField } from "@/components/admin/branding/MediaField";
+import { PHONE } from "@/components/common/mobile/phone";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 const FAVICON_ACCEPT =
   "image/png,image/webp,image/x-icon,image/vnd.microsoft.icon";
@@ -201,7 +203,7 @@ function LivePreview({
             ) : (
               <Box sx={{ width: 16, height: 16, borderRadius: "50%", bgcolor: "#c4b5fd", flexShrink: 0 }} />
             )}
-            <Typography noWrap sx={{ fontSize: "0.72rem", fontWeight: 600, color: "#334155" }}>
+            <Typography noWrap sx={{ fontSize: phoneText(0.72), fontWeight: 600, color: "#334155" }}>
               {appName}
             </Typography>
             <Box component="span" sx={{ ml: 0.25, color: "#94a3b8", fontSize: "0.8rem", lineHeight: 1 }}>
@@ -222,7 +224,7 @@ function LivePreview({
           }}
         >
           <Box sx={{ width: 10, height: 10, borderRadius: "50%", border: "2px solid #cbd5e1", flexShrink: 0 }} />
-          <Typography noWrap sx={{ fontSize: "0.72rem", color: "#94a3b8", fontFamily: "ui-monospace, monospace" }}>
+          <Typography noWrap sx={{ fontSize: phoneText(0.72), color: "#94a3b8", fontFamily: "ui-monospace, monospace" }}>
             app.yourdomain.com
           </Typography>
         </Box>
@@ -265,7 +267,7 @@ function LivePreview({
                   px: 1.25,
                 }}
               >
-                <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.4)" }}>{ph}</Typography>
+                <Typography sx={{ fontSize: phoneText(0.72), color: "rgba(255,255,255,0.4)" }}>{ph}</Typography>
               </Box>
             ))}
           </Stack>
@@ -464,6 +466,11 @@ export default function AdminSettingsPage() {
             gridTemplateColumns: { xs: "1fr", lg: "minmax(0,1fr) 400px" },
             gap: 2.5,
             alignItems: "start",
+            // Phone: 44px inputs (the small field is 40px), and a column a long URL cannot widen.
+            [PHONE]: {
+              gridTemplateColumns: "minmax(0, 1fr)",
+              "& .MuiInputBase-sizeSmall:not(.MuiInputBase-multiline)": { minHeight: 44 },
+            },
           }}
         >
           <Box sx={{ display: "flex", flexDirection: "column", gap: 2.5 }}>
