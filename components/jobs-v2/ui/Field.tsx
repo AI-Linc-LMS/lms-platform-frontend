@@ -24,6 +24,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { formatBytes } from "@/lib/jobs-v2/format";
 import { statusOptions, type StatusKind } from "@/lib/jobs-v2/status";
 import { CTL_H, J, MOTION, R, SHADOW, TYPE, focusRing, srOnly } from "./jobsTokens";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /* ==========================================================================
  * Shared field plumbing.
@@ -405,6 +406,24 @@ export interface JSelectProps extends BaseFieldProps {
   "aria-label"?: string;
 }
 
+/**
+ * The field is 44px on a phone, but a Select opens from its inner display box, which drew 30px
+ * inside it: a tap near the field's top or bottom edge did nothing. On a phone the box fills the
+ * field; the -1px margins give back the border so the field stays 44px.
+ */
+const SELECT_PHONE_SX = {
+  [PHONE]: {
+    "& .MuiSelect-select.MuiInputBase-input": {
+      boxSizing: "border-box",
+      minHeight: CTL_H.touch,
+      marginBlock: "-1px",
+      display: "flex",
+      alignItems: "center",
+      paddingBlock: 0,
+    },
+  },
+} as const;
+
 export function JSelect({
   label,
   required,
@@ -470,7 +489,7 @@ export function JSelect({
         disabled={disabled}
         onChange={(event) => onChange(String(event.target.value))}
         renderValue={render}
-        input={<BareInput sx={controlSx({ error: Boolean(error), disabled, dense })} />}
+        input={<BareInput sx={{ ...(controlSx({ error: Boolean(error), disabled, dense }) as object), ...SELECT_PHONE_SX }} />}
         inputProps={{
           "aria-required": required || undefined,
           "aria-invalid": error ? true : undefined,

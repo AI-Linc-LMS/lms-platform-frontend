@@ -65,8 +65,9 @@ export function AdaptiveInfoTip({
           ml: 0.25,
           color: "text.secondary",
           "&:hover": { color: "#6366f1", bgcolor: "color-mix(in srgb, #6366f1 8%, transparent)" },
-          // The glyph stays 15px inline with its label; on a phone an invisible 44px hit area surrounds it.
-          [PHONE]: { position: "relative", "&::after": { content: '""', position: "absolute", inset: -12 } },
+          // The glyph stays 15px inline with its label; on a phone an invisible hit area surrounds it:
+          // the button draws 19px, so 13px on every side makes it 45px (12px left it at 43).
+          [PHONE]: { position: "relative", "&::after": { content: '""', position: "absolute", inset: -13 } },
         }}
       >
         <Icon icon="mdi:information-outline" width={15} />
