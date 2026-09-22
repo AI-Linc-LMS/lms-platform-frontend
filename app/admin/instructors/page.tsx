@@ -52,74 +52,16 @@ import {
 } from "@/lib/services/admin/admin-instructors.service";
 import { adminCourseBuilderService } from "@/lib/services/admin/admin-course-builder.service";
 import { formatDate } from "@/lib/utils/date-utils";
-import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
 import { PHONE } from "@/components/common/mobile/phone";
 import {
   CardFact,
   PHONE_FIELD_SX,
+  PhoneSheet,
   SHEET_BUTTON_SX,
   TAP,
   phoneIconButtonSx,
   useIsPhone,
-} from "@/components/admin/instructors/instructorsPhone";
-
-/**
- * A confirm-style bottom sheet for this page's phone layout. Desktop keeps each original Dialog;
- * this only renders below `sm`. While `busy`, the sheet cannot be dismissed and both actions are
- * disabled, so a request in flight is never orphaned by a stray swipe.
- */
-function PhoneSheet({
-  open,
-  onClose,
-  busy,
-  title,
-  cancelLabel,
-  confirmLabel,
-  onConfirm,
-  confirmColor = "primary",
-  confirmDisabled,
-  children,
-}: {
-  open: boolean;
-  onClose: () => void;
-  busy: boolean;
-  title: React.ReactNode;
-  cancelLabel: string;
-  confirmLabel?: React.ReactNode;
-  onConfirm?: () => void;
-  confirmColor?: "primary" | "error";
-  confirmDisabled?: boolean;
-  children: React.ReactNode;
-}) {
-  return (
-    <ResponsiveDialog
-      open={open}
-      onClose={busy ? () => undefined : onClose}
-      hideCloseButton={busy}
-      title={title}
-      footer={
-        <>
-          <Button onClick={onClose} disabled={busy} variant="outlined" color="inherit" sx={SHEET_BUTTON_SX}>
-            {cancelLabel}
-          </Button>
-          {onConfirm && (
-            <Button
-              onClick={onConfirm}
-              disabled={busy || confirmDisabled}
-              variant="contained"
-              color={confirmColor}
-              sx={SHEET_BUTTON_SX}
-            >
-              {confirmLabel}
-            </Button>
-          )}
-        </>
-      }
-    >
-      {children}
-    </ResponsiveDialog>
-  );
-}
+} from "@/components/admin/adminPhone";
 
 interface CourseOption {
   id: number;

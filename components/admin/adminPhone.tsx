@@ -1,11 +1,12 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { Box, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { Box, Button, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { PHONE } from "@/components/common/mobile/phone";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
 
 /**
- * Phone pieces for the admin instructors page and its dialogs.
+ * Phone pieces shared by the admin instructors, scorecard and projects pages.
  *
  * Everything that changes size is written under `PHONE` (max-width 599.95px), never as an MUI
  * `xs` value, because `xs` is emitted inside `@media (min-width:0px)` and would reach the desktop.
@@ -34,7 +35,65 @@ export const phoneIconButtonSx = { [PHONE]: { width: TAP, height: TAP } } as con
 /** A small field is 40px; on a phone its input is a 48px thumb target. */
 export const PHONE_FIELD_SX = { [PHONE]: { "& .MuiInputBase-root": { minHeight: 48 } } } as const;
 
-/** One labelled fact on an instructor card: "Phone  +91 …". */
+/**
+ * A confirm-style bottom sheet for this page's phone layout. Desktop keeps each original Dialog;
+ * this only renders below `sm`. While `busy`, the sheet cannot be dismissed and both actions are
+ * disabled, so a request in flight is never orphaned by a stray swipe.
+ */
+export function PhoneSheet({
+  open,
+  onClose,
+  busy,
+  title,
+  cancelLabel,
+  confirmLabel,
+  onConfirm,
+  confirmColor = "primary",
+  confirmDisabled,
+  children,
+}: {
+  open: boolean;
+  onClose: () => void;
+  busy: boolean;
+  title: ReactNode;
+  cancelLabel: string;
+  confirmLabel?: ReactNode;
+  onConfirm?: () => void;
+  confirmColor?: "primary" | "error";
+  confirmDisabled?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <ResponsiveDialog
+      open={open}
+      onClose={busy ? () => undefined : onClose}
+      hideCloseButton={busy}
+      title={title}
+      footer={
+        <>
+          <Button onClick={onClose} disabled={busy} variant="outlined" color="inherit" sx={SHEET_BUTTON_SX}>
+            {cancelLabel}
+          </Button>
+          {onConfirm && (
+            <Button
+              onClick={onConfirm}
+              disabled={busy || confirmDisabled}
+              variant="contained"
+              color={confirmColor}
+              sx={SHEET_BUTTON_SX}
+            >
+              {confirmLabel}
+            </Button>
+          )}
+        </>
+      }
+    >
+      {children}
+    </ResponsiveDialog>
+  );
+}
+
+/** One labelled fact on a phone card: "Phone  +91 ...". */
 export function CardFact({ label, children }: { label: ReactNode; children: ReactNode }) {
   return (
     <Box sx={{ display: "flex", alignItems: "baseline", gap: 1, minWidth: 0 }}>

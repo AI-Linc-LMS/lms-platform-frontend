@@ -33,7 +33,7 @@ import {
 } from "@/lib/services/admin/admin-adaptive-course.service";
 import { Course } from "@/lib/services/courses.service";
 import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
-import { PHONE_FIELD_SX, SHEET_BUTTON_SX, phoneButtonSx, useIsPhone } from "./instructorsPhone";
+import { PHONE_FIELD_SX, SHEET_BUTTON_SX, phoneButtonSx, useIsPhone } from "@/components/admin/adminPhone";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
