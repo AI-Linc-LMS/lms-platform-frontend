@@ -473,7 +473,9 @@ export default function AdminScorecardPage() {
                     [PHONE]: {
                       minWidth: 0,
                       flexBasis: "100%",
-                      "& .MuiAutocomplete-popupIndicator, & .MuiAutocomplete-clearIndicator": { width: 44, height: 44 },
+                      // The indicators keep MUI's size: the input's end padding is reserved for 26px
+                      // buttons, so 44px ones slid a selected name under them. The field itself is
+                      // the tap target and opens the list anywhere it is touched.
                     },
                   }}
                 />
