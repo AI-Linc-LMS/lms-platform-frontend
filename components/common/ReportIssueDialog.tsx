@@ -528,7 +528,7 @@ export function ReportIssueDialog({
         <Box
           sx={{
             // Small MUI inputs are 40px; a thumb needs 44.
-            "& .MuiInputBase-sizeSmall": { minHeight: 44 },
+            "& .MuiInputBase-inputSizeSmall": { paddingTop: "10.5px", paddingBottom: "10.5px" },
             // The country-flag picker inside the WhatsApp field.
             "& .MuiInputAdornment-root .MuiIconButton-root": { minWidth: 44, minHeight: 44 },
           }}
