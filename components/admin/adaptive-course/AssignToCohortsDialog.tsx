@@ -13,12 +13,14 @@ import {
   Typography,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { PHONE_TEXT, phoneSheetDialogSx } from "./coursePhone";
 import { useToast } from "@/components/common/Toast";
 import {
   adminCohortsService,
   type CohortListItem,
 } from "@/lib/services/admin/admin-cohorts.service";
 import { AdminSectionSkeleton } from "@/components/courses/CourseSkeletons";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface Props {
   open: boolean;
@@ -119,7 +121,7 @@ export function AssignToCohortsDialog({ open, onClose, courseId, courseTitle }: 
   }
 
   return (
-    <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="sm" fullWidth>
+    <Dialog open={open} onClose={saving ? undefined : onClose} maxWidth="sm" fullWidth sx={phoneSheetDialogSx}>
       <DialogTitle sx={{ fontWeight: 800 }}>
         Assign to cohort
         <Typography sx={{ fontSize: "0.82rem", fontWeight: 500, color: "text.secondary", mt: 0.25 }}>
@@ -180,7 +182,7 @@ export function AssignToCohortsDialog({ open, onClose, courseId, courseTitle }: 
                       px: 1,
                       py: 0.2,
                       borderRadius: 999,
-                      fontSize: "0.68rem",
+                      fontSize: "0.68rem", [PHONE]: { fontSize: PHONE_TEXT },
                       fontWeight: 800,
                       textTransform: "capitalize",
                       color: STATUS_TONE[c.status] ?? "#94a3b8",

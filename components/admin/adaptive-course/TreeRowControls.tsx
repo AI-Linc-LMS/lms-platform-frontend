@@ -3,6 +3,8 @@
 import { useCallback, useState } from "react";
 import { Box, ButtonBase, TextField, Tooltip, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { PHONE } from "@/components/common/mobile/phone";
+import { TAP } from "./coursePhone";
 
 const INDIGO = "#6366f1";
 const DANGER = "#ef4444";
@@ -82,6 +84,7 @@ export function InlineEditableTitle({
             "& .acb-rename-pencil": { opacity: 0.4, flexShrink: 0 },
             "&:hover": { bgcolor: "color-mix(in srgb, var(--border-default) 45%, transparent)" },
             "&:hover .acb-rename-pencil": { opacity: 1, color: INDIGO },
+            [PHONE]: { minHeight: TAP },
           }}
         >
           {/* Wraps rather than truncates: a clipped week title with no tooltip of its
@@ -232,6 +235,7 @@ function IconAction({
           bgcolor: `color-mix(in srgb, ${hoverColor} 12%, transparent)`,
         },
         "&:disabled": { opacity: 0.4 },
+        [PHONE]: { width: TAP, height: TAP },
       }}
     >
       <Icon icon={icon} width={width} />

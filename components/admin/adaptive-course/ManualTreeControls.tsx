@@ -8,6 +8,8 @@ import { LoadingButton } from "@/components/common/LoadingButton";
 import { useToast } from "@/components/common/Toast";
 import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { PHONE } from "@/components/common/mobile/phone";
+import { TAP } from "./coursePhone";
 
 const INDIGO = "#6366f1";
 
@@ -124,6 +126,7 @@ function GhostAddRow({
             color: INDIGO,
             bgcolor: "rgba(99, 102, 241, 0.06)",
           },
+          [PHONE]: { minHeight: TAP },
         }}
       >
         <Icon icon="mdi:plus" width={16} />
@@ -212,6 +215,7 @@ function GhostAddRow({
           borderRadius: "8px",
           bgcolor: INDIGO,
           "&:hover": { bgcolor: "#4f46e5" },
+          [PHONE]: { minHeight: TAP },
         }}
       >
         Add
