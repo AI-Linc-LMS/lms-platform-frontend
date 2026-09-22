@@ -10,7 +10,7 @@ import { isClientOrgAdminRole } from "@/lib/auth/role-utils";
 import {
   adminInsightsService,
   type AdaptiveCourseOption,
-  type AtRiskRow,
+  type AtRiskPayload,
   type EngagementPayload,
   type LeaderboardPayload,
   type LearningPayload,
@@ -64,7 +64,7 @@ export default function AdminDashboardPage() {
   const [error, setError] = useState<string | null>(null);
 
   const [pulse, setPulse] = useState<PulsePayload | null>(null);
-  const [atRisk, setAtRisk] = useState<{ results: AtRiskRow[]; rules: Record<string, string> } | null>(null);
+  const [atRisk, setAtRisk] = useState<AtRiskPayload | null>(null);
   const [board, setBoard] = useState<LeaderboardPayload | null>(null);
   const [engagement, setEngagement] = useState<EngagementPayload | null>(null);
   const [learning, setLearning] = useState<LearningPayload | null>(null);
@@ -151,7 +151,7 @@ export default function AdminDashboardPage() {
         });
 
     settle(adminInsightsService.getPulse(range, courseId), setPulse);
-    settle(adminInsightsService.getAtRisk(10, courseId), setAtRisk, { results: [], rules: {} });
+    settle(adminInsightsService.getAtRisk(10, courseId), setAtRisk, { results: [], total: 0, rules: {} });
     settle(adminInsightsService.getLeaderboard(courseId, 10), setBoard, {
       rows: [], scope: { course_id: courseId, label: "" }, total_ranked: 0,
     });
@@ -203,7 +203,7 @@ export default function AdminDashboardPage() {
       ? `${active.toLocaleString()} of ${total.toLocaleString()} students (${pct}%) did something in the ${periodLabel}, ${direction}.`
       : `${active.toLocaleString()} students were active in the ${periodLabel}.`;
 
-    const risk = atRisk?.results.length ?? 0;
+    const risk = atRisk?.total ?? 0;
     const tail = risk > 0
       ? ` ${risk} ${risk === 1 ? "student needs" : "students need"} attention.`
       : " Nobody is currently flagged as falling behind.";
@@ -357,7 +357,7 @@ export default function AdminDashboardPage() {
 
         <Box data-tour-id="dashboard-atrisk">
           <DeckSection title="Who needs help" />
-          <AtRiskPanel atRisk={atRisk} loading={busy(atRisk)} />
+          <AtRiskPanel atRisk={atRisk} loading={busy(atRisk)} courseId={courseId} />
         </Box>
 
         <Box>

@@ -14,9 +14,39 @@ const INACTIVE_DAYS = 30;
 const LOW_COMPLETION_PCT = 30;
 
 /**
+ * What "at risk" means. The SERVER decides it (admin_dashboard/insights/at_risk.py) and both the
+ * dashboard's "Needs attention" list and this directory's "At risk" segment read that one
+ * verdict. This copy is only the wording shown next to the chip; both payloads also ship the
+ * server's own text, which wins when present.
+ */
+export const AT_RISK_RULES: Record<string, string> = {
+  never_started: "Enrolled for 21+ days with no activity recorded yet.",
+  gone_quiet: "No activity for 14 days or more.",
+  behind_peers:
+    "Fewer activities done in the last 90 days than most active students here (bottom quarter).",
+  struggling:
+    "Under 50% correct on first attempts at quizzes and coding in the last 30 days (3+ attempts).",
+};
+
+export const AT_RISK_ELIGIBILITY =
+  "Checked: active student accounts enrolled in a course, on the platform for 21+ days. A student is at risk when they match at least one rule.";
+
+/**
+ * The Manage Students URL that lists every at-risk student - the dashboard's "View all".
+ * `courseId` is the dashboard's ADAPTIVE course filter; the directory evaluates the same rule
+ * for that course so the two lists are the same set.
+ */
+export function atRiskSegmentHref(courseId?: number | null): string {
+  const params = new URLSearchParams({ segment: "at_risk" });
+  if (courseId != null) params.set("riskCourse", String(courseId));
+  return `/admin/manage-students?${params.toString()}`;
+}
+
+/**
  * Engagement-health flags for a student, derived from data the directory
- * already has. Shared by the directory's at-risk badge and the "segment"
- * quick-filters so both agree on what "at risk" means.
+ * already has. `atRisk` is the server's verdict, not a browser-side guess:
+ * the browser rule (legacy enrolment + legacy completion) disagreed with the
+ * dashboard on most students.
  */
 export function studentRiskFlags(
   student: Student,
@@ -33,10 +63,7 @@ export function studentRiskFlags(
   const lowCompletion =
     !!stats && stats.completion_percentage < LOW_COMPLETION_PCT;
   const noStreak = (student.current_streak ?? 0) === 0;
-  // Only flag enrolled students as at-risk - an unenrolled student with no
-  // activity is expected, not a concern.
-  const enrolled = (student.enrollment_count ?? 0) > 0;
-  const atRisk = enrolled && (inactive || lowCompletion);
+  const atRisk = student.at_risk === true;
   return { inactive, lowCompletion, noStreak, atRisk };
 }
 

@@ -100,6 +100,36 @@ export interface AtRiskRow {
   rules: string[];
   reason: string;
   severity: number;
+  /** ISO timestamp of the last recorded activity; null when they never started. */
+  last_active?: string | null;
+}
+
+/**
+ * The at-risk list. The SAME server rule backs Manage Students' "At risk" segment
+ * (admin_dashboard/insights/at_risk.py), so `total` is exactly what that segment lists.
+ */
+export interface AtRiskPayload {
+  /** The top rows only; the server caps the list at `limit`. */
+  results: AtRiskRow[];
+  /** Every student the rule flags. Not `results.length`: the list is capped. */
+  total: number;
+  /** rule key -> plain-English definition, as applied by the server. */
+  rules: Record<string, string>;
+  /** Who the rules are checked against. */
+  eligibility?: string;
+  degraded?: boolean;
+}
+
+/** Fill the fields an older server did not send, so the UI never reads `undefined` as zero. */
+export function normalizeAtRisk(data: Partial<AtRiskPayload> | null | undefined): AtRiskPayload {
+  const results = Array.isArray(data?.results) ? data.results : [];
+  return {
+    results,
+    total: typeof data?.total === "number" ? data.total : results.length,
+    rules: data?.rules ?? {},
+    eligibility: data?.eligibility,
+    degraded: data?.degraded,
+  };
 }
 
 export interface EngagementPayload {
@@ -195,16 +225,13 @@ export const adminInsightsService = {
     return res.data;
   },
 
-  getAtRisk: async (
-    limit = 10,
-    courseId?: number | null
-  ): Promise<{ results: AtRiskRow[]; rules: Record<string, string> }> => {
+  getAtRisk: async (limit = 10, courseId?: number | null): Promise<AtRiskPayload> => {
     const qs = new URLSearchParams({ limit: String(limit) });
     if (courseId != null) qs.set("course_id", String(courseId));
-    const res = await apiClient.get<{ results: AtRiskRow[]; rules: Record<string, string> }>(
+    const res = await apiClient.get<Partial<AtRiskPayload>>(
       `/admin-dashboard/api/clients/${config.clientId}/insights/at-risk/?${qs.toString()}`
     );
-    return res.data;
+    return normalizeAtRisk(res.data);
   },
 
   getEngagement: async (range: RangeKey, courseId?: number | null): Promise<EngagementPayload> => {

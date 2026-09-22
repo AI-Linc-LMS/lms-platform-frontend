@@ -40,6 +40,15 @@ export interface Student {
   enrollment_count: number;
   /** Whether the student has saved a resume on their profile */
   has_saved_resume?: boolean;
+  /**
+   * The server's at-risk verdict - the same rule as the dashboard's "Needs attention" list.
+   * Absent on an older server, which reads as "not at risk".
+   */
+  at_risk?: boolean;
+  /** Rule keys that fired (never_started, gone_quiet, behind_peers, struggling). */
+  risk_rules?: string[];
+  /** Plain-English reason, e.g. "no activity for 30 days". */
+  risk_reason?: string;
   /** Active batches this student belongs to. */
   cohorts?: { id: number; name: string }[];
   /**
@@ -80,6 +89,10 @@ export interface ManageStudentsParams {
   limit?: number;
   sort_by?: string;
   sort_order?: "asc" | "desc";
+  /** Only "at_risk" is understood: narrows to the at-risk rule server-side. */
+  segment?: "at_risk";
+  /** ADAPTIVE course id to evaluate the at-risk rule for (the dashboard's course filter). */
+  risk_course_id?: number;
 }
 
 export interface ManageStudentsResponse {
@@ -98,6 +111,12 @@ export interface ManageStudentsResponse {
     is_active?: string | null;
     sort_by?: string;
     sort_order?: string;
+  };
+  /** The at-risk rule text the server applied. */
+  at_risk_definition?: {
+    rules: Record<string, string>;
+    eligibility: string;
+    scope?: { course_id: number | null; label: string };
   };
 }
 
@@ -444,6 +463,9 @@ export const adminStudentService = {
     if (params?.limit) queryParams.append("limit", params.limit.toString());
     if (params?.sort_by) queryParams.append("sort_by", params.sort_by);
     if (params?.sort_order) queryParams.append("sort_order", params.sort_order);
+    if (params?.segment) queryParams.append("segment", params.segment);
+    if (params?.risk_course_id)
+      queryParams.append("risk_course_id", params.risk_course_id.toString());
 
     const queryString = queryParams.toString();
     const url = `/admin-dashboard/api/clients/${
