@@ -7,6 +7,7 @@ import { ScrollRow } from "@/components/common/mobile/ScrollRow";
 import { SessionMaterialsDisclosure } from "@/components/live-sessions/SessionMaterialsDisclosure";
 import type { StudentLiveSession } from "@/lib/services/live-sessions";
 import { formatSessionClock, formatSessionTime } from "@/lib/utils/session-time";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /* ==========================================================================
  * The three cards a learner's Live Sessions list is made of.
@@ -213,7 +214,7 @@ export function UpcomingCard({ s, isNext, reminderOn, onAddCalendar, onRemind }:
         <Box sx={{ display: { xs: "none", sm: "block" }, flexShrink: 0 }}>
           <DateBadge dt={s.class_datetime} tz={s.timezone} />
         </Box>
-        <Box sx={{ flex: 1, width: { xs: "100%", sm: "auto" }, minWidth: { xs: 0, sm: 200 }, display: "flex", flexDirection: "column" }}>
+        <Box data-testid="upcoming-info" sx={{ flex: 1, width: { xs: "100%", sm: "auto" }, minWidth: { xs: 0, sm: 200 }, display: "flex", flexDirection: "column", [PHONE]: { flexBasis: "100%" } }}>
           <ScrollRow
             ariaLabel="Session details"
             gutter={1.75}
@@ -286,7 +287,7 @@ export function RecordingCard({ s, watching, onWatch, onSummary }: { s: StudentL
       <Box sx={{ display: { xs: "none", sm: "block" }, flexShrink: 0 }}>
         <DateBadge dt={s.class_datetime} tz={s.timezone} />
       </Box>
-      <Box sx={{ flex: 1, width: { xs: "100%", sm: "auto" }, minWidth: { xs: 0, sm: 180 } }}>
+      <Box data-testid="recording-info" sx={{ flex: 1, width: { xs: "100%", sm: "auto" }, minWidth: { xs: 0, sm: 180 }, [PHONE]: { flexBasis: "100%" } }}>
         {/* Title on its own line on a phone, with the chips under it — on one line they squeezed
             the title to three ellipsed words. */}
         <Stack direction="row" spacing={0.75} alignItems="center" sx={{ minWidth: 0, flexWrap: { xs: "wrap", sm: "nowrap" }, rowGap: 0.5 }}>
