@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { Box, Typography } from "@mui/material";
 import { AnimatedRing } from "@/components/scorecard/shared/AnimatedRing";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface LiveTimerRingProps {
   /** Resets the timer whenever this changes - pass the current MCQ id. */
@@ -56,7 +57,7 @@ export function LiveTimerRing({ resetKey, expectedSeconds = 60, running = true, 
         <Typography sx={{ fontSize: "1.05rem", fontWeight: 800, lineHeight: 1, fontVariantNumeric: "tabular-nums" }}>
           {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, "0")}
         </Typography>
-        <Typography sx={{ fontSize: "0.6rem", color: "text.secondary", letterSpacing: "0.14em", textTransform: "uppercase", mt: 0.4 }}>
+        <Typography sx={{ fontSize: "0.6rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", letterSpacing: "0.14em", textTransform: "uppercase", mt: 0.4 }}>
           on this Q
         </Typography>
       </Box>

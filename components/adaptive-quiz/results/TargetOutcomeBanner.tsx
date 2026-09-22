@@ -3,6 +3,7 @@
 import { Box, Typography } from "@mui/material";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface TargetOutcome {
   kind: "mastered" | "improving" | "no_progress" | "first_measure";
@@ -113,7 +114,7 @@ export function TargetOutcomeBanner({ outcome }: TargetOutcomeBannerProps) {
       <Box sx={{ position: "relative", flex: 1, minWidth: 0 }}>
         <Typography
           sx={{
-            fontSize: "0.66rem",
+            fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" },
             fontWeight: 800,
             letterSpacing: "0.16em",
             textTransform: "uppercase",
@@ -173,7 +174,7 @@ export function TargetOutcomeBanner({ outcome }: TargetOutcomeBannerProps) {
         {deltaLabel && (
           <Typography
             sx={{
-              fontSize: "0.74rem",
+              fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" },
               fontWeight: 800,
               color: outcome.delta_pct && outcome.delta_pct > 0 ? "#10b981" : "#ef4444",
               mt: 0.4,

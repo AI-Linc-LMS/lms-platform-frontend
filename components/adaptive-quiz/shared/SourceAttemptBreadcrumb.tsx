@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Box, ButtonBase, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface SourceAttemptBreadcrumbProps {
   source: {
@@ -56,7 +57,7 @@ export function SourceAttemptBreadcrumb({ source, onBeforeNavigate }: SourceAtte
         border: "1px solid color-mix(in srgb, #a855f7 32%, transparent)",
         bgcolor: "color-mix(in srgb, #a855f7 8%, transparent)",
         color: "#a855f7",
-        fontSize: "0.72rem",
+        fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
         fontWeight: 800,
         letterSpacing: "0.02em",
         transition: "background 120ms ease, transform 120ms ease, border-color 120ms ease",
@@ -69,14 +70,14 @@ export function SourceAttemptBreadcrumb({ source, onBeforeNavigate }: SourceAtte
       aria-label={`Open source attempt results: ${source.quiz_title}`}
     >
       <Icon icon="mdi:arrow-u-left-top" width={14} />
-      <Typography component="span" sx={{ fontSize: "0.72rem", fontWeight: 800 }}>
+      <Typography component="span" sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800 }}>
         From: <Box component="span" sx={{ color: "text.primary" }}>{source.quiz_title}</Box>
       </Typography>
       <Box
         component="span"
         sx={{
           color: "text.secondary",
-          fontSize: "0.68rem",
+          fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" },
           fontWeight: 700,
           ml: 0.25,
         }}
