@@ -36,6 +36,18 @@ import {
   type SkillContentType,
 } from "@/lib/services/admin/admin-skills.service";
 import { SkillMappingDialog } from "@/components/admin/skill-mapping/SkillMappingDialog";
+import { PHONE } from "@/components/common/mobile/phone";
+import { ScrollRow } from "@/components/common/mobile/ScrollRow";
+import {
+  CardFact,
+  PHONE_FIELD_SX,
+  PhoneSheet,
+  TAP,
+  useIsPhone,
+} from "@/components/admin/adminPhone";
+
+/** Filter chips are 24px; on a phone they are 44px pills in a sideways row. */
+const PHONE_CHIP_SX = { [PHONE]: { height: TAP, borderRadius: 999, fontSize: "0.8125rem", px: 0.5 } } as const;
 
 const CONTENT_TYPE_OPTIONS: Array<{ value: SkillContentType; label: string; icon: string }> = [
   { value: "mcq", label: "MCQ", icon: "mdi:format-list-checks" },
@@ -64,7 +76,7 @@ function StatChip({ label, value, color }: { label: string; value: number; color
       <Typography
         variant="caption"
         color="text.secondary"
-        sx={{ fontWeight: 600, letterSpacing: 0.3, textTransform: "uppercase", fontSize: "0.65rem" }}
+        sx={{ fontWeight: 600, letterSpacing: 0.3, textTransform: "uppercase", fontSize: "0.65rem", [PHONE]: { fontSize: "0.75rem" } }}
       >
         {label}
       </Typography>
@@ -85,6 +97,7 @@ function StatChip({ label, value, color }: { label: string; value: number; color
 
 export default function AdminScorecardSkillsPage() {
   const { showToast } = useToast();
+  const isPhone = useIsPhone();
   const [skills, setSkills] = useState<Skill[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -252,6 +265,269 @@ export default function AdminScorecardSkillsPage() {
     setMappingDialogOpen(true);
   }, []);
 
+  const createBody = (
+    <Box sx={{ display: "grid", gap: 2, pt: 1 }}>
+      <TextField
+        autoFocus
+        label="Name"
+        size="small"
+        fullWidth
+        value={createName}
+        onChange={(e) => setCreateName(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") void handleCreate();
+        }}
+        placeholder="e.g. React Hooks"
+        sx={PHONE_FIELD_SX}
+      />
+      <TextField
+        label="Category (optional)"
+        size="small"
+        fullWidth
+        value={createCategory}
+        onChange={(e) => setCreateCategory(e.target.value)}
+        placeholder="e.g. Frontend, DSA, Behavioral"
+        sx={PHONE_FIELD_SX}
+      />
+    </Box>
+  );
+
+  const taggerBody = (
+    <>
+      {/* Content type chips */}
+      <Box
+        sx={{
+          px: 3,
+          py: 2,
+          borderBottom: "1px solid color-mix(in srgb, var(--border-default) 60%, transparent)",
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 0.75,
+          alignItems: "center",
+        }}
+      >
+        {CONTENT_TYPE_OPTIONS.filter((opt) =>
+          ["mcq", "coding_problem", "video", "article", "assessment"].includes(opt.value),
+        ).map((opt) => {
+          const count =
+            browserData == null
+              ? null
+              : opt.value === "video"
+              ? browserData.videos.length
+              : opt.value === "article"
+              ? browserData.articles.length
+              : opt.value === "mcq"
+              ? browserData.mcqs.length
+              : opt.value === "coding_problem"
+              ? browserData.coding_problems.length
+              : opt.value === "assessment"
+              ? browserData.assessments.length
+              : 0;
+          const selected = taggerContentType === opt.value;
+          return (
+            <Chip
+              key={opt.value}
+              icon={<IconWrapper icon={opt.icon} size={14} />}
+              label={count != null ? `${opt.label} (${count})` : opt.label}
+              onClick={() => {
+                setTaggerContentType(opt.value);
+                setBrowserSearch("");
+              }}
+              sx={{
+                fontWeight: 700,
+                bgcolor: selected
+                  ? "var(--accent-indigo)"
+                  : "color-mix(in srgb, var(--border-default) 35%, transparent)",
+                color: selected ? "#fff" : "var(--font-secondary)",
+                "& .MuiChip-icon": { color: selected ? "#fff" : "var(--font-secondary)" },
+                ...PHONE_CHIP_SX,
+              }}
+            />
+          );
+        })}
+      </Box>
+
+      {/* Search input */}
+      <Box sx={{ px: 3, pt: 2, pb: 1.5 }}>
+        <TextField
+          fullWidth
+          size="small"
+          placeholder={`Search ${taggerContentType.replace("_", " ")} by title…`}
+          value={browserSearch}
+          onChange={(e) => setBrowserSearch(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <IconWrapper icon="mdi:magnify" size={18} color="var(--font-secondary)" />
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Box>
+
+      {/* Results list */}
+      <Box sx={{ maxHeight: 480, overflowY: "auto", px: 3, pb: 2 }}>
+        {browserLoading ? (
+          <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+            <CircularProgress size={28} />
+          </Box>
+        ) : filteredBrowserRows.length === 0 ? (
+          <Box
+            sx={{
+              py: 6,
+              textAlign: "center",
+              color: "var(--font-secondary)",
+              border: "1px dashed color-mix(in srgb, var(--border-default) 80%, transparent)",
+              borderRadius: 2,
+            }}
+          >
+            <IconWrapper icon="mdi:tag-off-outline" size={36} color="var(--font-secondary)" />
+            <Typography variant="body2" sx={{ mt: 1, fontWeight: 600 }}>
+              {browserSearch
+                ? `No ${taggerContentType.replace("_", " ")} matching "${browserSearch}".`
+                : `No ${taggerContentType.replace("_", " ")} found for this client yet.`}
+            </Typography>
+          </Box>
+        ) : (
+          <Box sx={{ display: "grid", gap: 1, [PHONE]: { gridTemplateColumns: "minmax(0, 1fr)" } }}>
+            {filteredBrowserRows.slice(0, 100).map((row) => {
+              const tagged = row.skill_ids.length > 0;
+              const skillNames = row.skill_ids
+                .map((id) => skillNameById[id])
+                .filter(Boolean) as string[];
+              return (
+                <Box
+                  key={`${taggerContentType}-${row.id}`}
+                  onClick={() => handlePickContent(row)}
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1.5,
+                    p: 1.25,
+                    borderRadius: 2,
+                    border: `1px solid color-mix(in srgb, ${
+                      tagged ? "var(--accent-indigo)" : "var(--border-default)"
+                    } ${tagged ? "30%" : "60%"}, transparent)`,
+                    bgcolor: tagged
+                      ? "color-mix(in srgb, var(--accent-indigo) 6%, transparent)"
+                      : "transparent",
+                    cursor: "pointer",
+                    transition: "all 0.18s ease",
+                    "&:hover": {
+                      borderColor: "var(--accent-indigo)",
+                      bgcolor:
+                        "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
+                      transform: "translateY(-1px)",
+                    },
+                  }}
+                >
+                  <Box
+                    sx={{
+                      width: 32,
+                      height: 32,
+                      borderRadius: 1.25,
+                      bgcolor: tagged
+                        ? "var(--accent-indigo)"
+                        : "color-mix(in srgb, var(--border-default) 60%, transparent)",
+                      color: "#fff",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      flexShrink: 0,
+                      fontSize: "0.7rem",
+                      fontWeight: 800,
+                      fontVariantNumeric: "tabular-nums",
+                      [PHONE]: { fontSize: "0.75rem", width: 56 },
+                    }}
+                  >
+                    #{row.id}
+                  </Box>
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontWeight: 700,
+                        color: "var(--font-primary)",
+                        fontSize: "0.88rem",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                      title={row.title}
+                    >
+                      {row.title || `#${row.id}`}
+                    </Typography>
+                    {tagged ? (
+                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.4, mt: 0.4 }}>
+                        {skillNames.slice(0, 4).map((name) => (
+                          <Chip
+                            key={name}
+                            label={name}
+                            size="small"
+                            sx={{
+                              height: 18,
+                              fontSize: "0.65rem",
+                              [PHONE]: { height: 22, fontSize: "0.75rem" },
+                              fontWeight: 700,
+                              bgcolor:
+                                "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
+                              color: "var(--accent-indigo)",
+                              "& .MuiChip-label": { px: 0.75 },
+                            }}
+                          />
+                        ))}
+                        {skillNames.length > 4 && (
+                          <Chip
+                            label={`+${skillNames.length - 4}`}
+                            size="small"
+                            sx={{
+                              height: 18,
+                              fontSize: "0.65rem",
+                              [PHONE]: { height: 22, fontSize: "0.75rem" },
+                              fontWeight: 700,
+                              bgcolor: "color-mix(in srgb, var(--border-default) 50%, transparent)",
+                              color: "var(--font-secondary)",
+                              "& .MuiChip-label": { px: 0.75 },
+                            }}
+                          />
+                        )}
+                      </Box>
+                    ) : (
+                      <Typography
+                        variant="caption"
+                        sx={{ color: "var(--font-secondary)", fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" } }}
+                      >
+                        Not tagged yet - click to add skills
+                      </Typography>
+                    )}
+                  </Box>
+                  <IconWrapper
+                    icon={tagged ? "mdi:tag-edit-outline" : "mdi:tag-plus-outline"}
+                    size={18}
+                    color="var(--accent-indigo)"
+                  />
+                </Box>
+              );
+            })}
+            {filteredBrowserRows.length > 100 && (
+              <Typography
+                variant="caption"
+                sx={{
+                  color: "var(--font-secondary)",
+                  textAlign: "center",
+                  mt: 0.5,
+                }}
+              >
+                Showing first 100 of {filteredBrowserRows.length} - refine the search to
+                narrow it down.
+              </Typography>
+            )}
+          </Box>
+        )}
+      </Box>
+    </>
+  );
+
   return (
     <PageShell>
         <ModulePageHeader
@@ -311,7 +587,7 @@ export default function AdminScorecardSkillsPage() {
             placeholder="Search skills by name or category"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            sx={{ flex: 1, minWidth: 240 }}
+            sx={{ flex: 1, minWidth: 240, [PHONE]: { minWidth: 0, flexBasis: "100%", "& .MuiInputBase-root": { minHeight: 48 } } }}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
@@ -320,7 +596,9 @@ export default function AdminScorecardSkillsPage() {
               ),
             }}
           />
-          <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap" }}>
+          {(() => {
+            const chips = (
+              <>
             <Chip
               label="All categories"
               size="small"
@@ -332,6 +610,7 @@ export default function AdminScorecardSkillsPage() {
                     ? "var(--accent-indigo)"
                     : "color-mix(in srgb, var(--border-default) 35%, transparent)",
                 color: categoryFilter === "all" ? "#fff" : "var(--font-secondary)",
+                ...PHONE_CHIP_SX,
               }}
             />
             {categories.map((cat) => (
@@ -347,10 +626,21 @@ export default function AdminScorecardSkillsPage() {
                       ? "var(--accent-indigo)"
                       : "color-mix(in srgb, var(--border-default) 35%, transparent)",
                   color: categoryFilter === cat ? "#fff" : "var(--font-secondary)",
+                  ...PHONE_CHIP_SX,
                 }}
               />
             ))}
-          </Box>
+              </>
+            );
+            // A phone gets one sideways row instead of a wall of wrapped chips above the list.
+            return isPhone ? (
+              <ScrollRow gutter={2} gap={0.75} ariaLabel="Categories" sx={{ width: "100%" }}>
+                {chips}
+              </ScrollRow>
+            ) : (
+              <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap" }}>{chips}</Box>
+            );
+          })()}
         </Paper>
 
         {/* Skills table */}
@@ -377,6 +667,53 @@ export default function AdminScorecardSkillsPage() {
                   ? "No skills yet. Click \"New skill\" to add the first one - or run the backfill migration to seed from existing MCQ.skills / CodingProblem.tags."
                   : "No skills match your filters."}
               </Typography>
+            </Box>
+          ) : isPhone ? (
+            <Box data-testid="skill-cards" sx={{ display: "flex", flexDirection: "column" }}>
+              {filtered.map((s) => (
+                <Box
+                  key={s.id}
+                  data-testid="skill-card"
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    display: "flex",
+                    alignItems: "flex-start",
+                    gap: 1,
+                    borderBottom: "1px solid var(--border-default)",
+                    "&:last-of-type": { borderBottom: "none" },
+                  }}
+                >
+                  <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 0.5 }}>
+                    <Typography sx={{ fontWeight: 700, color: "var(--font-primary)", fontSize: "0.95rem", overflowWrap: "anywhere" }}>
+                      {s.name}
+                    </Typography>
+                    {s.description && (
+                      <Typography sx={{ fontSize: "0.8125rem", color: "var(--font-secondary)", overflowWrap: "anywhere" }}>
+                        {s.description}
+                      </Typography>
+                    )}
+                    <CardFact label="Category">{s.category || "-"}</CardFact>
+                    <CardFact label="Mappings">{s.mapping_count ?? 0}</CardFact>
+                    <CardFact label="Updated">
+                      {s.updated_at
+                        ? new Date(s.updated_at).toLocaleDateString(undefined, {
+                            day: "numeric",
+                            month: "short",
+                            year: "numeric",
+                          })
+                        : "-"}
+                    </CardFact>
+                  </Box>
+                  <IconButton
+                    onClick={() => void handleDelete(s)}
+                    aria-label={`Deactivate ${s.name}`}
+                    sx={{ width: TAP, height: TAP, flexShrink: 0, color: "var(--font-secondary)" }}
+                  >
+                    <IconWrapper icon="mdi:archive-outline" size={20} />
+                  </IconButton>
+                </Box>
+              ))}
             </Box>
           ) : (
             <TableContainer>
@@ -475,6 +812,20 @@ export default function AdminScorecardSkillsPage() {
         </Paper>
 
         {/* Create dialog */}
+        {isPhone ? (
+          <PhoneSheet
+            open={createOpen}
+            onClose={() => setCreateOpen(false)}
+            busy={creating}
+            title="Create new skill"
+            cancelLabel="Cancel"
+            confirmLabel="Create"
+            confirmDisabled={!createName.trim()}
+            onConfirm={() => void handleCreate()}
+          >
+            {createBody}
+          </PhoneSheet>
+        ) : (
         <Dialog
           open={createOpen}
           onClose={creating ? undefined : () => setCreateOpen(false)}
@@ -483,28 +834,7 @@ export default function AdminScorecardSkillsPage() {
         >
           <DialogTitle sx={{ fontWeight: 800 }}>Create new skill</DialogTitle>
           <DialogContent>
-            <Box sx={{ display: "grid", gap: 2, pt: 1 }}>
-              <TextField
-                autoFocus
-                label="Name"
-                size="small"
-                fullWidth
-                value={createName}
-                onChange={(e) => setCreateName(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") void handleCreate();
-                }}
-                placeholder="e.g. React Hooks"
-              />
-              <TextField
-                label="Category (optional)"
-                size="small"
-                fullWidth
-                value={createCategory}
-                onChange={(e) => setCreateCategory(e.target.value)}
-                placeholder="e.g. Frontend, DSA, Behavioral"
-              />
-            </Box>
+            {createBody}
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
             <Button
@@ -529,8 +859,20 @@ export default function AdminScorecardSkillsPage() {
             </Button>
           </DialogActions>
         </Dialog>
+        )}
 
         {/* Content tagger - searchable browser */}
+        {isPhone ? (
+          <PhoneSheet
+            open={taggerOpen}
+            onClose={() => setTaggerOpen(false)}
+            busy={false}
+            title="Browse content to tag"
+            cancelLabel="Close"
+          >
+            <Box sx={{ mx: -2 }}>{taggerBody}</Box>
+          </PhoneSheet>
+        ) : (
         <Dialog
           open={taggerOpen}
           onClose={() => setTaggerOpen(false)}
@@ -547,233 +889,7 @@ export default function AdminScorecardSkillsPage() {
             </Typography>
           </DialogTitle>
           <DialogContent dividers sx={{ p: 0 }}>
-            {/* Content type chips */}
-            <Box
-              sx={{
-                px: 3,
-                py: 2,
-                borderBottom: "1px solid color-mix(in srgb, var(--border-default) 60%, transparent)",
-                display: "flex",
-                flexWrap: "wrap",
-                gap: 0.75,
-                alignItems: "center",
-              }}
-            >
-              {CONTENT_TYPE_OPTIONS.filter((opt) =>
-                ["mcq", "coding_problem", "video", "article", "assessment"].includes(opt.value),
-              ).map((opt) => {
-                const count =
-                  browserData == null
-                    ? null
-                    : opt.value === "video"
-                    ? browserData.videos.length
-                    : opt.value === "article"
-                    ? browserData.articles.length
-                    : opt.value === "mcq"
-                    ? browserData.mcqs.length
-                    : opt.value === "coding_problem"
-                    ? browserData.coding_problems.length
-                    : opt.value === "assessment"
-                    ? browserData.assessments.length
-                    : 0;
-                const selected = taggerContentType === opt.value;
-                return (
-                  <Chip
-                    key={opt.value}
-                    icon={<IconWrapper icon={opt.icon} size={14} />}
-                    label={count != null ? `${opt.label} (${count})` : opt.label}
-                    onClick={() => {
-                      setTaggerContentType(opt.value);
-                      setBrowserSearch("");
-                    }}
-                    sx={{
-                      fontWeight: 700,
-                      bgcolor: selected
-                        ? "var(--accent-indigo)"
-                        : "color-mix(in srgb, var(--border-default) 35%, transparent)",
-                      color: selected ? "#fff" : "var(--font-secondary)",
-                      "& .MuiChip-icon": { color: selected ? "#fff" : "var(--font-secondary)" },
-                    }}
-                  />
-                );
-              })}
-            </Box>
-
-            {/* Search input */}
-            <Box sx={{ px: 3, pt: 2, pb: 1.5 }}>
-              <TextField
-                fullWidth
-                size="small"
-                placeholder={`Search ${taggerContentType.replace("_", " ")} by title…`}
-                value={browserSearch}
-                onChange={(e) => setBrowserSearch(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <IconWrapper icon="mdi:magnify" size={18} color="var(--font-secondary)" />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-            </Box>
-
-            {/* Results list */}
-            <Box sx={{ maxHeight: 480, overflowY: "auto", px: 3, pb: 2 }}>
-              {browserLoading ? (
-                <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
-                  <CircularProgress size={28} />
-                </Box>
-              ) : filteredBrowserRows.length === 0 ? (
-                <Box
-                  sx={{
-                    py: 6,
-                    textAlign: "center",
-                    color: "var(--font-secondary)",
-                    border: "1px dashed color-mix(in srgb, var(--border-default) 80%, transparent)",
-                    borderRadius: 2,
-                  }}
-                >
-                  <IconWrapper icon="mdi:tag-off-outline" size={36} color="var(--font-secondary)" />
-                  <Typography variant="body2" sx={{ mt: 1, fontWeight: 600 }}>
-                    {browserSearch
-                      ? `No ${taggerContentType.replace("_", " ")} matching "${browserSearch}".`
-                      : `No ${taggerContentType.replace("_", " ")} found for this client yet.`}
-                  </Typography>
-                </Box>
-              ) : (
-                <Box sx={{ display: "grid", gap: 1 }}>
-                  {filteredBrowserRows.slice(0, 100).map((row) => {
-                    const tagged = row.skill_ids.length > 0;
-                    const skillNames = row.skill_ids
-                      .map((id) => skillNameById[id])
-                      .filter(Boolean) as string[];
-                    return (
-                      <Box
-                        key={`${taggerContentType}-${row.id}`}
-                        onClick={() => handlePickContent(row)}
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1.5,
-                          p: 1.25,
-                          borderRadius: 2,
-                          border: `1px solid color-mix(in srgb, ${
-                            tagged ? "var(--accent-indigo)" : "var(--border-default)"
-                          } ${tagged ? "30%" : "60%"}, transparent)`,
-                          bgcolor: tagged
-                            ? "color-mix(in srgb, var(--accent-indigo) 6%, transparent)"
-                            : "transparent",
-                          cursor: "pointer",
-                          transition: "all 0.18s ease",
-                          "&:hover": {
-                            borderColor: "var(--accent-indigo)",
-                            bgcolor:
-                              "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
-                            transform: "translateY(-1px)",
-                          },
-                        }}
-                      >
-                        <Box
-                          sx={{
-                            width: 32,
-                            height: 32,
-                            borderRadius: 1.25,
-                            bgcolor: tagged
-                              ? "var(--accent-indigo)"
-                              : "color-mix(in srgb, var(--border-default) 60%, transparent)",
-                            color: "#fff",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                            flexShrink: 0,
-                            fontSize: "0.7rem",
-                            fontWeight: 800,
-                            fontVariantNumeric: "tabular-nums",
-                          }}
-                        >
-                          #{row.id}
-                        </Box>
-                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography
-                            variant="body2"
-                            sx={{
-                              fontWeight: 700,
-                              color: "var(--font-primary)",
-                              fontSize: "0.88rem",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                            title={row.title}
-                          >
-                            {row.title || `#${row.id}`}
-                          </Typography>
-                          {tagged ? (
-                            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.4, mt: 0.4 }}>
-                              {skillNames.slice(0, 4).map((name) => (
-                                <Chip
-                                  key={name}
-                                  label={name}
-                                  size="small"
-                                  sx={{
-                                    height: 18,
-                                    fontSize: "0.65rem",
-                                    fontWeight: 700,
-                                    bgcolor:
-                                      "color-mix(in srgb, var(--accent-indigo) 16%, transparent)",
-                                    color: "var(--accent-indigo)",
-                                    "& .MuiChip-label": { px: 0.75 },
-                                  }}
-                                />
-                              ))}
-                              {skillNames.length > 4 && (
-                                <Chip
-                                  label={`+${skillNames.length - 4}`}
-                                  size="small"
-                                  sx={{
-                                    height: 18,
-                                    fontSize: "0.65rem",
-                                    fontWeight: 700,
-                                    bgcolor: "color-mix(in srgb, var(--border-default) 50%, transparent)",
-                                    color: "var(--font-secondary)",
-                                    "& .MuiChip-label": { px: 0.75 },
-                                  }}
-                                />
-                              )}
-                            </Box>
-                          ) : (
-                            <Typography
-                              variant="caption"
-                              sx={{ color: "var(--font-secondary)", fontSize: "0.72rem" }}
-                            >
-                              Not tagged yet - click to add skills
-                            </Typography>
-                          )}
-                        </Box>
-                        <IconWrapper
-                          icon={tagged ? "mdi:tag-edit-outline" : "mdi:tag-plus-outline"}
-                          size={18}
-                          color="var(--accent-indigo)"
-                        />
-                      </Box>
-                    );
-                  })}
-                  {filteredBrowserRows.length > 100 && (
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        color: "var(--font-secondary)",
-                        textAlign: "center",
-                        mt: 0.5,
-                      }}
-                    >
-                      Showing first 100 of {filteredBrowserRows.length} - refine the search to
-                      narrow it down.
-                    </Typography>
-                  )}
-                </Box>
-              )}
-            </Box>
+            {taggerBody}
           </DialogContent>
           <DialogActions sx={{ px: 3, py: 1.5 }}>
             <Button onClick={() => setTaggerOpen(false)} sx={{ textTransform: "none" }}>
@@ -781,6 +897,7 @@ export default function AdminScorecardSkillsPage() {
             </Button>
           </DialogActions>
         </Dialog>
+        )}
 
         {/* SkillMappingDialog driver. Sits as a sibling so admin can open it from the tagger launcher above. */}
         <MappingDialogHost

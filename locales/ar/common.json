@@ -2592,5 +2592,32 @@
   },
   "adaptiveCoursesAdmin": {
     "deleteCourse": "حذف {{title}}"
+  },
+  "learningPlayerMobile": {
+    "workspaceTabs": "مساحة البرمجة",
+    "problemTab": "المسألة",
+    "codeTab": "الكود",
+    "resultsTab": "النتائج",
+    "noResultsYet": "شغّل الكود لترى نتائج الاختبارات وملاحظات المرشد هنا.",
+    "resultsReady": "النتائج الجديدة جاهزة"
+  },
+  "adminPeoplePhone": {
+    "moreActions": "إجراءات إضافية لـ {{name}}",
+    "instructorCode": "رمز المدرّب",
+    "moreCourses_zero": "لا مزيد",
+    "moreCourses_one": "+{{count}} آخر",
+    "moreCourses_two": "+{{count}} آخران",
+    "moreCourses_few": "+{{count}} أخرى",
+    "moreCourses_many": "+{{count}} أخرى",
+    "moreCourses_other": "+{{count}} أخرى",
+    "view": "عرض",
+    "edit": "تعديل",
+    "delete": "حذف",
+    "cancel": "إلغاء",
+    "deleteProjectTitle": "حذف هذا المشروع؟",
+    "deleteProjectBody": "ستفقد التقييمات التي تستخدمه هذا القسم. لا يمكن التراجع عن هذا الإجراء."
+  },
+  "purchases": {
+    "reference": "المرجع"
   }
 }

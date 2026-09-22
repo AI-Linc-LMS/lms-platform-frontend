@@ -6,6 +6,8 @@ import { useRouter } from "next/navigation";
 import { PanelCard, SectionHeader } from "./parts";
 import { CountUp } from "@/components/scorecard/shared/CountUp";
 import { useProfileGate } from "@/lib/contexts/ProfileGateContext";
+import { phoneText } from "@/components/common/mobile/phoneText";
+import { PHONE } from "@/components/common/mobile/phone";
 
 const MODULE_LABELS: Record<string, string> = {
   resume: "Resume",
@@ -55,7 +57,7 @@ export function ProfileCompletionPanel() {
         <Typography sx={{ fontWeight: 900, fontSize: "2.2rem", color: "#6366f1", lineHeight: 1.1 }}>
           <CountUp value={percentage} suffix="%" />
         </Typography>
-        <Typography sx={{ fontSize: "0.72rem", color: "#64748b", fontWeight: 700 }}>
+        <Typography sx={{ fontSize: phoneText(0.72), color: "#64748b", fontWeight: 700 }}>
           complete — finish it to unlock all benefits
         </Typography>
       </Box>
@@ -110,6 +112,7 @@ export function ProfileCompletionPanel() {
           color: "white",
           gap: 0.5,
           background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed), var(--module-cta-to, #ec4899))",
+          [PHONE]: { minHeight: 44 },
         }}
       >
         Complete profile <Icon icon="mdi:arrow-right" width={16} />

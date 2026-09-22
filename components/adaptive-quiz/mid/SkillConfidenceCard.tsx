@@ -6,6 +6,7 @@ import { Icon } from "@iconify/react";
 import { AIPill } from "../shared/AIPill";
 import { certaintyBand } from "@/lib/utils/adaptive-confidence";
 import { prettySkill } from "@/lib/utils/skill-label.utils";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface SkillRow {
   skill: string;
@@ -77,7 +78,7 @@ export function SkillConfidenceCard({ skills, activeSkill, nudge }: SkillConfide
                 >
                   {prettySkill(row.skill)}
                   {isActive && (
-                    <Box component="span" sx={{ ml: 0.75, fontSize: "0.62rem", fontWeight: 800, letterSpacing: "0.14em", color: "var(--accent-indigo, #6366f1)" }}>
+                    <Box component="span" sx={{ ml: 0.75, fontSize: "0.62rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.14em", color: "var(--accent-indigo, #6366f1)" }}>
                       • TARGETING
                     </Box>
                   )}
@@ -120,7 +121,7 @@ export function SkillConfidenceCard({ skills, activeSkill, nudge }: SkillConfide
                 const band = certaintyBand(row.se);
                 return (
                   <Tooltip title="How sure the AI is about this skill yet - it gets more confident as you answer more questions." arrow placement="top">
-                    <Typography sx={{ fontSize: "0.62rem", color: band.accent, fontWeight: 700, mt: 0.4, display: "inline-flex", alignItems: "center", gap: 0.3, cursor: "default" }}>
+                    <Typography sx={{ fontSize: "0.62rem", [PHONE]: { fontSize: "0.75rem" }, color: band.accent, fontWeight: 700, mt: 0.4, display: "inline-flex", alignItems: "center", gap: 0.3, cursor: "default" }}>
                       <Icon icon="mdi:radar" width={11} /> {band.label}
                     </Typography>
                   </Tooltip>

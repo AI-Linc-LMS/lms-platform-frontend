@@ -291,7 +291,7 @@ export function HeroPill({
         border: `1px solid ${ON_DARK.border}`,
         color: "#fff",
         fontWeight: 800,
-        fontSize: eyebrow ? "0.66rem" : "0.78rem",
+        fontSize: eyebrow ? phoneText(0.66) : "0.78rem",
         letterSpacing: eyebrow ? 0.6 : 0,
         textTransform: eyebrow ? "uppercase" : "none",
         ...(eyebrow ? { '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" } } : {}),

@@ -17,6 +17,7 @@ import {
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { ImageUrlDialog } from "./ImageUrlDialog";
+import { phoneSheetDialogSx } from "@/components/profile/phoneSheet";
 
 interface ProfileHeaderProps {
   userName: string;
@@ -271,6 +272,7 @@ export function ProfileHeader({
 
       {/* Headline Edit Dialog */}
       <Dialog
+        sx={phoneSheetDialogSx}
         open={headlineDialogOpen}
         onClose={() => {
           setHeadlineDialogOpen(false);

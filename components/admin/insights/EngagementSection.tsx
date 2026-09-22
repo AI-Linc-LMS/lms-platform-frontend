@@ -27,6 +27,7 @@ import {
   Panel,
   SERIES_COLORS,
 } from "./primitives";
+import { phoneFont } from "./phoneType";
 
 /**
  * Engagement tab: what students touch, when they touch it, and how many of them keep coming back.
@@ -145,7 +146,7 @@ export function EngagementSection({
                 label={data.range.label}
                 size="small"
                 sx={{
-                  fontSize: "0.68rem",
+                  ...phoneFont(0.68),
                   fontWeight: 700,
                   color: "var(--font-secondary)",
                   backgroundColor: "color-mix(in srgb, var(--border-default) 45%, transparent)",
@@ -283,7 +284,7 @@ export function EngagementSection({
                     >
                       {mixGrandTotal.toLocaleString()}
                     </Typography>
-                    <Typography sx={{ fontSize: "0.66rem", color: "var(--font-secondary)" }}>
+                    <Typography sx={{ ...phoneFont(0.66), color: "var(--font-secondary)" }}>
                       activities
                     </Typography>
                   </Box>
@@ -297,7 +298,7 @@ export function EngagementSection({
                   gap: 0.5,
                   mt: 1.5,
                   mb: 0.75,
-                  fontSize: "0.68rem",
+                  ...phoneFont(0.68),
                   fontWeight: 800,
                   letterSpacing: "0.06em",
                   textTransform: "uppercase",

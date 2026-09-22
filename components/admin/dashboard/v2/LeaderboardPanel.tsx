@@ -4,6 +4,7 @@ import { Box, Skeleton, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { Panel, DefinitionMark, EmptyState, INSIGHT } from "@/components/admin/insights/primitives";
 import type { LeaderboardPayload } from "@/lib/services/admin/admin-insights.service";
+import { phoneFont } from "@/components/admin/insights/phoneType";
 
 /**
  * Top students by adaptive points.
@@ -83,7 +84,7 @@ export function LeaderboardPanel({
                   flexShrink: 0,
                   display: "grid",
                   placeItems: "center",
-                  fontSize: "0.7rem",
+                  ...phoneFont(0.7),
                   fontWeight: 800,
                   color: r.rank <= 3 ? "#fff" : "var(--font-secondary)",
                   background:
@@ -113,7 +114,7 @@ export function LeaderboardPanel({
                 >
                   {r.name}
                 </Typography>
-                <Typography sx={{ fontSize: "0.72rem", color: "var(--font-secondary)" }}>
+                <Typography sx={{ ...phoneFont(0.72), color: "var(--font-secondary)" }}>
                   {r.activities.toLocaleString()} {r.activities === 1 ? "activity" : "activities"}
                 </Typography>
               </Box>

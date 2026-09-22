@@ -2,6 +2,7 @@
 
 import { Box } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
 
 export interface SegmentedTab<T extends string = string> {
   value: T;
@@ -86,6 +87,8 @@ export function SegmentedTabs<T extends string>({
                     bgcolor: "color-mix(in srgb, var(--ai-violet) 10%, var(--surface) 90%)",
                     color: "var(--ai-violet)",
                   },
+              // A 35px segment is under a thumb's minimum; phones get 44px. Desktop is untouched.
+              [PHONE]: { minHeight: 44 },
             }}
           >
             {tab.icon ? <IconWrapper icon={tab.icon} size={17} /> : null}
@@ -104,6 +107,7 @@ export function SegmentedTabs<T extends string>({
                     ? "color-mix(in srgb, var(--font-light) 26%, transparent)"
                     : "color-mix(in srgb, var(--ai-violet) 14%, var(--surface) 86%)",
                   color: active ? "var(--font-light)" : "var(--ai-violet)",
+                  [PHONE]: { fontSize: "0.75rem" },
                 }}
               >
                 {tab.count}

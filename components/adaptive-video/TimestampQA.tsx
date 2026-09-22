@@ -5,6 +5,7 @@ import { Icon } from "@iconify/react";
 import { useState } from "react";
 import { AIPill } from "@/components/adaptive-quiz/shared/AIPill";
 import type { AskResult } from "@/lib/services/adaptive-video.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
@@ -49,7 +50,7 @@ export function TimestampQA({
       <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1.25 }}>
         <AIPill icon={<Icon icon="mdi:comment-question-outline" />}>Ask at this moment</AIPill>
         <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, ml: "auto", px: 1, py: 0.3, borderRadius: 999,
-          background: "color-mix(in srgb, #6366f1 12%, transparent)", color: "#6366f1", fontSize: "0.7rem", fontWeight: 800 }}>
+          background: "color-mix(in srgb, #6366f1 12%, transparent)", color: "#6366f1", fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800 }}>
           <Icon icon="mdi:pin" width={12} /> {fmt(currentTime)}
         </Box>
       </Box>
@@ -94,7 +95,7 @@ export function TimestampQA({
 
       {result?.others_asked?.length ? (
         <Box sx={{ mt: 1.5 }}>
-          <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, color: "text.secondary", mb: 0.75, textTransform: "uppercase", letterSpacing: "0.06em" }}>
+          <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, color: "text.secondary", mb: 0.75, textTransform: "uppercase", letterSpacing: "0.06em" }}>
             Others asked here
           </Typography>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 0.5 }}>

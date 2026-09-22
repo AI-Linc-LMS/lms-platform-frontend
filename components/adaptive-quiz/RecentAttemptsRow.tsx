@@ -5,6 +5,7 @@ import { Box, ButtonBase, Typography } from "@mui/material";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
 import type { AdaptiveAttemptSummary } from "@/lib/services/adaptive-quiz.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface RecentAttemptsRowProps {
   attempts: AdaptiveAttemptSummary[];
@@ -62,7 +63,7 @@ export function RecentAttemptsRow({ attempts }: RecentAttemptsRowProps) {
         <Box>
           <Typography
             sx={{
-              fontSize: "0.7rem",
+              fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
               fontWeight: 700,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
@@ -82,7 +83,7 @@ export function RecentAttemptsRow({ attempts }: RecentAttemptsRowProps) {
             {attempts.length} {attempts.length === 1 ? "attempt" : "attempts"} so far
           </Typography>
         </Box>
-        <Typography sx={{ fontSize: "0.74rem", color: "text.secondary", fontWeight: 600 }}>
+        <Typography sx={{ fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", fontWeight: 600 }}>
           Click any to revisit its results
         </Typography>
       </Box>
@@ -171,7 +172,7 @@ function AttemptCard({
             px: 0.85,
             py: 0.2,
             borderRadius: 999,
-            fontSize: "0.6rem",
+            fontSize: "0.6rem", [PHONE]: { fontSize: "0.75rem" },
             fontWeight: 800,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
@@ -183,7 +184,7 @@ function AttemptCard({
           <Icon icon={status.icon} width={11} />
           {status.label}
         </Box>
-        <Typography sx={{ ml: "auto", fontSize: "0.68rem", color: "text.secondary", fontWeight: 700 }}>
+        <Typography sx={{ ml: "auto", fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", fontWeight: 700 }}>
           {relativeTime(attempt.completed_at ?? attempt.started_at)}
         </Typography>
       </Box>
@@ -202,7 +203,7 @@ function AttemptCard({
       >
         {attempt.quiz_title}
       </Typography>
-      <Typography sx={{ fontSize: "0.72rem", color: "text.secondary", fontWeight: 600 }}>
+      <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", fontWeight: 600 }}>
         {subtitle}
       </Typography>
 
@@ -219,7 +220,7 @@ function AttemptCard({
         >
           {attempt.question_count > 0 ? `${accuracyPct}%` : "-"}
         </Typography>
-        <Typography sx={{ fontSize: "0.74rem", color: "text.secondary", fontWeight: 700 }}>
+        <Typography sx={{ fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", fontWeight: 700 }}>
           {attempt.correct_count} / {attempt.question_count} correct
         </Typography>
       </Box>
@@ -228,19 +229,19 @@ function AttemptCard({
         {minutes > 0 && (
           <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.35 }}>
             <Icon icon="mdi:timer-outline" width={13} />
-            <Typography sx={{ fontSize: "0.72rem", fontWeight: 700 }}>{minutes}m</Typography>
+            <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 700 }}>{minutes}m</Typography>
           </Box>
         )}
         {attempt.has_narration && attempt.status === "completed" && (
           <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.35, color: "#a855f7" }}>
             <Icon icon="mdi:robot-happy-outline" width={13} />
-            <Typography sx={{ fontSize: "0.72rem", fontWeight: 700 }}>AI read ready</Typography>
+            <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 700 }}>AI read ready</Typography>
           </Box>
         )}
         <Typography
           sx={{
             ml: "auto",
-            fontSize: "0.74rem",
+            fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" },
             fontWeight: 800,
             color: accuracyAccent,
             display: "inline-flex",

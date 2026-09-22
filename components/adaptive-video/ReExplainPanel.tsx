@@ -6,6 +6,7 @@ import { useState } from "react";
 import { AIPill } from "@/components/adaptive-quiz/shared/AIPill";
 import { CompanionCard } from "./CompanionCard";
 import type { ReExplainResult, ReExplainStyle } from "@/lib/services/adaptive-video.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface Props {
   /** Re-explain the last ~30s ending at the player's current time. */
@@ -91,7 +92,7 @@ export function ReExplainPanel({ onReExplain }: Props) {
               startIcon={<Icon icon={s.icon} width={14} />}
               onClick={() => run(s.key)}
               sx={{
-                textTransform: "none", borderRadius: 999, fontSize: "0.74rem", fontWeight: 700,
+                textTransform: "none", borderRadius: 999, fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 700,
                 minWidth: 0, px: 1, justifyContent: "center", whiteSpace: "nowrap",
                 borderColor: selected ? "#a855f7" : "color-mix(in srgb, #a855f7 30%, transparent)",
                 background: selected ? "color-mix(in srgb, #a855f7 10%, transparent)" : "transparent",
@@ -120,7 +121,7 @@ export function ReExplainPanel({ onReExplain }: Props) {
           <Box sx={{ display: "flex", gap: 1, mb: 0.75, alignItems: "center" }}>
             <AIPill icon={<Icon icon="mdi:sparkles" />}>{result.style}</AIPill>
             {result.cached && (
-              <Typography sx={{ fontSize: "0.64rem", color: "text.secondary", alignSelf: "center" }}>instant · cached</Typography>
+              <Typography sx={{ fontSize: "0.64rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", alignSelf: "center" }}>instant · cached</Typography>
             )}
           </Box>
           <Typography sx={{ fontSize: "0.87rem", whiteSpace: "pre-wrap", lineHeight: 1.55 }}>{result.content}</Typography>

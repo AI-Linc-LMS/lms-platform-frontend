@@ -16,6 +16,7 @@ import {
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
+import { phoneSheetDialogSx } from "@/components/profile/phoneSheet";
 
 interface ImageUploadDialogProps {
   open: boolean;
@@ -227,6 +228,7 @@ export function ImageUploadDialog({
 
   return (
     <Dialog
+      sx={phoneSheetDialogSx}
       open={open}
       onClose={handleClose}
       maxWidth="md"

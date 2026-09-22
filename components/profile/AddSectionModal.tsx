@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import { motion } from "framer-motion";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { phoneSheetDialogSx } from "@/components/profile/phoneSheet";
 
 export type ProfileSectionId =
   | "skills"
@@ -120,6 +121,7 @@ export function AddSectionModal({
 
   return (
     <Dialog
+      sx={phoneSheetDialogSx}
       open={open}
       onClose={onClose}
       maxWidth="sm"

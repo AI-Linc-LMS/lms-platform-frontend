@@ -8,6 +8,8 @@ import { MomentumInfo } from "@/components/common/MomentumInfo";
 import { avatarColor, RANK_BG, RANK_FG } from "@/components/dashboard/v2/parts";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
 import type { LbRow, LeaderboardPeriod, LeaderboardStreaks } from "@/lib/types/leaderboard-streaks";
+import { phoneText } from "@/components/common/mobile/phoneText";
+import { tapHeight } from "@/components/common/phoneTap";
 
 const CARD = { borderRadius: 4, border: "1px solid #eef2f7", bgcolor: "#fff", boxShadow: "0 1px 2px rgba(16,24,40,0.04)" };
 const WEEKDAYS = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
@@ -39,7 +41,7 @@ function Pill({ icon, text, color, bg, title }: { icon: string; text?: string; c
   return (
     <Stack direction="row" spacing={0.3} alignItems="center" title={title} sx={{ px: 0.75, py: 0.25, borderRadius: 999, bgcolor: bg }}>
       <Icon icon={icon} width={9} color={color} />
-      {text ? <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, color }}>{text}</Typography> : null}
+      {text ? <Typography sx={{ fontSize: phoneText(0.7), fontWeight: 800, color }}>{text}</Typography> : null}
     </Stack>
   );
 }
@@ -65,7 +67,7 @@ function LeaderRow({ r, scoreLabel }: { r: LbRow; scoreLabel: string }) {
         <Typography sx={{ fontWeight: 800, fontSize: "0.92rem", color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {r.name}{me && <Box component="span" sx={{ color: "#7c3aed", fontWeight: 700, ml: 0.5 }}>(you)</Box>}
         </Typography>
-        <Typography sx={{ fontSize: "0.74rem", color: "#94a3b8" }}>{scoreLabel}: {r.score.toLocaleString()}</Typography>
+        <Typography sx={{ fontSize: phoneText(0.74), color: "#94a3b8" }}>{scoreLabel}: {r.score.toLocaleString()}</Typography>
       </Box>
       <Box sx={{ minWidth: 58, display: "flex", justifyContent: "flex-end" }}>
         <RankDeltaPill delta={r.rankDelta} />
@@ -87,19 +89,19 @@ function Calendar({ cal, bestDay }: { cal: LeaderboardStreaks["calendar"]; bestD
           <SectionBadge icon="mdi:calendar-month" gradient="linear-gradient(135deg, #f59e0b, #f97316)" />
           <Box>
             <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", color: "#0f172a", lineHeight: 1.15 }}>{cal.label}</Typography>
-            <Typography sx={{ fontSize: "0.74rem", color: "#64748b" }}>Days you showed up</Typography>
+            <Typography sx={{ fontSize: phoneText(0.74), color: "#64748b" }}>Days you showed up</Typography>
           </Box>
         </Stack>
         {bestDay && (
           <Stack direction="row" spacing={0.4} alignItems="center" sx={{ px: 1, py: 0.4, borderRadius: 999, bgcolor: "#f5f3ff" }}>
             <Icon icon="mdi:star-four-points" width={12} color="#7c3aed" />
-            <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color: "#6d28d9" }}>Best day: {bestDay}</Typography>
+            <Typography sx={{ fontSize: phoneText(0.72), fontWeight: 700, color: "#6d28d9" }}>Best day: {bestDay}</Typography>
           </Stack>
         )}
       </Stack>
       <Box sx={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: 0.75 }}>
         {WEEKDAYS.map((d) => (
-          <Typography key={d} sx={{ textAlign: "center", fontSize: "0.72rem", fontWeight: 700, color: "#94a3b8", mb: 0.5 }}>{d}</Typography>
+          <Typography key={d} sx={{ textAlign: "center", fontSize: phoneText(0.72), fontWeight: 700, color: "#94a3b8", mb: 0.5 }}>{d}</Typography>
         ))}
         {cells.map((c, i) => {
           if (!c) return <Box key={`e${i}`} />;
@@ -138,11 +140,11 @@ function StreakCard({ s }: { s: LeaderboardStreaks["streak"] }) {
               <Typography sx={{ fontSize: "2.4rem" }}>🔥</Typography>
               <Typography sx={{ fontWeight: 900, fontSize: "2.4rem", lineHeight: 1 }}>{s.current} <Box component="span" sx={{ fontSize: "1.2rem", fontWeight: 700 }}>days</Box></Typography>
             </Stack>
-            <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color: "rgba(255,255,255,0.85)", mt: 0.75 }}>Personal best: {s.longest} days</Typography>
+            <Typography sx={{ fontSize: phoneText(0.72), fontWeight: 700, color: "rgba(255,255,255,0.85)", mt: 0.75 }}>Personal best: {s.longest} days</Typography>
           </Box>
           <Box sx={{ textAlign: "right" }}>
             <Stack direction="row" spacing={0.25} alignItems="center" justifyContent="flex-end">
-              <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color: "#fff" }}>AI momentum score</Typography>
+              <Typography sx={{ fontSize: phoneText(0.72), fontWeight: 700, color: "#fff" }}>AI momentum score</Typography>
               <MomentumInfo info={s.momentumInfo} size={14} color="#ffffff" />
             </Stack>
             <Typography sx={{ fontWeight: 900, fontSize: "1.8rem", lineHeight: 1.1 }}>{s.momentum}<Box component="span" sx={{ fontSize: "0.95rem", fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>/100</Box></Typography>
@@ -203,7 +205,7 @@ export function LeaderboardStreaksContent() {
             <Box sx={{ minWidth: 0 }}>
               <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
                 <Typography sx={{ fontWeight: 900, fontSize: { xs: "1.6rem", md: "2.1rem" }, lineHeight: 1.1 }}>Leaderboard &amp; Streaks</Typography>
-                <Box sx={{ px: 1, py: 0.3, borderRadius: 999, fontSize: "0.62rem", fontWeight: 800, color: "#7c3aed", bgcolor: "white" }}>AI INSIGHT</Box>
+                <Box sx={{ px: 1, py: 0.3, borderRadius: 999, fontSize: phoneText(0.62), fontWeight: 800, color: "#7c3aed", bgcolor: "white" }}>AI INSIGHT</Box>
               </Stack>
               <Typography sx={{ fontSize: "0.92rem", color: "rgba(255,255,255,0.88)", mt: 1, maxWidth: 720, lineHeight: 1.55 }}>
                 Not just rankings - how to climb, and how to keep your momentum.
@@ -235,10 +237,10 @@ export function LeaderboardStreaksContent() {
                   <SectionBadge icon="mdi:trophy" gradient="linear-gradient(135deg, #f59e0b, #f97316)" />
                   <Box>
                     <Typography sx={{ fontWeight: 800, fontSize: "1.1rem", color: "#0f172a", lineHeight: 1.15 }}>Leaderboard</Typography>
-                    <Typography sx={{ fontSize: "0.74rem", color: "#64748b" }}>Where you stand in your cohort</Typography>
+                    <Typography sx={{ fontSize: phoneText(0.74), color: "#64748b" }}>Where you stand in your cohort</Typography>
                   </Box>
                 </Stack>
-                <ButtonBase onClick={(e) => setMenuEl(e.currentTarget)} sx={{ px: 1.25, py: 0.6, borderRadius: 999, border: "1px solid #e2e8f0", fontSize: "0.8rem", fontWeight: 700, color: "#475569", gap: 0.4, "&:hover": { borderColor: "#c4b5fd", color: "#6d28d9" } }}>
+                <ButtonBase onClick={(e) => setMenuEl(e.currentTarget)} sx={{ px: 1.25, py: 0.6, borderRadius: 999, border: "1px solid #e2e8f0", fontSize: "0.8rem", fontWeight: 700, color: "#475569", gap: 0.4, "&:hover": { borderColor: "#c4b5fd", color: "#6d28d9" }, ...tapHeight(31) }}>
                   {PERIOD_LABEL[data.period]} <Icon icon="mdi:chevron-down" width={16} />
                 </ButtonBase>
                 <Menu anchorEl={menuEl} open={Boolean(menuEl)} onClose={() => setMenuEl(null)}>
@@ -266,15 +268,15 @@ export function LeaderboardStreaksContent() {
                   {/* Column labels so the ▲/▼ pill reads as "rank change this week", not points. */}
                   <Stack direction="row" alignItems="center" spacing={1.5} sx={{ px: 1.25, mb: 0.75 }}>
                     <Box sx={{ flex: 1 }} />
-                    <Typography sx={{ minWidth: 58, textAlign: "right", whiteSpace: "nowrap", fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.4, textTransform: "uppercase", color: "#94a3b8" }}>This wk</Typography>
-                    <Typography sx={{ minWidth: 34, textAlign: "right", fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.4, textTransform: "uppercase", color: "#94a3b8" }}>Rank</Typography>
+                    <Typography sx={{ minWidth: 58, textAlign: "right", whiteSpace: "nowrap", fontSize: phoneText(0.6), fontWeight: 800, letterSpacing: 0.4, textTransform: "uppercase", color: "#94a3b8" }}>This wk</Typography>
+                    <Typography sx={{ minWidth: 34, textAlign: "right", fontSize: phoneText(0.6), fontWeight: 800, letterSpacing: 0.4, textTransform: "uppercase", color: "#94a3b8" }}>Rank</Typography>
                   </Stack>
                   <Stack spacing={1}>
                     {data.leaderboard.rows.map((r) => (
                       <LeaderRow key={r.rank + r.name} r={r} scoreLabel={data.period === "week" ? "This week" : "Score"} />
                     ))}
                   </Stack>
-                  <Typography sx={{ mt: 1.25, fontSize: "0.72rem", color: "#94a3b8", lineHeight: 1.5 }}>
+                  <Typography sx={{ mt: 1.25, fontSize: phoneText(0.72), color: "#94a3b8", lineHeight: 1.5 }}>
                     <Box component="span" sx={{ fontWeight: 800, color: "#15803d" }}>▲</Box> /{" "}
                     <Box component="span" sx={{ fontWeight: 800, color: "#b91c1c" }}>▼</Box> show places moved this week; <b>–</b> means no change. Score is your total points.
                   </Typography>

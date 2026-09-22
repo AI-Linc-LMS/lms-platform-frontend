@@ -5,7 +5,8 @@ import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { useParams } from "next/navigation";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { useReturnTo } from "@/lib/hooks/useReturnTo";
-import { Box, ButtonBase, Dialog, IconButton, Popover, Typography } from "@mui/material";
+import { Box, ButtonBase, Dialog, IconButton, Popover, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
 import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -24,6 +25,7 @@ import {
   type ExplainResult,
   type ReadingTier,
 } from "@/lib/services/adaptive-course.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 const TIER_BLURB: Record<ReadingTier, string> = {
   Beginner: "ELI5",
@@ -44,6 +46,8 @@ export default function AdaptiveArticleReaderPage() {
   const { push } = useInstantNavigation();
   const params = useParams();
   const { showToast } = useToast();
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const courseId = Number(params.courseId);
   const submoduleId = Number(params.submoduleId);
   // Honours ?from= so a learner who arrived from a roadmap returns to it, not to the course.
@@ -209,6 +213,35 @@ export default function AdaptiveArticleReaderPage() {
   const glossaryEntries = useMemo(() => Object.entries(article?.glossary ?? {}), [article]);
   const tierIndex = READING_TIERS.indexOf(tier);
 
+  // One body for both the phone sheet and the desktop dialog.
+  const summaryBody = (
+    <>
+      {summary.loading ? (
+        <GeneratingShimmer label="Summarising what you've read…" />
+      ) : (
+        <Box sx={{ fontSize: "0.9rem" }}>
+          {/* word-by-word reveal of the recap */}
+          <AdaptiveArticleBody html={summary.html} explainTerms={[]} onExplain={() => {}} reveal />
+          {summary.bullets.length > 0 && (
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 0.85, mt: 2 }}>
+              <Typography sx={{ fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "text.secondary" }}>Key takeaways</Typography>
+              {summary.bullets.map((b, i) => (
+                <Box key={i} sx={{ display: "flex", gap: 1, alignItems: "flex-start", p: 1.1, borderRadius: 2.5,
+                  bgcolor: "color-mix(in srgb, #a855f7 7%, transparent)",
+                  border: "1px solid color-mix(in srgb, #a855f7 16%, transparent)",
+                  opacity: 0, animation: "acb-fade-in 0.4s ease forwards", animationDelay: `${0.4 + i * 0.3}s` }}>
+                  <Icon icon="mdi:check-circle" width={17} style={{ color: "#a855f7", flexShrink: 0, marginTop: 1 }} />
+                  <Typography sx={{ fontSize: "0.85rem", lineHeight: 1.45 }}>{b}</Typography>
+                </Box>
+              ))}
+            </Box>
+          )}
+          <style jsx global>{`@keyframes acb-fade-in { to { opacity: 1; } }`}</style>
+        </Box>
+      )}
+    </>
+  );
+
   return (
     <MainLayout fullWidthContent>
       {/* Reading-progress bar */}
@@ -219,7 +252,7 @@ export default function AdaptiveArticleReaderPage() {
       <Box sx={{ maxWidth: 1760, mx: "auto", py: { xs: 3, md: 5 } }}>
         <ButtonBase
           onClick={() => push(returnTo.href)}
-          sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}
+          sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem", [PHONE]: { minHeight: 44, mb: 1 } }}
         >
           <Icon icon="mdi:arrow-left" width={18} />
           {returnTo.label}
@@ -255,7 +288,9 @@ export default function AdaptiveArticleReaderPage() {
                     </Typography>
                   </Box>
                 </Box>
-                <Box sx={{ display: "flex", borderRadius: 999, p: 0.4, bgcolor: "color-mix(in srgb, var(--card-bg) 70%, transparent)", border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)" }}>
+                <Box data-testid="tier-switcher" sx={{ display: "flex", borderRadius: 999, p: 0.4, bgcolor: "color-mix(in srgb, var(--card-bg) 70%, transparent)", border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
+                  // Four levels do not fit one row at 390px (Expert fell off the edge): two by two on a phone.
+                  [PHONE]: { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", width: "100%", borderRadius: 4, gap: 0.5 } }}>
                   {READING_TIERS.map((t) => {
                     const active = t === tier;
                     return (
@@ -263,9 +298,10 @@ export default function AdaptiveArticleReaderPage() {
                         sx={{ px: 1.5, py: 0.7, borderRadius: 999, display: "flex", flexDirection: "column", alignItems: "center", lineHeight: 1.1,
                           color: active ? "white" : "text.primary",
                           background: active ? "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" : "transparent",
-                          "&:disabled": { opacity: 0.6 } }}>
+                          "&:disabled": { opacity: 0.6 },
+                          [PHONE]: { minHeight: 48, borderRadius: 3 } }}>
                         <Typography sx={{ fontWeight: 800, fontSize: "0.8rem" }}>{t}</Typography>
-                        <Typography sx={{ fontSize: "0.62rem", opacity: 0.8 }}>{TIER_BLURB[t]}</Typography>
+                        <Typography sx={{ fontSize: "0.62rem", [PHONE]: { fontSize: "0.75rem" }, opacity: 0.8 }}>{TIER_BLURB[t]}</Typography>
                       </ButtonBase>
                     );
                   })}
@@ -309,7 +345,7 @@ export default function AdaptiveArticleReaderPage() {
                 <TocRail headings={headings} activeId={activeHeading} onJump={goToHeading} open={tocOpen} onToggle={() => setTocOpen((v) => !v)} />
 
                 {/* Body */}
-                <Box ref={bodyWrapRef} sx={{ position: "relative", borderRadius: 4, p: { xs: 2, md: 3.5 }, bgcolor: "color-mix(in srgb, var(--card-bg) 75%, transparent)", border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)", minHeight: 240 }}>
+                <Box ref={bodyWrapRef} sx={{ position: "relative", borderRadius: 4, p: { xs: 2, md: 3.5 }, bgcolor: "color-mix(in srgb, var(--card-bg) 75%, transparent)", border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)", minHeight: 240, [PHONE]: { p: 1.5, minWidth: 0 } }}>
                   {tierLoading ? (
                     <ConjureLoader tier={pendingTier ?? tier} />
                   ) : (
@@ -330,7 +366,7 @@ export default function AdaptiveArticleReaderPage() {
                       </Box>
                       <Box sx={{ minWidth: 0 }}>
                         <Typography sx={{ fontWeight: 800, fontSize: "0.86rem", lineHeight: 1.2 }}>Not landing right?</Typography>
-                        <Typography sx={{ fontSize: "0.72rem", color: "text.secondary" }}>Re-pitch it instantly</Typography>
+                        <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary" }}>Re-pitch it instantly</Typography>
                       </Box>
                     </Box>
                     <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75, px: 1.5, pb: 1.5 }}>
@@ -397,7 +433,7 @@ export default function AdaptiveArticleReaderPage() {
                 background: "linear-gradient(135deg, #6366f1, #a855f7)", flexShrink: 0 }}>
                 <Icon icon={EXPLAIN_VIEW_META[explain.view].icon} width={14} style={{ color: "white" }} />
               </Box>
-              <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "#a855f7", minWidth: 0,
+              <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "#a855f7", minWidth: 0,
                 overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                 {EXPLAIN_VIEW_META[explain.view].label} · {explain.term}
               </Typography>
@@ -429,7 +465,7 @@ export default function AdaptiveArticleReaderPage() {
                   return (
                     <ButtonBase key={key} disabled={!has}
                       onClick={() => setExplain((s) => (s ? { ...s, view: key } : s))}
-                      sx={{ px: 1.25, py: 0.5, borderRadius: 999, fontSize: "0.72rem", fontWeight: 800, gap: 0.4,
+                      sx={{ px: 1.25, py: 0.5, borderRadius: 999, fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem", minHeight: 44 }, fontWeight: 800, gap: 0.4,
                         color: explain.view === key ? "white" : has ? "#6366f1" : "text.disabled",
                         background: explain.view === key ? "linear-gradient(135deg, #6366f1, #a855f7)" : "color-mix(in srgb, #6366f1 12%, transparent)",
                         "&:disabled": { opacity: 0.45, background: "color-mix(in srgb, var(--border-default) 30%, transparent)" } }}>
@@ -444,58 +480,48 @@ export default function AdaptiveArticleReaderPage() {
         )}
       </Popover>
 
-      {/* Summarise dialog - centered, polished recap of the article so far */}
-      <Dialog
-        open={summary.open}
-        onClose={() => setSummary((s) => ({ ...s, open: false }))}
-        maxWidth="sm"
-        fullWidth
-        slotProps={{ paper: { sx: { borderRadius: 4, overflow: "hidden", bgcolor: "var(--card-bg)", border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)", boxShadow: "0 28px 70px -30px rgba(124,58,237,0.55)" } } }}
-      >
-        {/* Gradient header */}
-        <Box sx={{ position: "relative", px: 3, py: 2.25, color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 55%, #ec4899 100%)" }}>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
-            <AIBeacon size={26} />
-            <Box>
-              <Typography sx={{ fontWeight: 800, fontSize: "1.02rem", lineHeight: 1.15 }}>Summary so far</Typography>
-              <Typography sx={{ fontSize: "0.74rem", opacity: 0.9 }}>The key ideas, condensed · {tier} level</Typography>
+      {/* Summarise - a bottom sheet on a phone; the centred dialog, unchanged, from sm up. */}
+      {isPhone ? (
+        <ResponsiveDialog
+          open={summary.open}
+          onClose={() => setSummary((s) => ({ ...s, open: false }))}
+          title="Summary so far"
+          description={`The key ideas, condensed · ${tier} level`}
+          data-testid="summary-sheet"
+        >
+          {summaryBody}
+        </ResponsiveDialog>
+      ) : (
+        <Dialog
+          open={summary.open}
+          onClose={() => setSummary((s) => ({ ...s, open: false }))}
+          maxWidth="sm"
+          fullWidth
+          slotProps={{ paper: { sx: { borderRadius: 4, overflow: "hidden", bgcolor: "var(--card-bg)", border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)", boxShadow: "0 28px 70px -30px rgba(124,58,237,0.55)" } } }}
+        >
+          {/* Gradient header */}
+          <Box sx={{ position: "relative", px: 3, py: 2.25, color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 55%, #ec4899 100%)" }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
+              <AIBeacon size={26} />
+              <Box>
+                <Typography sx={{ fontWeight: 800, fontSize: "1.02rem", lineHeight: 1.15 }}>Summary so far</Typography>
+                <Typography sx={{ fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" }, opacity: 0.9 }}>The key ideas, condensed · {tier} level</Typography>
+              </Box>
             </Box>
+            <IconButton
+              onClick={() => setSummary((s) => ({ ...s, open: false }))}
+              aria-label="Close"
+              sx={{ position: "absolute", top: 10, right: 10, color: "white", "&:hover": { bgcolor: "rgba(255,255,255,0.18)" } }}
+            >
+              <Icon icon="mdi:close" width={18} />
+            </IconButton>
           </Box>
-          <IconButton
-            onClick={() => setSummary((s) => ({ ...s, open: false }))}
-            aria-label="Close"
-            sx={{ position: "absolute", top: 10, right: 10, color: "white", "&:hover": { bgcolor: "rgba(255,255,255,0.18)" } }}
-          >
-            <Icon icon="mdi:close" width={18} />
-          </IconButton>
-        </Box>
 
-        <Box sx={{ p: 3, maxHeight: "60vh", overflowY: "auto" }}>
-          {summary.loading ? (
-            <GeneratingShimmer label="Summarising what you've read…" />
-          ) : (
-            <Box sx={{ fontSize: "0.9rem" }}>
-              {/* word-by-word reveal of the recap */}
-              <AdaptiveArticleBody html={summary.html} explainTerms={[]} onExplain={() => {}} reveal />
-              {summary.bullets.length > 0 && (
-                <Box sx={{ display: "flex", flexDirection: "column", gap: 0.85, mt: 2 }}>
-                  <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "text.secondary" }}>Key takeaways</Typography>
-                  {summary.bullets.map((b, i) => (
-                    <Box key={i} sx={{ display: "flex", gap: 1, alignItems: "flex-start", p: 1.1, borderRadius: 2.5,
-                      bgcolor: "color-mix(in srgb, #a855f7 7%, transparent)",
-                      border: "1px solid color-mix(in srgb, #a855f7 16%, transparent)",
-                      opacity: 0, animation: "acb-fade-in 0.4s ease forwards", animationDelay: `${0.4 + i * 0.3}s` }}>
-                      <Icon icon="mdi:check-circle" width={17} style={{ color: "#a855f7", flexShrink: 0, marginTop: 1 }} />
-                      <Typography sx={{ fontSize: "0.85rem", lineHeight: 1.45 }}>{b}</Typography>
-                    </Box>
-                  ))}
-                </Box>
-              )}
-              <style jsx global>{`@keyframes acb-fade-in { to { opacity: 1; } }`}</style>
-            </Box>
-          )}
-        </Box>
-      </Dialog>
+          <Box sx={{ p: 3, maxHeight: "60vh", overflowY: "auto" }}>
+            {summaryBody}
+          </Box>
+        </Dialog>
+      )}
     </MainLayout>
   );
 }
@@ -647,7 +673,7 @@ function RailLabel({ icon, text, noMargin }: { icon: string; text: string; noMar
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 0.6, mb: noMargin ? 0 : 1.25 }}>
       <Icon icon={icon} width={16} style={{ color: "#a855f7" }} />
-      <Typography sx={{ fontWeight: 800, fontSize: "0.74rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "#a855f7" }}>{text}</Typography>
+      <Typography sx={{ fontWeight: 800, fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" }, letterSpacing: "0.06em", textTransform: "uppercase", color: "#a855f7" }}>{text}</Typography>
     </Box>
   );
 }
@@ -735,7 +761,7 @@ function RescueBtn({ icon, title, sub, accent, disabled, onClick }: { icon: stri
       </Box>
       <Box sx={{ minWidth: 0 }}>
         <Typography sx={{ fontWeight: 800, fontSize: "0.81rem", lineHeight: 1.2 }}>{title}</Typography>
-        <Typography sx={{ fontSize: "0.71rem", color: "text.secondary" }}>{sub}</Typography>
+        <Typography sx={{ fontSize: "0.71rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary" }}>{sub}</Typography>
       </Box>
     </ButtonBase>
   );
@@ -745,7 +771,7 @@ function ToolbarBtn({ icon, label, onClick }: { icon: string; label: string; onC
   return (
     <ButtonBase onClick={onClick} sx={{ px: 1.75, py: 0.85, borderRadius: 999, fontWeight: 800, fontSize: "0.82rem", gap: 0.5, color: "text.primary",
       bgcolor: "color-mix(in srgb, var(--card-bg) 60%, transparent)", border: "1px solid color-mix(in srgb, var(--border-default) 75%, transparent)",
-      "&:hover": { borderColor: "color-mix(in srgb, #6366f1 50%, transparent)" } }}>
+      "&:hover": { borderColor: "color-mix(in srgb, #6366f1 50%, transparent)" }, [PHONE]: { minHeight: 44 } }}>
       <Icon icon={icon} width={16} />
       {label}
     </ButtonBase>

@@ -29,6 +29,7 @@ import {
   AssessmentEmailJob,
 } from "@/lib/services/admin/admin-assessment-email-jobs.service";
 import { config } from "@/lib/config";
+import { PHONE } from "@/components/common/mobile/phone";
 
 type AnyJob = EmailJob | AssessmentEmailJob;
 
@@ -176,7 +177,10 @@ function JobsPanel({
           placeholder="Search by subject or assessment…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          sx={{ minWidth: 260, flex: "1 1 260px", maxWidth: 420 }}
+          sx={{
+            minWidth: 260, flex: "1 1 260px", maxWidth: 420,
+            [PHONE]: { minWidth: 0, maxWidth: "none", "& .MuiInputBase-root": { minHeight: 44 } },
+          }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
@@ -185,7 +189,7 @@ function JobsPanel({
             ),
           }}
         />
-        <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+        <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", [PHONE]: { "& > .MuiButtonBase-root": { minHeight: 44, px: 1.75 } } }}>
           {STATUS_FILTERS.map((f) => {
             const active = status === f.value;
             return (
@@ -237,7 +241,15 @@ function JobsPanel({
       )}
 
       {filtered.length > limit || limit !== 12 ? (
-        <Box sx={{ mt: 3, display: "flex", flexWrap: "wrap", gap: 1.5, justifyContent: "space-between", alignItems: "center" }}>
+        <Box
+          sx={{
+            mt: 3, display: "flex", flexWrap: "wrap", gap: 1.5, justifyContent: "space-between", alignItems: "center",
+            [PHONE]: {
+              "& .MuiInputBase-root": { minHeight: 44 },
+              "& .MuiPaginationItem-root": { minWidth: 44, height: 44, borderRadius: 22 },
+            },
+          }}
+        >
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
             <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
               {`Showing ${(safePage - 1) * limit + 1}–${Math.min(filtered.length, safePage * limit)} of ${filtered.length}`}
@@ -353,7 +365,7 @@ export default function AdminEmailsPage() {
       />
 
       {/* tab switch */}
-      <Box data-tour-id="emails-tabs" sx={{ display: "flex", gap: 0.75, mt: 1 }}>
+      <Box data-tour-id="emails-tabs" sx={{ display: "flex", gap: 0.75, mt: 1, [PHONE]: { "& > .MuiButtonBase-root": { minHeight: 44 } } }}>
             {TABS.map((tb, i) => {
               const active = tab === i;
               return (

@@ -52,6 +52,16 @@ import {
 } from "@/lib/services/admin/admin-instructors.service";
 import { adminCourseBuilderService } from "@/lib/services/admin/admin-course-builder.service";
 import { formatDate } from "@/lib/utils/date-utils";
+import { PHONE } from "@/components/common/mobile/phone";
+import {
+  CardFact,
+  PHONE_FIELD_SX,
+  PhoneSheet,
+  SHEET_BUTTON_SX,
+  TAP,
+  phoneIconButtonSx,
+  useIsPhone,
+} from "@/components/admin/adminPhone";
 
 interface CourseOption {
   id: number;
@@ -117,6 +127,7 @@ function avatarColorFor(seed: string): string {
 export default function InstructorsPage() {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
+  const isPhone = useIsPhone();
 
   const [activeTab, setActiveTab] = useState<InstructorListStatus>("pending");
   const [dataByStatus, setDataByStatus] = useState<
@@ -457,6 +468,499 @@ export default function InstructorsPage() {
 
   const loading = loadingByStatus[activeTab];
 
+  const emptyState = (
+    <Stack alignItems="center" spacing={1.5}>
+      <Box
+        sx={{
+          width: 64,
+          height: 64,
+          borderRadius: "50%",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          backgroundColor: STATUS_VISUAL[activeTab].tint,
+          color: STATUS_VISUAL[activeTab].accent,
+        }}
+      >
+        <IconWrapper icon={STATUS_VISUAL[activeTab].icon} size={32} />
+      </Box>
+      <Typography sx={{ color: "var(--font-secondary)" }}>
+        {searchTerm
+          ? t("adminInstructors.noMatch")
+          : t(`adminInstructors.empty.${activeTab}`)}
+      </Typography>
+    </Stack>
+  );
+
+  /**
+   * The row actions as full-width thumb buttons. Same handlers as `renderActions`; only the
+   * shape changes, because a right-aligned row of small buttons does not fit a 358px card.
+   */
+  const renderPhoneActions = (row: InstructorRow) => {
+    const btn = { ...SHEET_BUTTON_SX, minHeight: TAP, flex: "1 1 0", minWidth: 0 } as const;
+    if (activeTab === "pending") {
+      return (
+        <>
+          <Button
+            variant="contained"
+            disabled={busyId === row.id}
+            startIcon={<IconWrapper icon="mdi:check" size={16} />}
+            onClick={() => setConfirmApproveRow(row)}
+            sx={{
+              ...btn,
+              backgroundColor: "var(--accent-indigo)",
+              color: "var(--font-light)",
+              "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
+            }}
+          >
+            {busyId === row.id
+              ? t("adminInstructors.loading.approving")
+              : t("adminInstructors.actions.approve")}
+          </Button>
+          <Button
+            variant="outlined"
+            color="error"
+            disabled={busyId === row.id}
+            startIcon={<IconWrapper icon="mdi:close" size={16} />}
+            onClick={() => {
+              setRejectReason("");
+              setConfirmRejectRow(row);
+            }}
+            sx={btn}
+          >
+            {t("adminInstructors.actions.reject")}
+          </Button>
+        </>
+      );
+    }
+    if (activeTab === "approved") {
+      return (
+        <>
+          <Button
+            variant="outlined"
+            startIcon={<IconWrapper icon="mdi:book-plus-multiple-outline" size={16} />}
+            onClick={() => void openAssignDialog(row)}
+            sx={btn}
+          >
+            {t("adminInstructors.actions.assignCourses")}
+          </Button>
+          <IconButton
+            aria-label={t("adminPeoplePhone.moreActions", { name: row.full_name || row.email })}
+            onClick={(e) => openMenu(row, e.currentTarget)}
+            sx={{ width: TAP, height: TAP, flexShrink: 0, border: "1px solid var(--border-default)", borderRadius: 2 }}
+          >
+            <IconWrapper icon="mdi:dots-vertical" size={20} />
+          </IconButton>
+        </>
+      );
+    }
+    return (
+      <>
+        <Button
+          variant="outlined"
+          disabled={busyId === row.id}
+          startIcon={<IconWrapper icon="mdi:refresh" size={16} />}
+          onClick={() => setConfirmReopenRow(row)}
+          sx={btn}
+        >
+          {t("adminInstructors.actions.reopen")}
+        </Button>
+        <Button
+          variant="text"
+          color="error"
+          startIcon={<IconWrapper icon="mdi:account-remove-outline" size={16} />}
+          onClick={() => setRemoveRow(row)}
+          sx={btn}
+        >
+          Remove
+        </Button>
+      </>
+    );
+  };
+
+  const phoneCards = (
+    <Stack spacing={1.25} data-testid="instructor-cards">
+      {loading && (dataByStatus[activeTab]?.length ?? 0) === 0 ? (
+        <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+          <CircularProgress size={32} />
+        </Box>
+      ) : visibleRows.length === 0 ? (
+        <Box sx={{ py: 6 }}>{emptyState}</Box>
+      ) : (
+        visibleRows.map((row) => (
+          <Paper
+            key={row.id}
+            elevation={0}
+            data-testid="instructor-card"
+            sx={{
+              p: 1.75,
+              borderRadius: 2,
+              border: "1px solid var(--border-default)",
+              backgroundColor: "var(--card-bg)",
+            }}
+          >
+            <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0 }}>
+              <Avatar
+                sx={{
+                  width: 40,
+                  height: 40,
+                  backgroundColor: avatarColorFor(row.email || row.full_name),
+                  color: "#fff",
+                  fontWeight: 700,
+                  fontSize: "0.875rem",
+                }}
+              >
+                {getInitials(row.full_name, row.email)}
+              </Avatar>
+              <Box sx={{ minWidth: 0, flex: 1 }}>
+                <Typography sx={{ color: "var(--font-primary)", fontWeight: 700, fontSize: "0.95rem", lineHeight: 1.25, overflowWrap: "anywhere" }}>
+                  {row.full_name || row.email}
+                </Typography>
+                <Typography sx={{ color: "var(--font-secondary)", fontSize: "0.8125rem", overflowWrap: "anywhere" }}>
+                  {row.email}
+                </Typography>
+              </Box>
+            </Stack>
+
+            <Stack spacing={0.75} sx={{ mt: 1.5 }}>
+              <CardFact label={t("adminInstructors.columns.phone")}>{row.phone_number || "-"}</CardFact>
+              <CardFact label={t("adminInstructors.columns.createdAt")}>{formatDate(row.created_at)}</CardFact>
+              {activeTab === "approved" && codeById[row.id] && (
+                <CardFact label={t("adminPeoplePhone.instructorCode")}>
+                  <Box component="span" sx={{ fontFamily: "monospace", fontWeight: 800 }}>{codeById[row.id]}</Box>
+                </CardFact>
+              )}
+              {activeTab === "approved" && (
+                <CardFact label={t("adminInstructors.columns.assignedCourses")}>
+                  {row.assigned_courses && row.assigned_courses.length > 0 ? (
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, alignItems: "center" }}>
+                      {row.assigned_courses.slice(0, 3).map((c) => (
+                        <Chip
+                          key={c.id}
+                          label={c.title}
+                          size="small"
+                          sx={{
+                            backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
+                            color: "var(--accent-indigo)",
+                            fontWeight: 500,
+                            fontSize: "0.75rem",
+                            maxWidth: "100%",
+                          }}
+                        />
+                      ))}
+                      {row.assigned_courses.length > 3 && (
+                        <Button
+                          size="small"
+                          onClick={() => setViewCoursesRow(row)}
+                          sx={{ minHeight: TAP, textTransform: "none", fontWeight: 700 }}
+                        >
+                          {t("adminPeoplePhone.moreCourses", { count: row.assigned_courses.length - 3 })}
+                        </Button>
+                      )}
+                    </Box>
+                  ) : (
+                    "-"
+                  )}
+                </CardFact>
+              )}
+              {activeTab === "rejected" && (
+                <>
+                  <CardFact label={t("adminInstructors.columns.reviewedAt")}>{formatDate(row.pending_reviewed_at)}</CardFact>
+                  <CardFact label={t("adminInstructors.columns.rejectionReason")}>
+                    {row.pending_rejection_reason?.trim() || "-"}
+                  </CardFact>
+                </>
+              )}
+            </Stack>
+
+            <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 1.5 }}>
+              {row.instructor_cv_url && (
+                <Button
+                  variant="outlined"
+                  component="a"
+                  href={row.instructor_cv_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  startIcon={<IconWrapper icon="mdi:file-pdf-box" size={16} />}
+                  sx={{ ...SHEET_BUTTON_SX, minHeight: TAP, flex: "1 1 100%", color: "var(--accent-indigo)" }}
+                >
+                  View CV
+                </Button>
+              )}
+              {renderPhoneActions(row)}
+            </Box>
+          </Paper>
+        ))
+      )}
+    </Stack>
+  );
+
+  // Shared by the desktop Dialog and the phone sheet, so the two cannot drift apart.
+  const saveCode = async () => {
+    if (!codeRow) return;
+    setSavingCode(true);
+    try {
+      const res = await instructorService.setInstructorCode(codeRow.id, codeValue.trim());
+      setCodeById((m) => ({ ...m, [codeRow.id]: res.instructor_code }));
+      showToast("Instructor code updated.", "success");
+      setCodeRow(null);
+    } catch (err: unknown) {
+      showToast(readApiError(err, "Couldn't update the code."), "error");
+    } finally {
+      setSavingCode(false);
+    }
+  };
+
+  const codeBody = (
+    <>
+      <Typography sx={{ fontSize: "0.85rem", color: "var(--font-secondary)", mb: 2 }}>
+        Students see this code instead of the instructor&apos;s real name across courses and live sessions. Leave blank to clear it.
+      </Typography>
+      <TextField
+        autoFocus fullWidth size="small" label="Instructor code"
+        value={codeValue} onChange={(e) => setCodeValue(e.target.value)}
+        placeholder="e.g. RM-07" inputProps={{ maxLength: 32 }}
+        sx={PHONE_FIELD_SX}
+      />
+    </>
+  );
+
+  const approveBody = (
+    <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
+      {t("adminInstructors.confirm.approveBody", {
+        name: confirmApproveRow?.full_name ?? "",
+        email: confirmApproveRow?.email ?? "",
+      })}
+    </Typography>
+  );
+
+  const rejectBody = (
+    <>
+      <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 2 }}>
+        {t("adminInstructors.confirm.rejectBody", {
+          name: confirmRejectRow?.full_name ?? "",
+          email: confirmRejectRow?.email ?? "",
+        })}
+      </Typography>
+      <TextField
+        label={t("adminInstructors.confirm.reasonLabel")}
+        value={rejectReason}
+        onChange={(e) => setRejectReason(e.target.value)}
+        fullWidth
+        multiline
+        minRows={3}
+        disabled={busyId !== null}
+      />
+    </>
+  );
+
+  const reopenBody = (
+    <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
+      {t("adminInstructors.confirm.reopenBody", {
+        name: confirmReopenRow?.full_name ?? "",
+        email: confirmReopenRow?.email ?? "",
+      })}
+    </Typography>
+  );
+
+  const removeMessage = `This removes ${removeRow?.full_name || "this person"} as an instructor — their role goes back to student, their instructor code is cleared, and all their course/cohort/live-session assignments are removed. Their account and learning data are kept.`;
+
+  const removeInstructor = async () => {
+    if (!removeRow) return;
+    setRemoving(true);
+    try {
+      await adminInstructorsService.removeInstructor(removeRow.id);
+      showToast(`${removeRow.full_name || "Instructor"} is no longer an instructor.`, "success");
+      setRemoveRow(null);
+      await refreshAll();
+      await loadCodes();
+    } catch (err: unknown) {
+      showToast(readApiError(err, "Couldn't remove this instructor."), "error");
+    } finally {
+      setRemoving(false);
+    }
+  };
+
+  const assignBody = (
+    <>
+    <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 2 }}>
+      {t("adminInstructors.assignDialog.body")}
+    </Typography>
+
+    {coursesLoading ? (
+      <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
+        <CircularProgress size={28} />
+      </Box>
+    ) : allCourses.length === 0 ? (
+      <Stack alignItems="center" spacing={1.5} sx={{ py: 4 }}>
+        <Box
+          sx={{
+            width: 56,
+            height: 56,
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor:
+              "color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%)",
+            color: "var(--accent-indigo)",
+          }}
+        >
+          <IconWrapper icon="mdi:book-off-outline" size={28} />
+        </Box>
+        <Typography sx={{ color: "var(--font-secondary)" }}>
+          {t("adminInstructors.assignDialog.noCourses")}
+        </Typography>
+      </Stack>
+    ) : (
+      <>
+        <TextField
+          size="small"
+          fullWidth
+          placeholder={
+            t("adminInstructors.assignDialog.searchPlaceholder") as string
+          }
+          value={courseSearch}
+          onChange={(e) => setCourseSearch(e.target.value)}
+          sx={{ mb: 1.5, ...PHONE_FIELD_SX }}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <IconWrapper icon="mdi:magnify" size={18} />
+              </InputAdornment>
+            ),
+          }}
+        />
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            px: 0.5,
+            pb: 0.5,
+          }}
+        >
+          <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
+            {t("adminInstructors.assignDialog.selectedCount", {
+              count: selectedCourseIds.length,
+            })}
+          </Typography>
+          <Button
+            size="small"
+            onClick={toggleAllFiltered}
+            sx={{ textTransform: "none", [PHONE]: { minHeight: TAP } }}
+          >
+            {allFilteredSelected
+              ? t("adminInstructors.assignDialog.clearAll")
+              : t("adminInstructors.assignDialog.selectAll")}
+          </Button>
+        </Box>
+        <Divider sx={{ mb: 1 }} />
+        <Stack
+          sx={{
+            maxHeight: 320,
+            overflowY: "auto",
+            "& .MuiFormControlLabel-root": {
+              m: 0,
+              px: 1,
+              py: 0.5,
+              borderRadius: 1,
+              "&:hover": {
+                backgroundColor:
+                  "color-mix(in srgb, var(--accent-indigo) 6%, var(--surface) 94%)",
+              },
+            },
+          }}
+        >
+          {filteredAssignCourses.length === 0 ? (
+            <Typography
+              sx={{
+                color: "var(--font-secondary)",
+                textAlign: "center",
+                py: 3,
+              }}
+            >
+              {t("adminInstructors.noMatch")}
+            </Typography>
+          ) : (
+            filteredAssignCourses.map((c) => {
+              const checked = selectedCourseIds.includes(c.id);
+              return (
+                <FormControlLabel
+                  key={c.id}
+                  control={
+                    <Checkbox
+                      checked={checked}
+                      onChange={(_, v) => {
+                        setSelectedCourseIds((prev) =>
+                          v
+                            ? [...prev, c.id]
+                            : prev.filter((id) => id !== c.id)
+                        );
+                      }}
+                    />
+                  }
+                  label={
+                    <ListItemText
+                      primary={c.title}
+                      primaryTypographyProps={{
+                        sx: { color: "var(--font-primary)" },
+                      }}
+                    />
+                  }
+                />
+              );
+            })
+          )}
+        </Stack>
+      </>
+    )}
+    </>
+  );
+
+  const viewBody = (
+    <>
+    {viewCoursesRow?.assigned_courses && viewCoursesRow.assigned_courses.length > 0 ? (
+      <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ rowGap: 0.5 }}>
+        {viewCoursesRow.assigned_courses.map((c) => (
+          <Chip
+            key={c.id}
+            label={c.title}
+            size="small"
+            sx={{
+              backgroundColor:
+                "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
+              color: "var(--accent-indigo)",
+              fontWeight: 500,
+            }}
+          />
+        ))}
+      </Stack>
+    ) : (
+      <Stack alignItems="center" spacing={1.5} sx={{ py: 3 }}>
+        <Box
+          sx={{
+            width: 56,
+            height: 56,
+            borderRadius: "50%",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            backgroundColor:
+              "color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%)",
+            color: "var(--accent-indigo)",
+          }}
+        >
+          <IconWrapper icon="mdi:book-off-outline" size={28} />
+        </Box>
+        <Typography sx={{ color: "var(--font-secondary)" }}>
+          {t("adminInstructors.viewCourses.noCourses")}
+        </Typography>
+      </Stack>
+    )}
+    </>
+  );
+
   return (
     <PageShell maxWidth={1200}>
       <ModulePageHeader
@@ -546,7 +1050,7 @@ export default function InstructorsPage() {
                       <IconWrapper icon={v.icon} size={16} />
                       <Typography
                         variant="caption"
-                        sx={{ fontWeight: 600, fontSize: "0.7rem" }}
+                        sx={{ fontWeight: 600, fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" } }}
                       >
                         {t(`adminInstructors.stats.${s}`)}
                       </Typography>
@@ -597,6 +1101,7 @@ export default function InstructorsPage() {
                 fontWeight: 600,
                 color: "var(--font-secondary)",
                 "&.Mui-selected": { color: "var(--accent-indigo)" },
+                [PHONE]: { minHeight: 48 },
               },
               "& .MuiTabs-indicator": {
                 backgroundColor: "var(--accent-indigo)",
@@ -636,6 +1141,7 @@ export default function InstructorsPage() {
                           height: 20,
                           fontWeight: 700,
                           fontSize: "0.7rem",
+                          [PHONE]: { fontSize: "0.75rem" },
                         },
                       }}
                     />
@@ -657,6 +1163,7 @@ export default function InstructorsPage() {
                 backgroundColor: "var(--card-bg)",
                 borderRadius: 2,
               },
+              [PHONE]: { "& .MuiInputBase-root": { minHeight: 48 } },
             }}
             InputProps={{
               startAdornment: (
@@ -666,7 +1173,7 @@ export default function InstructorsPage() {
               ),
               endAdornment: searchTerm ? (
                 <InputAdornment position="end">
-                  <IconButton size="small" onClick={() => setSearchTerm("")}>
+                  <IconButton size="small" onClick={() => setSearchTerm("")} sx={phoneIconButtonSx}>
                     <IconWrapper icon="mdi:close" size={16} />
                   </IconButton>
                 </InputAdornment>
@@ -675,7 +1182,8 @@ export default function InstructorsPage() {
           />
         </Box>
 
-        {/* Table */}
+        {/* Table on desktop; one card per instructor on a phone. */}
+        {isPhone ? phoneCards : (
         <TableContainer
           data-tour-id="instructors-table"
           component={Paper}
@@ -722,27 +1230,7 @@ export default function InstructorsPage() {
               ) : visibleRows.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={columns.length} align="center" sx={{ py: 8 }}>
-                    <Stack alignItems="center" spacing={1.5}>
-                      <Box
-                        sx={{
-                          width: 64,
-                          height: 64,
-                          borderRadius: "50%",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          backgroundColor: STATUS_VISUAL[activeTab].tint,
-                          color: STATUS_VISUAL[activeTab].accent,
-                        }}
-                      >
-                        <IconWrapper icon={STATUS_VISUAL[activeTab].icon} size={32} />
-                      </Box>
-                      <Typography sx={{ color: "var(--font-secondary)" }}>
-                        {searchTerm
-                          ? t("adminInstructors.noMatch")
-                          : t(`adminInstructors.empty.${activeTab}`)}
-                      </Typography>
-                    </Stack>
+                    {emptyState}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -912,6 +1400,7 @@ export default function InstructorsPage() {
             </TableBody>
           </Table>
         </TableContainer>
+        )}
 
         {/* Approved-row actions menu */}
         <Menu anchorEl={menuAnchor} open={Boolean(menuAnchor)} onClose={closeMenu}>
@@ -946,70 +1435,80 @@ export default function InstructorsPage() {
         </Menu>
 
         {/* Set instructor code */}
+        {isPhone ? (
+          <PhoneSheet
+            open={!!codeRow}
+            onClose={() => setCodeRow(null)}
+            busy={savingCode}
+            title="Set instructor code"
+            cancelLabel="Cancel"
+            confirmLabel={savingCode ? "Saving…" : "Save code"}
+            onConfirm={() => void saveCode()}
+          >
+            {codeBody}
+          </PhoneSheet>
+        ) : (
         <Dialog open={!!codeRow} onClose={() => (savingCode ? undefined : setCodeRow(null))} fullWidth maxWidth="xs">
           <DialogTitle sx={{ fontWeight: 800 }}>Set instructor code</DialogTitle>
           <DialogContent>
-            <Typography sx={{ fontSize: "0.85rem", color: "var(--font-secondary)", mb: 2 }}>
-              Students see this code instead of the instructor&apos;s real name across courses and live sessions. Leave blank to clear it.
-            </Typography>
-            <TextField
-              autoFocus fullWidth size="small" label="Instructor code"
-              value={codeValue} onChange={(e) => setCodeValue(e.target.value)}
-              placeholder="e.g. RM-07" inputProps={{ maxLength: 32 }}
-            />
+            {codeBody}
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
             <Button onClick={() => setCodeRow(null)} disabled={savingCode} sx={{ textTransform: "none", fontWeight: 700 }}>Cancel</Button>
             <Button
               variant="contained" disabled={savingCode}
-              onClick={async () => {
-                if (!codeRow) return;
-                setSavingCode(true);
-                try {
-                  const res = await instructorService.setInstructorCode(codeRow.id, codeValue.trim());
-                  setCodeById((m) => ({ ...m, [codeRow.id]: res.instructor_code }));
-                  showToast("Instructor code updated.", "success");
-                  setCodeRow(null);
-                } catch (err: unknown) {
-                  showToast(readApiError(err, "Couldn't update the code."), "error");
-                } finally {
-                  setSavingCode(false);
-                }
-              }}
+              onClick={saveCode}
               sx={{ textTransform: "none", fontWeight: 800 }}
             >
               {savingCode ? "Saving…" : "Save code"}
             </Button>
           </DialogActions>
         </Dialog>
+        )}
 
         {/* Remove instructor (demote) */}
+        {isPhone ? (
+          <PhoneSheet
+            open={!!removeRow}
+            onClose={() => setRemoveRow(null)}
+            busy={removing}
+            title="Remove as instructor?"
+            cancelLabel="Cancel"
+            confirmLabel={removing ? "Removing…" : "Remove instructor"}
+            confirmColor="error"
+            onConfirm={() => void removeInstructor()}
+          >
+            <Typography sx={{ color: "var(--font-secondary)", lineHeight: 1.6, fontSize: "0.95rem" }}>
+              {removeMessage}
+            </Typography>
+          </PhoneSheet>
+        ) : (
         <ConfirmDialog
           open={!!removeRow}
           title="Remove as instructor?"
-          message={`This removes ${removeRow?.full_name || "this person"} as an instructor — their role goes back to student, their instructor code is cleared, and all their course/cohort/live-session assignments are removed. Their account and learning data are kept.`}
+          message={removeMessage}
           confirmText={removing ? "Removing…" : "Remove instructor"}
           cancelText="Cancel"
           confirmColor="error"
           onCancel={() => (removing ? undefined : setRemoveRow(null))}
-          onConfirm={async () => {
-            if (!removeRow) return;
-            setRemoving(true);
-            try {
-              await adminInstructorsService.removeInstructor(removeRow.id);
-              showToast(`${removeRow.full_name || "Instructor"} is no longer an instructor.`, "success");
-              setRemoveRow(null);
-              await refreshAll();
-              await loadCodes();
-            } catch (err: unknown) {
-              showToast(readApiError(err, "Couldn't remove this instructor."), "error");
-            } finally {
-              setRemoving(false);
-            }
-          }}
+          onConfirm={removeInstructor}
         />
+        )}
 
         {/* Approve dialog */}
+        {isPhone ? (
+          <PhoneSheet
+            open={Boolean(confirmApproveRow)}
+            onClose={() => setConfirmApproveRow(null)}
+            busy={busyId !== null}
+            title={t("adminInstructors.confirm.approveTitle")}
+            cancelLabel={t("adminInstructors.confirm.cancel")}
+            confirmLabel={busyId !== null ? t("adminInstructors.loading.approving") : t("adminInstructors.confirm.approveCta")}
+            onConfirm={() => void handleApproveConfirmed()}
+          >
+            {approveBody}
+          </PhoneSheet>
+        ) : (
         <Dialog
           open={Boolean(confirmApproveRow)}
           onClose={() => busyId === null && setConfirmApproveRow(null)}
@@ -1037,12 +1536,7 @@ export default function InstructorsPage() {
             {t("adminInstructors.confirm.approveTitle")}
           </DialogTitle>
           <DialogContent>
-            <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-              {t("adminInstructors.confirm.approveBody", {
-                name: confirmApproveRow?.full_name ?? "",
-                email: confirmApproveRow?.email ?? "",
-              })}
-            </Typography>
+            {approveBody}
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
             <Button
@@ -1069,8 +1563,23 @@ export default function InstructorsPage() {
             </Button>
           </DialogActions>
         </Dialog>
+        )}
 
         {/* Reject dialog */}
+        {isPhone ? (
+          <PhoneSheet
+            open={Boolean(confirmRejectRow)}
+            onClose={() => setConfirmRejectRow(null)}
+            busy={busyId !== null}
+            title={t("adminInstructors.confirm.rejectTitle")}
+            cancelLabel={t("adminInstructors.confirm.cancel")}
+            confirmLabel={busyId !== null ? t("adminInstructors.loading.rejecting") : t("adminInstructors.confirm.rejectCta")}
+            confirmColor="error"
+            onConfirm={() => void handleRejectConfirmed()}
+          >
+            {rejectBody}
+          </PhoneSheet>
+        ) : (
         <Dialog
           open={Boolean(confirmRejectRow)}
           onClose={() => busyId === null && setConfirmRejectRow(null)}
@@ -1100,21 +1609,7 @@ export default function InstructorsPage() {
             {t("adminInstructors.confirm.rejectTitle")}
           </DialogTitle>
           <DialogContent>
-            <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 2 }}>
-              {t("adminInstructors.confirm.rejectBody", {
-                name: confirmRejectRow?.full_name ?? "",
-                email: confirmRejectRow?.email ?? "",
-              })}
-            </Typography>
-            <TextField
-              label={t("adminInstructors.confirm.reasonLabel")}
-              value={rejectReason}
-              onChange={(e) => setRejectReason(e.target.value)}
-              fullWidth
-              multiline
-              minRows={3}
-              disabled={busyId !== null}
-            />
+            {rejectBody}
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
             <Button
@@ -1137,8 +1632,22 @@ export default function InstructorsPage() {
             </Button>
           </DialogActions>
         </Dialog>
+        )}
 
         {/* Reopen dialog */}
+        {isPhone ? (
+          <PhoneSheet
+            open={Boolean(confirmReopenRow)}
+            onClose={() => setConfirmReopenRow(null)}
+            busy={busyId !== null}
+            title={t("adminInstructors.confirm.reopenTitle")}
+            cancelLabel={t("adminInstructors.confirm.cancel")}
+            confirmLabel={busyId !== null ? t("adminInstructors.loading.reopening") : t("adminInstructors.confirm.reopenCta")}
+            onConfirm={() => void handleReopenConfirmed()}
+          >
+            {reopenBody}
+          </PhoneSheet>
+        ) : (
         <Dialog
           open={Boolean(confirmReopenRow)}
           onClose={() => busyId === null && setConfirmReopenRow(null)}
@@ -1166,12 +1675,7 @@ export default function InstructorsPage() {
             {t("adminInstructors.confirm.reopenTitle")}
           </DialogTitle>
           <DialogContent>
-            <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
-              {t("adminInstructors.confirm.reopenBody", {
-                name: confirmReopenRow?.full_name ?? "",
-                email: confirmReopenRow?.email ?? "",
-              })}
-            </Typography>
+            {reopenBody}
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
             <Button
@@ -1193,8 +1697,23 @@ export default function InstructorsPage() {
             </Button>
           </DialogActions>
         </Dialog>
+        )}
 
         {/* Assign courses dialog */}
+        {isPhone ? (
+          <PhoneSheet
+            open={Boolean(assignRow)}
+            onClose={() => setAssignRow(null)}
+            busy={busyId !== null}
+            title={t("adminInstructors.assignDialog.title", { name: assignRow?.full_name ?? "" })}
+            cancelLabel={t("adminInstructors.confirm.cancel")}
+            confirmLabel={busyId !== null ? t("adminInstructors.loading.assigning") : t("adminInstructors.assignDialog.save")}
+            confirmDisabled={coursesLoading}
+            onConfirm={() => void handleAssignSave()}
+          >
+            {assignBody}
+          </PhoneSheet>
+        ) : (
         <Dialog
           open={Boolean(assignRow)}
           onClose={() => busyId === null && setAssignRow(null)}
@@ -1225,138 +1744,7 @@ export default function InstructorsPage() {
             {t("adminInstructors.assignDialog.title", { name: assignRow?.full_name ?? "" })}
           </DialogTitle>
           <DialogContent>
-            <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 2 }}>
-              {t("adminInstructors.assignDialog.body")}
-            </Typography>
-
-            {coursesLoading ? (
-              <Box sx={{ display: "flex", justifyContent: "center", py: 4 }}>
-                <CircularProgress size={28} />
-              </Box>
-            ) : allCourses.length === 0 ? (
-              <Stack alignItems="center" spacing={1.5} sx={{ py: 4 }}>
-                <Box
-                  sx={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: "50%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor:
-                      "color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%)",
-                    color: "var(--accent-indigo)",
-                  }}
-                >
-                  <IconWrapper icon="mdi:book-off-outline" size={28} />
-                </Box>
-                <Typography sx={{ color: "var(--font-secondary)" }}>
-                  {t("adminInstructors.assignDialog.noCourses")}
-                </Typography>
-              </Stack>
-            ) : (
-              <>
-                <TextField
-                  size="small"
-                  fullWidth
-                  placeholder={
-                    t("adminInstructors.assignDialog.searchPlaceholder") as string
-                  }
-                  value={courseSearch}
-                  onChange={(e) => setCourseSearch(e.target.value)}
-                  sx={{ mb: 1.5 }}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <IconWrapper icon="mdi:magnify" size={18} />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                    px: 0.5,
-                    pb: 0.5,
-                  }}
-                >
-                  <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
-                    {t("adminInstructors.assignDialog.selectedCount", {
-                      count: selectedCourseIds.length,
-                    })}
-                  </Typography>
-                  <Button
-                    size="small"
-                    onClick={toggleAllFiltered}
-                    sx={{ textTransform: "none" }}
-                  >
-                    {allFilteredSelected
-                      ? t("adminInstructors.assignDialog.clearAll")
-                      : t("adminInstructors.assignDialog.selectAll")}
-                  </Button>
-                </Box>
-                <Divider sx={{ mb: 1 }} />
-                <Stack
-                  sx={{
-                    maxHeight: 320,
-                    overflowY: "auto",
-                    "& .MuiFormControlLabel-root": {
-                      m: 0,
-                      px: 1,
-                      py: 0.5,
-                      borderRadius: 1,
-                      "&:hover": {
-                        backgroundColor:
-                          "color-mix(in srgb, var(--accent-indigo) 6%, var(--surface) 94%)",
-                      },
-                    },
-                  }}
-                >
-                  {filteredAssignCourses.length === 0 ? (
-                    <Typography
-                      sx={{
-                        color: "var(--font-secondary)",
-                        textAlign: "center",
-                        py: 3,
-                      }}
-                    >
-                      {t("adminInstructors.noMatch")}
-                    </Typography>
-                  ) : (
-                    filteredAssignCourses.map((c) => {
-                      const checked = selectedCourseIds.includes(c.id);
-                      return (
-                        <FormControlLabel
-                          key={c.id}
-                          control={
-                            <Checkbox
-                              checked={checked}
-                              onChange={(_, v) => {
-                                setSelectedCourseIds((prev) =>
-                                  v
-                                    ? [...prev, c.id]
-                                    : prev.filter((id) => id !== c.id)
-                                );
-                              }}
-                            />
-                          }
-                          label={
-                            <ListItemText
-                              primary={c.title}
-                              primaryTypographyProps={{
-                                sx: { color: "var(--font-primary)" },
-                              }}
-                            />
-                          }
-                        />
-                      );
-                    })
-                  )}
-                </Stack>
-              </>
-            )}
+            {assignBody}
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
             <Button
@@ -1383,8 +1771,20 @@ export default function InstructorsPage() {
             </Button>
           </DialogActions>
         </Dialog>
+        )}
 
         {/* View courses dialog */}
+        {isPhone ? (
+          <PhoneSheet
+            open={Boolean(viewCoursesRow)}
+            onClose={() => setViewCoursesRow(null)}
+            busy={false}
+            title={t("adminInstructors.viewCourses.title", { name: viewCoursesRow?.full_name ?? "" })}
+            cancelLabel={t("adminInstructors.confirm.cancel")}
+          >
+            {viewBody}
+          </PhoneSheet>
+        ) : (
         <Dialog
           open={Boolean(viewCoursesRow)}
           onClose={() => setViewCoursesRow(null)}
@@ -1417,44 +1817,7 @@ export default function InstructorsPage() {
             })}
           </DialogTitle>
           <DialogContent>
-            {viewCoursesRow?.assigned_courses && viewCoursesRow.assigned_courses.length > 0 ? (
-              <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ rowGap: 0.5 }}>
-                {viewCoursesRow.assigned_courses.map((c) => (
-                  <Chip
-                    key={c.id}
-                    label={c.title}
-                    size="small"
-                    sx={{
-                      backgroundColor:
-                        "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
-                      color: "var(--accent-indigo)",
-                      fontWeight: 500,
-                    }}
-                  />
-                ))}
-              </Stack>
-            ) : (
-              <Stack alignItems="center" spacing={1.5} sx={{ py: 3 }}>
-                <Box
-                  sx={{
-                    width: 56,
-                    height: 56,
-                    borderRadius: "50%",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    backgroundColor:
-                      "color-mix(in srgb, var(--accent-indigo) 8%, var(--surface) 92%)",
-                    color: "var(--accent-indigo)",
-                  }}
-                >
-                  <IconWrapper icon="mdi:book-off-outline" size={28} />
-                </Box>
-                <Typography sx={{ color: "var(--font-secondary)" }}>
-                  {t("adminInstructors.viewCourses.noCourses")}
-                </Typography>
-              </Stack>
-            )}
+            {viewBody}
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
             <Button
@@ -1465,6 +1828,7 @@ export default function InstructorsPage() {
             </Button>
           </DialogActions>
         </Dialog>
+        )}
     </PageShell>
   );
 }

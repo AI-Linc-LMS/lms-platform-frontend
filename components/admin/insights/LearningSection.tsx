@@ -15,6 +15,7 @@ import {
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { LearningPayload } from "@/lib/services/admin/admin-insights.service";
 import { DefinitionMark, EmptyState, INSIGHT, Panel, SERIES_COLORS } from "./primitives";
+import { phoneFont } from "./phoneType";
 
 /**
  * Learning block of the admin insights dashboard.
@@ -230,7 +231,7 @@ const GRID_COLUMNS = {
 
 function CourseHealthHeader({ definitions }: { definitions: Record<string, string> }) {
   const label = {
-    fontSize: "0.68rem",
+    ...phoneFont(0.68),
     fontWeight: 800,
     letterSpacing: "0.06em",
     textTransform: "uppercase" as const,
@@ -303,7 +304,7 @@ function CourseRow({ course }: { course: Course }) {
               label="Draft"
               sx={{
                 height: 20,
-                fontSize: "0.65rem",
+                ...phoneFont(0.65),
                 fontWeight: 800,
                 letterSpacing: "0.04em",
                 color: "var(--font-secondary)",
@@ -313,7 +314,7 @@ function CourseRow({ course }: { course: Course }) {
           )}
         </Box>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 0.5, flexWrap: "wrap" }}>
-          <Typography sx={{ fontSize: "0.72rem", color: "var(--font-secondary)" }}>
+          <Typography sx={{ ...phoneFont(0.72), color: "var(--font-secondary)" }}>
             {course.nodes.toLocaleString()} nodes · {course.started.toLocaleString()} started
           </Typography>
           {stalled && (
@@ -323,7 +324,7 @@ function CourseRow({ course }: { course: Course }) {
               label={`${course.never_started.toLocaleString()} never opened it`}
               sx={{
                 height: 22,
-                fontSize: "0.68rem",
+                ...phoneFont(0.68),
                 fontWeight: 700,
                 color: INSIGHT.amber,
                 backgroundColor: `color-mix(in srgb, ${INSIGHT.amber} 14%, transparent)`,
@@ -349,7 +350,7 @@ function CourseRow({ course }: { course: Course }) {
           sx={{
             display: { xs: "inline", md: "none" },
             ml: 0.75,
-            fontSize: "0.72rem",
+            ...phoneFont(0.72),
             fontWeight: 600,
             color: "var(--font-secondary)",
           }}
@@ -376,7 +377,7 @@ function MetricBar({ label, value, color }: { label: string; value: number; colo
           display: { xs: "block", md: "none" },
           width: 76,
           flexShrink: 0,
-          fontSize: "0.7rem",
+          ...phoneFont(0.7),
           fontWeight: 700,
           color: "var(--font-secondary)",
         }}

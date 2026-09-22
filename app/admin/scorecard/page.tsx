@@ -45,6 +45,7 @@ import {
 } from "@/lib/services/admin/admin-scorecard.service";
 import { profileService, type HeatmapData } from "@/lib/services/profile.service";
 import type { ScorecardData } from "@/lib/types/scorecard.types";
+import { PHONE } from "@/components/common/mobile/phone";
 
 const MODULE_OPTIONS = [
   { id: "overview", label: "Student Overview" },
@@ -357,6 +358,7 @@ export default function AdminScorecardPage() {
                   letterSpacing: "0.14em",
                   textTransform: "uppercase",
                   display: "block",
+                  [PHONE]: { fontSize: "0.75rem", letterSpacing: "0.08em" },
                 }}
               >
                 {stat.label}
@@ -402,6 +404,7 @@ export default function AdminScorecardPage() {
                 bgcolor: "var(--card-bg)",
                 boxShadow:
                   "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
+                [PHONE]: { p: 2 },
               }}
             >
               <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2 }}>
@@ -451,6 +454,8 @@ export default function AdminScorecardPage() {
                       }}
                       sx={{
                         minWidth: 320,
+                        // 320px does not fit inside a 390px screen's padded card.
+                        [PHONE]: { minWidth: 0 },
                         "& .MuiOutlinedInput-root": {
                           borderRadius: 2,
                           bgcolor: "var(--surface)",
@@ -462,7 +467,17 @@ export default function AdminScorecardPage() {
                       }}
                     />
                   )}
-                  sx={{ flex: 1, minWidth: 280 }}
+                  sx={{
+                    flex: 1,
+                    minWidth: 280,
+                    [PHONE]: {
+                      minWidth: 0,
+                      flexBasis: "100%",
+                      // The indicators keep MUI's size: the input's end padding is reserved for 26px
+                      // buttons, so 44px ones slid a selected name under them. The field itself is
+                      // the tap target and opens the list anywhere it is touched.
+                    },
+                  }}
                 />
                 {selectedStudent && (
                   <Chip
@@ -471,7 +486,7 @@ export default function AdminScorecardPage() {
                     color="primary"
                     variant="outlined"
                     onDelete={() => setSelectedStudent(null)}
-                    sx={{ fontWeight: 500 }}
+                    sx={{ fontWeight: 500, [PHONE]: { height: 44, maxWidth: "100%", borderRadius: 999 } }}
                   />
                 )}
               </Box>
@@ -720,6 +735,7 @@ export default function AdminScorecardPage() {
                     boxShadow:
                       "0 1px 3px color-mix(in srgb, var(--font-primary) 10%, transparent)",
                     height: "100%",
+                    [PHONE]: { p: 2 },
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 1.5 }}>
@@ -761,6 +777,7 @@ export default function AdminScorecardPage() {
                                       gap: 1,
                                       p: 1.5,
                                       borderRadius: 1.5,
+                                      [PHONE]: { p: 0.5, gap: 0.5 },
                                       border: "1px solid",
                                       borderColor: snapshot.isDragging ? "primary.main" : "divider",
                                       bgcolor: snapshot.isDragging
@@ -779,6 +796,8 @@ export default function AdminScorecardPage() {
                                         display: "flex",
                                         alignItems: "center",
                                         "&:active": { cursor: "grabbing" },
+                                        // A 20px grip is hard to catch with a thumb.
+                                        [PHONE]: { width: 44, height: 44, justifyContent: "center", flexShrink: 0 },
                                       }}
                                     >
                                       <IconWrapper icon="mdi:drag" size={20} />
@@ -787,7 +806,7 @@ export default function AdminScorecardPage() {
                                       checked={showAllModules || enabledModulesSet.has(opt.id)}
                                       onChange={() => toggleModule(opt.id)}
                                       size="small"
-                                      sx={{ py: 0.25 }}
+                                      sx={{ py: 0.25, [PHONE]: { width: 44, height: 44, p: 0 } }}
                                     />
                                     <Typography variant="body2" sx={{ flex: 1 }}>
                                       {opt.label}
@@ -814,7 +833,7 @@ export default function AdminScorecardPage() {
                       }
                       onClick={handleSaveConfig}
                       disabled={savingConfig}
-                      sx={{ mt: 3, textTransform: "none", borderRadius: 2 }}
+                      sx={{ mt: 3, textTransform: "none", borderRadius: 2, [PHONE]: { minHeight: 48, width: "100%" } }}
                     >
                       {savingConfig ? "Saving..." : "Save Module Settings"}
                     </Button>

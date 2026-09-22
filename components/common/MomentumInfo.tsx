@@ -4,6 +4,7 @@ import { useState, type MouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Box, ButtonBase, IconButton, Popover, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { infoHitArea } from "@/components/common/phoneTap";
 import type { MomentumInfo as MomentumInfoData } from "@/lib/types/momentum";
 
 /**
@@ -28,7 +29,7 @@ export function MomentumInfo({ info, size = 15, color = "#94a3b8" }: { info: Mom
         size="small"
         onClick={open}
         aria-label="How momentum is calculated"
-        sx={{ p: 0.2, color, "&:hover": { color: "#f59e0b", bgcolor: "transparent" } }}
+        sx={{ p: 0.2, color, "&:hover": { color: "#f59e0b", bgcolor: "transparent" }, ...infoHitArea(size) }}
       >
         <Icon icon="mdi:information-outline" width={size} />
       </IconButton>

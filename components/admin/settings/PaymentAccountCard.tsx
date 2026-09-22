@@ -18,6 +18,7 @@ import { useToast } from "@/components/common/Toast";
 import { razorpayService, type RazorpayStatus } from "@/lib/services/razorpay.service";
 import { config } from "@/lib/config";
 import { RazorpaySetupGuide } from "./RazorpaySetupGuide";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * Connect this institution's own Razorpay account.
@@ -274,7 +275,12 @@ export function PaymentAccountCard() {
                     "& .MuiOutlinedInput-root": { borderRadius: 2 },
                   }}
                 />
-                <IconButton size="small" onClick={copyWebhookUrl} aria-label="Copy webhook URL">
+                <IconButton
+                  size="small"
+                  onClick={copyWebhookUrl}
+                  aria-label="Copy webhook URL"
+                  sx={{ [PHONE]: { width: 44, height: 44, flexShrink: 0 } }}
+                >
                   <Icon icon="mdi:content-copy" width={18} />
                 </IconButton>
               </Stack>
@@ -305,7 +311,11 @@ export function PaymentAccountCard() {
         </>
       )}
 
-      <Stack direction="row" spacing={1.5} sx={{ flexWrap: "wrap", gap: 1 }}>
+      <Stack
+        direction="row"
+        spacing={1.5}
+        sx={{ flexWrap: "wrap", gap: 1, [PHONE]: { "& .MuiButton-root": { minHeight: 44 } } }}
+      >
         {!onPlatformAccount && (
           <LoadingButton
             variant="contained"
@@ -359,6 +369,7 @@ export function PaymentAccountCard() {
             textTransform: "none",
             fontWeight: 600,
             color: "var(--accent-indigo)",
+            [PHONE]: { minHeight: 44, textAlign: "start" },
             "&:hover": {
               backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, var(--surface) 90%)",
             },

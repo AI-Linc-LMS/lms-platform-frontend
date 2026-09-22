@@ -255,6 +255,7 @@ export default function AdminDashboardPage() {
                 borderRadius: 999,
                 px: 1.75,
                 "&:hover": { background: "rgba(255,255,255,0.16)" },
+                [PHONE]: { minHeight: 44, flexShrink: 0 },
               }}
             >
               {exporting ? "Building…" : "Export"}
