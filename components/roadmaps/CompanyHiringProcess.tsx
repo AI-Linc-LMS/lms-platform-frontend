@@ -6,6 +6,7 @@ import type {
   RoadmapHiringStage,
   RoadmapSyllabusRound,
 } from "@/lib/services/roadmaps.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The hiring funnel: one numbered step per published stage.
@@ -103,6 +104,7 @@ export function CompanyHiringProcess({
                       sx={{
                         height: 20,
                         fontSize: 10.5,
+                        [PHONE]: { height: 22, fontSize: 12 },
                         fontWeight: 600,
                         bgcolor: "transparent",
                         border: "1px solid var(--border-default)",
@@ -117,6 +119,7 @@ export function CompanyHiringProcess({
                       sx={{
                         height: 20,
                         fontSize: 10.5,
+                        [PHONE]: { height: 22, fontSize: 12 },
                         fontWeight: 600,
                         bgcolor: "transparent",
                         border: "1px solid var(--border-default)",

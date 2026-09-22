@@ -2982,5 +2982,8 @@
     "savingLocked": "Saving is locked",
     "downloadLocked": "Download is locked",
     "sidebarTooltip": "Complete your profile to unlock"
+  },
+  "roadmapsMobile": {
+    "mapHint": "Tap a step to open it. Press and hold to mark it done, in progress or skipped."
   }
 }

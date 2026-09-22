@@ -4,6 +4,8 @@ import { Fragment, useRef, useState } from "react";
 import type React from "react";
 import { Box, Chip, Stack, Typography, useMediaQuery } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { useTranslation } from "react-i18next";
+import { PHONE } from "@/components/common/mobile/phone";
 import type {
   RoadmapGraph,
   RoadmapNode,
@@ -121,6 +123,8 @@ function NodeBox({
           boxShadow: RM.shadow(0),
         },
         "&:focus-visible": { outline: `3px solid ${VIOLET}`, outlineOffset: 3 },
+        // A leaf is 32px and a step 40px on a desktop; a thumb needs 44.
+        [PHONE]: { minHeight: 44 },
       }}
     >
       <Stack
@@ -149,7 +153,10 @@ function NodeBox({
         <Chip
           label="Optional"
           size="small"
-          sx={{ mt: 0.6, height: 17, fontSize: 9.5, bgcolor: "#ffffffcc", color: "#64748b" }}
+          sx={{
+            mt: 0.6, height: 17, fontSize: 9.5, bgcolor: "#ffffffcc", color: "#64748b",
+            [PHONE]: { height: 20, fontSize: 12 },
+          }}
         />
       )}
     </Box>
@@ -202,7 +209,9 @@ function StepCell({
       {dependsOn.length > 0 && (
         <Stack direction="row" spacing={0.4} flexWrap="wrap" useFlexGap
                justifyContent="center" sx={{ mt: 0.6 }}>
-          <Typography sx={{ fontSize: 10, color: "#94a3b8", alignSelf: "center" }}>
+          <Typography
+            sx={{ fontSize: 10, color: "#94a3b8", alignSelf: "center", [PHONE]: { fontSize: 12 } }}
+          >
             needs
           </Typography>
           {dependsOn.map((d) => (
@@ -215,6 +224,8 @@ function StepCell({
                 height: 18, fontSize: 9.5, cursor: "pointer",
                 bgcolor: "#f1f5f9", color: "#475569",
                 "&:hover": { bgcolor: "#ede9fe", color: "#5b21b6" },
+                // A jump to another step: a real target on a phone, not an 18px caption.
+                [PHONE]: { height: 44, fontSize: 12, borderRadius: 999 },
               }}
             />
           ))}
@@ -355,6 +366,7 @@ function RelatedTracks({
               transition: "background-color .15s ease, transform .15s ease",
               "&:hover": { bgcolor: "#5b21b6", transform: "translateY(-2px)" },
               "&:focus-visible": { outline: `2px solid ${INK}`, outlineOffset: 2 },
+              [PHONE]: { minHeight: 44 },
             }}
           >
             {r.pageTitle}
@@ -382,6 +394,7 @@ export function RoadmapSpine({
   // Columns per row, and therefore where the path turns. Resolved with a media query rather
   // than CSS alone because the serpentine has to CHUNK the steps to know which rows reverse,
   // and a pure-CSS version would need a different nth-child rule per breakpoint.
+  const { t } = useTranslation();
   const wide = useMediaQuery("(min-width:1200px)");
   const mid = useMediaQuery("(min-width:900px)");
   const cols = wide ? 3 : mid ? 2 : 1;
@@ -435,8 +448,14 @@ export function RoadmapSpine({
               }}
             >
               <Icon icon="solar:cursor-linear" width={14} />
-              <Typography sx={{ fontSize: "0.78rem" }}>
-                Click a step to open it. Right-click to mark it done, in progress or skipped.
+              <Typography sx={{ fontSize: "0.78rem", [PHONE]: { fontSize: "0.8rem" } }}>
+                {/* A phone has no right-click; its equivalent here is a long press. */}
+                <Box component="span" sx={{ [PHONE]: { display: "none" } }}>
+                  Click a step to open it. Right-click to mark it done, in progress or skipped.
+                </Box>
+                <Box component="span" sx={{ display: "none", [PHONE]: { display: "inline" } }}>
+                  {t("roadmapsMobile.mapHint")}
+                </Box>
               </Typography>
             </Stack>
           )}
@@ -540,6 +559,7 @@ function RoadmapSection({
                     width: 21, height: 21, borderRadius: "50%",
                     display: "grid", placeItems: "center",
                     bgcolor: accent.rail, color: "#fff", fontSize: 11, fontWeight: 800,
+                    [PHONE]: { width: 24, height: 24, fontSize: 12 },
                   }}
                 >
                   {si + 1}

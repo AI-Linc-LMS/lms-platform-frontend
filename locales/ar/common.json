@@ -2582,5 +2582,8 @@
     "adminInterviewSessions": "Review realtime interview sittings, grades and integrity flags.",
     "adminInterviewSetup": "أنشئ المقابلات وحدد مواعيدها واطلع على المرشحين ونتائجهم.",
     "projectLibrary": "مشاريع عملية ينفذها المتعلمون داخل المتصفح."
+  },
+  "roadmapsMobile": {
+    "mapHint": "اضغط على خطوة لفتحها. اضغط مطولاً لتحديدها كمكتملة أو قيد التعلّم أو متخطاة."
   }
 }
