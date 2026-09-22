@@ -12,6 +12,7 @@ import {
   DialogTitle,
   IconButton,
   InputAdornment,
+  MenuItem,
   TextField,
   Typography,
   useMediaQuery,
@@ -25,6 +26,7 @@ import {
   type Student,
 } from "@/lib/services/admin/admin-student.service";
 import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
+import { adminCohortsService, type CohortListItem } from "@/lib/services/admin/admin-cohorts.service";
 import { StudentAvatar } from "./studentVisuals";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
@@ -65,6 +67,11 @@ export function EnrollAdaptiveStudentsDialog({
   const [totalPages, setTotalPages] = useState(1);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [submitting, setSubmitting] = useState(false);
+  // The batch to ALSO put these learners in. "" = none: enrolling is the course only, and never
+  // creates a batch. Picked from the tenant's existing batches; hidden when there are none or the
+  // caller cannot list them (the cohort screens are feature-gated).
+  const [batches, setBatches] = useState<CohortListItem[]>([]);
+  const [batchId, setBatchId] = useState<number | "">("");
   const theme = useTheme();
   // On a phone the sheet holds itself open while the enrolment request runs.
   const holdOpen = useMediaQuery(theme.breakpoints.down("sm")) && submitting;
@@ -111,8 +118,25 @@ export function EnrollAdaptiveStudentsDialog({
     setSearch("");
     setSelected(new Set());
     setPage(1);
+    setBatchId("");
     void load("", 1);
   }, [open, load]);
+
+  useEffect(() => {
+    if (!open) return;
+    let live = true;
+    adminCohortsService
+      .listCohorts()
+      .then((cs) => {
+        if (live) setBatches(cs.filter((c) => c.status !== "archived"));
+      })
+      .catch(() => {
+        if (live) setBatches([]);
+      });
+    return () => {
+      live = false;
+    };
+  }, [open]);
 
   // Debounced search.
   useEffect(() => {
@@ -167,7 +191,7 @@ export function EnrollAdaptiveStudentsDialog({
       const res = await adminAdaptiveCourseService.enrollStudents(
         courseId,
         comp ? comp.ids : Array.from(selected),
-        { compPaid: Boolean(comp) },
+        { compPaid: Boolean(comp), ...(batchId ? { cohortId: batchId } : {}) },
       );
       const pass: PassCounts = {
         succeeded: res.succeeded,
@@ -199,7 +223,16 @@ export function EnrollAdaptiveStudentsDialog({
         return;
       }
 
-      const msg = summarise(first, pass, Boolean(comp), refusedIds.length ? ` · ${refusedIds.length} still need to buy it` : "");
+      const batchNote = res.cohort
+        ? ` · ${res.cohort.added} added to ${res.cohort.name}` +
+          (res.cohort.already ? ` (${res.cohort.already} already in it)` : "")
+        : "";
+      const msg = summarise(
+        first,
+        pass,
+        Boolean(comp),
+        (refusedIds.length ? ` · ${refusedIds.length} still need to buy it` : "") + batchNote,
+      );
       // "Enrolled 0" is not a success, and neither is a batch where anyone failed in EITHER pass:
       // a green toast and a closed dialog read as "everyone is in".
       if (first.failed + pass.failed > 0 || first.succeeded + pass.succeeded === 0) {
@@ -318,6 +351,30 @@ export function EnrollAdaptiveStudentsDialog({
               );
             })}
           </Box>
+        )}
+
+        {batches.length > 0 && (
+          <TextField
+            select
+            fullWidth
+            size="small"
+            label="Also add to a batch (optional)"
+            value={batchId}
+            onChange={(e) => setBatchId(e.target.value === "" ? "" : Number(e.target.value))}
+            helperText={
+              batchId
+                ? "They'll join this batch too, and get its sessions and anything else posted to it."
+                : "Course only. Enrolling never creates a batch."
+            }
+            sx={{ mt: 2 }}
+          >
+            <MenuItem value="">No batch - course only</MenuItem>
+            {batches.map((b) => (
+              <MenuItem key={b.id} value={b.id}>
+                {b.name}
+              </MenuItem>
+            ))}
+          </TextField>
         )}
 
         {totalPages > 1 && (

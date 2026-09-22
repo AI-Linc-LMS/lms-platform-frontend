@@ -468,6 +468,14 @@ export interface EnrollActionResult {
   code?: string;
   /** Whether THIS caller may give the course free (admins only). Absent from older servers. */
   can_comp?: boolean;
+  /** Present only when a batch was chosen: who was added to it. Enrolment alone never touches one. */
+  cohort?: {
+    id: number;
+    name: string;
+    added: number;
+    already: number;
+    failed?: Array<{ student_id: number | null; detail: string }>;
+  };
 }
 
 export interface AdaptiveStudentProgressDetail {
@@ -1020,11 +1028,17 @@ export const adminAdaptiveCourseService = {
   async enrollStudents(
     courseId: number,
     studentIds: number[],
-    opts: { compPaid?: boolean } = {},
+    opts: { compPaid?: boolean; cohortId?: number } = {},
   ): Promise<EnrollActionResult> {
+    // `cohort_id` puts the learners in that EXISTING batch too. Omitted, the enrolment is the
+    // course only: the server no longer invents a batch named after the course.
     const { data } = await apiClient.post<EnrollActionResult>(
       `${BASE}/courses/${courseId}/students/enroll/`,
-      { student_ids: studentIds, ...(opts.compPaid ? { comp_paid: true } : {}) },
+      {
+        student_ids: studentIds,
+        ...(opts.compPaid ? { comp_paid: true } : {}),
+        ...(opts.cohortId ? { cohort_id: opts.cohortId } : {}),
+      },
     );
     return data;
   },
