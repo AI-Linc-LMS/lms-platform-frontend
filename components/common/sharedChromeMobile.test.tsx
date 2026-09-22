@@ -240,6 +240,19 @@ describe("TenantLogo", () => {
     expect(screen.getByRole("img")).toHaveAttribute("src", "https://b/logo.png");
   });
 
+  it("shows the wordmark for an image that failed before hydration (complete, no natural width)", () => {
+    const complete = vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(true);
+    const natural = vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(0);
+    try {
+      render(<TenantLogo src="https://be.example/branding/asset/3/" name="CodePaathshala" />);
+      expect(screen.getByTestId("tenant-wordmark")).toHaveTextContent("CodePaathshala");
+      expect(document.querySelector("img")).toBeNull();
+    } finally {
+      complete.mockRestore();
+      natural.mockRestore();
+    }
+  });
+
   it("shows the wordmark when there is no url at all", () => {
     render(<TenantLogo src="" name="Acme" />);
     expect(screen.getByTestId("tenant-wordmark")).toHaveTextContent("Acme");

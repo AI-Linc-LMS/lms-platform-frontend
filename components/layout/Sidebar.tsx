@@ -62,6 +62,26 @@ import { TenantLogo } from "@/components/common/TenantLogo";
 const DRAWER_WIDTH = 264;
 const DRAWER_WIDTH_COLLAPSED = 64;
 
+/**
+ * The tenant name standing in for a logo that failed to load, in the logo's box.
+ *
+ * Block + centred text + a line-height equal to the box, not a centring flexbox: in a flex
+ * container text-overflow never applies, so a long name ("Kalinga Institute of Industrial
+ * Technology") was cut at both ends instead of ending in an ellipsis.
+ */
+export function sidebarWordmarkSx(logoHeightPx: number, color: string) {
+  return {
+    display: "block",
+    textAlign: "center",
+    lineHeight: `${logoHeightPx}px`,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    fontSize: "1.05rem",
+    color,
+  } as const;
+}
+
 const SIDEBAR_SECTIONS_STORAGE_KEY = "sidebar_open_sections";
 const ALL_SECTION_IDS = [...STUDENT_SECTIONS, ...ADMIN_SECTIONS].map((s) => s.id);
 
@@ -696,14 +716,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 src={sidebarLogoUrl}
                 name={clientInfo?.app_name || clientInfo?.name || "Logo"}
                 imgStyle={{ width: "100%", height: "100%", objectFit: "contain" }}
-                wordmarkSx={{
-                  height: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  fontSize: "1.05rem",
-                  color: shell.nav,
-                }}
+                wordmarkSx={sidebarWordmarkSx(sidebarLogoSizing.logoHeightPx, shell.nav)}
               />
             </Box>
           ) : (
