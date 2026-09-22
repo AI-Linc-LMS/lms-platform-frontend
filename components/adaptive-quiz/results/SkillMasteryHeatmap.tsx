@@ -8,8 +8,38 @@ import { prettySkill } from "@/lib/utils/skill-label.utils";
 import type { AdaptiveAINarration } from "@/lib/types/adaptive-quiz";
 import { PHONE } from "@/components/common/mobile/phone";
 
+type SkillRow = AdaptiveAINarration["skill_mastery"][number];
+
 interface SkillMasteryHeatmapProps {
   skills: AdaptiveAINarration["skill_mastery"];
+}
+
+/** "This attempt: 100% (5/5)", or null for a row cached before the backend sent the counts. */
+export function attemptLine(row: SkillRow): string | null {
+  const total = row.attempt_total;
+  if (typeof total !== "number" || total <= 0) return null;
+  const correct = Math.max(0, Math.min(total, row.attempt_correct ?? 0));
+  return `This attempt: ${Math.round((correct / total) * 100)}% (${correct}/${total})`;
+}
+
+/**
+ * Why the mastery number can sit below this attempt's score. Mastery is an estimate that starts at
+ * 50% and firms up with every answer, so a perfect 1/1 reads 73% and a perfect 5/5 about 92%. The
+ * old "confidence early" said the same thing in words nobody could act on; this says what moves it.
+ * Rows without an evidence count (cached before the field existed) keep the old wording.
+ */
+export function evidenceLine(row: SkillRow): string {
+  const n = row.evidence_count;
+  if (typeof n !== "number" || n <= 0) {
+    return `confidence ${row.se < 0.5 ? "high" : row.se < 0.9 ? "building" : "early"}`;
+  }
+  if (row.se < 0.5) return `Based on ${n} question${n === 1 ? "" : "s"}`;
+  return `Mastery grows with more questions: ${n} so far`;
+}
+
+function isPerfectBelowFull(row: SkillRow): boolean {
+  const total = row.attempt_total ?? 0;
+  return total > 0 && row.attempt_correct === total && row.mastery_pct < 100;
 }
 
 const BAND_LABEL: Record<string, string> = {
@@ -65,7 +95,7 @@ export function SkillMasteryHeatmap({ skills }: SkillMasteryHeatmapProps) {
           </Box>
           <Box>
             <Typography sx={{ fontWeight: 800, fontSize: "1.1rem", letterSpacing: "-0.01em", lineHeight: 1.15 }}>Skill mastery</Typography>
-            <Typography sx={{ fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary" }}>Where each sub-skill landed this attempt</Typography>
+            <Typography sx={{ fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary" }}>Estimated mastery per sub-skill, next to this attempt&apos;s result</Typography>
           </Box>
         </Stack>
         <Stack direction="row" spacing={0.5} alignItems="center" sx={{ color: "text.secondary" }}>
@@ -81,6 +111,7 @@ export function SkillMasteryHeatmap({ skills }: SkillMasteryHeatmapProps) {
           const color = BAND_COLOR[row.band] ?? "#6366f1";
           const hasBaseline = row.delta_pct !== null && row.delta_pct !== undefined;
           const delta = row.delta_pct as number;
+          const attempt = attemptLine(row);
           const previousMastery =
             typeof row.previous_mastery_pct === "number"
               ? Math.max(0, Math.min(100, row.previous_mastery_pct))
@@ -130,14 +161,29 @@ export function SkillMasteryHeatmap({ skills }: SkillMasteryHeatmapProps) {
                 )}
               </Box>
 
-              <Typography sx={{ fontSize: "0.62rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", mt: 0.6 }}>
+              {attempt && (
+                <Typography
+                  data-testid="skill-attempt"
+                  sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.8rem" }, fontWeight: 700, color: "text.primary", mt: 0.75, fontVariantNumeric: "tabular-nums" }}
+                >
+                  {attempt}
+                </Typography>
+              )}
+              <Typography sx={{ fontSize: "0.62rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", mt: attempt ? 0.25 : 0.6 }}>
                 {previousMastery !== null ? `Was ${previousMastery}%` : "First attempt"}
-                <Box component="span" sx={{ opacity: 0.6 }}> · confidence {row.se < 0.5 ? "high" : row.se < 0.9 ? "building" : "early"}</Box>
+                <Box component="span" data-testid="skill-evidence" sx={{ opacity: 0.75 }}> · {evidenceLine(row)}</Box>
               </Typography>
             </Box>
           );
         })}
       </Box>
+      {skills.some(isPerfectBelowFull) && (
+        <Typography data-testid="skill-mastery-explainer" sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.8rem" }, color: "text.secondary", lineHeight: 1.5 }}>
+          A perfect attempt can still read below 100%. Mastery is an estimate built from every
+          question on a skill and only reaches the top after many correct answers, so one short
+          quiz cannot claim full mastery on its own.
+        </Typography>
+      )}
     </Box>
   );
 }

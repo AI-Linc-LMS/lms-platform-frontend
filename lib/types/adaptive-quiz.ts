@@ -124,6 +124,13 @@ export interface AdaptiveAINarration {
      *  no prior session - drives the dashed ghost-marker on the bar. */
     previous_mastery_pct?: number | null;
     band: "emerging" | "developing" | "proficient" | "mastered" | string;
+    /** This attempt's raw result on the skill: answers correct / answered, over the questions
+     *  that test it. Absent on narrations cached before the field existed. */
+    attempt_correct?: number;
+    attempt_total?: number;
+    /** How many answers ``mastery_pct`` rests on. Mastery is an estimate that starts at 50% and
+     *  firms up per answer, so a perfect 1/1 reads 73% and a perfect 5/5 about 92%. */
+    evidence_count?: number;
   }>;
   /** Populated only for re-quiz sessions (config targets exactly one skill).
    *  Drives the "Skill mastered" / "Improving" / "Keep practising" banner. */
