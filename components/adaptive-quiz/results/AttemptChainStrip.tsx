@@ -4,6 +4,7 @@ import { Box, ButtonBase, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import type { AdaptiveSessionDetail } from "@/lib/types/adaptive-quiz";
+import { PHONE } from "@/components/common/mobile/phone";
 
 type Chain = NonNullable<AdaptiveSessionDetail["attempt_chain"]>;
 type Attempt = Chain["attempts"][number];
@@ -47,7 +48,7 @@ export function AttemptChainStrip({ chain }: { chain?: Chain }) {
           <Icon icon="mdi:history" width={19} />
         </Box>
         <Box sx={{ lineHeight: 1.1 }}>
-          <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "#6366f1" }}>
+          <Typography sx={{ fontSize: "0.62rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "#6366f1" }}>
             Your attempts on this topic
           </Typography>
           <Typography sx={{ fontSize: "0.92rem", fontWeight: 800, color: "text.primary" }}>
@@ -64,6 +65,7 @@ export function AttemptChainStrip({ chain }: { chain?: Chain }) {
             disabled={a.is_current}
             sx={{
               px: 1.4, py: 0.6, borderRadius: 999, fontWeight: 800, fontSize: "0.76rem", gap: 0.5,
+              [PHONE]: { minHeight: 44 },
               border: "1px solid",
               borderColor: a.is_current ? "#6366f1" : "color-mix(in srgb, #6366f1 28%, transparent)",
               color: a.is_current ? "white" : "#6366f1",

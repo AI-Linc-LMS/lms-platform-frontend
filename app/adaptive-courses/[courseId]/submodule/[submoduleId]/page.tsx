@@ -257,13 +257,13 @@ export default function AdaptiveCourseSubmodulePage() {
           <>
             {/* Gradient hero - matches the course page */}
             <Box sx={{ borderRadius: 5, p: { xs: 2.5, md: 3.5 }, mb: 2.5, color: "white", position: "relative", overflow: "hidden", background: "linear-gradient(135deg, var(--module-hero-from, #7c3aed) 0%, var(--module-hero-mid, #a855f7) 55%, var(--module-hero-to, #c026d3) 100%)", boxShadow: "0 24px 60px -28px var(--module-hero-shadow, rgba(124,58,237,0.6))" }}>
-              <ButtonBase onMouseEnter={() => prefetch(returnTo.href)} onClick={() => push(returnTo.href)} sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.8)", mb: 1, gap: 0.5 }}>
+              <ButtonBase onMouseEnter={() => prefetch(returnTo.href)} onClick={() => push(returnTo.href)} sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.8)", mb: 1, gap: 0.5, [PHONE]: { fontSize: "0.8rem", minHeight: 44, mb: 0.5 } }}>
                 <Icon icon="mdi:arrow-left" width={14} /> {returnTo.label}
               </ButtonBase>
               <Stack direction="row" spacing={0.75} sx={{ mb: 1 }}>
-                <Box sx={{ px: 1, py: 0.4, borderRadius: 999, fontSize: "0.66rem", fontWeight: 800, letterSpacing: 0.5, color: "white", bgcolor: "rgba(255,255,255,0.18)" }}>TOPIC</Box>
+                <Box sx={{ px: 1, py: 0.4, borderRadius: 999, fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: 0.5, color: "white", bgcolor: "rgba(255,255,255,0.18)" }}>TOPIC</Box>
                 {allDone && (
-                  <Stack direction="row" spacing={0.4} alignItems="center" sx={{ px: 1, py: 0.4, borderRadius: 999, fontSize: "0.66rem", fontWeight: 800, color: "white", bgcolor: "rgba(34,197,94,0.32)" }}>
+                  <Stack direction="row" spacing={0.4} alignItems="center" sx={{ px: 1, py: 0.4, borderRadius: 999, fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, color: "white", bgcolor: "rgba(34,197,94,0.32)" }}>
                     <Icon icon="mdi:check-circle" width={13} /> COMPLETED
                   </Stack>
                 )}
@@ -283,7 +283,7 @@ export default function AdaptiveCourseSubmodulePage() {
               {items.length > 0 && (
                 <Button onClick={() => items[resumeIdx].onClick()} variant="contained"
                   endIcon={<Icon icon="mdi:arrow-right" width={18} />}
-                  sx={{ mt: 2.25, px: 2.5, py: 1, borderRadius: 2, fontWeight: 800, fontSize: "0.85rem", color: "#7c3aed", bgcolor: "white", textTransform: "none", "&:hover": { bgcolor: "#f5f3ff" } }}>
+                  sx={{ mt: 2.25, px: 2.5, py: 1, borderRadius: 2, fontWeight: 800, fontSize: "0.85rem", color: "#7c3aed", bgcolor: "white", textTransform: "none", "&:hover": { bgcolor: "#f5f3ff" }, [PHONE]: { minHeight: 48, width: "100%" } }}>
                   {ctaLabel}
                 </Button>
               )}
@@ -406,7 +406,7 @@ function TopicHandouts({ attachments }: { attachments: AdaptiveCourseAttachment[
                     {a.description}
                   </Typography>
                 )}
-                <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.6, fontSize: "0.72rem", color: "#64748b", fontWeight: 700 }}>
+                <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 0.6, fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "#64748b", fontWeight: 700 }}>
                   <Box component="span" sx={{ color: look.accent }}>{look.label}</Box>
                   {size && <Box component="span">· {size}</Box>}
                   <Icon icon="mdi:tray-arrow-down" width={13} />
@@ -425,7 +425,7 @@ function FactorChip({ text, tone = "muted" }: { text: string; tone?: "muted" | "
     tone === "good" ? { color: "#15803d", bgcolor: "#dcfce7" }
     : tone === "warn" ? { color: "#b45309", bgcolor: "#fef3c7" }
     : { color: "#475569", bgcolor: "#f1f5f9" };
-  return <Box component="span" sx={{ px: 0.75, py: 0.2, borderRadius: 999, fontSize: "0.64rem", fontWeight: 700, ...s }}>{text}</Box>;
+  return <Box component="span" sx={{ px: 0.75, py: 0.2, borderRadius: 999, fontSize: "0.64rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 700, ...s }}>{text}</Box>;
 }
 
 /** Inline "how these points were earned" chips - base → time → accuracy → late → weight = earned. */
@@ -478,7 +478,7 @@ function PathRow({ item, step, last, status, points, onPrefetch }: { item: FlowI
   );
 
   return (
-    <Box sx={{ display: "flex", gap: 1.75, alignItems: "stretch" }}>
+    <Box data-testid="path-row" sx={{ display: "flex", gap: 1.75, alignItems: "stretch", [PHONE]: { gap: 1 } }}>
       {/* timeline rail - marker vertically centred on the card, continuous line behind */}
       <Box sx={{ position: "relative", width: 28, flexShrink: 0 }}>
         {!last && <Box sx={{ position: "absolute", left: "50%", top: 0, bottom: -12, width: "2px", bgcolor: "#eef2f7", transform: "translateX(-50%)" }} />}
@@ -499,25 +499,30 @@ function PathRow({ item, step, last, status, points, onPrefetch }: { item: FlowI
           cursor: "pointer",
           transition: "border-color .15s, box-shadow .15s",
           "&:hover": { borderColor: "#cbd5e1" },
+          // The card is a flex child of the rail row; without a zero floor its chips and button
+          // pushed it past the screen edge and squeezed the title into a one-word column.
+          [PHONE]: { minWidth: 0, p: 1.5 },
         }}
       >
-        <Stack direction="row" alignItems="center" gap={1.5}>
+        {/* On a phone the points and the action drop to their own row under the title, so the
+            title gets the card's whole width instead of what the button leaves over. */}
+        <Stack direction="row" alignItems="center" gap={1.5} sx={{ [PHONE]: { flexWrap: "wrap", gap: 1.25 } }}>
           <Box sx={{ width: 38, height: 38, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", color: m.color, bgcolor: m.bg }}>
             <Icon icon={m.icon} width={20} />
           </Box>
-          <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Box sx={{ minWidth: 0, flex: 1, [PHONE]: { flexBasis: "calc(100% - 50px)" } }}>
             <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap">
-              <Typography sx={{ fontSize: "0.64rem", fontWeight: 800, letterSpacing: 0.6, color: m.color }}>{m.label}</Typography>
+              <Typography sx={{ fontSize: "0.64rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: 0.6, color: m.color }}>{m.label}</Typography>
               {done && (
                 <Stack direction="row" spacing={0.3} alignItems="center" sx={{ px: 0.75, py: 0.2, borderRadius: 999, bgcolor: "#dcfce7" }}>
                   <Icon icon="mdi:check" width={11} color="#15803d" />
-                  <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, color: "#15803d" }}>Completed</Typography>
+                  <Typography sx={{ fontSize: "0.6rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, color: "#15803d" }}>Completed</Typography>
                 </Stack>
               )}
               {current && (
                 <Stack direction="row" spacing={0.3} alignItems="center" sx={{ px: 0.75, py: 0.2, borderRadius: 999, bgcolor: "#eef2ff" }}>
                   <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: "#6366f1" }} />
-                  <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, color: "#4f46e5" }}>Current step</Typography>
+                  <Typography sx={{ fontSize: "0.6rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, color: "#4f46e5" }}>Current step</Typography>
                 </Stack>
               )}
             </Stack>
@@ -525,7 +530,7 @@ function PathRow({ item, step, last, status, points, onPrefetch }: { item: FlowI
             {item.chips.length > 0 && (
               <Stack direction="row" flexWrap="wrap" sx={{ gap: 0.75, mt: 0.75 }}>
                 {item.chips.map((c, i) => (
-                  <Stack key={i} direction="row" spacing={0.4} alignItems="center" sx={{ px: 1, py: 0.35, borderRadius: 999, fontSize: "0.72rem", fontWeight: 600, color: "#475569", bgcolor: "#f1f5f9", border: "1px solid #e2e8f0" }}>
+                  <Stack key={i} direction="row" spacing={0.4} alignItems="center" sx={{ px: 1, py: 0.35, borderRadius: 999, fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 600, color: "#475569", bgcolor: "#f1f5f9", border: "1px solid #e2e8f0" }}>
                     <Icon icon={c.icon} width={13} />
                     {c.text}
                   </Stack>
@@ -535,20 +540,20 @@ function PathRow({ item, step, last, status, points, onPrefetch }: { item: FlowI
             {done && points && <PointsFactors item={points} />}
           </Box>
           {points && (
-            <Box sx={{ textAlign: "right", flexShrink: 0, minWidth: 46 }}>
+            <Box sx={{ textAlign: "right", flexShrink: 0, minWidth: 46, [PHONE]: { textAlign: "start", marginInlineStart: "50px" } }}>
               {done ? (
                 <>
                   <Typography sx={{ fontWeight: 800, fontSize: "0.92rem", color: "#15803d", lineHeight: 1 }}>
                     {points.earned}<Box component="span" sx={{ color: "#94a3b8", fontWeight: 600 }}>/{points.on_offer}</Box>
                   </Typography>
-                  <Typography sx={{ fontSize: "0.6rem", color: "#94a3b8", fontWeight: 700 }}>earned</Typography>
+                  <Typography sx={{ fontSize: "0.6rem", [PHONE]: { fontSize: "0.75rem" }, color: "#94a3b8", fontWeight: 700 }}>earned</Typography>
                 </>
               ) : (
                 <>
                   <Typography sx={{ fontWeight: 800, fontSize: "0.92rem", color: "#475569", lineHeight: 1 }}>
-                    {points.on_offer}<Box component="span" sx={{ fontSize: "0.6rem", color: "#94a3b8", fontWeight: 600 }}> pts</Box>
+                    {points.on_offer}<Box component="span" sx={{ fontSize: "0.6rem", [PHONE]: { fontSize: "0.75rem" }, color: "#94a3b8", fontWeight: 600 }}> pts</Box>
                   </Typography>
-                  <Typography sx={{ fontSize: "0.6rem", color: "#94a3b8", fontWeight: 700 }}>on offer</Typography>
+                  <Typography sx={{ fontSize: "0.6rem", [PHONE]: { fontSize: "0.75rem" }, color: "#94a3b8", fontWeight: 700 }}>on offer</Typography>
                 </>
               )}
             </Box>
@@ -556,7 +561,7 @@ function PathRow({ item, step, last, status, points, onPrefetch }: { item: FlowI
           {done ? (
             <ButtonBase
               onClick={(e) => { e.stopPropagation(); reviewAction(); }}
-              sx={{ flexShrink: 0, px: 2, py: 0.9, borderRadius: 999, fontWeight: 800, color: "#475569", fontSize: "0.82rem", gap: 0.5, border: "1px solid #cbd5e1", bgcolor: "transparent" }}
+              sx={{ flexShrink: 0, px: 2, py: 0.9, borderRadius: 999, fontWeight: 800, color: "#475569", fontSize: "0.82rem", gap: 0.5, border: "1px solid #cbd5e1", bgcolor: "transparent", [PHONE]: { minHeight: 44, marginInlineStart: "auto" } }}
             >
               <Icon icon={item.onReview ? "mdi:eye-outline" : "mdi:refresh"} width={15} />
               Review
@@ -564,7 +569,7 @@ function PathRow({ item, step, last, status, points, onPrefetch }: { item: FlowI
           ) : (
             <ButtonBase
               onClick={(e) => { e.stopPropagation(); item.onClick(); }}
-              sx={{ flexShrink: 0, px: 2.25, py: 1, borderRadius: 999, fontWeight: 800, color: "white", fontSize: "0.85rem", gap: 0.5, background: `linear-gradient(135deg, ${m.color} 0%, #a855f7 130%)`, boxShadow: `0 12px 26px -16px ${m.color}` }}
+              sx={{ flexShrink: 0, px: 2.25, py: 1, borderRadius: 999, fontWeight: 800, color: "white", fontSize: "0.85rem", gap: 0.5, background: `linear-gradient(135deg, ${m.color} 0%, #a855f7 130%)`, boxShadow: `0 12px 26px -16px ${m.color}`, [PHONE]: { minHeight: 44, marginInlineStart: "auto" } }}
             >
               <Icon icon={m.actionIcon} width={16} />
               {current ? `${m.action} now` : m.action}

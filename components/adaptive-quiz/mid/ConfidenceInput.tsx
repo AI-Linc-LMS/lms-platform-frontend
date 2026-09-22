@@ -2,6 +2,7 @@
 
 import { Box, ButtonBase, Typography } from "@mui/material";
 import type { ConfidenceLevel } from "@/lib/types/adaptive-quiz";
+import { PHONE } from "@/components/common/mobile/phone";
 
 const OPTIONS: Array<{ value: ConfidenceLevel; label: string; emoji: string }> = [
   { value: 1, label: "Guessing", emoji: "🤷" },
@@ -20,7 +21,7 @@ export function ConfidenceInput({ value, onChange }: ConfidenceInputProps) {
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
       <Typography
         sx={{
-          fontSize: "0.66rem",
+          fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" },
           fontWeight: 800,
           letterSpacing: "0.16em",
           textTransform: "uppercase",
@@ -57,12 +58,13 @@ export function ConfidenceInput({ value, onChange }: ConfidenceInputProps) {
                 alignItems: "center",
                 gap: 0.5,
                 transition: "border-color 120ms ease, background-color 120ms ease",
+                [PHONE]: { minHeight: 56, minWidth: 0 },
               }}
             >
               <Box sx={{ fontSize: "1.3rem", lineHeight: 1 }}>{opt.emoji}</Box>
               <Typography
                 sx={{
-                  fontSize: "0.7rem",
+                  fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                   fontWeight: 700,
                   color: selected ? "#6366f1" : "text.primary",
                   textAlign: "center",

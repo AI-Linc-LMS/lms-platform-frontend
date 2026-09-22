@@ -5,6 +5,7 @@ import { Box, ButtonBase, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PerQuestionRationaleCard } from "./PerQuestionRationaleCard";
 import type { AdaptiveAINarration, AdaptiveResponseRow } from "@/lib/types/adaptive-quiz";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface PerQuestionBreakdownProps {
   responses: AdaptiveResponseRow[];
@@ -42,7 +43,7 @@ export function PerQuestionBreakdown({ responses, narration, mcqDirectory }: Per
         <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", letterSpacing: "-0.01em" }}>
           Question by question
         </Typography>
-        <Typography sx={{ ml: "auto", fontSize: "0.74rem", color: "text.secondary", fontWeight: 600 }}>
+        <Typography sx={{ ml: "auto", fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", fontWeight: 600 }}>
           Tap a pill to see the AI's read on it.
         </Typography>
       </Box>

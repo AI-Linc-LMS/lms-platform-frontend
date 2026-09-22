@@ -10,6 +10,7 @@ import type {
   AdaptiveQuestion,
   ConfidenceLevel,
 } from "@/lib/types/adaptive-quiz";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface QuestionCardProps {
   question: AdaptiveQuestion;
@@ -114,11 +115,12 @@ export function QuestionCard({
             border: "1px dashed color-mix(in srgb, #a855f7 50%, transparent)",
             color: hintTokensRemaining > 0 ? "#a855f7" : "text.disabled",
             "&:disabled": { opacity: 0.6, cursor: "not-allowed" },
+            [PHONE]: { minHeight: 44 },
           }}
           aria-label="Ask for a hint"
         >
           <Icon icon="mdi:lightbulb-on-outline" width={16} />
-          <Typography sx={{ fontSize: "0.72rem", fontWeight: 700 }}>
+          <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 700 }}>
             Ask for a hint · {hintTokensRemaining} left
           </Typography>
         </ButtonBase>
@@ -230,6 +232,8 @@ export function QuestionCard({
             "&:disabled": { cursor: "not-allowed" },
             fontSize: "0.9rem",
             letterSpacing: "0.02em",
+            // Full width on a phone: the one action on the screen, where the thumb already is.
+            [PHONE]: { width: "100%", minHeight: 48 },
           }}
         >
           {submitting ? "Scoring…" : "Submit answer"}
