@@ -29,6 +29,13 @@ export interface NavigationItem {
   /** i18n key for the one-line module explainer shown via the (i) tooltip. */
   descKey?: string;
   /**
+   * A shorter name for the phone dock, whose active tab has about 86px for its label on a 360px
+   * screen. "Assessment Management" and "Manage Students" were cut to an ellipsis there; the
+   * full name stays the tab's accessible name.
+   */
+  dockLabelKey?: string;
+  dockLabel?: string;
+  /**
    * Which profile-gated module this is ("resume" | "jobs" | "interview"), if any.
    * Compared against the server's `locked_modules` — never a hard-coded client list, so the
    * backend can change what it gates without a frontend release.
@@ -135,7 +142,7 @@ const SIDEBAR_SECTIONS_STORAGE_KEY = "sidebar_open_sections";
 export const INSTRUCTOR_NAV_ITEMS: NavigationItem[] = [
   { label: "Dashboard", labelKey: "instructorNav.dashboard", path: "/instructor/dashboard", icon: "mdi:view-dashboard", featureName: "instructor" },
   { label: "My Batches", labelKey: "instructorNav.cohorts", path: "/instructor/cohorts", icon: "mdi:account-group", featureName: "instructor" },
-  { label: "Course Content", labelKey: "instructorNav.courses", path: "/instructor/courses", icon: "mdi:book-education", featureName: "instructor" },
+  { label: "Course Content", labelKey: "instructorNav.courses", dockLabelKey: "navDock.content", dockLabel: "Content", path: "/instructor/courses", icon: "mdi:book-education", featureName: "instructor" },
   { label: "Students", labelKey: "instructorNav.students", path: "/instructor/students", icon: "mdi:account-school", featureName: "instructor" },
   { label: "Gradebook", labelKey: "instructorNav.gradebook", path: "/instructor/assessments", icon: "mdi:clipboard-check-outline", featureName: "instructor" },
   // Authoring, not marking. Gradebook above READS submissions; this is where a trainer writes
@@ -147,7 +154,7 @@ export const INSTRUCTOR_NAV_ITEMS: NavigationItem[] = [
   // one screen, scoped per object on the server. An instructor sees their own batches' briefs plus
   // the tenant's shared ones, and can only rewrite the former - the server decides that, and sends
   // `can_edit` per brief so the screen can say so before anyone starts typing.
-  { label: "Project Library", labelKey: "instructorNav.projects", path: "/admin/projects", icon: "mdi:hammer-wrench", featureName: "instructor" },
+  { label: "Project Library", labelKey: "instructorNav.projects", dockLabelKey: "navDock.projects", dockLabel: "Projects", path: "/admin/projects", icon: "mdi:hammer-wrench", featureName: "instructor" },
   { label: "Live Sessions", labelKey: "instructorNav.live", path: "/instructor/live-sessions", icon: "mdi:video-outline", featureName: "instructor" },
   { label: "Analytics", labelKey: "instructorNav.analytics", path: "/instructor/analytics", icon: "mdi:chart-box-outline", featureName: "instructor" },
 ];
@@ -314,7 +321,7 @@ export const ADMIN_NAV_ITEMS: NavigationItem[] = [
   },
   {
     label: "Manage Students",
-    labelKey: "nav.manageStudents",
+    labelKey: "nav.manageStudents", dockLabelKey: "navDock.students", dockLabel: "Students",
     path: "/admin/manage-students",
     icon: "mdi:account-group",
     featureName: "admin_manage_students",
@@ -375,7 +382,7 @@ export const ADMIN_NAV_ITEMS: NavigationItem[] = [
   },
   {
     label: "Tickets",
-    labelKey: "nav.adminTickets",
+    labelKey: "nav.adminTickets", dockLabelKey: "navDock.tickets", dockLabel: "Tickets",
     path: "/admin/tickets",
     icon: "mdi:ticket-confirmation-outline",
     featureName: "admin_tickets",
@@ -409,7 +416,7 @@ export const ADMIN_NAV_ITEMS: NavigationItem[] = [
     // the admin side did not exist. Gated on interview_realtime, so it appears exactly for
     // the tenants whose learners can sit one.
     label: "Interview Attempts",
-    labelKey: "nav.adminInterviewSessions",
+    labelKey: "nav.adminInterviewSessions", dockLabelKey: "navDock.attempts", dockLabel: "Attempts",
     path: "/admin/admin-mock-interview/sessions",
     icon: "mdi:clipboard-account",
     featureName: "interview_realtime",
@@ -432,7 +439,7 @@ export const ADMIN_NAV_ITEMS: NavigationItem[] = [
     // it did not exist - the same failure the comment on "Interview Attempts" describes,
     // one level deeper. Reported from client 5 as "I cannot see the interview admin side".
     label: "Interview Setup",
-    labelKey: "nav.adminInterviewSetup",
+    labelKey: "nav.adminInterviewSetup", dockLabelKey: "navDock.interviews", dockLabel: "Interviews",
     path: "/admin/admin-mock-interview/templates",
     icon: "mdi:calendar-check-outline",
     featureName: "admin_mock_interview",
@@ -440,7 +447,7 @@ export const ADMIN_NAV_ITEMS: NavigationItem[] = [
   },
   {
     label: "Assessment Management",
-    labelKey: "nav.assessmentManagement",
+    labelKey: "nav.assessmentManagement", dockLabelKey: "nav.assessments", dockLabel: "Assessments",
     path: "/admin/assessment",
     icon: "mdi:file-document-edit",
     featureName: "admin_assessment",
@@ -448,7 +455,7 @@ export const ADMIN_NAV_ITEMS: NavigationItem[] = [
   },
   {
     label: "Project Library",
-    labelKey: "nav.projectLibrary",
+    labelKey: "nav.projectLibrary", dockLabelKey: "navDock.projects", dockLabel: "Projects",
     path: "/admin/projects",
     icon: "mdi:hammer-wrench",
     // Same gate as assessment management: a project brief is only ever used by an assessment,
@@ -458,7 +465,7 @@ export const ADMIN_NAV_ITEMS: NavigationItem[] = [
   },
   {
     label: "Adaptive Course Builder",
-    labelKey: "nav.adminAdaptiveQuizzes",
+    labelKey: "nav.adminAdaptiveQuizzes", dockLabelKey: "nav.adaptiveCourses", dockLabel: "Courses",
     path: "/admin/adaptive-courses",
     icon: "mdi:robot-excited-outline",
     featureName: "admin_adaptive_quizzes",
@@ -485,7 +492,7 @@ export const ADMIN_NAV_ITEMS: NavigationItem[] = [
     // split the assessments module already makes with nav.assessments and
     // nav.assessmentManagement.
     label: "Certificate Management",
-    labelKey: "nav.certificateManagement",
+    labelKey: "nav.certificateManagement", dockLabelKey: "nav.certificates", dockLabel: "Certificates",
     path: "/admin/certificates",
     icon: "mdi:certificate",
     featureName: "admin_certificates",

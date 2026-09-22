@@ -81,6 +81,8 @@ export function MobileNav() {
   if (resolving || bar.length === 0) return null;
 
   const fullLabel = (item: NavigationItem) => t(item.labelKey, item.label) as string;
+  const dockLabel = (item: NavigationItem) =>
+    item.dockLabelKey ? (t(item.dockLabelKey, item.dockLabel ?? item.label) as string) : fullLabel(item);
   const menuActive = menu.isOpen || rest.some((i) => isNavItemActive(pathname, i.path));
 
   return (
@@ -137,9 +139,12 @@ export function MobileNav() {
             <IconWrapper icon={item.icon} size={22} />
             {active && (
               <Typography
-                sx={{ fontSize: "0.8rem", "@media (max-width:379.95px)": { fontSize: "0.74rem" }, fontWeight: 800, color: "inherit", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}
+                data-testid="mobile-nav-label"
+                // 12px is the floor on a phone. Below 380px the active tab has ~86px for its name,
+                // which every dock label fits at 12px (the long admin names use dockLabel).
+                sx={{ fontSize: "0.8rem", "@media (max-width:379.95px)": { fontSize: "0.75rem" }, fontWeight: 800, color: "inherit", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}
               >
-                {fullLabel(item)}
+                {dockLabel(item)}
               </Typography>
             )}
           </ButtonBase>
