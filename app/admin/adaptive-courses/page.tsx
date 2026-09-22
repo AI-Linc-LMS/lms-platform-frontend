@@ -469,17 +469,7 @@ export default function AdminAdaptiveCoursesPage() {
           {!loading && courses.length > 0 && (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 2, mb: 2.5 }}>
               <Box sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
-                <Box
-                  sx={{
-                    display: "contents",
-                    [PHONE]: {
-                      "& [role=tab]": { minHeight: TAP },
-                      "& [role=tab] > .MuiBox-root": { fontSize: PHONE_TEXT },
-                    },
-                  }}
-                >
-                  <SegmentedTabs<CourseTab> tabs={courseTabs} value={tab} onChange={setTab} />
-                </Box>
+                <SegmentedTabs<CourseTab> tabs={courseTabs} value={tab} onChange={setTab} />
                 <Box
                   data-tour-id="adaptive-courses-view"
                   sx={{ [PHONE]: { "& .MuiIconButton-root": { width: TAP, height: TAP } } }}
