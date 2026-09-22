@@ -473,10 +473,9 @@ export default function AdminScorecardPage() {
                     [PHONE]: {
                       minWidth: 0,
                       flexBasis: "100%",
-                      // The open/close chevron is a 44px target, grown 8px on every side by negative
-                      // margins so it takes no more of the input's end padding than MUI reserved for
-                      // the 28px button, and a selected name never slides under it.
-                      "& .MuiAutocomplete-popupIndicator": { width: 44, height: 44, m: "-8px" },
+                      // The indicators keep MUI's size: the input's end padding is reserved for 26px
+                      // buttons, so 44px ones slid a selected name under them. The field itself is
+                      // the tap target and opens the list anywhere it is touched.
                     },
                   }}
                 />
