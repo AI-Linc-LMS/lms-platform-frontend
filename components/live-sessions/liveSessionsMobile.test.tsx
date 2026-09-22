@@ -180,3 +180,36 @@ describe("LiveSessionFeedbackDialog", () => {
     await waitFor(() => expect(screen.queryByRole("button", { name: /Sending/ })).toBeNull());
   });
 });
+
+/**
+ * The card's text column must claim the whole row on a phone.
+ *
+ * `flex: 1` is shorthand for a 0% flex-basis, so in the wrapping card row the text column and the
+ * 100%-wide actions "fit" on one line: the column collapsed to 0px and its title spilled down the
+ * card one letter per line, under the Add to calendar / Remind me buttons. A phone-only
+ * `flex-basis: 100%` makes the actions wrap below. Desktop keeps `flex: 1` beside the date badge.
+ */
+describe("session card text column on a phone", () => {
+  const rules = (el: Element) => {
+    const css = Array.from(document.querySelectorAll("style")).map((s) => s.textContent ?? "").join("\n");
+    const cls = Array.from(el.classList).find((c) => c.startsWith("css-")) ?? "";
+    const phone = [...css.matchAll(/@media \(max-width:599\.95px\)\{([^@]*)\}/g)].map((m) => m[1]).join("\n");
+    const outside = css.replace(/@media \(max-width:599\.95px\)\{[^@]*\}/g, "");
+    const own = (block: string) => [...block.matchAll(new RegExp(`\\.${cls}\\{([^}]*)\\}`, "g"))].map((m) => m[1]).join(";");
+    return { phone: own(phone), outside: own(outside) };
+  };
+
+  it("claims the full row in an upcoming card, only below 600px", () => {
+    render(<UpcomingCard s={session()} isNext={false} reminderOn={false} onAddCalendar={vi.fn()} onRemind={vi.fn()} />);
+    const { phone, outside } = rules(screen.getByTestId("upcoming-info"));
+    expect(phone).toMatch(/flex-basis:100%/);
+    expect(outside).not.toMatch(/flex-basis:100%/);
+  });
+
+  it("claims the full row in a recording card, only below 600px", () => {
+    render(<RecordingCard s={session()} watching={false} onWatch={vi.fn()} onSummary={vi.fn()} />);
+    const { phone, outside } = rules(screen.getByTestId("recording-info"));
+    expect(phone).toMatch(/flex-basis:100%/);
+    expect(outside).not.toMatch(/flex-basis:100%/);
+  });
+});

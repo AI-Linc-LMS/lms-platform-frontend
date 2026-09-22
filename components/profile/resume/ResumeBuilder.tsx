@@ -50,6 +50,7 @@ import { toPng } from "html-to-image";
 import { resumeService } from "@/lib/services/resume.service";
 import { PANEL_BORDER, PANEL_SHADOW, PROFILE, TILE_GRADIENT, CTA_GRADIENT, CTA_SHADOW } from "../theme/profileTokens";
 import { LockedAction } from "@/components/common/ProfileLock";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /** Where the builder's current content came from. Drives the toolbar's segmented control. */
 type ResumeSource = "sample" | "profile" | "blank";
@@ -897,7 +898,7 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
           gap: 1.5,
         }}
       >
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, minWidth: 0, flex: 1, width: { xs: "100%", sm: "auto" } }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, minWidth: 0, flex: 1, width: { xs: "100%", sm: "auto" }, [PHONE]: { flexBasis: "100%" } }}>
           <Typography
             sx={{
               fontWeight: 800,
