@@ -27,6 +27,8 @@ import {
   type AdminProjectTemplate,
 } from "@/lib/services/admin/admin-projects.service";
 import { PHONE } from "@/components/common/mobile/phone";
+import { useTranslation } from "react-i18next";
+import { CardFact, PhoneSheet, TAP, useIsPhone } from "@/components/admin/adminPhone";
 
 /**
  * The project brief library.
@@ -66,6 +68,8 @@ function verificationChip(t: AdminProjectTemplate) {
 export default function ProjectLibraryPage() {
   const router = useRouter();
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
+  const isPhone = useIsPhone();
 
   const [projects, setProjects] = useState<AdminProjectTemplate[]>([]);
   const [loading, setLoading] = useState(true);
@@ -208,6 +212,36 @@ export default function ProjectLibraryPage() {
     },
   ];
 
+  const emptyState = (
+    <AssessmentEmptyState
+      icon="mdi:hammer-wrench"
+      title={
+        tab === "unverified"
+          ? "Every auto-graded project is verified"
+          : tab === "archived"
+          ? "Nothing archived"
+          : "No projects yet"
+      }
+      description={
+        tab === "all"
+          ? "A project is a brief the learner builds in the browser — an HTML/CSS/JS page, or a Python program — with a live preview as they type."
+          : undefined
+      }
+      action={
+        tab === "all" ? (
+          <Button
+            variant="contained"
+            startIcon={<IconWrapper icon="mdi:plus" size={18} />}
+            onClick={() => router.push("/admin/projects/new")}
+            sx={{ textTransform: "none", borderRadius: 2, [PHONE]: { minHeight: TAP } }}
+          >
+            Create the first one
+          </Button>
+        ) : undefined
+      }
+    />
+  );
+
   return (
     <MainLayout>
       <Box sx={{ p: { xs: 2, sm: 3 }, [PHONE]: { px: 0, pt: 0 } }}>
@@ -235,6 +269,7 @@ export default function ProjectLibraryPage() {
                 borderRadius: 2,
                 backgroundColor: "var(--accent-indigo)",
                 "&:hover": { backgroundColor: "var(--accent-indigo)" },
+                [PHONE]: { minHeight: TAP },
               }}
             >
               New project
@@ -309,46 +344,118 @@ export default function ProjectLibraryPage() {
         <Box sx={{ mt: 2 }}>
           {loading ? (
             <AssessmentTableSkeleton />
+          ) : isPhone ? (
+            <Box
+              data-testid="project-cards"
+              sx={{
+                borderRadius: 2,
+                border: "1px solid var(--border-default)",
+                background: "var(--card-bg)",
+                overflow: "hidden",
+              }}
+            >
+              {rows.length === 0 ? emptyState : rows.map((p) => (
+                <Box
+                  key={p.id}
+                  data-testid="project-card"
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 0.75,
+                    borderBottom: "1px solid var(--border-default)",
+                    "&:last-of-type": { borderBottom: "none" },
+                  }}
+                >
+                  <Box
+                    component="button"
+                    type="button"
+                    onClick={() => router.push(`/admin/projects/${p.id}`)}
+                    sx={{
+                      all: "unset",
+                      cursor: "pointer",
+                      minHeight: TAP,
+                      display: "flex",
+                      flexDirection: "column",
+                      justifyContent: "center",
+                      textAlign: "start",
+                    }}
+                  >
+                    <Typography sx={{ fontWeight: 700, fontSize: "0.95rem", color: "var(--font-primary)", overflowWrap: "anywhere" }}>
+                      {p.title}
+                    </Typography>
+                    <Typography sx={{ fontSize: "0.8125rem", color: "var(--font-secondary)" }}>
+                      {Object.keys(p.starter_files || {}).length} starter file
+                      {Object.keys(p.starter_files || {}).length === 1 ? "" : "s"}
+                    </Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
+                    <StatusChip
+                      label={RUNTIME_LABELS[p.runtime] ?? p.runtime}
+                      tone="info"
+                      icon={p.runtime === "python" ? "mdi:language-python" : "mdi:language-html5"}
+                    />
+                    {verificationChip(p)}
+                  </Box>
+                  <CardFact label="Marks">{p.max_marks}</CardFact>
+                  <Box sx={{ display: "flex", gap: 1, mt: 0.5 }}>
+                    <Button
+                      variant="outlined"
+                      startIcon={
+                        <IconWrapper icon={p.can_edit === false ? "mdi:eye-outline" : "mdi:pencil-outline"} size={18} />
+                      }
+                      onClick={() => router.push(`/admin/projects/${p.id}`)}
+                      sx={{ flex: 1, minHeight: TAP, textTransform: "none", borderRadius: 2, fontWeight: 700 }}
+                    >
+                      {p.can_edit === false ? t("adminPeoplePhone.view") : t("adminPeoplePhone.edit")}
+                    </Button>
+                    {p.can_edit !== false && (
+                      <Button
+                        variant="outlined"
+                        color="error"
+                        startIcon={<IconWrapper icon="mdi:trash-can-outline" size={18} />}
+                        onClick={() => setPendingDelete(p)}
+                        sx={{ flex: 1, minHeight: TAP, textTransform: "none", borderRadius: 2, fontWeight: 700 }}
+                      >
+                        {t("adminPeoplePhone.delete")}
+                      </Button>
+                    )}
+                  </Box>
+                </Box>
+              ))}
+            </Box>
           ) : (
             <AssessmentDataTable
               columns={columns}
               rows={rows}
               rowKey={(p) => p.id}
               onRowClick={(p) => router.push(`/admin/projects/${p.id}`)}
-              emptyState={
-                <AssessmentEmptyState
-                  icon="mdi:hammer-wrench"
-                  title={
-                    tab === "unverified"
-                      ? "Every auto-graded project is verified"
-                      : tab === "archived"
-                      ? "Nothing archived"
-                      : "No projects yet"
-                  }
-                  description={
-                    tab === "all"
-                      ? "A project is a brief the learner builds in the browser — an HTML/CSS/JS page, or a Python program — with a live preview as they type."
-                      : undefined
-                  }
-                  action={
-                    tab === "all" ? (
-                      <Button
-                        variant="contained"
-                        startIcon={<IconWrapper icon="mdi:plus" size={18} />}
-                        onClick={() => router.push("/admin/projects/new")}
-                        sx={{ textTransform: "none", borderRadius: 2 }}
-                      >
-                        Create the first one
-                      </Button>
-                    ) : undefined
-                  }
-                />
-              }
+              emptyState={emptyState}
             />
           )}
         </Box>
       </Box>
 
+      {isPhone ? (
+        <PhoneSheet
+          open={Boolean(pendingDelete)}
+          onClose={() => setPendingDelete(null)}
+          busy={deleting}
+          title={t("adminPeoplePhone.deleteProjectTitle")}
+          cancelLabel={t("adminPeoplePhone.cancel")}
+          confirmLabel={t("adminPeoplePhone.delete")}
+          confirmColor="error"
+          onConfirm={() => void handleDelete()}
+        >
+          <Typography sx={{ fontWeight: 600, color: "var(--error-500)", mb: 1, overflowWrap: "anywhere" }}>
+            {pendingDelete?.title}
+          </Typography>
+          <Typography sx={{ fontSize: "0.9rem", color: "var(--font-secondary)", lineHeight: 1.6 }}>
+            {t("adminPeoplePhone.deleteProjectBody")}
+          </Typography>
+        </PhoneSheet>
+      ) : (
       <DeleteConfirmationModal
         open={Boolean(pendingDelete)}
         onClose={() => setPendingDelete(null)}
@@ -360,6 +467,7 @@ export default function ProjectLibraryPage() {
             : "Delete this project?"
         }
       />
+      )}
     </MainLayout>
   );
 }

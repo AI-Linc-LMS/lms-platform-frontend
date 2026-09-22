@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { Box, Tooltip, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE_CHART_TEXT, PHONE_HIT_AREA, phoneFont } from "./phoneType";
 
 /**
  * Shared surfaces for the insights dashboard.
@@ -104,7 +105,7 @@ export function Panel({
         </Box>
         {action}
       </Box>
-      <Box sx={{ p: { xs: 2, md: 2.5 }, flex: 1, minWidth: 0 }}>{children}</Box>
+      <Box sx={{ p: { xs: 2, md: 2.5 }, flex: 1, minWidth: 0, ...PHONE_CHART_TEXT }}>{children}</Box>
     </Box>
   );
 }
@@ -121,6 +122,7 @@ export function DefinitionMark({ text }: { text: string }) {
           opacity: 0.65,
           cursor: "help",
           "&:hover": { opacity: 1 },
+          ...PHONE_HIT_AREA,
         }}
       >
         <IconWrapper icon="mdi:information-outline" size={14} />
@@ -189,7 +191,7 @@ export function MetricTile({
         </Box>
         <Typography
           sx={{
-            fontSize: "0.7rem",
+            ...phoneFont(0.7),
             fontWeight: 800,
             letterSpacing: "0.06em",
             textTransform: "uppercase",
@@ -292,7 +294,7 @@ export function HourHeatmap({
                 sx={{
                   flex: 1,
                   textAlign: "center",
-                  fontSize: "0.56rem",
+                  ...phoneFont(0.56),
                   color: "var(--font-secondary)",
                   fontWeight: 700,
                 }}
@@ -308,7 +310,7 @@ export function HourHeatmap({
                 sx={{
                   width: 34,
                   flexShrink: 0,
-                  fontSize: "0.66rem",
+                  ...phoneFont(0.66),
                   fontWeight: 800,
                   color: "var(--font-secondary)",
                 }}
@@ -354,7 +356,7 @@ export function HourHeatmap({
           gap: 1,
           mt: 1.5,
           flexWrap: "wrap",
-          fontSize: "0.72rem",
+          ...phoneFont(0.72),
           color: "var(--font-secondary)",
         }}
       >

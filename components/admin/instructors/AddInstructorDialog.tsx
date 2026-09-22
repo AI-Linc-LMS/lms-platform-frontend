@@ -32,6 +32,8 @@ import {
   type AdminAdaptiveCourseListItem,
 } from "@/lib/services/admin/admin-adaptive-course.service";
 import { Course } from "@/lib/services/courses.service";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
+import { PHONE_FIELD_SX, SHEET_BUTTON_SX, phoneButtonSx, useIsPhone } from "@/components/admin/adminPhone";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -50,6 +52,7 @@ function conflictOf(e: unknown): CreateInstructorConflict | null {
 
 export function AddInstructorDialog({ open, onClose, onSuccess }: AddInstructorDialogProps) {
   const { showToast } = useToast();
+  const isPhone = useIsPhone();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -154,6 +157,169 @@ export function AddInstructorDialog({ open, onClose, onSuccess }: AddInstructorD
     }
   };
 
+  // One body for both shells: the desktop Dialog below is the original markup, and the phone
+  // sheet renders the same fields with full-width 48px actions.
+  const content = (
+    <>
+      <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+        Creates an approved instructor account straight away, so they do not have to sign up and
+        wait for review. You never set their password: they will get an email telling them to use
+        Forgot password the first time they sign in.
+      </Typography>
+
+      {conflict && (
+        <Alert
+          severity={conflict.can_promote ? "warning" : "info"}
+          sx={{ mb: 2 }}
+          action={
+            conflict.can_promote ? (
+              <Button
+                color="inherit"
+                size="small"
+                disabled={submitting}
+                onClick={() => submit(true)}
+                sx={phoneButtonSx}
+              >
+                Make them an instructor
+              </Button>
+            ) : undefined
+          }
+        >
+          {conflict.error}
+        </Alert>
+      )}
+
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <TextField
+          label="Full name"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          error={!!nameError}
+          helperText={nameError}
+          required
+          fullWidth
+          autoFocus
+        />
+        <TextField
+          label="Email"
+          type="email"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            setConflict(null); // a different address is a different question
+          }}
+          error={!!emailError}
+          helperText={emailError}
+          required
+          fullWidth
+        />
+        <TextField
+          label="Phone (optional)"
+          value={phone}
+          onChange={(e) => setPhone(e.target.value)}
+          fullWidth
+        />
+
+        {loadingCourses ? (
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <CircularProgress size={18} />
+            <Typography variant="body2" color="text.secondary">
+              Loading courses…
+            </Typography>
+          </Box>
+        ) : (
+          <>
+            {classicEnabled && courses.length > 0 && (
+              <FormControl fullWidth size="small" sx={PHONE_FIELD_SX}>
+                <InputLabel>Courses to teach</InputLabel>
+                <Select
+                  multiple
+                  value={courseIds}
+                  label="Courses to teach"
+                  onChange={(e) => setCourseIds(e.target.value as number[])}
+                  renderValue={(ids) => (
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                      {(ids as number[]).map((id) => (
+                        <Chip
+                          key={id}
+                          size="small"
+                          label={courses.find((c) => c.id === id)?.title || `Course ${id}`}
+                        />
+                      ))}
+                    </Box>
+                  )}
+                >
+                  {courses.map((c) => (
+                    <MenuItem key={c.id} value={c.id}>
+                      {c.title}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+            {adaptiveCourses.length > 0 && (
+              <FormControl fullWidth size="small" sx={PHONE_FIELD_SX}>
+                <InputLabel>Adaptive courses to teach</InputLabel>
+                <Select
+                  multiple
+                  value={adaptiveIds}
+                  label="Adaptive courses to teach"
+                  onChange={(e) => setAdaptiveIds(e.target.value as number[])}
+                  renderValue={(ids) => (
+                    <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
+                      {(ids as number[]).map((id) => (
+                        <Chip
+                          key={id}
+                          size="small"
+                          label={
+                            adaptiveCourses.find((c) => c.id === id)?.title || `Adaptive ${id}`
+                          }
+                        />
+                      ))}
+                    </Box>
+                  )}
+                >
+                  {adaptiveCourses.map((c) => (
+                    <MenuItem key={c.id} value={c.id}>
+                      {c.title}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            )}
+            <Typography variant="caption" color="text.secondary">
+              Courses are optional — you can assign them later from this page.
+            </Typography>
+          </>
+        )}
+      </Box>
+    </>
+  );
+
+  if (isPhone) {
+    return (
+      <ResponsiveDialog
+        open={open}
+        // Closing mid-request would leave the admin not knowing whether the account exists.
+        onClose={submitting ? () => undefined : onClose}
+        hideCloseButton={submitting}
+        title="Add an instructor"
+        footer={
+          <>
+            <Button onClick={onClose} disabled={submitting} variant="outlined" color="inherit" sx={SHEET_BUTTON_SX}>
+              Cancel
+            </Button>
+            <Button onClick={() => submit(false)} disabled={submitting} variant="contained" sx={SHEET_BUTTON_SX}>
+              {submitting ? <CircularProgress size={20} color="inherit" /> : "Add instructor"}
+            </Button>
+          </>
+        }
+      >
+        {content}
+      </ResponsiveDialog>
+    );
+  }
+
   return (
     <Dialog open={open} onClose={submitting ? undefined : onClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
@@ -164,137 +330,7 @@ export function AddInstructorDialog({ open, onClose, onSuccess }: AddInstructorD
       </DialogTitle>
 
       <DialogContent dividers>
-        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          Creates an approved instructor account straight away, so they do not have to sign up and
-          wait for review. You never set their password: they will get an email telling them to use
-          Forgot password the first time they sign in.
-        </Typography>
-
-        {conflict && (
-          <Alert
-            severity={conflict.can_promote ? "warning" : "info"}
-            sx={{ mb: 2 }}
-            action={
-              conflict.can_promote ? (
-                <Button
-                  color="inherit"
-                  size="small"
-                  disabled={submitting}
-                  onClick={() => submit(true)}
-                >
-                  Make them an instructor
-                </Button>
-              ) : undefined
-            }
-          >
-            {conflict.error}
-          </Alert>
-        )}
-
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-          <TextField
-            label="Full name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            error={!!nameError}
-            helperText={nameError}
-            required
-            fullWidth
-            autoFocus
-          />
-          <TextField
-            label="Email"
-            type="email"
-            value={email}
-            onChange={(e) => {
-              setEmail(e.target.value);
-              setConflict(null); // a different address is a different question
-            }}
-            error={!!emailError}
-            helperText={emailError}
-            required
-            fullWidth
-          />
-          <TextField
-            label="Phone (optional)"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            fullWidth
-          />
-
-          {loadingCourses ? (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <CircularProgress size={18} />
-              <Typography variant="body2" color="text.secondary">
-                Loading courses…
-              </Typography>
-            </Box>
-          ) : (
-            <>
-              {classicEnabled && courses.length > 0 && (
-                <FormControl fullWidth size="small">
-                  <InputLabel>Courses to teach</InputLabel>
-                  <Select
-                    multiple
-                    value={courseIds}
-                    label="Courses to teach"
-                    onChange={(e) => setCourseIds(e.target.value as number[])}
-                    renderValue={(ids) => (
-                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                        {(ids as number[]).map((id) => (
-                          <Chip
-                            key={id}
-                            size="small"
-                            label={courses.find((c) => c.id === id)?.title || `Course ${id}`}
-                          />
-                        ))}
-                      </Box>
-                    )}
-                  >
-                    {courses.map((c) => (
-                      <MenuItem key={c.id} value={c.id}>
-                        {c.title}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              )}
-              {adaptiveCourses.length > 0 && (
-                <FormControl fullWidth size="small">
-                  <InputLabel>Adaptive courses to teach</InputLabel>
-                  <Select
-                    multiple
-                    value={adaptiveIds}
-                    label="Adaptive courses to teach"
-                    onChange={(e) => setAdaptiveIds(e.target.value as number[])}
-                    renderValue={(ids) => (
-                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5 }}>
-                        {(ids as number[]).map((id) => (
-                          <Chip
-                            key={id}
-                            size="small"
-                            label={
-                              adaptiveCourses.find((c) => c.id === id)?.title || `Adaptive ${id}`
-                            }
-                          />
-                        ))}
-                      </Box>
-                    )}
-                  >
-                    {adaptiveCourses.map((c) => (
-                      <MenuItem key={c.id} value={c.id}>
-                        {c.title}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              )}
-              <Typography variant="caption" color="text.secondary">
-                Courses are optional — you can assign them later from this page.
-              </Typography>
-            </>
-          )}
-        </Box>
+        {content}
       </DialogContent>
 
       <DialogActions>

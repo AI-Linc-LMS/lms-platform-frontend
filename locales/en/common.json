@@ -2983,6 +2983,18 @@
     "downloadLocked": "Download is locked",
     "sidebarTooltip": "Complete your profile to unlock"
   },
+  "adminPeoplePhone": {
+    "moreActions": "More actions for {{name}}",
+    "instructorCode": "Instructor code",
+    "moreCourses_one": "+{{count}} more",
+    "moreCourses_other": "+{{count}} more",
+    "view": "View",
+    "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "deleteProjectTitle": "Delete this project?",
+    "deleteProjectBody": "Assessments that use it will lose the section. This cannot be undone."
+  },
   "roadmapsMobile": {
     "mapHint": "Tap a step to open it. Press and hold to mark it done, in progress or skipped."
   },

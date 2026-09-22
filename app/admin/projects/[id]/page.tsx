@@ -323,7 +323,7 @@ export default function ProjectEditorPage() {
                   variant="outlined"
                   startIcon={<IconWrapper icon="mdi:shield-check-outline" size={18} />}
                   onClick={runVerify}
-                  sx={{ textTransform: "none", borderRadius: 2 }}
+                  sx={{ textTransform: "none", borderRadius: 2, [PHONE]: { minHeight: 44 } }}
                 >
                   Verify
                 </LoadingButton>
@@ -339,6 +339,7 @@ export default function ProjectEditorPage() {
                   borderRadius: 2,
                   backgroundColor: "var(--accent-indigo)",
                   "&:hover": { backgroundColor: "var(--accent-indigo)" },
+                  [PHONE]: { minHeight: 44 },
                 }}
               >
                 {isNew ? "Create" : "Save"}
@@ -377,9 +378,18 @@ export default function ProjectEditorPage() {
               display: "grid",
               gap: 2.5,
               gridTemplateColumns: { xs: "1fr", md: "2fr 1fr" },
+              // 24px padding plus the page gutter left the editor 294px wide on a phone.
+              [PHONE]: { p: 2, gridTemplateColumns: "minmax(0, 1fr)" },
             }}
           >
-            <Box sx={{ display: "grid", gap: 2.5 }}>
+            <Box
+              sx={{
+                display: "grid",
+                gap: 2.5,
+                // The shared editor's 32px formatting buttons, raised to thumb size on a phone only.
+                [PHONE]: { "& [role=toolbar] .MuiButtonBase-root": { width: 44, height: 44 } },
+              }}
+            >
               {!canEdit && (
                 <Alert severity="info" icon={<IconWrapper icon="mdi:lock-outline" size={18} />}>
                   This brief belongs to the institute&apos;s shared library, so only an admin can
@@ -661,7 +671,7 @@ export default function ProjectEditorPage() {
                     />
                     <IconButton
                       onClick={() => mark(setRubric)(rubric.filter((_, j) => j !== i))}
-                      sx={{ mt: 0.5 }}
+                      sx={{ mt: 0.5, [PHONE]: { width: 44, height: 44, justifySelf: "end" } }}
                     >
                       <IconWrapper icon="mdi:close" size={18} />
                     </IconButton>
@@ -673,7 +683,7 @@ export default function ProjectEditorPage() {
                   onClick={() =>
                     mark(setRubric)([...rubric, { criterion: "", weight: 10, guidance: "" }])
                   }
-                  sx={{ textTransform: "none", mt: 1 }}
+                  sx={{ textTransform: "none", mt: 1, [PHONE]: { minHeight: 44 } }}
                 >
                   Add a criterion
                 </Button>
