@@ -22,7 +22,7 @@ export function ContinueCoursesRow({ courses }: { courses: DashboardCourse[] }) 
 
   return (
     <Box sx={{ mt: 1 }}>
-      <SectionHeader icon="mdi:play-box-multiple" title="Continue your courses" subtitle="Pick up where you left off" />
+      <SectionHeader icon="mdi:play-box-multiple" title="Continue your courses" />
       {/* minmax(0,1fr), not 1fr (= minmax(auto,1fr)): the cards' nowrap "You left at" value
           would otherwise inflate a column's min-content and make the cards unequal width. */}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2,minmax(0,1fr))", lg: "repeat(3,minmax(0,1fr))" }, gap: 2 }}>

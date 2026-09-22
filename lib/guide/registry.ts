@@ -1977,14 +1977,6 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
         color: "#a78bfa",
       },
       {
-        targetId: "assessments-stats",
-        title: "Progress at a glance",
-        narration: "These tiles keep a running count of what's available now, what's under review, what you've completed, and your total assessments - a quick pulse on where you stand.",
-        placement: "bottom",
-        icon: "mdi:lightning-bolt",
-        color: "#22c55e",
-      },
-      {
         targetId: "assessments-tabs",
         title: "Filter by status",
         narration: "Switch between All, Available, Under review, Completed, and Expired to zero in on exactly the assessments you care about. Each tab shows its own live count.",

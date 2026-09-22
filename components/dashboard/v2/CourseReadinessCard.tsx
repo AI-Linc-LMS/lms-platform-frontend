@@ -8,11 +8,13 @@ import type { DashboardCourse } from "@/lib/types/dashboard";
 import { BAND_STYLE, SignalBar } from "./parts";
 import { phoneText } from "@/components/common/mobile/phoneText";
 
-const SIGNALS: { key: "coverage" | "precision" | "craft" | "clutch"; icon: string; label: string; sub: string }[] = [
-  { key: "coverage", icon: "mdi:book-open-variant", label: "Curriculum Coverage", sub: "topics & skills completed" },
-  { key: "precision", icon: "mdi:target", label: "Practice Precision", sub: "accuracy in quizzes & drills" },
-  { key: "craft", icon: "mdi:code-tags", label: "Applied Craft", sub: "hands-on coding expertise" },
-  { key: "clutch", icon: "mdi:trophy-variant", label: "Clutch Performance", sub: "assessments & interviews" },
+// The labels say what each signal is; the sub-lines under them ("topics & skills completed", ...)
+// only restated the label and were removed at the product owner's request.
+const SIGNALS: { key: "coverage" | "precision" | "craft" | "clutch"; icon: string; label: string }[] = [
+  { key: "coverage", icon: "mdi:book-open-variant", label: "Curriculum Coverage" },
+  { key: "precision", icon: "mdi:target", label: "Practice Precision" },
+  { key: "craft", icon: "mdi:code-tags", label: "Applied Craft" },
+  { key: "clutch", icon: "mdi:trophy-variant", label: "Clutch Performance" },
 ];
 
 export function CourseReadinessCard({
@@ -40,9 +42,6 @@ export function CourseReadinessCard({
           </Box>
           <Typography sx={{ fontWeight: 800, fontSize: "1.15rem" }}>Course readiness</Typography>
         </Stack>
-        <Typography sx={{ fontSize: "0.76rem", color: "rgba(255,255,255,0.55)", display: { xs: "none", sm: "block" }, maxWidth: 240, textAlign: "right" }}>
-          Four signals of how prepared you are in each course
-        </Typography>
       </Stack>
 
       {/* Tabs */}
@@ -99,7 +98,7 @@ export function CourseReadinessCard({
             .sort((a, b) => (active.readiness[b.key].percent ?? -1) - (active.readiness[a.key].percent ?? -1))
             .map((s) => {
             const cell = active.readiness[s.key];
-            return <SignalBar key={s.key} icon={s.icon} label={s.label} sub={s.sub} percent={cell.percent} band={cell.band} dark />;
+            return <SignalBar key={s.key} icon={s.icon} label={s.label} percent={cell.percent} band={cell.band} dark />;
           })}
         </Box>
       </Stack>
