@@ -7,16 +7,14 @@ import {
   Chip,
   CircularProgress,
   Collapse,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   MenuItem,
   Snackbar,
   Alert,
   Stack,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
@@ -31,6 +29,10 @@ import {
   type InstructorCohortDetail,
 } from "@/lib/services/instructor.service";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { pf, PHONE_CHIP, PHONE_TAP } from "@/components/instructor/phoneSx";
+import { InstructorDialog } from "@/components/instructor/InstructorDialog";
+import { ScrollRow } from "@/components/common/mobile/ScrollRow";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /* --------------------------------- status --------------------------------- */
 
@@ -60,7 +62,7 @@ function StatusChip({ status }: { status: InstructorStudentStatus }) {
         borderRadius: 999,
         bgcolor: m.bg,
         color: m.color,
-        fontSize: "0.72rem",
+        ...pf(0.72),
         fontWeight: 800,
         whiteSpace: "nowrap",
       }}
@@ -137,7 +139,7 @@ function ExpandedDetail({
     >
       {/* Enrolled courses */}
       <Box>
-        <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "text.secondary", mb: 1 }}>
+        <Typography sx={{ ...pf(0.68), fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "text.secondary", mb: 1 }}>
           Enrolled courses
         </Typography>
         {loading ? (
@@ -158,7 +160,7 @@ function ExpandedDetail({
 
       {/* Cohorts */}
       <Box>
-        <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "text.secondary", mb: 1 }}>
+        <Typography sx={{ ...pf(0.68), fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "text.secondary", mb: 1 }}>
           Cohorts
         </Typography>
         {loading ? (
@@ -176,7 +178,7 @@ function ExpandedDetail({
 
       {/* Actions */}
       <Box>
-        <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "text.secondary", mb: 1 }}>
+        <Typography sx={{ ...pf(0.68), fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "text.secondary", mb: 1 }}>
           Instructor actions
         </Typography>
         <Stack spacing={1}>
@@ -184,14 +186,14 @@ function ExpandedDetail({
             onClick={() => onNudge(studentId)}
             disabled={nudging}
             startIcon={nudging ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:bell-ring-outline" width={16} />}
-            sx={{ justifyContent: "flex-start", textTransform: "none", fontWeight: 700, color: "#fff", px: 1.75, py: 0.9, borderRadius: 2, background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)", "&:hover": { filter: "brightness(1.06)" }, "&.Mui-disabled": { color: "rgba(255,255,255,0.85)", opacity: 0.7 } }}
+            sx={{ justifyContent: "flex-start", textTransform: "none", fontWeight: 700, color: "#fff", px: 1.75, py: 0.9, borderRadius: 2, background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)", "&:hover": { filter: "brightness(1.06)" }, "&.Mui-disabled": { color: "rgba(255,255,255,0.85)", opacity: 0.7 }, ...PHONE_TAP }}
           >
             {nudging ? "Sending…" : "Send a nudge"}
           </Button>
           <Button
             href={detail ? `mailto:${detail.email}` : undefined}
             startIcon={<Icon icon="mdi:calendar-account" width={16} />}
-            sx={{ justifyContent: "flex-start", textTransform: "none", fontWeight: 700, color: "#6366f1", px: 1.75, py: 0.9, borderRadius: 2, border: "1px solid var(--border-default)" }}
+            sx={{ justifyContent: "flex-start", textTransform: "none", fontWeight: 700, color: "#6366f1", px: 1.75, py: 0.9, borderRadius: 2, border: "1px solid var(--border-default)", ...PHONE_TAP }}
           >
             Book 1:1
           </Button>
@@ -216,8 +218,10 @@ function ReportRow({
   onToggle,
   onNudge,
   nudging,
+  isPhone = false,
 }: {
   s: InstructorStudentRow;
+  isPhone?: boolean;
   expanded: boolean;
   onToggle: () => void;
   onNudge: (id: number) => void;
@@ -247,7 +251,22 @@ function ReportRow({
           </Box>
           <Box sx={{ minWidth: 0 }}>
             <Typography noWrap sx={{ fontWeight: 700, fontSize: "0.9rem" }}>{s.name}</Typography>
-            <Typography noWrap sx={{ fontSize: "0.72rem", color: "text.secondary" }}>{relTime(s.last_active)}</Typography>
+            <Typography noWrap sx={{ ...pf(0.72), color: "text.secondary" }}>{relTime(s.last_active)}</Typography>
+            {/* A phone hides the Cohort / Progress / Score / Points / Status columns (they are
+                md-only), which left a bare list of names. The numbers ride under the name instead. */}
+            {isPhone && (
+              <Stack data-testid="student-phone-meta" direction="row" alignItems="center" sx={{ mt: 0.75, flexWrap: "wrap", gap: 1 }}>
+                <StatusChip status={s.status} />
+                <Typography sx={{ fontSize: "0.75rem", fontWeight: 800 }}>{Math.round(pct)}%</Typography>
+                <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
+                  {s.avg_score == null ? "-" : `${Math.round(s.avg_score)}%`}
+                </Typography>
+                <Stack direction="row" spacing={0.4} alignItems="center">
+                  <Icon icon="mdi:lightning-bolt" width={14} style={{ color: "#f59e0b" }} />
+                  <Typography sx={{ fontSize: "0.75rem", fontWeight: 800 }}>{s.points}</Typography>
+                </Stack>
+              </Stack>
+            )}
           </Box>
         </Stack>
 
@@ -259,7 +278,7 @@ function ReportRow({
         {/* Progress */}
         <Box sx={{ display: { xs: "none", md: "block" } }}>
           <Stack direction="row" justifyContent="space-between" sx={{ mb: 0.4 }}>
-            <Typography sx={{ fontSize: "0.72rem", fontWeight: 800 }}>{Math.round(pct)}%</Typography>
+            <Typography sx={{ ...pf(0.72), fontWeight: 800 }}>{Math.round(pct)}%</Typography>
           </Stack>
           <Box sx={{ height: 6, borderRadius: 3, bgcolor: "color-mix(in srgb,var(--border-default) 55%,transparent)", overflow: "hidden" }}>
             <Box sx={{ width: `${pct}%`, height: "100%", background: pct >= 60 ? "#10b981" : pct >= 40 ? "#f59e0b" : "#ef4444" }} />
@@ -297,6 +316,8 @@ function ReportRow({
 /* ---------------------------------- page ---------------------------------- */
 
 export default function InstructorStudentsPage() {
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const [rows, setRows] = useState<InstructorStudentRow[]>([]);
   const [summary, setSummary] = useState<InstructorStudentsSummary>({ count: 0, avg_progress: 0, avg_score: 0, at_risk: 0 });
   const [cohorts, setCohorts] = useState<InstructorCohortDetail[]>([]);
@@ -472,7 +493,7 @@ export default function InstructorStudentsPage() {
           <Box key={k.label} sx={{ p: 2, borderRadius: 3, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)" }}>
             <Stack direction="row" spacing={1} alignItems="center" sx={{ color: "text.secondary", mb: 0.75 }}>
               <Icon icon={k.icon} width={16} style={{ color: k.color }} />
-              <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4 }}>{k.label}</Typography>
+              <Typography sx={{ ...pf(0.72), fontWeight: 700, textTransform: "uppercase", letterSpacing: 0.4 }}>{k.label}</Typography>
             </Stack>
             <Typography sx={{ fontWeight: 900, fontSize: "1.7rem", lineHeight: 1 }}>{k.value}</Typography>
           </Box>
@@ -498,6 +519,7 @@ export default function InstructorStudentsPage() {
                   color: active ? "#fff" : "text.secondary",
                   background: active ? "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)" : "var(--card-bg)",
                   border: active ? "none" : "1px solid var(--border-default)",
+                  [PHONE]: { minHeight: 44, display: "inline-flex", alignItems: "center" },
                 }}
               >
                 {t.label}
@@ -516,25 +538,36 @@ export default function InstructorStudentsPage() {
       </Stack>
 
       {/* Cohort tabs (server-side, membership-based) */}
-      {cohorts.length > 0 && (
-        <Stack direction="row" spacing={0.75} sx={{ mb: 2, flexWrap: "wrap", gap: 0.75 }}>
-          <Chip
-            label="All cohorts"
-            onClick={() => setCohortId(null)}
-            variant={cohortId === null ? "filled" : "outlined"}
-            sx={{ fontWeight: 700, ...(cohortId === null ? { bgcolor: "color-mix(in srgb,#6366f1 15%,transparent)", color: "#4f46e5" } : {}) }}
-          />
-          {cohorts.map((c) => (
-            <Chip
-              key={c.id}
-              label={c.name}
-              onClick={() => setCohortId(c.id)}
-              variant={cohortId === c.id ? "filled" : "outlined"}
-              sx={{ fontWeight: 700, ...(cohortId === c.id ? { bgcolor: "color-mix(in srgb,#6366f1 15%,transparent)", color: "#4f46e5" } : {}) }}
-            />
-          ))}
-        </Stack>
-      )}
+      {cohorts.length > 0 && (() => {
+        const cohortChips = (
+          <>
+              <Chip
+                label="All cohorts"
+                onClick={() => setCohortId(null)}
+                variant={cohortId === null ? "filled" : "outlined"}
+                sx={{ fontWeight: 700, ...(cohortId === null ? { bgcolor: "color-mix(in srgb,#6366f1 15%,transparent)", color: "#4f46e5" } : {}) , ...PHONE_CHIP }}
+              />
+              {cohorts.map((c) => (
+                <Chip
+                  key={c.id}
+                  label={c.name}
+                  onClick={() => setCohortId(c.id)}
+                  variant={cohortId === c.id ? "filled" : "outlined"}
+                  sx={{ fontWeight: 700, ...(cohortId === c.id ? { bgcolor: "color-mix(in srgb,#6366f1 15%,transparent)", color: "#4f46e5" } : {}) , ...PHONE_CHIP }}
+                />
+              ))}
+          </>
+        );
+        // An instructor can staff dozens of batches; wrapped, that is a wall of chips above the
+        // list on a phone. One sideways row there instead; the wrap stays on desktop.
+        return isPhone ? (
+          <ScrollRow ariaLabel="Cohorts" sx={{ mb: 2 }}>{cohortChips}</ScrollRow>
+        ) : (
+          <Stack direction="row" spacing={0.75} sx={{ mb: 2, flexWrap: "wrap", gap: 0.75 }}>
+            {cohortChips}
+          </Stack>
+        );
+      })()}
 
       {error && <Typography sx={{ color: "#ef4444", fontWeight: 700, textAlign: "center", py: 4 }}>{error}</Typography>}
 
@@ -553,7 +586,7 @@ export default function InstructorStudentsPage() {
           }}
         >
           {["Student", "Cohort", "Progress", "Avg score", "Points", "Status", ""].map((h, i) => (
-            <Typography key={i} sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "text.secondary" }}>
+            <Typography key={i} sx={{ ...pf(0.68), fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "text.secondary" }}>
               {h}
             </Typography>
           ))}
@@ -580,6 +613,7 @@ export default function InstructorStudentsPage() {
               onToggle={() => setExpanded((cur) => (cur === s.student_id ? null : s.student_id))}
               onNudge={doNudge}
               nudging={nudgingId === s.student_id}
+              isPhone={isPhone}
             />
           ))
         )}
@@ -587,65 +621,73 @@ export default function InstructorStudentsPage() {
 
       {pages > 1 && (
         <Stack direction="row" spacing={1} justifyContent="center" alignItems="center" sx={{ mt: 3 }}>
-          <Button disabled={page <= 1 || loading} onClick={() => void load(page - 1, { search: query, status, cohortId })} startIcon={<Icon icon="mdi:chevron-left" />}>
+          <Button disabled={page <= 1 || loading} onClick={() => void load(page - 1, { search: query, status, cohortId })} startIcon={<Icon icon="mdi:chevron-left" />} sx={PHONE_TAP}>
             Prev
           </Button>
           <Typography sx={{ fontSize: "0.85rem", color: "text.secondary" }}>
             Page {page} of {pages} · {count} student{count === 1 ? "" : "s"}
           </Typography>
-          <Button disabled={page >= pages || loading} onClick={() => void load(page + 1, { search: query, status, cohortId })} endIcon={<Icon icon="mdi:chevron-right" />}>
+          <Button disabled={page >= pages || loading} onClick={() => void load(page + 1, { search: query, status, cohortId })} endIcon={<Icon icon="mdi:chevron-right" />} sx={PHONE_TAP}>
             Next
           </Button>
         </Stack>
       )}
 
       {/* Message cohort dialog */}
-      <Dialog open={msgOpen} onClose={() => setMsgOpen(false)} fullWidth maxWidth="sm">
-        <DialogTitle sx={{ fontWeight: 800 }}>Message a cohort</DialogTitle>
-        <DialogContent>
-          <Stack spacing={2} sx={{ mt: 0.5 }}>
-            <TextField
-              select
-              label="Cohort"
-              value={msgCohort}
-              onChange={(e) => setMsgCohort(Number(e.target.value))}
-              fullWidth
-              size="small"
+      <InstructorDialog
+        open={msgOpen}
+        onClose={() => setMsgOpen(false)}
+        busy={msgSending}
+        maxWidth="sm"
+        title="Message a cohort"
+        titleSx={{ fontWeight: 800 }}
+        actionsSx={{ px: 3, pb: 2 }}
+        data-testid="message-cohort"
+        actions={
+          <>
+            <Button onClick={() => setMsgOpen(false)} disabled={isPhone && msgSending} sx={{ textTransform: "none", fontWeight: 700 }}>
+              Cancel
+            </Button>
+            <Button
+              onClick={sendMessage}
+              disabled={msgCohort === "" || !msgBody.trim() || msgSending}
+              startIcon={msgSending ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:send" width={16} />}
+              sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2, background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)" }}
             >
-              {cohorts.map((c) => (
-                <MenuItem key={c.id} value={c.id}>
-                  {c.name} · {c.student_count} student{c.student_count === 1 ? "" : "s"}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              label="Message"
-              value={msgBody}
-              onChange={(e) => setMsgBody(e.target.value)}
-              fullWidth
-              multiline
-              minRows={4}
-              placeholder="Share an announcement, reminder or encouragement with the whole cohort…"
-            />
-            <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
-              Delivered as an in-app notification to every student in the cohort.
-            </Typography>
-          </Stack>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setMsgOpen(false)} sx={{ textTransform: "none", fontWeight: 700 }}>
-            Cancel
-          </Button>
-          <Button
-            onClick={sendMessage}
-            disabled={msgCohort === "" || !msgBody.trim() || msgSending}
-            startIcon={msgSending ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:send" width={16} />}
-            sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2, background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)" }}
+              Send message
+            </Button>
+          </>
+        }
+      >
+        <Stack spacing={2} sx={{ mt: 0.5 }}>
+          <TextField
+            select
+            label="Cohort"
+            value={msgCohort}
+            onChange={(e) => setMsgCohort(Number(e.target.value))}
+            fullWidth
+            size="small"
           >
-            Send message
-          </Button>
-        </DialogActions>
-      </Dialog>
+            {cohorts.map((c) => (
+              <MenuItem key={c.id} value={c.id}>
+                {c.name} · {c.student_count} student{c.student_count === 1 ? "" : "s"}
+              </MenuItem>
+            ))}
+          </TextField>
+          <TextField
+            label="Message"
+            value={msgBody}
+            onChange={(e) => setMsgBody(e.target.value)}
+            fullWidth
+            multiline
+            minRows={4}
+            placeholder="Share an announcement, reminder or encouragement with the whole cohort…"
+          />
+          <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
+            Delivered as an in-app notification to every student in the cohort.
+          </Typography>
+        </Stack>
+      </InstructorDialog>
 
       <Snackbar
         open={!!toast}

@@ -6,10 +6,6 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   Stack,
   TextField,
   Typography,
@@ -30,6 +26,8 @@ import {
   type TicketCategory,
   type TicketStatus,
 } from "@/lib/services/ticket.service";
+import { pf, PHONE_CHIP } from "@/components/instructor/phoneSx";
+import { InstructorDialog } from "@/components/instructor/InstructorDialog";
 
 /**
  * An instructor's ticket queue: the doubts raised by students in the cohorts they staff.
@@ -167,6 +165,7 @@ export default function InstructorTicketsPage() {
                 bgcolor: status === f.key ? "var(--primary-500)" : "var(--card-bg)",
                 color: status === f.key ? "#fff" : "var(--font-secondary)",
                 border: "1px solid var(--border-default)",
+                ...PHONE_CHIP,
               }}
             />
           ))}
@@ -191,6 +190,7 @@ export default function InstructorTicketsPage() {
               bgcolor: category === "" ? "var(--primary-500)" : "var(--card-bg)",
               color: category === "" ? "#fff" : "var(--font-secondary)",
               border: "1px solid var(--border-default)",
+              ...PHONE_CHIP,
             }}
           />
           {categoryOptions.map((c) => (
@@ -205,6 +205,7 @@ export default function InstructorTicketsPage() {
                 bgcolor: category === c.value ? "var(--primary-500)" : "var(--card-bg)",
                 color: category === c.value ? "#fff" : "var(--font-secondary)",
                 border: "1px solid var(--border-default)",
+                ...PHONE_CHIP,
               }}
             />
           ))}
@@ -271,7 +272,7 @@ export default function InstructorTicketsPage() {
                     </Box>
                     <Box
                       sx={{
-                        px: 1, py: 0.3, borderRadius: 999, fontSize: "0.68rem", fontWeight: 800,
+                        px: 1, py: 0.3, borderRadius: 999, ...pf(0.68), fontWeight: 800,
                         bgcolor: tone.bg, color: tone.fg, flexShrink: 0,
                       }}
                     >
@@ -282,7 +283,7 @@ export default function InstructorTicketsPage() {
                   <Stack direction="row" alignItems="center" spacing={1} sx={{ mt: 0.6 }}>
                     {t.assigned_to_user && (
                       <Typography
-                        sx={{ color: "var(--font-secondary)", fontSize: "0.72rem", flex: 1, minWidth: 0 }}
+                        sx={{ color: "var(--font-secondary)", ...pf(0.72), flex: 1, minWidth: 0 }}
                       >
                         <Icon icon="mdi:account-check-outline" width={13} style={{ verticalAlign: -2 }} />{" "}
                         {t.assigned_to_user.full_name}
@@ -307,6 +308,7 @@ export default function InstructorTicketsPage() {
                           ml: "auto",
                           color: "#047857",
                           bgcolor: "color-mix(in srgb,#10b981 14%,transparent)",
+                          ...PHONE_CHIP,
                         }}
                       />
                     )}
@@ -321,51 +323,52 @@ export default function InstructorTicketsPage() {
       {/* Assignee resolve dialog - a lighter sibling of the admin resolve form (that one is
           inline in the admin detail page, not a reusable component). Notes are required; the
           endpoint notifies the student on success. */}
-      <Dialog
+      <InstructorDialog
         open={Boolean(resolveFor)}
         onClose={resolving ? undefined : () => setResolveFor(null)}
+        busy={resolving}
         maxWidth="sm"
-        fullWidth
+        title={<>Resolve ticket{resolveFor ? ` · ${resolveFor.subject}` : ""}</>}
+        titleSx={{ fontWeight: 800 }}
+        actionsSx={{ px: 3, pb: 2 }}
+        data-testid="resolve-ticket"
+        actions={
+          <>
+            <Button
+              onClick={() => setResolveFor(null)}
+              disabled={resolving}
+              sx={{ textTransform: "none", fontWeight: 700 }}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => void submitResolve()}
+              disabled={resolving || !notes.trim()}
+              startIcon={
+                resolving ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:check" width={16} />
+              }
+              sx={{ textTransform: "none", fontWeight: 800, borderRadius: 999, px: 2.5, bgcolor: "#047857", "&:hover": { bgcolor: "#065f46" } }}
+            >
+              {resolving ? "Resolving…" : "Resolve & notify"}
+            </Button>
+          </>
+        }
       >
-        <DialogTitle sx={{ fontWeight: 800 }}>
-          Resolve ticket{resolveFor ? ` · ${resolveFor.subject}` : ""}
-        </DialogTitle>
-        <DialogContent>
-          <Typography sx={{ color: "var(--font-secondary)", fontSize: "0.85rem", mb: 1.5 }}>
-            The student is notified by email and in-app with what you write here.
-          </Typography>
-          <TextField
-            label="Resolution notes *"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            multiline
-            rows={4}
-            fullWidth
-            placeholder="Explain how you resolved the doubt, and any follow-up steps."
-            disabled={resolving}
-          />
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button
-            onClick={() => setResolveFor(null)}
-            disabled={resolving}
-            sx={{ textTransform: "none", fontWeight: 700 }}
-          >
-            Cancel
-          </Button>
-          <Button
-            variant="contained"
-            onClick={() => void submitResolve()}
-            disabled={resolving || !notes.trim()}
-            startIcon={
-              resolving ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:check" width={16} />
-            }
-            sx={{ textTransform: "none", fontWeight: 800, borderRadius: 999, px: 2.5, bgcolor: "#047857", "&:hover": { bgcolor: "#065f46" } }}
-          >
-            {resolving ? "Resolving…" : "Resolve & notify"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        <Typography sx={{ color: "var(--font-secondary)", fontSize: "0.85rem", mb: 1.5 }}>
+          The student is notified by email and in-app with what you write here.
+        </Typography>
+        <TextField
+          label="Resolution notes *"
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          multiline
+          rows={4}
+          fullWidth
+          placeholder="Explain how you resolved the doubt, and any follow-up steps."
+          disabled={resolving}
+        />
+      </InstructorDialog>
     </PageShell>
   );
 }

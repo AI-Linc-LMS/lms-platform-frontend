@@ -7,10 +7,6 @@ import {
   Box,
   Button,
   CircularProgress,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
   FormControlLabel,
   IconButton,
   Menu,
@@ -44,6 +40,9 @@ import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { viewerTimeZone, timezoneOptions, sessionTimeParts, toLocalInputInZone } from "@/lib/utils/session-time";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { statusOf, type SessionStatus } from "./sessionStatus";
+import { pf, PHONE_TAP, PHONE_ICON_BTN } from "@/components/instructor/phoneSx";
+import { InstructorDialog } from "@/components/instructor/InstructorDialog";
+import { PHONE } from "@/components/common/mobile/phone";
 
 const STATUS_META: Record<SessionStatus, { label: string; color: string; bg: string }> = {
   live: { label: "Live", color: "#059669", bg: "color-mix(in srgb,#10b981 15%,transparent)" },
@@ -309,11 +308,12 @@ export default function InstructorLiveSessionsPage() {
               sx={{ display: "inline-flex", alignItems: "center", gap: 0.6, px: 1.75, py: 0.75, borderRadius: 999,
                 cursor: "pointer", fontSize: "0.82rem", fontWeight: 700, color: active ? "#fff" : "text.secondary",
                 background: active ? "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #a855f7) 100%)" : "var(--card-bg)",
-                border: active ? "none" : "1px solid var(--border-default)" }}>
+                border: active ? "none" : "1px solid var(--border-default)",
+                [PHONE]: { minHeight: 44 } }}>
               {t.key === "live" && <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: active ? "#fff" : "#10b981" }} />}
               {t.key !== "live" && <Icon icon={t.icon} width={15} />}
               {t.label}
-              <Box component="span" sx={{ ml: 0.3, px: 0.7, py: 0.05, borderRadius: 999, fontSize: "0.68rem", fontWeight: 800,
+              <Box component="span" sx={{ ml: 0.3, px: 0.7, py: 0.05, borderRadius: 999, ...pf(0.68), fontWeight: 800,
                 bgcolor: active ? "rgba(255,255,255,0.25)" : "color-mix(in srgb,var(--border-default) 60%,transparent)" }}>
                 {counts[t.key]}
               </Box>
@@ -444,6 +444,7 @@ export default function InstructorLiveSessionsPage() {
         confirmColor="error"
         onConfirm={() => void cancelOccurrence()}
         onCancel={() => setCancelOcc(null)}
+        busy={cancellingOcc}
       />
 
       {showTruncation && (
@@ -477,31 +478,36 @@ export default function InstructorLiveSessionsPage() {
         onClose={() => setPlayerFor(null)}
       />
 
-      <Dialog open={Boolean(materialsFor)} onClose={() => setMaterialsFor(null)} maxWidth="sm" fullWidth>
-        <DialogTitle>{materialsFor?.topic_name || "Study material"}</DialogTitle>
-        <DialogContent>
-          {materialsFor && (
-            <StudyMaterialManager
-              liveClassId={materialsFor.id}
-              // The instructor list is already one row per sitting, so the row they opened IS the
-              // date. Offering it plus "All classes" lets them share week 3's slides with week 3
-              // instead of with all forty weeks.
-              occurrences={
-                materialsFor.occurrence_id
-                  ? [{
-                      id: materialsFor.occurrence_id,
-                      occurrence_datetime: materialsFor.class_datetime,
-                      topic_name: materialsFor.topic_name,
-                    }]
-                  : undefined
-              }
-            />
-          )}
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setMaterialsFor(null)}>Close</Button>
-        </DialogActions>
-      </Dialog>
+      <InstructorDialog
+        open={Boolean(materialsFor)}
+        onClose={() => setMaterialsFor(null)}
+        maxWidth="sm"
+        title={<>{materialsFor?.topic_name || "Study material"}</>}
+        data-testid="study-material"
+        actions={
+          <>
+            <Button onClick={() => setMaterialsFor(null)}>Close</Button>
+          </>
+        }
+      >
+        {materialsFor && (
+          <StudyMaterialManager
+            liveClassId={materialsFor.id}
+            // The instructor list is already one row per sitting, so the row they opened IS the
+            // date. Offering it plus "All classes" lets them share week 3's slides with week 3
+            // instead of with all forty weeks.
+            occurrences={
+              materialsFor.occurrence_id
+                ? [{
+                    id: materialsFor.occurrence_id,
+                    occurrence_datetime: materialsFor.class_datetime,
+                    topic_name: materialsFor.topic_name,
+                  }]
+                : undefined
+            }
+          />
+        )}
+      </InstructorDialog>
 
       <Snackbar open={!!toast} autoHideDuration={4000} onClose={() => setToast(null)} anchorOrigin={{ vertical: "bottom", horizontal: "center" }}>
         {toast ? <Alert severity={toast.sev} variant="filled" onClose={() => setToast(null)} sx={{ fontWeight: 600 }}>{toast.text}</Alert> : undefined}
@@ -528,10 +534,10 @@ function TurnoutBlock({ label, attendance, registered, turnout, unidentified = 0
         <Box sx={{ width: `${Math.max(0, Math.min(100, turnout))}%`, height: "100%", bgcolor: color }} />
       </Box>
       <Stack direction="row" alignItems="baseline" gap={0.75} sx={{ mt: 0.4 }}>
-        <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color }}>{turnout}% turnout</Typography>
+        <Typography sx={{ ...pf(0.72), fontWeight: 700, color }}>{turnout}% turnout</Typography>
         {unidentified > 0 && (
           <Tooltip title={`${unidentified} ${unidentified === 1 ? "person" : "people"} joined that we could not match to an enrolled student - usually a guest, or a personal Zoom account with a different email. They are not counted in turnout.`}>
-            <Typography sx={{ fontSize: "0.72rem", fontWeight: 600, color: "text.secondary", cursor: "help", textDecoration: "underline dotted", textUnderlineOffset: 3 }}>
+            <Typography sx={{ ...pf(0.72), fontWeight: 600, color: "text.secondary", cursor: "help", textDecoration: "underline dotted", textUnderlineOffset: 3 }}>
               +{unidentified} unidentified
             </Typography>
           </Tooltip>
@@ -560,7 +566,7 @@ function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCo
   const hasStats = s.registered > 0 && s.turnout != null
     && (status === "ended" || s.attendance > 0 || s.unidentified_guests > 0);
 
-  const outlineBtn = { textTransform: "none", fontWeight: 700, color: "#6366f1", px: 1.75, py: 0.9, borderRadius: 2, border: "1px solid var(--border-default)" } as const;
+  const outlineBtn = { textTransform: "none", fontWeight: 700, color: "#6366f1", px: 1.75, py: 0.9, borderRadius: 2, border: "1px solid var(--border-default)", ...PHONE_TAP } as const;
 
   return (
     <Box sx={{ borderRadius: 3.5, bgcolor: "var(--card-bg)", p: { xs: 1.75, md: 2.25 },
@@ -573,25 +579,25 @@ function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCo
         <Typography sx={{ fontWeight: 900, fontSize: "0.98rem", lineHeight: 1.15, color: today ? "#059669" : "var(--font-primary)" }}>
           {timeLabel(s.class_datetime, s.timezone)}
         </Typography>
-        <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.4, color: "text.secondary", mt: 0.4 }}>
+        <Typography sx={{ ...pf(0.6), fontWeight: 800, letterSpacing: 0.4, color: "text.secondary", mt: 0.4 }}>
           {dateLabel(s.class_datetime, now, status, s.timezone)}
         </Typography>
       </Box>
 
       {/* Middle */}
-      <Box sx={{ flex: 1, minWidth: 200 }}>
+      <Box sx={{ flex: 1, minWidth: 200, [PHONE]: { minWidth: 0 } }}>
         <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mb: 0.6, flexWrap: "wrap", gap: 0.5 }}>
-          <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, px: 0.9, py: 0.2, borderRadius: 999, bgcolor: m.bg, color: m.color, fontSize: "0.68rem", fontWeight: 800 }}>
+          <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, px: 0.9, py: 0.2, borderRadius: 999, bgcolor: m.bg, color: m.color, ...pf(0.68), fontWeight: 800 }}>
             {isLive && <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: m.color, animation: "pulse 1.4s infinite" }} />}
             {m.label}
           </Box>
           <Stack direction="row" spacing={0.35} alignItems="center" sx={{ color: p.color }}>
             <Icon icon={p.icon} width={14} />
-            <Typography sx={{ fontSize: "0.72rem", fontWeight: 700 }}>{p.label}</Typography>
+            <Typography sx={{ ...pf(0.72), fontWeight: 700 }}>{p.label}</Typography>
           </Stack>
-          <Typography sx={{ fontSize: "0.72rem", color: "text.secondary" }}>{s.duration_minutes}m</Typography>
+          <Typography sx={{ ...pf(0.72), color: "text.secondary" }}>{s.duration_minutes}m</Typography>
           {viewerTime && (
-            <Typography sx={{ fontSize: "0.72rem", color: "text.secondary" }}>· {viewerTime}{viewerZoneAbbr ? ` ${viewerZoneAbbr}` : ""} your time</Typography>
+            <Typography sx={{ ...pf(0.72), color: "text.secondary" }}>· {viewerTime}{viewerZoneAbbr ? ` ${viewerZoneAbbr}` : ""} your time</Typography>
           )}
         </Stack>
         <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", lineHeight: 1.2 }} noWrap>{s.topic_name}</Typography>
@@ -603,7 +609,7 @@ function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCo
               sx={{
                 display: "inline-flex", alignItems: "center", gap: 0.4,
                 px: 0.9, py: 0.25, borderRadius: 999,
-                fontSize: "0.72rem", fontWeight: 800, lineHeight: 1.6,
+                ...pf(0.72), fontWeight: 800, lineHeight: 1.6,
                 color: "var(--accent-indigo)",
                 bgcolor: "color-mix(in srgb, var(--accent-indigo) 12%, transparent)",
                 border: "1px solid color-mix(in srgb, var(--accent-indigo) 32%, transparent)",
@@ -631,7 +637,7 @@ function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCo
           <TurnoutBlock label={status === "live" ? "Joined" : "Attendance"} attendance={s.attendance} registered={s.registered} turnout={s.turnout} unidentified={s.unidentified_guests} />
         )}
 
-        <Stack direction="row" spacing={1} alignItems="center">
+        <Stack direction="row" spacing={1} alignItems="center" sx={{ [PHONE]: { flexWrap: "wrap", gap: 1, "& > :not(style) ~ :not(style)": { ml: 0 } } }}>
           {/* Also before the clock says "live".
               A trainer opens the room to set up, and a session the platform still calls
               "scheduled" was previously unstartable from here — the button only appeared once the
@@ -644,7 +650,7 @@ function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCo
                 startIcon={hosting ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:video" width={16} />}
                 sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2, py: 0.9, borderRadius: 2,
                   background: "linear-gradient(135deg,#10b981,#059669)", "&:hover": { filter: "brightness(1.06)" },
-                  "&.Mui-disabled": { color: "rgba(255,255,255,0.8)" } }}>
+                  "&.Mui-disabled": { color: "rgba(255,255,255,0.8)" }, ...PHONE_TAP }}>
                 {/* A LIVE room is already started - "Start hosting" read as if the trainer's own
                     earlier start hadn't taken, so they clicked it again fearing the class was down. */}
                 {status === "live" ? "Join as host" : "Start early"}
@@ -669,7 +675,7 @@ function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCo
                 <Tooltip title="The link students use to join. Presenters need the panelist link instead - this one seats them in the audience.">
                   <Button onClick={onCopy} startIcon={<Icon icon="mdi:tray-arrow-up" width={16} />}
                     sx={{ textTransform: "none", fontWeight: 700, color: "#7c3aed", px: 1.75, py: 0.9, borderRadius: 2,
-                      bgcolor: "color-mix(in srgb,#7c3aed 10%,transparent)" }}>
+                      bgcolor: "color-mix(in srgb,#7c3aed 10%,transparent)", ...PHONE_TAP }}>
                     Copy attendee link
                   </Button>
                 </Tooltip>
@@ -681,7 +687,7 @@ function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCo
               {s.has_recording ? (
                 <Button onClick={onRecording} startIcon={<Icon icon="mdi:play" width={16} />}
                   sx={{ textTransform: "none", fontWeight: 700, color: "#7c3aed", px: 1.75, py: 0.9, borderRadius: 2,
-                    bgcolor: "color-mix(in srgb,#7c3aed 10%,transparent)" }}>
+                    bgcolor: "color-mix(in srgb,#7c3aed 10%,transparent)", ...PHONE_TAP }}>
                   Recording
                 </Button>
               ) : s.editable ? (
@@ -704,12 +710,12 @@ function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCo
               gated on the session having ended. */}
           <Button onClick={onMaterials} startIcon={<Icon icon="mdi:paperclip" width={16} />} sx={outlineBtn}>Material</Button>
           {s.created_by_me && (
-            <IconButton size="small" onClick={onDelete} sx={{ color: "text.secondary", "&:hover": { color: "#ef4444" } }} aria-label="Delete session">
+            <IconButton size="small" onClick={onDelete} sx={{ color: "text.secondary", "&:hover": { color: "#ef4444" }, ...PHONE_ICON_BTN }} aria-label="Delete session">
               <Icon icon="mdi:trash-can-outline" width={18} />
             </IconButton>
           )}
           {onMenu && (
-            <IconButton size="small" onClick={onMenu} sx={{ color: "text.secondary" }} aria-label="Options for this date">
+            <IconButton size="small" onClick={onMenu} sx={{ color: "text.secondary", ...PHONE_ICON_BTN }} aria-label="Options for this date">
               <Icon icon="mdi:dots-vertical" width={18} />
             </IconButton>
           )}
@@ -718,7 +724,7 @@ function SessionRow({ s, status, now, hosting, panelistUrl, onHost, onCopy, onCo
 
       {s.password && (
         <Box sx={{ width: "100%", display: "flex", justifyContent: "flex-end" }}>
-          <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, px: 1, py: 0.4, borderRadius: 1.5, bgcolor: "color-mix(in srgb,#6366f1 8%,transparent)", fontSize: "0.7rem", fontWeight: 700, color: "#4f46e5" }}>
+          <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, px: 1, py: 0.4, borderRadius: 1.5, bgcolor: "color-mix(in srgb,#6366f1 8%,transparent)", ...pf(0.7), fontWeight: 700, color: "#4f46e5" }}>
             <Icon icon="mdi:key-variant" width={12} /> {s.password}
           </Box>
         </Box>
@@ -800,72 +806,80 @@ function CreateSessionDialog({ open, onClose, onCreated }: {
   };
 
   return (
-    <Dialog open={open} onClose={saving ? undefined : onClose} fullWidth maxWidth="sm">
-      <DialogTitle sx={{ fontWeight: 800 }}>Schedule a live session</DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} sx={{ mt: 0.5 }}>
-          <Stack direction="row" spacing={1}>
-            {(["meeting", "webinar"] as const).map((t) => {
-              const active = sessionType === t;
-              return (
-                <Box key={t} onClick={() => setSessionType(t)}
-                  sx={{ flex: 1, p: 1.5, borderRadius: 2.5, cursor: "pointer", textAlign: "center",
-                    border: active ? "2px solid #7c3aed" : "1px solid var(--border-default)",
-                    bgcolor: active ? "color-mix(in srgb,#7c3aed 8%,transparent)" : "transparent" }}>
-                  <Icon icon={t === "webinar" ? "mdi:presentation" : "mdi:video"} width={22} style={{ color: active ? "#7c3aed" : "#6b7280" }} />
-                  <Typography sx={{ fontWeight: 800, fontSize: "0.86rem", mt: 0.25 }}>{t === "webinar" ? "Webinar" : "Meeting"}</Typography>
-                  <Typography sx={{ fontSize: "0.68rem", color: "text.secondary" }}>
-                    {t === "webinar" ? "You join as a panelist" : "You host with the start link"}
-                  </Typography>
-                </Box>
-              );
-            })}
-          </Stack>
-          <TextField label="Topic" value={topic} onChange={(e) => setTopic(e.target.value)} fullWidth size="small" required />
-          <TextField label="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} fullWidth size="small" multiline minRows={2} />
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-            <TextField label="Starts" type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)}
-              fullWidth size="small" InputLabelProps={{ shrink: true }} helperText="Wall-clock time, in the timezone →" />
-            <TextField label="Duration (min)" type="number" value={duration}
-              onChange={(e) => setDuration(Math.max(1, Math.min(600, Number(e.target.value) || 0)))}
-              size="small" sx={{ width: { xs: "100%", sm: 130 } }} inputProps={{ min: 1, max: 600 }} />
-          </Stack>
-          <TextField select label="Timezone" value={sessionTz} onChange={(e) => setSessionTz(e.target.value)}
-            fullWidth size="small" helperText="The session is scheduled in this zone">
-            {timezoneOptions(sessionTz).map((z) => (
-              <MenuItem key={z.value} value={z.value}>{z.label}</MenuItem>
-            ))}
-          </TextField>
-          <TextField select label="Cohort or course" value={audience} onChange={(e) => setAudience(e.target.value)} fullWidth size="small">
-            {cohorts.length > 0 && <MenuItem disabled sx={{ fontWeight: 800, opacity: 1 }}>Cohorts</MenuItem>}
-            {cohorts.map((c) => <MenuItem key={`c${c.id}`} value={`c:${c.id}`}>&nbsp;&nbsp;{c.name}</MenuItem>)}
-            {courses.length > 0 && <MenuItem disabled sx={{ fontWeight: 800, opacity: 1 }}>Courses</MenuItem>}
-            {courses.map((c) => <MenuItem key={`a${c.id}`} value={`a:${c.id}`}>&nbsp;&nbsp;{c.title}</MenuItem>)}
-            {cohorts.length === 0 && courses.length === 0 && <MenuItem disabled>No assigned cohorts or courses</MenuItem>}
-          </TextField>
-          <RecurrenceControls startDatetime={when} onChange={setRecurrence} />
-          {sessionType === "webinar" && (
-            <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "center" }}>
-              <TextField label="Passcode (optional)" value={passcode} onChange={(e) => setPasscode(e.target.value)} size="small" sx={{ flex: 1 }} />
-              <FormControlLabel control={<Switch checked={registration} onChange={(e) => setRegistration(e.target.checked)} />} label="Require registration" />
-            </Stack>
-          )}
-          {err && <Alert severity="error" sx={{ fontWeight: 600 }}>{err}</Alert>}
-          <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
-            Provisions a Zoom {sessionType} on your institution's account. {sessionType === "webinar" ? "You'll be added as a panelist and get a unique presenter link." : "You'll get the host start link to run it."}
-          </Typography>
+    <InstructorDialog
+      open={open}
+      onClose={saving ? undefined : onClose}
+      busy={saving}
+      maxWidth="sm"
+      title="Schedule a live session"
+      titleSx={{ fontWeight: 800 }}
+      actionsSx={{ px: 3, pb: 2 }}
+      data-testid="create-session"
+      actions={
+        <>
+          <Button onClick={onClose} disabled={saving} sx={{ textTransform: "none", fontWeight: 700 }}>Cancel</Button>
+          <Button onClick={submit} disabled={!valid || saving}
+            startIcon={saving ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:calendar-check" width={16} />}
+            sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2,
+              background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)", "&.Mui-disabled": { color: "rgba(255,255,255,0.7)", opacity: 0.7 } }}>
+            {saving ? "Creating…" : "Create session"}
+          </Button>
+        </>
+      }
+    >
+      <Stack spacing={2} sx={{ mt: 0.5 }}>
+        <Stack direction="row" spacing={1}>
+          {(["meeting", "webinar"] as const).map((t) => {
+            const active = sessionType === t;
+            return (
+              <Box key={t} onClick={() => setSessionType(t)}
+                sx={{ flex: 1, p: 1.5, borderRadius: 2.5, cursor: "pointer", textAlign: "center",
+                  border: active ? "2px solid #7c3aed" : "1px solid var(--border-default)",
+                  bgcolor: active ? "color-mix(in srgb,#7c3aed 8%,transparent)" : "transparent" }}>
+                <Icon icon={t === "webinar" ? "mdi:presentation" : "mdi:video"} width={22} style={{ color: active ? "#7c3aed" : "#6b7280" }} />
+                <Typography sx={{ fontWeight: 800, fontSize: "0.86rem", mt: 0.25 }}>{t === "webinar" ? "Webinar" : "Meeting"}</Typography>
+                <Typography sx={{ ...pf(0.68), color: "text.secondary" }}>
+                  {t === "webinar" ? "You join as a panelist" : "You host with the start link"}
+                </Typography>
+              </Box>
+            );
+          })}
         </Stack>
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} disabled={saving} sx={{ textTransform: "none", fontWeight: 700 }}>Cancel</Button>
-        <Button onClick={submit} disabled={!valid || saving}
-          startIcon={saving ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:calendar-check" width={16} />}
-          sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2,
-            background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)", "&.Mui-disabled": { color: "rgba(255,255,255,0.7)", opacity: 0.7 } }}>
-          {saving ? "Creating…" : "Create session"}
-        </Button>
-      </DialogActions>
-    </Dialog>
+        <TextField label="Topic" value={topic} onChange={(e) => setTopic(e.target.value)} fullWidth size="small" required />
+        <TextField label="Description (optional)" value={description} onChange={(e) => setDescription(e.target.value)} fullWidth size="small" multiline minRows={2} />
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
+          <TextField label="Starts" type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)}
+            fullWidth size="small" InputLabelProps={{ shrink: true }} helperText="Wall-clock time, in the timezone →" />
+          <TextField label="Duration (min)" type="number" value={duration}
+            onChange={(e) => setDuration(Math.max(1, Math.min(600, Number(e.target.value) || 0)))}
+            size="small" sx={{ width: { xs: "100%", sm: 130 } }} inputProps={{ min: 1, max: 600 }} />
+        </Stack>
+        <TextField select label="Timezone" value={sessionTz} onChange={(e) => setSessionTz(e.target.value)}
+          fullWidth size="small" helperText="The session is scheduled in this zone">
+          {timezoneOptions(sessionTz).map((z) => (
+            <MenuItem key={z.value} value={z.value}>{z.label}</MenuItem>
+          ))}
+        </TextField>
+        <TextField select label="Cohort or course" value={audience} onChange={(e) => setAudience(e.target.value)} fullWidth size="small">
+          {cohorts.length > 0 && <MenuItem disabled sx={{ fontWeight: 800, opacity: 1 }}>Cohorts</MenuItem>}
+          {cohorts.map((c) => <MenuItem key={`c${c.id}`} value={`c:${c.id}`}>&nbsp;&nbsp;{c.name}</MenuItem>)}
+          {courses.length > 0 && <MenuItem disabled sx={{ fontWeight: 800, opacity: 1 }}>Courses</MenuItem>}
+          {courses.map((c) => <MenuItem key={`a${c.id}`} value={`a:${c.id}`}>&nbsp;&nbsp;{c.title}</MenuItem>)}
+          {cohorts.length === 0 && courses.length === 0 && <MenuItem disabled>No assigned cohorts or courses</MenuItem>}
+        </TextField>
+        <RecurrenceControls startDatetime={when} onChange={setRecurrence} />
+        {sessionType === "webinar" && (
+          <Stack direction={{ xs: "column", sm: "row" }} spacing={2} alignItems={{ sm: "center" }}>
+            <TextField label="Passcode (optional)" value={passcode} onChange={(e) => setPasscode(e.target.value)} size="small" sx={{ flex: 1 }} />
+            <FormControlLabel control={<Switch checked={registration} onChange={(e) => setRegistration(e.target.checked)} />} label="Require registration" />
+          </Stack>
+        )}
+        {err && <Alert severity="error" sx={{ fontWeight: 600 }}>{err}</Alert>}
+        <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>
+          Provisions a Zoom {sessionType} on your institution's account. {sessionType === "webinar" ? "You'll be added as a panelist and get a unique presenter link." : "You'll get the host start link to run it."}
+        </Typography>
+      </Stack>
+    </InstructorDialog>
   );
 }
 
@@ -933,35 +947,43 @@ function EditSessionDialog({ session, onClose, onSaved }: {
   };
 
   return (
-    <Dialog open={!!session} onClose={saving ? undefined : onClose} fullWidth maxWidth="xs">
-      <DialogTitle sx={{ fontWeight: 800 }}>Edit session</DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} sx={{ mt: 0.5 }}>
-          <TextField label="Topic" value={topic} onChange={(e) => setTopic(e.target.value)} fullWidth size="small" />
-          <TextField label="Starts" type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)}
-            fullWidth size="small" InputLabelProps={{ shrink: true }} helperText="Wall-clock time, in the timezone below" />
-          <TextField select label="Timezone" value={sessionTz} onChange={(e) => setSessionTz(e.target.value)}
-            fullWidth size="small">
-            {timezoneOptions(sessionTz).map((z) => (
-              <MenuItem key={z.value} value={z.value}>{z.label}</MenuItem>
-            ))}
-          </TextField>
-          <TextField label="Duration (min)" type="number" value={duration}
-            onChange={(e) => setDuration(Math.max(1, Math.min(600, Number(e.target.value) || 0)))}
-            size="small" inputProps={{ min: 1, max: 600 }} />
-          {err && <Alert severity="error" sx={{ fontWeight: 600 }}>{err}</Alert>}
-          <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Changes sync to the Zoom session.</Typography>
-        </Stack>
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} disabled={saving} sx={{ textTransform: "none", fontWeight: 700 }}>Cancel</Button>
-        <Button onClick={submit} disabled={!valid || saving}
-          startIcon={saving ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:content-save" width={16} />}
-          sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2, background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)" }}>
-          {saving ? "Saving…" : "Save changes"}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    <InstructorDialog
+      open={!!session}
+      onClose={saving ? undefined : onClose}
+      busy={saving}
+      maxWidth="xs"
+      title="Edit session"
+      titleSx={{ fontWeight: 800 }}
+      actionsSx={{ px: 3, pb: 2 }}
+      data-testid="edit-session"
+      actions={
+        <>
+          <Button onClick={onClose} disabled={saving} sx={{ textTransform: "none", fontWeight: 700 }}>Cancel</Button>
+          <Button onClick={submit} disabled={!valid || saving}
+            startIcon={saving ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:content-save" width={16} />}
+            sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2, background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)" }}>
+            {saving ? "Saving…" : "Save changes"}
+          </Button>
+        </>
+      }
+    >
+      <Stack spacing={2} sx={{ mt: 0.5 }}>
+        <TextField label="Topic" value={topic} onChange={(e) => setTopic(e.target.value)} fullWidth size="small" />
+        <TextField label="Starts" type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)}
+          fullWidth size="small" InputLabelProps={{ shrink: true }} helperText="Wall-clock time, in the timezone below" />
+        <TextField select label="Timezone" value={sessionTz} onChange={(e) => setSessionTz(e.target.value)}
+          fullWidth size="small">
+          {timezoneOptions(sessionTz).map((z) => (
+            <MenuItem key={z.value} value={z.value}>{z.label}</MenuItem>
+          ))}
+        </TextField>
+        <TextField label="Duration (min)" type="number" value={duration}
+          onChange={(e) => setDuration(Math.max(1, Math.min(600, Number(e.target.value) || 0)))}
+          size="small" inputProps={{ min: 1, max: 600 }} />
+        {err && <Alert severity="error" sx={{ fontWeight: 600 }}>{err}</Alert>}
+        <Typography sx={{ fontSize: "0.75rem", color: "text.secondary" }}>Changes sync to the Zoom session.</Typography>
+      </Stack>
+    </InstructorDialog>
   );
 }
 
@@ -1021,109 +1043,115 @@ function AttendanceDialog({ session, onClose }: { session: InstructorLiveSession
   };
 
   return (
-    <Dialog open={!!session} onClose={onClose} fullWidth maxWidth="xs">
-      <DialogTitle sx={{ fontWeight: 800 }}>
-        Attendance
+    <InstructorDialog
+      open={!!session}
+      onClose={onClose}
+      maxWidth="xs"
+      title={<>Attendance
         <Typography component="span" sx={{ ml: 1, fontSize: "0.85rem", color: "text.secondary", fontWeight: 600 }}>
           {summary.attendance}/{summary.registered} joined
-        </Typography>
-      </DialogTitle>
-      <DialogContent>
-        {loading ? (
-          <Box sx={{ p: 3, display: "grid", placeItems: "center" }}><CircularProgress size={22} /></Box>
-        ) : rows && rows.length > 0 ? (
-          <Stack spacing={0.5} sx={{ mt: 0.5 }}>
-            {rows.map((r, i) => {
-              const src = SRC[r.source];
-              return (
-                <Box key={i} sx={{ display: "flex", alignItems: "center", gap: 1.25, p: 1, borderRadius: 2, "&:hover": { bgcolor: "color-mix(in srgb,#6366f1 5%,transparent)" } }}>
-                  <Box sx={{ width: 30, height: 30, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center",
-                    color: "#fff", fontWeight: 800, fontSize: "0.72rem", background: "linear-gradient(135deg,#6366f1,#a855f7)" }}>
-                    {(r.name || "?").slice(0, 1).toUpperCase()}
-                  </Box>
-                  <Box sx={{ minWidth: 0, flex: 1 }}>
-                    <Stack direction="row" spacing={0.6} alignItems="center" sx={{ minWidth: 0 }}>
-                      <Typography sx={{ fontWeight: 700, fontSize: "0.86rem" }} noWrap>{r.name}</Typography>
-                      {/* Who ran the room vs who attended it - display only on this surface. */}
-                      <RoleChip role={r.role} />
-                    </Stack>
-                    {r.email && <Typography sx={{ fontSize: "0.74rem", color: "text.secondary" }} noWrap>{r.email}</Typography>}
-                  </Box>
-                  {r.duration_minutes != null && (
-                    <Typography sx={{ fontSize: "0.74rem", color: "text.secondary" }}>
-                      {r.duration_minutes}m
-                      {/* Reconnections are information, not extra people. The list used to carry
-                          one row per join, so a host who dropped twice looked like three
-                          attendees; their time is now summed and the count shown here. */}
-                      {(r.joins ?? 1) > 1 ? ` · ${r.joins} joins` : ""}
-                    </Typography>
-                  )}
-                  <Box sx={{ px: 0.8, py: 0.15, borderRadius: 999, fontSize: "0.62rem", fontWeight: 800, color: src.color, bgcolor: `color-mix(in srgb,${src.color} 12%,transparent)` }}>{src.label}</Box>
+        </Typography></>}
+      titleSx={{ fontWeight: 800 }}
+      actionsSx={{ px: 3, pb: 2 }}
+      data-testid="attendance"
+      actions={
+        <>
+          <Button onClick={onClose} sx={{ textTransform: "none", fontWeight: 700 }}>Close</Button>
+        </>
+      }
+    >
+      {loading ? (
+        <Box sx={{ p: 3, display: "grid", placeItems: "center" }}><CircularProgress size={22} /></Box>
+      ) : rows && rows.length > 0 ? (
+        <Stack spacing={0.5} sx={{ mt: 0.5 }}>
+          {rows.map((r, i) => {
+            const src = SRC[r.source];
+            return (
+              <Box key={i} sx={{ display: "flex", alignItems: "center", gap: 1.25, p: 1, borderRadius: 2, "&:hover": { bgcolor: "color-mix(in srgb,#6366f1 5%,transparent)" } }}>
+                <Box sx={{ width: 30, height: 30, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center",
+                  color: "#fff", fontWeight: 800, ...pf(0.72), background: "linear-gradient(135deg,#6366f1,#a855f7)" }}>
+                  {(r.name || "?").slice(0, 1).toUpperCase()}
                 </Box>
-              );
-            })}
-          </Stack>
-        ) : (
-          <Typography sx={{ color: "text.secondary", py: 3, textAlign: "center" }}>No attendance recorded yet.</Typography>
-        )}
-
-        {!loading && unidentified.length > 0 && (
-          <Box sx={{ mt: 2.5, pt: 2, borderTop: "1px solid var(--border-default)" }}>
-            <Typography sx={{ fontWeight: 800, fontSize: "0.9rem" }}>
-              Not identified ({unidentified.length})
-            </Typography>
-            <Typography sx={{ fontSize: "0.76rem", color: "text.secondary", mb: 1.25 }}>
-              Zoom gives no email for a guest, so these people could not be matched automatically.
-              Pick the student you recognise - nothing is applied until you do.
-            </Typography>
-            <Stack spacing={1}>
-              {unidentified.map((u) => (
-                <Box key={u.participant_id} sx={{ p: 1.1, borderRadius: 2, border: "1px solid var(--border-default)" }}>
-                  <Stack direction="row" alignItems="baseline" gap={1}>
-                    <Typography sx={{ fontWeight: 700, fontSize: "0.85rem" }} noWrap>{u.name || "(no name)"}</Typography>
-                    <Typography sx={{ fontSize: "0.74rem", color: "text.secondary" }}>{u.duration_minutes}m</Typography>
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Stack direction="row" spacing={0.6} alignItems="center" sx={{ minWidth: 0 }}>
+                    <Typography sx={{ fontWeight: 700, fontSize: "0.86rem" }} noWrap>{r.name}</Typography>
+                    {/* Who ran the room vs who attended it - display only on this surface. */}
+                    <RoleChip role={r.role} />
                   </Stack>
-                  {u.candidates.length === 0 ? (
-                    <Typography sx={{ fontSize: "0.74rem", color: "text.secondary", mt: 0.5 }}>
-                      No likely match on this roster.
-                    </Typography>
-                  ) : (
-                    <Stack spacing={0.5} sx={{ mt: 0.75 }}>
-                      {u.candidates.map((c) => (
-                        <Tooltip key={c.student_id} title={c.reason}>
-                          <Button
-                            size="small"
-                            variant="outlined"
-                            disabled={confirming === u.participant_id}
-                            onClick={() => confirm(u.participant_id, c.student_id)}
-                            sx={{
-                              justifyContent: "space-between", textTransform: "none", fontWeight: 700,
-                              fontSize: "0.78rem", borderColor: "var(--border-default)", color: "text.primary",
-                            }}
-                          >
-                            <Box component="span" sx={{ overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</Box>
-                            <Box component="span" sx={{
-                              ml: 1, px: 0.7, borderRadius: 999, fontSize: "0.62rem", fontWeight: 800,
-                              color: CONFIDENCE[c.ambiguous ? "ambiguous" : c.confidence],
-                              bgcolor: `color-mix(in srgb,${CONFIDENCE[c.ambiguous ? "ambiguous" : c.confidence]} 12%,transparent)`,
-                            }}>
-                              {c.ambiguous ? "unsure" : c.confidence}
-                            </Box>
-                          </Button>
-                        </Tooltip>
-                      ))}
-                    </Stack>
-                  )}
+                  {r.email && <Typography sx={{ ...pf(0.74), color: "text.secondary" }} noWrap>{r.email}</Typography>}
                 </Box>
-              ))}
-            </Stack>
-          </Box>
-        )}
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} sx={{ textTransform: "none", fontWeight: 700 }}>Close</Button>
-      </DialogActions>
-    </Dialog>
+                {r.duration_minutes != null && (
+                  <Typography sx={{ ...pf(0.74), color: "text.secondary" }}>
+                    {r.duration_minutes}m
+                    {/* Reconnections are information, not extra people. The list used to carry
+                        one row per join, so a host who dropped twice looked like three
+                        attendees; their time is now summed and the count shown here. */}
+                    {(r.joins ?? 1) > 1 ? ` · ${r.joins} joins` : ""}
+                  </Typography>
+                )}
+                <Box sx={{ px: 0.8, py: 0.15, borderRadius: 999, ...pf(0.62), fontWeight: 800, color: src.color, bgcolor: `color-mix(in srgb,${src.color} 12%,transparent)` }}>{src.label}</Box>
+              </Box>
+            );
+          })}
+        </Stack>
+      ) : (
+        <Typography sx={{ color: "text.secondary", py: 3, textAlign: "center" }}>No attendance recorded yet.</Typography>
+      )}
+
+      {!loading && unidentified.length > 0 && (
+        <Box sx={{ mt: 2.5, pt: 2, borderTop: "1px solid var(--border-default)" }}>
+          <Typography sx={{ fontWeight: 800, fontSize: "0.9rem" }}>
+            Not identified ({unidentified.length})
+          </Typography>
+          <Typography sx={{ fontSize: "0.76rem", color: "text.secondary", mb: 1.25 }}>
+            Zoom gives no email for a guest, so these people could not be matched automatically.
+            Pick the student you recognise - nothing is applied until you do.
+          </Typography>
+          <Stack spacing={1}>
+            {unidentified.map((u) => (
+              <Box key={u.participant_id} sx={{ p: 1.1, borderRadius: 2, border: "1px solid var(--border-default)" }}>
+                <Stack direction="row" alignItems="baseline" gap={1}>
+                  <Typography sx={{ fontWeight: 700, fontSize: "0.85rem" }} noWrap>{u.name || "(no name)"}</Typography>
+                  <Typography sx={{ ...pf(0.74), color: "text.secondary" }}>{u.duration_minutes}m</Typography>
+                </Stack>
+                {u.candidates.length === 0 ? (
+                  <Typography sx={{ ...pf(0.74), color: "text.secondary", mt: 0.5 }}>
+                    No likely match on this roster.
+                  </Typography>
+                ) : (
+                  <Stack spacing={0.5} sx={{ mt: 0.75 }}>
+                    {u.candidates.map((c) => (
+                      <Tooltip key={c.student_id} title={c.reason}>
+                        <Button
+                          size="small"
+                          variant="outlined"
+                          disabled={confirming === u.participant_id}
+                          onClick={() => confirm(u.participant_id, c.student_id)}
+                          sx={{
+                            justifyContent: "space-between", textTransform: "none", fontWeight: 700,
+                            fontSize: "0.78rem", borderColor: "var(--border-default)", color: "text.primary",
+                            ...PHONE_TAP,
+                          }}
+                        >
+                          <Box component="span" sx={{ overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</Box>
+                          <Box component="span" sx={{
+                            ml: 1, px: 0.7, borderRadius: 999, ...pf(0.62), fontWeight: 800,
+                            color: CONFIDENCE[c.ambiguous ? "ambiguous" : c.confidence],
+                            bgcolor: `color-mix(in srgb,${CONFIDENCE[c.ambiguous ? "ambiguous" : c.confidence]} 12%,transparent)`,
+                          }}>
+                            {c.ambiguous ? "unsure" : c.confidence}
+                          </Box>
+                        </Button>
+                      </Tooltip>
+                    ))}
+                  </Stack>
+                )}
+              </Box>
+            ))}
+          </Stack>
+        </Box>
+      )}
+    </InstructorDialog>
   );
 }
 
@@ -1179,33 +1207,41 @@ function EditOccurrenceDateDialog({ session, onClose, onSaved, onError }: {
   };
 
   return (
-    <Dialog open={Boolean(session)} onClose={saving ? undefined : onClose} fullWidth maxWidth="xs">
-      <DialogTitle sx={{ fontWeight: 800 }}>Edit this date</DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} sx={{ mt: 0.5 }}>
-          <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>
-            Only this sitting moves - the rest of the series stays where it is.
-          </Typography>
-          <TextField label="Starts" type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)}
-            fullWidth size="small" InputLabelProps={{ shrink: true }}
-            helperText={`Wall-clock time in ${session?.timezone || "the session's timezone"}`} />
-          <TextField label="Duration (min)" type="number" value={duration}
-            onChange={(e) => setDuration(Math.max(1, Math.min(600, Number(e.target.value) || 0)))}
-            size="small" inputProps={{ min: 1, max: 600 }} />
-          <TextField label="Title for this date (optional)" value={title} onChange={(e) => setTitle(e.target.value)}
-            fullWidth size="small" placeholder={session?.topic_name}
-            helperText="Leave blank to keep the current title." />
-        </Stack>
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} disabled={saving} sx={{ textTransform: "none", fontWeight: 700 }}>Cancel</Button>
-        <Button onClick={() => void submit()} disabled={!valid || saving}
-          startIcon={saving ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:content-save" width={16} />}
-          sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2, background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)" }}>
-          {saving ? "Saving…" : "Save changes"}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    <InstructorDialog
+      open={Boolean(session)}
+      onClose={saving ? undefined : onClose}
+      busy={saving}
+      maxWidth="xs"
+      title="Edit this date"
+      titleSx={{ fontWeight: 800 }}
+      actionsSx={{ px: 3, pb: 2 }}
+      data-testid="session-date"
+      actions={
+        <>
+          <Button onClick={onClose} disabled={saving} sx={{ textTransform: "none", fontWeight: 700 }}>Cancel</Button>
+          <Button onClick={() => void submit()} disabled={!valid || saving}
+            startIcon={saving ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:content-save" width={16} />}
+            sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2, background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)" }}>
+            {saving ? "Saving…" : "Save changes"}
+          </Button>
+        </>
+      }
+    >
+      <Stack spacing={2} sx={{ mt: 0.5 }}>
+        <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>
+          Only this sitting moves - the rest of the series stays where it is.
+        </Typography>
+        <TextField label="Starts" type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)}
+          fullWidth size="small" InputLabelProps={{ shrink: true }}
+          helperText={`Wall-clock time in ${session?.timezone || "the session's timezone"}`} />
+        <TextField label="Duration (min)" type="number" value={duration}
+          onChange={(e) => setDuration(Math.max(1, Math.min(600, Number(e.target.value) || 0)))}
+          size="small" inputProps={{ min: 1, max: 600 }} />
+        <TextField label="Title for this date (optional)" value={title} onChange={(e) => setTitle(e.target.value)}
+          fullWidth size="small" placeholder={session?.topic_name}
+          helperText="Leave blank to keep the current title." />
+      </Stack>
+    </InstructorDialog>
   );
 }
 
@@ -1255,29 +1291,37 @@ function AddSeriesDateDialog({ session, onClose, onSaved, onError }: {
   };
 
   return (
-    <Dialog open={Boolean(session)} onClose={saving ? undefined : onClose} fullWidth maxWidth="xs">
-      <DialogTitle sx={{ fontWeight: 800 }}>Add a date</DialogTitle>
-      <DialogContent>
-        <Stack spacing={2} sx={{ mt: 0.5 }}>
-          <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>
-            Adds one extra sitting to this series. Students see it like any other date.
-          </Typography>
-          <TextField label="Starts" type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)}
-            fullWidth size="small" InputLabelProps={{ shrink: true }}
-            helperText={`Wall-clock time in ${session?.timezone || "the session's timezone"}`} />
-          <TextField label="Duration (min)" type="number" value={duration}
-            onChange={(e) => setDuration(Math.max(1, Math.min(600, Number(e.target.value) || 0)))}
-            size="small" inputProps={{ min: 1, max: 600 }} />
-        </Stack>
-      </DialogContent>
-      <DialogActions sx={{ px: 3, pb: 2 }}>
-        <Button onClick={onClose} disabled={saving} sx={{ textTransform: "none", fontWeight: 700 }}>Cancel</Button>
-        <Button onClick={() => void submit()} disabled={!valid || saving}
-          startIcon={saving ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:calendar-plus" width={16} />}
-          sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2, background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)" }}>
-          {saving ? "Adding…" : "Add date"}
-        </Button>
-      </DialogActions>
-    </Dialog>
+    <InstructorDialog
+      open={Boolean(session)}
+      onClose={saving ? undefined : onClose}
+      busy={saving}
+      maxWidth="xs"
+      title="Add a date"
+      titleSx={{ fontWeight: 800 }}
+      actionsSx={{ px: 3, pb: 2 }}
+      data-testid="session-date"
+      actions={
+        <>
+          <Button onClick={onClose} disabled={saving} sx={{ textTransform: "none", fontWeight: 700 }}>Cancel</Button>
+          <Button onClick={() => void submit()} disabled={!valid || saving}
+            startIcon={saving ? <CircularProgress size={15} color="inherit" /> : <Icon icon="mdi:calendar-plus" width={16} />}
+            sx={{ textTransform: "none", fontWeight: 800, color: "#fff", px: 2.5, borderRadius: 2, background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)" }}>
+            {saving ? "Adding…" : "Add date"}
+          </Button>
+        </>
+      }
+    >
+      <Stack spacing={2} sx={{ mt: 0.5 }}>
+        <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>
+          Adds one extra sitting to this series. Students see it like any other date.
+        </Typography>
+        <TextField label="Starts" type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)}
+          fullWidth size="small" InputLabelProps={{ shrink: true }}
+          helperText={`Wall-clock time in ${session?.timezone || "the session's timezone"}`} />
+        <TextField label="Duration (min)" type="number" value={duration}
+          onChange={(e) => setDuration(Math.max(1, Math.min(600, Number(e.target.value) || 0)))}
+          size="small" inputProps={{ min: 1, max: 600 }} />
+      </Stack>
+    </InstructorDialog>
   );
 }
