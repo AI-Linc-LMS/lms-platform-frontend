@@ -7,7 +7,6 @@ import {
   Button,
   Chip,
   CircularProgress,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -32,6 +31,7 @@ import {
   revokeAssessmentRetake,
 } from "@/lib/services/admin/admin-assessment.service";
 import { config } from "@/lib/config";
+import { SheetDialog } from "@/components/admin/SheetDialog";
 
 interface RetakeGrantsDialogProps {
   open: boolean;
@@ -148,7 +148,7 @@ export function RetakeGrantsDialog({
   };
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+    <SheetDialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle sx={{ pr: 6 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           <IconWrapper icon="mdi:replay" size={22} color="var(--accent-indigo)" />
@@ -320,6 +320,6 @@ export function RetakeGrantsDialog({
       <DialogActions>
         <Button onClick={onClose}>Close</Button>
       </DialogActions>
-    </Dialog>
+    </SheetDialog>
   );
 }

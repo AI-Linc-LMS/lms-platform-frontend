@@ -12,6 +12,8 @@ import {
   InputLabel,
   Select,
   MenuItem,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
@@ -31,6 +33,7 @@ import {
   type InterviewFiltersState,
 } from "@/components/admin/mock-interview";
 import { PHONE } from "@/components/common/mobile/phone";
+import { PhoneFloor } from "@/components/admin/PhoneSheetParts";
 
 type TabValue = "overview" | "interviews" | "students" | "topics";
 
@@ -48,6 +51,8 @@ const DEFAULT_FILTERS: InterviewFiltersState = {
 export default function AdminMockInterviewPage() {
   const { showToast } = useToast();
   const [tab, setTab] = useState<TabValue>("overview");
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const [days, setDays] = useState(30);
 
   // Dashboard data
@@ -221,6 +226,7 @@ export default function AdminMockInterviewPage() {
 
   return (
     <MainLayout>
+      <PhoneFloor>
       <Box sx={{ p: { xs: 2, sm: 3 }, [PHONE]: { px: 0, pt: 0 } }}>
         <Box sx={{ mb: 3 }}>
           <Typography variant="h5" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
@@ -234,6 +240,8 @@ export default function AdminMockInterviewPage() {
         <Tabs
           value={tab}
           onChange={(_, v: TabValue) => setTab(v)}
+          // Four icon tabs are 490px wide; a phone scrolls them instead of clipping "Topics".
+          {...(isPhone ? { variant: "scrollable" as const, scrollButtons: false, allowScrollButtonsMobile: false } : {})}
           sx={{
             mb: 3,
             borderBottom: "1px solid var(--border-default)",
@@ -388,6 +396,7 @@ export default function AdminMockInterviewPage() {
           />
         )}
       </Box>
+      </PhoneFloor>
     </MainLayout>
   );
 }

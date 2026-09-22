@@ -19,6 +19,7 @@ import {
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { StatusChip } from "@/components/admin/assessment/shared";
 import { DragDropContext, Droppable, Draggable, DropResult } from "@hello-pangea/dnd";
+import { PHONE } from "@/components/common/mobile/phone";
 
 export interface Section {
   id: string;
@@ -84,7 +85,7 @@ const helperFormProps = {
 
 /** Section kicker label (redesign): tiny, heavy, uppercase, tertiary. */
 const kickerSx = {
-  fontSize: "0.72rem",
+  fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
   fontWeight: 800,
   letterSpacing: "0.08em",
   textTransform: "uppercase" as const,
@@ -208,7 +209,7 @@ function PointsStat({
       </Typography>
       <Typography
         variant="caption"
-        sx={{ color: "var(--font-tertiary)", fontSize: "0.72rem" }}
+        sx={{ color: "var(--font-tertiary)", fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" } }}
       >
         {label}
       </Typography>
@@ -1126,7 +1127,7 @@ function SectionCard({
                   component="span"
                   sx={{
                     fontFamily: "var(--font-mono)",
-                    fontSize: "0.72rem",
+                    fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                     fontWeight: 700,
                     color: "var(--accent-indigo)",
                   }}

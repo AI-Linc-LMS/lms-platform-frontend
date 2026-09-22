@@ -19,6 +19,8 @@ import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { AdminInterviewListItem } from "@/lib/services/admin/admin-mock-interview.service";
 import { PaginationControls } from "@/components/admin/assessment/PaginationControls";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_TABLE_CARDS } from "@/components/admin/phoneFloor";
 
 interface MockInterviewTableProps {
   interviews: AdminInterviewListItem[];
@@ -187,6 +189,8 @@ export function MockInterviewTable({
             sx={{
               maxHeight: { xs: "60vh", sm: "none" },
               overflowX: "auto",
+              // Phone: one card per row, its actions in a bar at the card's foot.
+              ...PHONE_TABLE_CARDS,
             }}
           >
             <Table stickyHeader size="small">
@@ -221,7 +225,7 @@ export function MockInterviewTable({
               <TableBody>
                 {interviews.map((row) => (
                   <TableRow key={row.id} hover>
-                    <TableCell>
+                    <TableCell data-label={t("adminMockInterview.titleColumn")}>
                       <Typography
                         variant="body2"
                         sx={{
@@ -235,25 +239,25 @@ export function MockInterviewTable({
                         {row.title}
                       </Typography>
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t("adminMockInterview.student")}>
                       <Box>
                         <Typography variant="body2" sx={{ fontWeight: 500 }}>
                           {row.student_name}
                         </Typography>
                         <Typography
                           variant="caption"
-                          sx={{ color: "var(--font-secondary)", fontSize: "0.7rem" }}
+                          sx={{ color: "var(--font-secondary)", fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" } }}
                         >
                           {row.student_email}
                         </Typography>
                       </Box>
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t("adminMockInterview.topic")}>
                       <Typography variant="body2">
                         {row.subtopic ? `${row.topic} / ${row.subtopic}` : row.topic}
                       </Typography>
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t("adminMockInterview.difficulty")}>
                       <Chip
                         label={row.difficulty}
                         size="small"
@@ -268,19 +272,19 @@ export function MockInterviewTable({
                                   : "color-mix(in srgb, var(--font-secondary) 14%, transparent)",
                           color: DIFFICULTY_COLORS[row.difficulty] || "var(--font-primary)",
                           fontWeight: 600,
-                          fontSize: "0.7rem",
+                          fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                         }}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t("adminMockInterview.status")}>
                       <Chip
                         label={row.status.replace("_", " ")}
                         size="small"
                         color={STATUS_COLORS[row.status] || "default"}
-                        sx={{ textTransform: "capitalize", fontSize: "0.7rem" }}
+                        sx={{ textTransform: "capitalize", fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" } }}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t("adminMockInterview.percentage")}>
                       {row.overall_percentage != null ? (
                         <Typography
                           variant="body2"
@@ -300,7 +304,7 @@ export function MockInterviewTable({
                         "-"
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t("adminMockInterview.created")}>
                       <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                         {formatDate(row.created_at)}
                       </Typography>

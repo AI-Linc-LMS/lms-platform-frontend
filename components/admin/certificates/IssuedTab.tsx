@@ -6,7 +6,6 @@ import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tansta
 import {
   Box,
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -59,6 +58,8 @@ import {
   secondaryButtonSx,
   sourceKindMeta,
 } from "./shared";
+import { PHONE } from "@/components/common/mobile/phone";
+import { SheetDialog } from "@/components/admin/SheetDialog";
 
 /**
  * Who holds what.
@@ -373,7 +374,7 @@ export function IssuedTab({ clientId }: IssuedTabProps) {
               the email is the only thing that tells two learners with the same
               display name apart before one of their credentials gets revoked. */}
           {cert.student?.email ? (
-            <Typography sx={{ fontSize: "0.72rem", color: "var(--font-secondary)" }}>
+            <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "var(--font-secondary)" }}>
               {cert.student.email}
             </Typography>
           ) : null}
@@ -393,7 +394,7 @@ export function IssuedTab({ clientId }: IssuedTabProps) {
           </Typography>
           <Typography
             sx={{
-              fontSize: "0.72rem",
+              fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
               color: "var(--font-secondary)",
               fontFamily: "var(--font-mono)",
             }}
@@ -440,7 +441,7 @@ export function IssuedTab({ clientId }: IssuedTabProps) {
           {cert.serial_no ? (
             <Typography
               sx={{
-                fontSize: "0.72rem",
+                fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                 color: "var(--font-secondary)",
                 fontFamily: "var(--font-mono)",
               }}
@@ -601,6 +602,7 @@ export function IssuedTab({ clientId }: IssuedTabProps) {
       ) : (
         <Box>
           <AssessmentDataTable<IssuedCertificate>
+            phoneCards
             columns={columns}
             rows={rows}
             rowKey={(cert) => cert.id}
@@ -626,7 +628,7 @@ export function IssuedTab({ clientId }: IssuedTabProps) {
       )}
 
       {/* Credential viewer */}
-      <Dialog
+      <SheetDialog
         open={Boolean(viewing)}
         onClose={() => setViewing(null)}
         maxWidth="lg"
@@ -645,7 +647,7 @@ export function IssuedTab({ clientId }: IssuedTabProps) {
               </Typography>
               <Typography
                 sx={{
-                  fontSize: "0.72rem",
+                  fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                   color: "var(--font-secondary)",
                   fontFamily: "var(--font-mono)",
                 }}
@@ -700,11 +702,11 @@ export function IssuedTab({ clientId }: IssuedTabProps) {
             {t("certificatesUpload.downloadPdf", "Download PDF")}
           </LoadingButton>
         </DialogActions>
-      </Dialog>
+      </SheetDialog>
 
       {/* Revoke, with a reason: the public credential page shows that it was
           withdrawn, and a support ticket six months later needs to know why. */}
-      <Dialog
+      <SheetDialog
         open={Boolean(revoking)}
         onClose={() => setRevoking(null)}
         maxWidth="sm"
@@ -761,7 +763,7 @@ export function IssuedTab({ clientId }: IssuedTabProps) {
             {t("certificatesUpload.revoke", "Revoke")}
           </LoadingButton>
         </DialogActions>
-      </Dialog>
+      </SheetDialog>
     </Stack>
   );
 }

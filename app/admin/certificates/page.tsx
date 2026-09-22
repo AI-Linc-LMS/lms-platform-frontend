@@ -35,6 +35,7 @@ import type {
   CertificateRuleScope,
 } from "@/lib/certificates/types";
 import { CERT_ACCENT } from "@/lib/certificates/ui-tokens";
+import { PhoneFloor } from "@/components/admin/PhoneSheetParts";
 
 /**
  * The certificates module.
@@ -304,6 +305,7 @@ function AdminCertificatesPageInner() {
 
   return (
     <PageShell>
+        <PhoneFloor>
       <ModulePageHeader
         eyebrow="Content"
         // Matches the sidebar entry, which has read "Certificate Management" since the admin nav
@@ -436,7 +438,8 @@ function AdminCertificatesPageInner() {
         template={null}
         onClose={() => setCreateOpen(false)}
       />
-    </PageShell>
+      </PhoneFloor>
+      </PageShell>
   );
 }
 

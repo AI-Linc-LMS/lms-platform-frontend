@@ -19,6 +19,7 @@ import {
   LiveMonitorConnecting,
 } from "@/components/admin/assessment/live-monitor/LiveMonitorRoomInner";
 import { PHONE } from "@/components/common/mobile/phone";
+import { PhoneFloor } from "@/components/admin/PhoneSheetParts";
 
 function ConnectionGate({
   assessmentId,
@@ -123,6 +124,7 @@ export default function AssessmentLiveMonitorPage() {
 
   return (
     <MainLayout>
+      <PhoneFloor>
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, maxWidth: 1600, mx: "auto", [PHONE]: { px: 0, pt: 0 } }}>
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
@@ -183,6 +185,7 @@ export default function AssessmentLiveMonitorPage() {
           </LiveKitRoom>
         )}
       </Box>
+      </PhoneFloor>
     </MainLayout>
   );
 }

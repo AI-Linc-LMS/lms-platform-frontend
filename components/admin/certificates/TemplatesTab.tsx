@@ -44,6 +44,7 @@ import {
   quietButtonSx,
   secondaryButtonSx,
 } from "./shared";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The design library.
@@ -434,7 +435,7 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
                       display: "block",
                       mt: 0.5,
                       fontWeight: 700,
-                      fontSize: "0.66rem",
+                      fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" },
                       color: "var(--font-primary)",
                       textAlign: "center",
                       overflow: "hidden",
@@ -688,6 +689,8 @@ export function TemplatesTab({ clientId, issuer, onAssignTemplate }: TemplatesTa
         confirmText={t("certificatesUpload.deleteAnyway", "Delete anyway")}
         cancelText={t("common.cancel", "Cancel")}
         confirmColor="error"
+        // This one stays open while the forced delete runs; on a phone the sheet holds.
+        busy={hardDelete.isPending}
         onConfirm={() => {
           if (inUse) hardDelete.mutate({ tpl: inUse.template, force: true });
         }}

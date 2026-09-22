@@ -8,6 +8,7 @@ import { useToast } from "@/components/common/Toast";
 import { config } from "@/lib/config";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { generateAssessmentCopy } from "@/lib/services/admin/admin-assessment-composer.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface BasicInfoSectionProps {
   title: string;
@@ -30,7 +31,7 @@ const helperFormProps = {
 
 /** Section kicker label (design contract): tiny, heavy, tracked-out uppercase. */
 const groupTitleSx = {
-  fontSize: "0.72rem",
+  fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
   fontWeight: 800,
   letterSpacing: "0.08em",
   textTransform: "uppercase" as const,

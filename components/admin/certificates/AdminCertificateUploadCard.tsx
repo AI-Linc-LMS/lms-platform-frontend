@@ -25,6 +25,7 @@ import {
   fieldSx,
   CERT_BADGE_GRADIENT,
 } from "./shared";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The background-artwork upload card, in the admin dialect.
@@ -162,7 +163,7 @@ export function AdminCertificateUploadCard({
                 sx={{
                   textTransform: "none",
                   fontWeight: 700,
-                  fontSize: "0.72rem",
+                  fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                   minWidth: 0,
                   px: 0.75,
                   color: "var(--font-secondary)",

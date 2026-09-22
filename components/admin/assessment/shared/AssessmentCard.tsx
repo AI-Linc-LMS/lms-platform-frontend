@@ -5,6 +5,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import type { Assessment } from "@/lib/services/admin/admin-assessment.service";
 import { StatusChip } from "./AssessmentStatusChip";
 import { DifficultyBalanceMeter, type DifficultyBalance } from "./DifficultyBalanceMeter";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /** Derive a display status from the list-item flags/times (no single status field exists). */
 export function deriveAssessmentStatus(a: Assessment): {
@@ -145,7 +146,7 @@ export function AssessmentCard({
                 borderRadius: 999,
                 color: "#fff",
                 background: "var(--gradient-ai)",
-                fontSize: "0.72rem",
+                fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                 fontWeight: 700,
               }}
             >

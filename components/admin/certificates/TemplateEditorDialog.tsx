@@ -16,7 +16,6 @@ import {
   AccordionSummary,
   Box,
   Button,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -81,6 +80,8 @@ import {
   quietButtonSx,
   type TemplateDraft,
 } from "./shared";
+import { PHONE } from "@/components/common/mobile/phone";
+import { SheetDialog } from "@/components/admin/SheetDialog";
 
 /**
  * The design editor: a form on the left, the actual certificate on the right,
@@ -572,9 +573,9 @@ export function TemplateEditorDialog({
   const stageHeight = stageWidth * (CERTIFICATE_CANVAS_HEIGHT / CERTIFICATE_CANVAS_WIDTH);
 
   return (
-    <Dialog
+    <SheetDialog
       open={open}
-      onClose={() => onClose()}
+      onClose={() => { if (!save.isPending) onClose(); }}
       maxWidth="xl"
       fullWidth
       slotProps={{
@@ -610,7 +611,7 @@ export function TemplateEditorDialog({
                 ? t("certificatesUpload.editTemplateTitle", "Edit certificate design")
                 : t("certificatesUpload.newTemplateTitle", "New certificate design")}
             </Typography>
-            <Typography sx={{ fontSize: "0.72rem", color: "var(--font-secondary)" }}>
+            <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "var(--font-secondary)" }}>
               {t(
                 "certificatesUpload.editorSubtitle",
                 "Everything you change is drawn on the right exactly as a learner will receive it.",
@@ -634,6 +635,7 @@ export function TemplateEditorDialog({
             gridTemplateColumns: { xs: "1fr", md: "minmax(0, 420px) minmax(0, 1fr)" },
             alignItems: "start",
             height: "100%",
+            [PHONE]: { gridTemplateColumns: "minmax(0, 1fr)" },
           }}
         >
           {/* ---------------- form ---------------- */}
@@ -692,7 +694,7 @@ export function TemplateEditorDialog({
                     {t("certificatesUpload.backgroundSection", "Background image")}
                   </Typography>
                   <Typography
-                    sx={{ fontSize: "0.72rem", color: "var(--font-secondary)", lineHeight: 1.55 }}
+                    sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "var(--font-secondary)", lineHeight: 1.55 }}
                   >
                     {t(
                       "certificatesUpload.backgroundHelp",
@@ -914,7 +916,7 @@ export function TemplateEditorDialog({
                                   display: "block",
                                   mt: 0.4,
                                   color: "var(--font-primary)",
-                                  fontSize: 10,
+                                  fontSize: 10, [PHONE]: { fontSize: "0.75rem" },
                                   fontWeight: 700,
                                   textAlign: "center",
                                   overflow: "hidden",
@@ -959,7 +961,7 @@ export function TemplateEditorDialog({
                     <Stack direction="row" justifyContent="space-between" alignItems="center">
                       <Eyebrow>{t("certificatesUpload.fieldOrnament", "Ornamentation")}</Eyebrow>
                       <Typography
-                        sx={{ fontSize: "0.72rem", fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--font-secondary)" }}
+                        sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 700, fontFamily: "var(--font-mono)", color: "var(--font-secondary)" }}
                       >
                         {draft.ornamentLevel ?? preset.ornamentLevel} / 7
                       </Typography>
@@ -979,7 +981,7 @@ export function TemplateEditorDialog({
                       sx={{ color: "var(--ai-violet)" }}
                     />
                     <Typography
-                      sx={{ fontSize: "0.72rem", color: "var(--font-secondary)", lineHeight: 1.55 }}
+                      sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "var(--font-secondary)", lineHeight: 1.55 }}
                     >
                       {t(
                         "certificatesUpload.ornamentHelp",
@@ -997,7 +999,7 @@ export function TemplateEditorDialog({
                 {t("certificatesUpload.copySection", "Wording")}
               </Typography>
               <Typography
-                sx={{ fontSize: "0.72rem", color: "var(--font-secondary)", lineHeight: 1.55 }}
+                sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "var(--font-secondary)", lineHeight: 1.55 }}
               >
                 {t(
                   "certificatesUpload.copySectionHint",
@@ -1049,7 +1051,7 @@ export function TemplateEditorDialog({
                   <AccordionDetails sx={{ px: 1.75, pb: 2 }}>
                     <Stack spacing={1.5}>
                       <Typography
-                        sx={{ fontSize: "0.72rem", color: "var(--font-secondary)", lineHeight: 1.55 }}
+                        sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "var(--font-secondary)", lineHeight: 1.55 }}
                       >
                         {t(
                           "certificatesUpload.paletteHelp",
@@ -1138,6 +1140,17 @@ export function TemplateEditorDialog({
               bgcolor: "var(--surface)",
               position: { md: "sticky" },
               top: 0,
+              // Phone: the preview leads and stays pinned while the form scrolls under it, so
+              // every change is seen as it is made. It scales to the sheet's width.
+              [PHONE]: {
+                order: -1,
+                position: "sticky",
+                zIndex: 2,
+                px: 2,
+                py: 1.5,
+                minWidth: 0,
+                borderBottom: "1px solid var(--border-default)",
+              },
             }}
           >
             <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
@@ -1150,7 +1163,7 @@ export function TemplateEditorDialog({
                 {t("certificatesUpload.livePreview", "Live preview")}
               </Typography>
               <Box sx={{ flex: 1 }} />
-              <Typography sx={{ fontSize: "0.72rem", color: "var(--font-secondary)" }}>
+              <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "var(--font-secondary)" }}>
                 {t("certificatesUpload.previewSampleNote", "Sample recipient and sample course")}
               </Typography>
             </Stack>
@@ -1187,7 +1200,7 @@ export function TemplateEditorDialog({
                           cursor: "grab",
                           touchAction: "none",
                           userSelect: "none",
-                          fontSize: 11,
+                          fontSize: 11, [PHONE]: { fontSize: "0.75rem" },
                           fontWeight: 800,
                           whiteSpace: "nowrap",
                           color: active ? "var(--font-light)" : "var(--font-primary)",
@@ -1211,7 +1224,7 @@ export function TemplateEditorDialog({
 
             {isUpload ? (
               <Typography
-                sx={{ display: "block", mt: 1.5, fontSize: "0.72rem", color: "var(--font-secondary)" }}
+                sx={{ display: "block", mt: 1.5, fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "var(--font-secondary)" }}
               >
                 {t(
                   "certificatesUpload.dragHint",
@@ -1224,7 +1237,7 @@ export function TemplateEditorDialog({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, py: 2 }}>
-        <Button onClick={() => onClose()} sx={quietButtonSx}>
+        <Button onClick={() => onClose()} disabled={save.isPending} sx={quietButtonSx}>
           {t("common.cancel", "Cancel")}
         </Button>
         <LoadingButton
@@ -1243,6 +1256,6 @@ export function TemplateEditorDialog({
             : t("certificatesUpload.createTemplate", "Create template")}
         </LoadingButton>
       </DialogActions>
-    </Dialog>
+    </SheetDialog>
   );
 }

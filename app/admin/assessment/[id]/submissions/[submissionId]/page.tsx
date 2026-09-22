@@ -23,7 +23,6 @@ import {
   Stack,
   TextField,
   Typography,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -48,6 +47,8 @@ import {
   parseSubjectiveAnswerPayload,
 } from "@/utils/assessment.utils";
 import { PHONE } from "@/components/common/mobile/phone";
+import { SheetDialog } from "@/components/admin/SheetDialog";
+import { PhoneFloor } from "@/components/admin/PhoneSheetParts";
 
 type ScoreMap = Record<number, { awarded_marks: string; note: string }>;
 
@@ -395,17 +396,25 @@ export default function AdminSubmissionEvaluationPage() {
 
   return (
     <MainLayout>
+        <PhoneFloor>
       <Box
         sx={{
           maxWidth: 1100,
           mx: "auto",
           p: { xs: 2, sm: 3 },
           pb: isPublished ? 3 : { xs: 18, md: 12 },
+          // The phone grading bar is three rows (total, back, save + publish); leave room for it.
+          [PHONE]: isPublished ? {} : { pb: "calc(260px + env(safe-area-inset-bottom, 0px))" },
         }}
       >
         <Breadcrumbs
           separator={<IconWrapper icon="mdi:chevron-right" size={16} />}
-          sx={{ mb: 2, "& .MuiBreadcrumbs-separator": { mx: 0.5, opacity: 0.55 } }}
+          sx={{
+            mb: 2,
+            "& .MuiBreadcrumbs-separator": { mx: 0.5, opacity: 0.55 },
+            // Phone: each crumb is a 44px target.
+            [PHONE]: { "& .MuiBreadcrumbs-li > a": { minHeight: 44, display: "inline-flex", alignItems: "center" } },
+          }}
         >
           <MuiLink
             component={Link}
@@ -981,7 +990,7 @@ export default function AdminSubmissionEvaluationPage() {
                                 mb: 1,
                                 letterSpacing: "0.04em",
                                 textTransform: "uppercase",
-                                fontSize: "0.68rem",
+                                fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" },
                               }}
                             >
                               {t("admin.assessment.submissionLearnerResponse")}
@@ -1306,7 +1315,7 @@ export default function AdminSubmissionEvaluationPage() {
             }}
           >
             <Box sx={{ maxWidth: 1100, mx: "auto", display: "flex", gap: 1.25, flexWrap: "wrap", alignItems: "center", justifyContent: "space-between" }}>
-              <Box sx={{ minWidth: 220 }}>
+              <Box sx={{ minWidth: 220, [PHONE]: { minWidth: 0 } }}>
                 <Typography variant="caption" color="text.secondary" sx={{ fontWeight: 800 }}>
                   Draft total
                 </Typography>
@@ -1314,7 +1323,24 @@ export default function AdminSubmissionEvaluationPage() {
                   {totalScore} / {data.maximum_marks}
                 </Typography>
               </Box>
-              <Stack direction="row" spacing={1} flexWrap="wrap" justifyContent="flex-end">
+              <Stack
+                direction="row"
+                spacing={1}
+                flexWrap="wrap"
+                justifyContent="flex-end"
+                sx={{
+                  // Phone: Save and Publish side by side under a full-width Back, all 44px.
+                  [PHONE]: {
+                    width: "100%",
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: 1,
+                    "& > :not(style) ~ :not(style)": { ml: 0 },
+                    "& > :first-of-type": { gridColumn: "1 / -1" },
+                    "& .MuiButton-root": { minHeight: 44 },
+                  },
+                }}
+              >
                 <Button variant="outlined" onClick={goToSubmissions}>
                   Back to submissions
                 </Button>
@@ -1375,7 +1401,7 @@ export default function AdminSubmissionEvaluationPage() {
         )}
       </Box>
 
-      <Dialog
+      <SheetDialog
         open={mediaPreview.open}
         onClose={(_, reason) => {
           if (reason === "backdropClick" || reason === "escapeKeyDown") {
@@ -1480,8 +1506,9 @@ export default function AdminSubmissionEvaluationPage() {
             {t("tools.close")}
           </Button>
         </DialogActions>
-      </Dialog>
-    </MainLayout>
+      </SheetDialog>
+      </PhoneFloor>
+      </MainLayout>
   );
 }
 

@@ -20,6 +20,7 @@ import {
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { StatusChip } from "@/components/admin/assessment/shared";
 import { MCQ } from "@/lib/services/admin/admin-assessment.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface MCQFormSectionProps {
   mcqs: MCQ[];
@@ -36,7 +37,7 @@ const cardSx = {
 
 /** Section kicker label (contract): tiny, heavy, tracked-out uppercase. */
 const kickerSx = {
-  fontSize: "0.72rem",
+  fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
   fontWeight: 800,
   letterSpacing: "0.08em",
   textTransform: "uppercase" as const,

@@ -16,7 +16,6 @@ import {
   TableHead,
   TableRow,
   Pagination,
-  Dialog,
   DialogTitle,
   DialogContent,
 } from "@mui/material";
@@ -31,6 +30,7 @@ import {
 } from "@/lib/services/admin/admin-assessment.service";
 import { config } from "@/lib/config";
 import { ProblemDescription } from "@/components/coding/ProblemDescription";
+import { SheetDialog } from "@/components/admin/SheetDialog";
 
 interface AIGeneratedCodingSectionProps {
   codingProblemIds: number[];
@@ -557,7 +557,7 @@ export function AIGeneratedCodingSection({
         </Box>
       )}
 
-      <Dialog
+      <SheetDialog
         open={!!previewProblem}
         onClose={() => setPreviewProblem(null)}
         maxWidth="md"
@@ -594,7 +594,7 @@ export function AIGeneratedCodingSection({
             </Box>
           )}
         </DialogContent>
-      </Dialog>
+      </SheetDialog>
     </Box>
   );
 }

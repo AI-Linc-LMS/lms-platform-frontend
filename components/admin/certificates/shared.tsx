@@ -23,6 +23,7 @@ import type {
   CertificateTemplate,
   CertificateTemplateDraft,
 } from "@/lib/certificates/types";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /** The sample copy every preview draws with. A template stores no title or
  *  tagline of its own, so the preview has to supply one; keeping it here means
@@ -438,7 +439,7 @@ export function SectionHeading({
           {title}
         </Typography>
         {subtitle ? (
-          <Typography sx={{ fontSize: "0.72rem", color: "var(--font-secondary)" }}>
+          <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "var(--font-secondary)" }}>
             {subtitle}
           </Typography>
         ) : null}
@@ -462,7 +463,7 @@ export function Eyebrow({
     <Typography
       component="div"
       sx={{
-        fontSize: "0.6rem",
+        fontSize: "0.6rem", [PHONE]: { fontSize: "0.75rem" },
         fontWeight: 800,
         letterSpacing: 0.5,
         textTransform: "uppercase",
@@ -585,7 +586,7 @@ export function MetaPill({
         backgroundColor: `color-mix(in srgb, ${color} 14%, var(--surface) 86%)`,
         border: "1px solid transparent",
         color,
-        fontSize: "0.72rem",
+        fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
         fontWeight: 600,
         lineHeight: 1,
         whiteSpace: "nowrap",

@@ -3010,12 +3010,33 @@
     "deleteProjectTitle": "Delete this project?",
     "deleteProjectBody": "Assessments that use it will lose the section. This cannot be undone."
   },
-  "instructorMobile": {
-    "cohortsFilter": "Cohorts",
-    "batchesFilter": "Batches"
+  "adminAssessMobile": {
+    "colAnswerMode": "Answer mode",
+    "colBrief": "Brief",
+    "colCorrect": "Correct",
+    "colDifficulty": "Difficulty",
+    "colEvaluated": "Evaluated",
+    "colEvaluation": "Evaluation",
+    "colId": "ID",
+    "colIntegrity": "Integrity",
+    "colMarking": "Marking",
+    "colMaxMarks": "Max marks",
+    "colOrder": "Order",
+    "colPrompt": "Prompt",
+    "colQuestion": "Question",
+    "colReview": "Review",
+    "colRuntime": "Runtime",
+    "colScore": "Score",
+    "colSection": "Section",
+    "colTags": "Tags",
+    "colTitle": "Title"
   },
   "purchases": {
     "reference": "Reference"
+  },
+  "instructorMobile": {
+    "cohortsFilter": "Cohorts",
+    "batchesFilter": "Batches"
   },
   "adaptiveCoursesAdmin": {
     "deleteCourse": "Delete {{title}}"

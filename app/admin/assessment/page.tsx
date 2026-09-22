@@ -23,6 +23,8 @@ import {
   IconButton,
   Divider,
   Tooltip,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -75,6 +77,9 @@ import {
   type CompanyPrepEntry,
 } from "@/lib/services/admin/admin-assessment-composer.service";
 import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_FLOOR_RULES } from "@/components/admin/phoneFloor";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
+import { PhoneSheetActions, PhoneSheetBody } from "@/components/admin/PhoneSheetParts";
 
 const COMPOSER_EXAMPLES = [
   "45-min proctored cybersecurity screening · 10 MCQ medium + 2 hard coding",
@@ -266,6 +271,12 @@ export default function AssessmentPage() {
   type StatusTab = "all" | "active" | "scheduled" | "draft" | "closed";
   const [statusTab, setStatusTab] = useState<StatusTab>("all");
   const [viewMode, setViewMode] = useState<"cards" | "table">("cards");
+  // A phone always gets the table component's own card layout: it carries every row action
+  // (email job, live monitor, certificate criteria, activate, share link), where the grid
+  // card's menu holds only a subset. The view toggle is hidden there, not removed.
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
+  const listView = isPhone ? "table" : viewMode;
   // Per-card overflow menu (preserves every row action the table exposed).
   // Re-attempts, reachable from the CARD menu too. Cards is the default view, and the action
   // existed only in the table's row menu - which is why this kept being reported as missing.
@@ -1008,9 +1019,167 @@ export default function AssessmentPage() {
     { value: "closed", label: "Closed", icon: "mdi:lock-outline", count: statusTabCounts.closed },
   ];
 
+  // Each confirm is a centred Dialog on sm+ (unchanged) and a bottom sheet on a phone; both
+  // render the same body and actions, and a running request holds the sheet open.
+  const deleteDialogBody = (
+    <>
+      <Alert severity="warning" sx={{ mb: 2 }}>
+        This action cannot be undone.
+      </Alert>
+      <DialogContentText id="delete-dialog-description">
+        {assessmentToDelete ? (
+          <>
+            Permanently delete &quot;{assessmentToDelete.title}&quot;? All
+            associated data will be removed.
+          </>
+        ) : null}
+      </DialogContentText>
+    </>
+  );
+  const deleteDialogActions = (
+    <>
+      <Button
+        onClick={handleDeleteDialogClose}
+        disabled={deleting}
+        color="inherit"
+      >
+        Cancel
+      </Button>
+      <LoadingButton
+        onClick={handleDeleteConfirm}
+        loading={deleting}
+        loadingText={t("common.deleting")}
+        variant="contained"
+        color="error"
+        autoFocus
+      >
+        Delete
+      </LoadingButton>
+    </>
+  );
+  const emailTriggerDialogBody = (
+    <>
+      {assessmentToTriggerEmail && (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <DialogContentText>
+            Send notification emails to students for this assessment. Review the full template below. This is what each recipient will receive.
+          </DialogContentText>
+          <Box>
+            <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 600 }}>
+              Subject
+            </Typography>
+            <Typography variant="body2" sx={{ mt: 0.5, p: 1.5, bgcolor: "var(--surface)", borderRadius: 1 }}>
+              {buildEmailSubject(assessmentToTriggerEmail)}
+            </Typography>
+          </Box>
+          {(() => {
+            const att = extractSavedEmailAttachment(
+              assessmentToTriggerEmail as unknown as Record<string, unknown>
+            );
+            const detail = assessmentToTriggerEmail as typeof assessmentToTriggerEmail & {
+              start_time?: string | null;
+              end_time?: string | null;
+            };
+            return (
+              <EmailTemplatePreview
+                subject={buildEmailSubject(assessmentToTriggerEmail)}
+                showPreviewChip={false}
+                attachmentUrl={att.url}
+                attachmentName={att.name}
+                schedule={{
+                  startTime: detail.start_time ?? null,
+                  endTime: detail.end_time ?? null,
+                  durationMinutes:
+                    assessmentToTriggerEmail.duration_minutes ?? null,
+                }}
+              >
+                <Box
+                  sx={{ "& a": { color: "var(--accent-indigo)" } }}
+                  dangerouslySetInnerHTML={{
+                    __html: buildEmailBody(
+                      assessmentToTriggerEmail
+                    ).replace(/\{name\}/g, "[Recipient Name]"),
+                  }}
+                />
+              </EmailTemplatePreview>
+            );
+          })()}
+          <Typography variant="body2" color="text.secondary">
+            Are you sure you want to send this notification?
+          </Typography>
+        </Box>
+      )}
+    </>
+  );
+  const emailTriggerDialogActions = (
+    <>
+      <Button
+        onClick={handleCloseEmailTriggerDialog}
+        disabled={!!triggeringEmailJobId}
+        color="inherit"
+      >
+        Cancel
+      </Button>
+      <LoadingButton
+        onClick={handleConfirmTriggerEmailJob}
+        loading={!!(triggeringEmailJobId && assessmentToTriggerEmail && triggeringEmailJobId === assessmentToTriggerEmail.id)}
+        loadingText={t("common.submitting")}
+        disabled={!!triggeringEmailJobId}
+        variant="contained"
+        sx={{
+          bgcolor: "var(--success-500)",
+          "&:hover": {
+            bgcolor:
+              "color-mix(in srgb, var(--success-500) 86%, var(--accent-indigo-dark))",
+          },
+        }}
+      >
+        Confirm & Send
+      </LoadingButton>
+    </>
+  );
+  const duplicateDialogBody = (
+    <>
+      <DialogContentText id="duplicate-dialog-description">
+        {assessmentToDuplicate ? (
+          <>
+            Create a duplicate of &quot;{assessmentToDuplicate.title}&quot;? The new assessment will be named &quot;{assessmentToDuplicate.title} - copy&quot; and will include all questions and settings.
+          </>
+        ) : null}
+      </DialogContentText>
+    </>
+  );
+  const duplicateDialogActions = (
+    <>
+      <Button
+        onClick={handleDuplicateDialogClose}
+        disabled={!!duplicatingId}
+        color="inherit"
+      >
+        Cancel
+      </Button>
+      <LoadingButton
+        onClick={handleDuplicateConfirm}
+        loading={!!duplicatingId}
+        loadingText={t("common.loading")}
+        variant="contained"
+        sx={{
+          bgcolor: "var(--accent-purple)",
+          "&:hover": {
+            bgcolor:
+              "color-mix(in srgb, var(--accent-purple) 86%, var(--accent-indigo-dark))",
+          },
+        }}
+        autoFocus
+      >
+        Duplicate
+      </LoadingButton>
+    </>
+  );
+
   return (
     <MainLayout fullWidthContent>
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, [PHONE]: { px: 0, pt: 0 } }}>
+      <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, [PHONE]: { px: 0, pt: 0, ...PHONE_FLOOR_RULES } }}>
         {/* Header - adaptive-course design language (Phase 1 revamp) */}
         <Box sx={{ mb: 4 }}>
           <AssessmentSectionHero
@@ -1073,7 +1242,7 @@ export default function AssessmentPage() {
                     py: 0.5,
                     borderRadius: 999,
                     background: "var(--gradient-ai)",
-                    fontSize: "0.7rem",
+                    fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                     fontWeight: 800,
                     letterSpacing: "0.1em",
                     mb: 1.5,
@@ -1112,7 +1281,7 @@ export default function AssessmentPage() {
                     AI-generated papers on prod are in that state. */}
                 <Box sx={{ maxWidth: 860, mt: 3 }}>
                   <Typography
-                    sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.1em", opacity: 0.75, mb: 0.5 }}
+                    sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.1em", opacity: 0.75, mb: 0.5 }}
                   >
                     GIVE IT TO A BATCH{isScopedAuthor ? "" : " (OPTIONAL)"}
                   </Typography>
@@ -1157,7 +1326,7 @@ export default function AssessmentPage() {
                 {companyCatalog.length > 0 ? (
                   <Box sx={{ maxWidth: 860, mt: 3.5 }}>
                     <Typography
-                      sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.1em", opacity: 0.75, mb: 0.5 }}
+                      sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.1em", opacity: 0.75, mb: 0.5 }}
                     >
                       PREP FOR A COMPANY
                     </Typography>
@@ -1174,6 +1343,7 @@ export default function AssessmentPage() {
                             sx={{
                               px: 1.5,
                               height: 34,
+                              [PHONE]: { height: 44 },
                               display: "inline-flex",
                               alignItems: "center",
                               borderRadius: 999,
@@ -1272,7 +1442,7 @@ export default function AssessmentPage() {
               {/* Right: blueprints inside the band (mockup) */}
               <Box>
                 <Typography
-                  sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.1em", opacity: 0.75, mb: 1.25 }}
+                  sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.1em", opacity: 0.75, mb: 1.25 }}
                 >
                   OR START FROM A BLUEPRINT
                 </Typography>
@@ -1362,6 +1532,7 @@ export default function AssessmentPage() {
                   gap: 0.6,
                   px: 1.5,
                   height: 36,
+                  [PHONE]: { height: 44 },
                   borderRadius: 999,
                   cursor: "pointer",
                   fontSize: "0.85rem",
@@ -1378,7 +1549,7 @@ export default function AssessmentPage() {
                 {pill.label}
               </Box>
             ))}
-          <Box sx={{ display: "flex", gap: 0.5, p: 0.5, borderRadius: 999, border: "1px solid var(--border-default)", bgcolor: "var(--surface)" }}>
+          <Box sx={{ display: "flex", gap: 0.5, p: 0.5, borderRadius: 999, border: "1px solid var(--border-default)", bgcolor: "var(--surface)", [PHONE]: { display: "none" } }}>
             {([
               { mode: "cards" as const, icon: "mdi:view-grid-outline", label: "Card view" },
               { mode: "table" as const, icon: "mdi:table", label: "Table view" },
@@ -1464,7 +1635,7 @@ export default function AssessmentPage() {
 
         {/* List - card grid (default) or the classic table (Phase 3 redesign) */}
         {loading ? (
-          viewMode === "cards" ? (
+          listView === "cards" ? (
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }, gap: 2 }}>
               {Array.from({ length: 6 }).map((_, i) => (
                 <Box key={i} sx={{ height: 236, borderRadius: "var(--radius-card)", bgcolor: "var(--surface)", border: "1px solid var(--border-default)" }} />
@@ -1499,7 +1670,7 @@ export default function AssessmentPage() {
               ) : undefined
             }
           />
-        ) : viewMode === "cards" ? (
+        ) : listView === "cards" ? (
           <>
             <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" }, gap: 2 }}>
               {paginatedAssessments.map((a) => (
@@ -1539,6 +1710,8 @@ export default function AssessmentPage() {
               overflow: "hidden",
               border: "1px solid var(--border-default)",
               backgroundColor: "var(--card-bg)",
+              // On a phone the rows are already cards; a card around the cards is noise.
+              [PHONE]: { border: "none", boxShadow: "none", backgroundColor: "transparent", overflow: "visible" },
             }}
           >
             <AssessmentTable
@@ -1649,196 +1822,110 @@ export default function AssessmentPage() {
           assessmentTitle={retakeDialog.title}
         />
 
-        <Dialog
-          open={deleteDialogOpen}
-          onClose={handleDeleteDialogClose}
-          aria-labelledby="delete-dialog-title"
-          aria-describedby="delete-dialog-description"
-          PaperProps={{
-            sx: {
-              borderRadius: 2,
-              minWidth: 360,
-            },
-          }}
-        >
-          <DialogTitle id="delete-dialog-title" sx={{ fontWeight: 600 }}>
-            Delete assessment?
-          </DialogTitle>
-          <DialogContent>
-            <Alert severity="warning" sx={{ mb: 2 }}>
-              This action cannot be undone.
-            </Alert>
-            <DialogContentText id="delete-dialog-description">
-              {assessmentToDelete ? (
-                <>
-                  Permanently delete &quot;{assessmentToDelete.title}&quot;? All
-                  associated data will be removed.
-                </>
-              ) : null}
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button
-              onClick={handleDeleteDialogClose}
-              disabled={deleting}
-              color="inherit"
-            >
-              Cancel
-            </Button>
-            <LoadingButton
-              onClick={handleDeleteConfirm}
-              loading={deleting}
-              loadingText={t("common.deleting")}
-              variant="contained"
-              color="error"
-              autoFocus
-            >
-              Delete
-            </LoadingButton>
-          </DialogActions>
-        </Dialog>
+        {isPhone ? (
+          <ResponsiveDialog
+            open={deleteDialogOpen}
+            onClose={handleDeleteDialogClose}
+            title="Delete assessment?"
+            hideCloseButton={deleting}
+            data-testid="assessment-delete-sheet"
+            footer={<PhoneSheetActions>{deleteDialogActions}</PhoneSheetActions>}
+          >
+            <PhoneSheetBody>{deleteDialogBody}</PhoneSheetBody>
+          </ResponsiveDialog>
+        ) : (
+          <Dialog
+            open={deleteDialogOpen}
+            onClose={handleDeleteDialogClose}
+            aria-labelledby="delete-dialog-title"
+            aria-describedby="delete-dialog-description"
+            PaperProps={{
+              sx: {
+                borderRadius: 2,
+                minWidth: 360,
+              },
+            }}
+          >
+            <DialogTitle id="delete-dialog-title" sx={{ fontWeight: 600 }}>
+              Delete assessment?
+            </DialogTitle>
+            <DialogContent>
+              {deleteDialogBody}
+            </DialogContent>
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+              {deleteDialogActions}
+            </DialogActions>
+          </Dialog>
+        )}
 
-        <Dialog
-          open={emailTriggerDialogOpen}
-          onClose={handleCloseEmailTriggerDialog}
-          maxWidth="md"
-          fullWidth
-          PaperProps={{
-            sx: { borderRadius: 2 },
-          }}
-        >
-          <DialogTitle sx={{ fontWeight: 600 }}>
-            Trigger Email Job
-          </DialogTitle>
-          <DialogContent>
-            {assessmentToTriggerEmail && (
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <DialogContentText>
-                  Send notification emails to students for this assessment. Review the full template below. This is what each recipient will receive.
-                </DialogContentText>
-                <Box>
-                  <Typography variant="caption" sx={{ color: "var(--font-secondary)", fontWeight: 600 }}>
-                    Subject
-                  </Typography>
-                  <Typography variant="body2" sx={{ mt: 0.5, p: 1.5, bgcolor: "var(--surface)", borderRadius: 1 }}>
-                    {buildEmailSubject(assessmentToTriggerEmail)}
-                  </Typography>
-                </Box>
-                {(() => {
-                  const att = extractSavedEmailAttachment(
-                    assessmentToTriggerEmail as unknown as Record<string, unknown>
-                  );
-                  const detail = assessmentToTriggerEmail as typeof assessmentToTriggerEmail & {
-                    start_time?: string | null;
-                    end_time?: string | null;
-                  };
-                  return (
-                    <EmailTemplatePreview
-                      subject={buildEmailSubject(assessmentToTriggerEmail)}
-                      showPreviewChip={false}
-                      attachmentUrl={att.url}
-                      attachmentName={att.name}
-                      schedule={{
-                        startTime: detail.start_time ?? null,
-                        endTime: detail.end_time ?? null,
-                        durationMinutes:
-                          assessmentToTriggerEmail.duration_minutes ?? null,
-                      }}
-                    >
-                      <Box
-                        sx={{ "& a": { color: "var(--accent-indigo)" } }}
-                        dangerouslySetInnerHTML={{
-                          __html: buildEmailBody(
-                            assessmentToTriggerEmail
-                          ).replace(/\{name\}/g, "[Recipient Name]"),
-                        }}
-                      />
-                    </EmailTemplatePreview>
-                  );
-                })()}
-                <Typography variant="body2" color="text.secondary">
-                  Are you sure you want to send this notification?
-                </Typography>
-              </Box>
-            )}
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button
-              onClick={handleCloseEmailTriggerDialog}
-              disabled={!!triggeringEmailJobId}
-              color="inherit"
-            >
-              Cancel
-            </Button>
-            <LoadingButton
-              onClick={handleConfirmTriggerEmailJob}
-              loading={!!(triggeringEmailJobId && assessmentToTriggerEmail && triggeringEmailJobId === assessmentToTriggerEmail.id)}
-              loadingText={t("common.submitting")}
-              disabled={!!triggeringEmailJobId}
-              variant="contained"
-              sx={{
-                bgcolor: "var(--success-500)",
-                "&:hover": {
-                  bgcolor:
-                    "color-mix(in srgb, var(--success-500) 86%, var(--accent-indigo-dark))",
-                },
-              }}
-            >
-              Confirm & Send
-            </LoadingButton>
-          </DialogActions>
-        </Dialog>
+        {isPhone ? (
+          <ResponsiveDialog
+            open={emailTriggerDialogOpen}
+            onClose={handleCloseEmailTriggerDialog}
+            title="Trigger Email Job"
+            hideCloseButton={!!triggeringEmailJobId}
+            data-testid="assessment-email-sheet"
+            footer={<PhoneSheetActions>{emailTriggerDialogActions}</PhoneSheetActions>}
+          >
+            <PhoneSheetBody>{emailTriggerDialogBody}</PhoneSheetBody>
+          </ResponsiveDialog>
+        ) : (
+          <Dialog
+            open={emailTriggerDialogOpen}
+            onClose={handleCloseEmailTriggerDialog}
+            maxWidth="md"
+            fullWidth
+            PaperProps={{
+              sx: { borderRadius: 2 },
+            }}
+          >
+            <DialogTitle sx={{ fontWeight: 600 }}>
+              Trigger Email Job
+            </DialogTitle>
+            <DialogContent>
+              {emailTriggerDialogBody}
+            </DialogContent>
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+              {emailTriggerDialogActions}
+            </DialogActions>
+          </Dialog>
+        )}
 
-        <Dialog
-          open={duplicateDialogOpen}
-          onClose={handleDuplicateDialogClose}
-          aria-labelledby="duplicate-dialog-title"
-          aria-describedby="duplicate-dialog-description"
-          PaperProps={{
-            sx: {
-              borderRadius: 2,
-              minWidth: 360,
-            },
-          }}
-        >
-          <DialogTitle id="duplicate-dialog-title" sx={{ fontWeight: 600 }}>
-            Duplicate Assessment?
-          </DialogTitle>
-          <DialogContent>
-            <DialogContentText id="duplicate-dialog-description">
-              {assessmentToDuplicate ? (
-                <>
-                  Create a duplicate of &quot;{assessmentToDuplicate.title}&quot;? The new assessment will be named &quot;{assessmentToDuplicate.title} - copy&quot; and will include all questions and settings.
-                </>
-              ) : null}
-            </DialogContentText>
-          </DialogContent>
-          <DialogActions sx={{ px: 3, pb: 2 }}>
-            <Button
-              onClick={handleDuplicateDialogClose}
-              disabled={!!duplicatingId}
-              color="inherit"
-            >
-              Cancel
-            </Button>
-            <LoadingButton
-              onClick={handleDuplicateConfirm}
-              loading={!!duplicatingId}
-              loadingText={t("common.loading")}
-              variant="contained"
-              sx={{
-                bgcolor: "var(--accent-purple)",
-                "&:hover": {
-                  bgcolor:
-                    "color-mix(in srgb, var(--accent-purple) 86%, var(--accent-indigo-dark))",
-                },
-              }}
-              autoFocus
-            >
-              Duplicate
-            </LoadingButton>
-          </DialogActions>
-        </Dialog>
+        {isPhone ? (
+          <ResponsiveDialog
+            open={duplicateDialogOpen}
+            onClose={handleDuplicateDialogClose}
+            title="Duplicate Assessment?"
+            hideCloseButton={!!duplicatingId}
+            data-testid="assessment-duplicate-sheet"
+            footer={<PhoneSheetActions>{duplicateDialogActions}</PhoneSheetActions>}
+          >
+            <PhoneSheetBody>{duplicateDialogBody}</PhoneSheetBody>
+          </ResponsiveDialog>
+        ) : (
+          <Dialog
+            open={duplicateDialogOpen}
+            onClose={handleDuplicateDialogClose}
+            aria-labelledby="duplicate-dialog-title"
+            aria-describedby="duplicate-dialog-description"
+            PaperProps={{
+              sx: {
+                borderRadius: 2,
+                minWidth: 360,
+              },
+            }}
+          >
+            <DialogTitle id="duplicate-dialog-title" sx={{ fontWeight: 600 }}>
+              Duplicate Assessment?
+            </DialogTitle>
+            <DialogContent>
+              {duplicateDialogBody}
+            </DialogContent>
+            <DialogActions sx={{ px: 3, pb: 2 }}>
+              {duplicateDialogActions}
+            </DialogActions>
+          </Dialog>
+        )}
       </Box>
     </MainLayout>
   );

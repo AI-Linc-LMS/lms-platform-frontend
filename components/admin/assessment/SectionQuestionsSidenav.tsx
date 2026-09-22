@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import { Section } from "./MultipleSectionsSection";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
 
 type SectionKind = "quiz" | "coding" | "subjective" | "project";
 
@@ -245,7 +246,7 @@ export function SectionQuestionsSidenav({
               px: 0.75,
               py: 0.55,
               fontWeight: 700,
-              fontSize: "0.74rem",
+              fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" },
               textTransform: "none",
               whiteSpace: "nowrap",
               overflow: "hidden",
@@ -286,7 +287,7 @@ export function SectionQuestionsSidenav({
           <Box sx={{ px: 2, pt: 1.5, pb: 0.5, flexShrink: 0 }}>
             <Typography
               sx={{
-                fontSize: "0.72rem",
+                fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                 fontWeight: 800,
                 letterSpacing: "0.08em",
                 textTransform: "uppercase",
@@ -395,7 +396,7 @@ export function SectionQuestionsSidenav({
                         alignItems: "center",
                         justifyContent: "center",
                         fontFamily: "var(--font-mono)",
-                        fontSize: "0.72rem",
+                        fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                         fontWeight: 700,
                         bgcolor:
                           count > 0

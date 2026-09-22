@@ -24,6 +24,7 @@ import { SectionCard, WrittenPromptPreview } from "./SectionCard";
 import { MCQQuestionsTable } from "./MCQQuestionsTable";
 import { CodingProblemsTable } from "./CodingProblemsTable";
 import { PaginationControls } from "./PaginationControls";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface MCQWithSection extends MCQ {
   sectionId: string;
@@ -31,7 +32,7 @@ interface MCQWithSection extends MCQ {
 
 /** Section kicker label (redesign language). Text renders UPPERCASE. */
 const kickerSx = {
-  fontSize: "0.72rem",
+  fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
   fontWeight: 800,
   letterSpacing: "0.08em",
   textTransform: "uppercase" as const,
@@ -48,7 +49,7 @@ const cardSx = {
 
 /** Uppercase table-head cell in the kicker voice. */
 const headCellSx = {
-  fontSize: "0.72rem",
+  fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
   fontWeight: 800,
   letterSpacing: "0.08em",
   textTransform: "uppercase" as const,

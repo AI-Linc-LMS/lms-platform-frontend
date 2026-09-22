@@ -30,6 +30,7 @@ import { Section } from "./MultipleSectionsSection";
 import { SectionQuestionsSidenav } from "./SectionQuestionsSidenav";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ProjectSelectionSection } from "@/components/admin/assessment/ProjectSelectionSection";
+import { PHONE } from "@/components/common/mobile/phone";
 
 type MCQInputMethod = "manual" | "existing" | "csv" | "ai";
 type CodingInputMethod = "existing" | "ai" | "raw" | "csv";
@@ -110,7 +111,7 @@ function MethodCardGrid<T extends string>({
                   {opt.title}
                 </Typography>
                 {opt.ai ? (
-                  <Box sx={{ px: 0.8, py: 0.1, borderRadius: 999, fontSize: "0.62rem", fontWeight: 800, letterSpacing: "0.06em", color: "#fff", background: "var(--gradient-ai)" }}>
+                  <Box sx={{ px: 0.8, py: 0.1, borderRadius: 999, fontSize: "0.62rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.06em", color: "#fff", background: "var(--gradient-ai)" }}>
                     FAST
                   </Box>
                 ) : null}

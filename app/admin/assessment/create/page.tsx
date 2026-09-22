@@ -14,7 +14,6 @@ import {
   Button,
   CircularProgress,
   Tooltip,
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -64,6 +63,8 @@ import {
   mapQuestionsExportToAuthoringState,
 } from "@/lib/utils/assessment-authoring-from-export.utils";
 import { PHONE } from "@/components/common/mobile/phone";
+import { SheetDialog } from "@/components/admin/SheetDialog";
+import { PhoneFloor } from "@/components/admin/PhoneSheetParts";
 
 type MCQInputMethod = "manual" | "existing" | "csv" | "ai";
 
@@ -2199,6 +2200,7 @@ function CreateAssessmentPageContent() {
 
   return (
     <MainLayout>
+      <PhoneFloor>
       <Box sx={{ p: { xs: 2, sm: 3 }, [PHONE]: { px: 0, pt: 0 } }}>
         <AssessmentBreadcrumb segments={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Assessments", href: "/admin/assessment" }, { label: "Create assessment" }]} />
         {/* Header - adaptive design (Phase 2 revamp) */}
@@ -2347,13 +2349,13 @@ function CreateAssessmentPageContent() {
                     <Typography sx={{ fontWeight: 800, fontFamily: "var(--font-jakarta)", fontSize: "0.98rem", lineHeight: 1.2 }}>
                       Live outline
                     </Typography>
-                    <Typography sx={{ fontSize: "0.72rem", opacity: 0.85 }}>Updates as you build</Typography>
+                    <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, opacity: 0.85 }}>Updates as you build</Typography>
                   </Box>
                 </Box>
                 <Box sx={{ p: 2.25 }}>
                   <Typography
                     sx={{
-                      fontSize: "0.72rem",
+                      fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                       fontWeight: 800,
                       letterSpacing: "0.08em",
                       color: "var(--font-tertiary)",
@@ -2579,7 +2581,7 @@ function CreateAssessmentPageContent() {
 
       {/* Picking more questions than a section serves is silent by design -- the extras are
           simply never drawn. This is the only point at which the author finds out. */}
-      <Dialog
+      <SheetDialog
         open={extraQuestionPrompt !== null}
         onClose={() => setExtraQuestionPrompt(null)}
         maxWidth="sm"
@@ -2646,8 +2648,9 @@ function CreateAssessmentPageContent() {
             Show them all
           </Button>
         </DialogActions>
-      </Dialog>
+      </SheetDialog>
 
+      </PhoneFloor>
     </MainLayout>
   );
 }

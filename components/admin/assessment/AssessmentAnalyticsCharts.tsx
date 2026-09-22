@@ -46,6 +46,8 @@ import {
   sectionRowAccent,
   SECTION_STATUS_MUI,
 } from "@/lib/utils/assessment-section-performance.utils";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_TABLE_CARDS } from "@/components/admin/phoneFloor";
 
 const C = {
   sky: "var(--accent-indigo)",
@@ -113,7 +115,7 @@ function studentCountTooltip(value: number | string | undefined) {
 
 const tableHeadCellSx = {
   fontWeight: 700,
-  fontSize: "0.68rem",
+  fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" },
   letterSpacing: "0.07em",
   textTransform: "uppercase" as const,
   color: "text.secondary",
@@ -193,7 +195,7 @@ function SectionTableTitle({
             sx={{
               height: 24,
               fontWeight: 700,
-              fontSize: "0.7rem",
+              fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
               bgcolor: "primary.main",
               color: "primary.contrastText",
               "& .MuiChip-label": { px: 1.25 },
@@ -804,7 +806,16 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
   const passRate = summary.pass_rate_percent;
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: { xs: 2.5, md: 3.25 } }}>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        gap: { xs: 2.5, md: 3.25 },
+        // Recharts writes its 11px axis ticks as an SVG attribute, which a media query cannot
+        // reach; CSS font-size outranks a presentation attribute, so a phone gets 12px here.
+        [PHONE]: { "& .recharts-text, & .recharts-cartesian-axis-tick text": { fontSize: 12 } },
+      }}
+    >
       <Box
         sx={{
           display: "grid",
@@ -840,7 +851,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
               <IconWrapper icon="mdi:chart-box-outline" size={20} color="#fff" />
             </Box>
             <Typography
-              sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.12em", color: "var(--accent-indigo)" }}
+              sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.12em", color: "var(--accent-indigo)" }}
             >
               ANALYTICS REPORT
             </Typography>
@@ -930,7 +941,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
           }}
         >
           <Typography
-            sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.08em", color: "var(--font-tertiary)", mb: 2 }}
+            sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.08em", color: "var(--font-tertiary)", mb: 2 }}
           >
             WHERE STUDENTS ARE
           </Typography>
@@ -984,7 +995,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
         >
           <Typography
             component="h3"
-            sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.08em", color: "var(--font-tertiary)", mb: 1 }}
+            sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.08em", color: "var(--font-tertiary)", mb: 1 }}
           >
             NUMBERS AT A GLANCE
           </Typography>
@@ -1197,7 +1208,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
             countChipMode="number"
             subtitle="How each part of the test is doing on average: max points, mean score, mean %, a quick bar, and a simple status vs the rest of the sections."
           />
-          <TableContainer>
+          <TableContainer sx={PHONE_TABLE_CARDS}>
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow sx={{ bgcolor: "var(--surface)" }}>
@@ -1245,7 +1256,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
                         },
                       ]}
                     >
-                      <TableCell sx={{ py: 1.35, verticalAlign: "middle", maxWidth: 280 }}>
+                      <TableCell data-label="Section" sx={{ py: 1.35, verticalAlign: "middle", maxWidth: 280 }}>
                         <Box
                           component="span"
                           sx={{
@@ -1263,25 +1274,25 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
                           {s.section_title}
                         </Box>
                       </TableCell>
-                      <TableCell
+                      <TableCell data-label="Max"
                         align="center"
                         sx={{ py: 1.35, fontVariantNumeric: "tabular-nums", fontWeight: 600 }}
                       >
                         {s.max_score != null ? s.max_score.toFixed(0) : "-"}
                       </TableCell>
-                      <TableCell
+                      <TableCell data-label="Avg score"
                         align="center"
                         sx={{ py: 1.35, fontVariantNumeric: "tabular-nums", fontWeight: 600 }}
                       >
                         {s.average_score != null ? s.average_score.toFixed(1) : "-"}
                       </TableCell>
-                      <TableCell
+                      <TableCell data-label="Avg %"
                         align="center"
                         sx={{ py: 1.35, fontVariantNumeric: "tabular-nums", fontWeight: 600 }}
                       >
                         {s.average_percentage != null ? `${s.average_percentage.toFixed(1)}%` : "-"}
                       </TableCell>
-                      <TableCell sx={{ py: 1.35, verticalAlign: "middle", minWidth: 140 }}>
+                      <TableCell data-label="Performance bar" sx={{ py: 1.35, verticalAlign: "middle", minWidth: 140 }}>
                         <LinearProgress
                           variant="determinate"
                           value={Math.min(100, Math.max(0, pct))}
@@ -1298,14 +1309,14 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
                           }}
                         />
                       </TableCell>
-                      <TableCell align="right" sx={{ py: 1.35, verticalAlign: "middle" }}>
+                      <TableCell data-label="Status" align="right" sx={{ py: 1.35, verticalAlign: "middle" }}>
                         <Chip
                           size="small"
                           label={sectionPerformanceStatusLabel(statusKind)}
                           sx={{
                             height: 26,
                             fontWeight: 700,
-                            fontSize: "0.72rem",
+                            fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                             bgcolor: statusSx.bgcolor,
                             color: statusSx.color,
                             borderRadius: 999,
@@ -1333,7 +1344,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
       {topPerformers.length > 0 && (
         <Paper variant="outlined" sx={{ ...tablePaperSx, borderRadius: 2 }}>
           <SectionTableTitle title="Top performers" count={topPerformers.length} countChipMode="number" />
-          <TableContainer>
+          <TableContainer sx={PHONE_TABLE_CARDS}>
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
@@ -1359,18 +1370,18 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
                     sx={[tableBodyRowSx, { "&:nth-of-type(even)": { bgcolor: "action.hover" } }]}
                   >
                     <TableCell sx={{ py: 1.25, fontWeight: 700, color: "text.secondary" }}>{row.rank}</TableCell>
-                    <TableCell sx={{ py: 1.25, fontWeight: 600 }}>{row.name}</TableCell>
-                    <TableCell sx={{ maxWidth: 200, wordBreak: "break-all", py: 1.25 }}>{row.email}</TableCell>
-                    <TableCell align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
+                    <TableCell data-label="Name" sx={{ py: 1.25, fontWeight: 600 }}>{row.name}</TableCell>
+                    <TableCell data-label="Email" sx={{ maxWidth: 200, wordBreak: "break-all", py: 1.25 }}>{row.email}</TableCell>
+                    <TableCell data-label="Score" align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
                       {row.score?.toFixed(1)}
                     </TableCell>
-                    <TableCell align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
+                    <TableCell data-label="Score %" align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
                       {row.percentage?.toFixed(1)}
                     </TableCell>
-                    <TableCell align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
+                    <TableCell data-label="Time (min)" align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
                       {row.time_taken_minutes}
                     </TableCell>
-                    <TableCell sx={{ py: 1.25, whiteSpace: "nowrap" }}>{formatShortDate(row.submitted_at)}</TableCell>
+                    <TableCell data-label="Submitted" sx={{ py: 1.25, whiteSpace: "nowrap" }}>{formatShortDate(row.submitted_at)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -1390,7 +1401,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
       {students.length > 0 && (
         <Paper variant="outlined" sx={{ ...tablePaperSx, borderRadius: 2 }}>
           <SectionTableTitle title="All submissions" count={students.length} countChipMode="number" />
-          <TableContainer>
+          <TableContainer sx={PHONE_TABLE_CARDS}>
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
@@ -1420,9 +1431,9 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
                     key={row.submission_id}
                     sx={[tableBodyRowSx, { "&:nth-of-type(even)": { bgcolor: "action.hover" } }]}
                   >
-                    <TableCell sx={{ py: 1.25, fontWeight: 600 }}>{row.name}</TableCell>
-                    <TableCell sx={{ maxWidth: 180, wordBreak: "break-all", py: 1.25 }}>{row.email}</TableCell>
-                    <TableCell sx={{ py: 1.25 }}>
+                    <TableCell data-label="Name" sx={{ py: 1.25, fontWeight: 600 }}>{row.name}</TableCell>
+                    <TableCell data-label="Email" sx={{ maxWidth: 180, wordBreak: "break-all", py: 1.25 }}>{row.email}</TableCell>
+                    <TableCell data-label="Status" sx={{ py: 1.25 }}>
                       <Chip
                         size="small"
                         label={statusSpec.label}
@@ -1431,19 +1442,19 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
                         sx={{ fontWeight: 700 }}
                       />
                     </TableCell>
-                    <TableCell align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
+                    <TableCell data-label="Score" align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
                       {row.score != null ? row.score.toFixed(1) : "-"}
                     </TableCell>
-                    <TableCell align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
+                    <TableCell data-label="Score %" align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
                       {row.percentage != null ? row.percentage.toFixed(1) : "-"}
                     </TableCell>
-                    <TableCell align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
+                    <TableCell data-label="Time (min)" align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
                       {row.time_taken_minutes ?? "-"}
                     </TableCell>
-                    <TableCell align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
+                    <TableCell data-label="Questions tried" align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
                       {row.attempted_questions ?? "-"}
                     </TableCell>
-                    <TableCell sx={{ py: 1.25, whiteSpace: "nowrap" }}>{formatShortDate(row.submitted_at)}</TableCell>
+                    <TableCell data-label="Submitted" sx={{ py: 1.25, whiteSpace: "nowrap" }}>{formatShortDate(row.submitted_at)}</TableCell>
                   </TableRow>
                   );
                 })}
@@ -1468,7 +1479,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
             count={codingQuestions.length}
             subtitle="For each coding task: how many students saw it, solved it fully, partly, did not pass, or skipped it."
           />
-          <TableContainer>
+          <TableContainer sx={PHONE_TABLE_CARDS}>
             <Table size="small" stickyHeader>
               <TableHead>
                 <TableRow>
@@ -1499,8 +1510,8 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
                     key={q.problem_id}
                     sx={[tableBodyRowSx, { "&:nth-of-type(even)": { bgcolor: "action.hover" } }]}
                   >
-                    <TableCell sx={{ maxWidth: 280, py: 1.25, fontWeight: 500 }}>{q.title}</TableCell>
-                    <TableCell sx={{ py: 1.25 }}>
+                    <TableCell data-label="Question" sx={{ maxWidth: 280, py: 1.25, fontWeight: 500 }}>{q.title}</TableCell>
+                    <TableCell data-label="Level" sx={{ py: 1.25 }}>
                       <Chip
                         size="small"
                         label={diffSpec.label}
@@ -1509,19 +1520,19 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
                         sx={{ fontWeight: 700, minWidth: 76, justifyContent: "center" }}
                       />
                     </TableCell>
-                    <TableCell align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
+                    <TableCell data-label="Saw it" align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
                       {q.appeared_count}
                     </TableCell>
-                    <TableCell align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums", color: C.pass }}>
+                    <TableCell data-label="Solved fully" align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums", color: C.pass }}>
                       {q.full_pass_count}
                     </TableCell>
-                    <TableCell align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
+                    <TableCell data-label="Partly solved" align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
                       {q.partial_count}
                     </TableCell>
-                    <TableCell align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums", color: "error.main" }}>
+                    <TableCell data-label="Did not pass" align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums", color: "error.main" }}>
                       {q.failed_count}
                     </TableCell>
-                    <TableCell align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
+                    <TableCell data-label="Skipped" align="right" sx={{ py: 1.25, fontVariantNumeric: "tabular-nums" }}>
                       {q.skipped_count}
                     </TableCell>
                   </TableRow>
@@ -1579,7 +1590,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
                           bgcolor: (theme: Theme) => alpha(theme.palette.common.black, theme.palette.mode === "dark" ? 0.15 : 0.03),
                           whiteSpace: "pre-wrap",
                           fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                          fontSize: "0.72rem",
+                          fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                           lineHeight: 1.55,
                           color: "text.secondary",
                           maxHeight: 320,
@@ -1644,7 +1655,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
                           bgcolor: (theme: Theme) => alpha(theme.palette.common.black, theme.palette.mode === "dark" ? 0.15 : 0.03),
                           whiteSpace: "pre-wrap",
                           fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                          fontSize: "0.72rem",
+                          fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                           lineHeight: 1.55,
                           color: "text.secondary",
                           maxHeight: 320,

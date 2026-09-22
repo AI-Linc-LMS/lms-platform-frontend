@@ -26,6 +26,7 @@ import type {
 import { TemplatePickerField } from "./TemplatePickerField";
 import type { TemplatePreviewContext } from "./previewPayload";
 import { NoticeStrip } from "./shared";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * "When this much of this course/assessment is done, award this design."
@@ -603,7 +604,7 @@ export function CertificateRuleEditor({
             </Typography>
           ) : null}
           {description ? (
-            <Typography sx={{ fontSize: "0.72rem", color: "var(--font-secondary)", mt: "1px" }}>
+            <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "var(--font-secondary)", mt: "1px" }}>
               {description}
             </Typography>
           ) : null}

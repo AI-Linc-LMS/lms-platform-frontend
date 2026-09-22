@@ -6,7 +6,6 @@ import {
   Box,
   Button,
   Chip,
-  Dialog,
   DialogActions,
   DialogContent,
   DialogTitle,
@@ -45,6 +44,8 @@ import {
   CUSTOM_TOPIC_VALUE,
 } from "@/lib/constants/interview-topics";
 import { PHONE } from "@/components/common/mobile/phone";
+import { SheetDialog } from "@/components/admin/SheetDialog";
+import { PhoneFloor } from "@/components/admin/PhoneSheetParts";
 
 /**
  * Admin: Create Interview page.
@@ -531,6 +532,7 @@ export default function AdminInterviewTemplatesPage() {
 
   return (
     <MainLayout>
+      <PhoneFloor>
       <Box sx={{ p: { xs: 2, sm: 3 }, [PHONE]: { px: 0, pt: 0 } }}>
         {/* Header + back link */}
         <Box
@@ -1273,9 +1275,9 @@ export default function AdminInterviewTemplatesPage() {
         </Box>
 
         {/* Delete confirm dialog */}
-        <Dialog
+        <SheetDialog
           open={pendingDelete !== null}
-          onClose={() => setPendingDelete(null)}
+          onClose={() => { if (deletingId === null) setPendingDelete(null); }}
         >
           <DialogTitle>Delete this interview?</DialogTitle>
           <DialogContent>
@@ -1306,9 +1308,9 @@ export default function AdminInterviewTemplatesPage() {
               {deletingId !== null ? "Deleting…" : "Delete"}
             </Button>
           </DialogActions>
-        </Dialog>
+        </SheetDialog>
 
-        <Dialog
+        <SheetDialog
           open={attemptsDialogTemplate !== null}
           onClose={() => setAttemptsDialogTemplate(null)}
           maxWidth="md"
@@ -1342,7 +1344,7 @@ export default function AdminInterviewTemplatesPage() {
                       <Typography sx={{ fontSize: "1.1rem", fontWeight: 800, lineHeight: 1.2 }}>
                         {value}
                       </Typography>
-                      <Typography sx={{ fontSize: "0.72rem", color: "var(--font-secondary)", fontWeight: 600 }}>
+                      <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "var(--font-secondary)", fontWeight: 600 }}>
                         {label}
                       </Typography>
                     </Box>
@@ -1686,8 +1688,9 @@ export default function AdminInterviewTemplatesPage() {
               Close
             </Button>
           </DialogActions>
-        </Dialog>
+        </SheetDialog>
       </Box>
+      </PhoneFloor>
     </MainLayout>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import {
-  Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
@@ -12,6 +11,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { SheetDialog } from "@/components/admin/SheetDialog";
 
 interface DeleteConfirmationModalProps {
   open: boolean;
@@ -30,7 +30,7 @@ export function DeleteConfirmationModal({
 }: DeleteConfirmationModalProps) {
   const { t } = useTranslation("common");
   return (
-    <Dialog
+    <SheetDialog
       open={open}
       onClose={onClose}
       maxWidth="sm"
@@ -91,7 +91,7 @@ export function DeleteConfirmationModal({
           Delete
         </LoadingButton>
       </DialogActions>
-    </Dialog>
+    </SheetDialog>
   );
 }
 
