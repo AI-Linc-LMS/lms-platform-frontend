@@ -2605,5 +2605,9 @@
   "mobileChrome": {
     "more": "المزيد",
     "platformGuide": "دليل المنصة"
+  },
+  "instructorMobile": {
+    "cohortsFilter": "المجموعات",
+    "batchesFilter": "الدفعات"
   }
 }

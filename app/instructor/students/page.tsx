@@ -33,6 +33,7 @@ import { pf, PHONE_CHIP, PHONE_TAP } from "@/components/instructor/phoneSx";
 import { InstructorDialog } from "@/components/instructor/InstructorDialog";
 import { ScrollRow } from "@/components/common/mobile/ScrollRow";
 import { PHONE } from "@/components/common/mobile/phone";
+import { useTranslation } from "react-i18next";
 
 /* --------------------------------- status --------------------------------- */
 
@@ -316,6 +317,7 @@ function ReportRow({
 /* ---------------------------------- page ---------------------------------- */
 
 export default function InstructorStudentsPage() {
+  const { t } = useTranslation("common");
   const theme = useTheme();
   const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const [rows, setRows] = useState<InstructorStudentRow[]>([]);
@@ -561,7 +563,7 @@ export default function InstructorStudentsPage() {
         // An instructor can staff dozens of batches; wrapped, that is a wall of chips above the
         // list on a phone. One sideways row there instead; the wrap stays on desktop.
         return isPhone ? (
-          <ScrollRow ariaLabel="Cohorts" sx={{ mb: 2 }}>{cohortChips}</ScrollRow>
+          <ScrollRow ariaLabel={t("instructorMobile.cohortsFilter", "Cohorts") as string} sx={{ mb: 2 }}>{cohortChips}</ScrollRow>
         ) : (
           <Stack direction="row" spacing={0.75} sx={{ mb: 2, flexWrap: "wrap", gap: 0.75 }}>
             {cohortChips}

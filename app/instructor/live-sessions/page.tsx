@@ -43,6 +43,7 @@ import { statusOf, type SessionStatus } from "./sessionStatus";
 import { pf, PHONE_TAP, PHONE_ICON_BTN } from "@/components/instructor/phoneSx";
 import { InstructorDialog } from "@/components/instructor/InstructorDialog";
 import { PHONE } from "@/components/common/mobile/phone";
+import { useTranslation } from "react-i18next";
 
 const STATUS_META: Record<SessionStatus, { label: string; color: string; bg: string }> = {
   live: { label: "Live", color: "#059669", bg: "color-mix(in srgb,#10b981 15%,transparent)" },
@@ -120,6 +121,7 @@ function facetsOf(s: InstructorLiveSession): { key: string; label: string }[] {
 }
 
 export default function InstructorLiveSessionsPage() {
+  const { t } = useTranslation("common");
   const [sessions, setSessions] = useState<InstructorLiveSession[]>([]);
   const [pastTotal, setPastTotal] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -296,7 +298,7 @@ export default function InstructorLiveSessionsPage() {
             value={facetFilter ?? ""}
             onChange={(k) => setFacetFilter(k === "" ? null : k)}
             scrollOnPhone
-            ariaLabel="Batches"
+            ariaLabel={t("instructorMobile.batchesFilter", "Batches") as string}
           />
         </Box>
       )}

@@ -3001,5 +3001,9 @@
   "mobileChrome": {
     "more": "More",
     "platformGuide": "Platform guide"
+  },
+  "instructorMobile": {
+    "cohortsFilter": "Cohorts",
+    "batchesFilter": "Batches"
   }
 }
