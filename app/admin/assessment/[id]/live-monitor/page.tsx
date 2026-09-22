@@ -18,6 +18,7 @@ import {
   LiveMonitorRoomInner,
   LiveMonitorConnecting,
 } from "@/components/admin/assessment/live-monitor/LiveMonitorRoomInner";
+import { PHONE } from "@/components/common/mobile/phone";
 
 function ConnectionGate({
   assessmentId,
@@ -122,7 +123,7 @@ export default function AssessmentLiveMonitorPage() {
 
   return (
     <MainLayout>
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, maxWidth: 1600, mx: "auto" }}>
+      <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, maxWidth: 1600, mx: "auto", [PHONE]: { px: 0, pt: 0 } }}>
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
           onClick={() => router.push("/admin/assessment")}

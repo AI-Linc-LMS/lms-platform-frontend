@@ -47,6 +47,7 @@ import {
   normalizeSubjectiveAnswer,
   parseSubjectiveAnswerPayload,
 } from "@/utils/assessment.utils";
+import { PHONE } from "@/components/common/mobile/phone";
 
 type ScoreMap = Record<number, { awarded_marks: string; note: string }>;
 
@@ -385,7 +386,7 @@ export default function AdminSubmissionEvaluationPage() {
   if (!data) {
     return (
       <MainLayout>
-        <Box sx={{ p: 4 }}>
+        <Box sx={{ p: 4, [PHONE]: { px: 0, pt: 0 } }}>
           <Alert severity="error">Submission evaluation data not found.</Alert>
         </Box>
       </MainLayout>

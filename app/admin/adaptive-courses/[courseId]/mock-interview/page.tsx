@@ -5,6 +5,7 @@ import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { MockInterviewAdminSection } from "@/components/admin/adaptive-course/MockInterviewAdminSection";
+import { PHONE } from "@/components/common/mobile/phone";
 
 export default function AdminMockInterviewPage() {
   const router = useRouter();
@@ -12,7 +13,7 @@ export default function AdminMockInterviewPage() {
 
   return (
     <MainLayout fullWidthContent>
-      <Box sx={{ maxWidth: 1100, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 4 } }}>
+      <Box sx={{ maxWidth: 1100, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 4 }, [PHONE]: { px: 0, pt: 0 } }}>
         <ButtonBase
           onClick={() => router.push(`/admin/adaptive-courses/${courseId}`)}
           sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}

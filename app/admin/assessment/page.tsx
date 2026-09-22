@@ -74,6 +74,7 @@ import {
   type ComposerPreset,
   type CompanyPrepEntry,
 } from "@/lib/services/admin/admin-assessment-composer.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 const COMPOSER_EXAMPLES = [
   "45-min proctored cybersecurity screening · 10 MCQ medium + 2 hard coding",
@@ -1009,7 +1010,7 @@ export default function AssessmentPage() {
 
   return (
     <MainLayout fullWidthContent>
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 } }}>
+      <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, [PHONE]: { px: 0, pt: 0 } }}>
         {/* Header - adaptive-course design language (Phase 1 revamp) */}
         <Box sx={{ mb: 4 }}>
           <AssessmentSectionHero

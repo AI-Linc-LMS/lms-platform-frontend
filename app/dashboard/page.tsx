@@ -4,11 +4,12 @@ import { Box } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { DashboardV2 } from "@/components/dashboard/v2/DashboardV2";
 import { AdaptivePromo } from "@/components/courses/AdaptivePromo";
+import { PHONE } from "@/components/common/mobile/phone";
 
 export default function DashboardPage() {
   return (
     <MainLayout fullWidthContent>
-      <Box sx={{ maxWidth: 1600, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 2, md: 3 } }}>
+      <Box sx={{ maxWidth: 1600, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 2, md: 3 }, [PHONE]: { px: 0, pt: 0 } }}>
         {/* New-adaptive-courses banner + first-time intro guide (legacy-only students). */}
         <AdaptivePromo />
         <DashboardV2 />

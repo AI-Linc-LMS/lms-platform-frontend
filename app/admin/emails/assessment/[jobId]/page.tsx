@@ -34,6 +34,7 @@ import {
 import { config } from "@/lib/config";
 import { EmailTemplatePreview } from "@/components/common/EmailTemplatePreview";
 import { extractSavedEmailAttachment } from "@/lib/utils/assessment-email-attachment";
+import { PHONE } from "@/components/common/mobile/phone";
 
 const POLL_INTERVAL_MS = 3000;
 const TERMINAL_STATUSES = ["COMPLETED", "FAILED", "completed", "failed"];
@@ -201,7 +202,7 @@ export default function AssessmentEmailJobDetailPage() {
 
   return (
     <MainLayout fullWidthContent>
-      <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
+      <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 }, [PHONE]: { px: 0, pt: 0 } }}>
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
           onClick={() => router.push("/admin/emails?tab=assessment")}

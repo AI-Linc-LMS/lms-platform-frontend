@@ -72,7 +72,7 @@ export default function AdminCohortDetailPage() {
   if (loading) {
     return (
       <MainLayout fullWidthContent>
-        <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: "var(--canvas)", minHeight: "100%" }}>
+        <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: "var(--canvas)", minHeight: "100%", [PHONE]: { px: 0, pt: 0 } }}>
           <Typography sx={{ textAlign: "center", py: 8, color: "var(--font-tertiary)" }}>Loading…</Typography>
         </Box>
       </MainLayout>
@@ -93,7 +93,7 @@ export default function AdminCohortDetailPage() {
 
   return (
     <MainLayout fullWidthContent>
-      <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: "var(--canvas)", minHeight: "100%" }}>
+      <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: "var(--canvas)", minHeight: "100%", [PHONE]: { px: 0, pt: 0 } }}>
         <AssessmentBreadcrumb
           segments={[
             { label: "Admin", href: "/admin/dashboard" },

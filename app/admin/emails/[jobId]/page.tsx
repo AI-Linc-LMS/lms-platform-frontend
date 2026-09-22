@@ -32,6 +32,7 @@ import {
   EmailRecipient,
 } from "@/lib/services/admin/admin-email-jobs.service";
 import { config } from "@/lib/config";
+import { PHONE } from "@/components/common/mobile/phone";
 
 const formatDate = (s: string) => {
   try {
@@ -164,7 +165,7 @@ export default function EmailJobDetailPage() {
 
   return (
     <MainLayout fullWidthContent>
-      <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
+      <Box sx={{ maxWidth: 1200, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 }, [PHONE]: { px: 0, pt: 0 } }}>
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
           onClick={() => router.push("/admin/emails")}

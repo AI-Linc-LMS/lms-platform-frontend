@@ -100,6 +100,7 @@ import {
   safeAssessmentPdfFileName,
   safeReportCsvFileName,
 } from "@/lib/utils/admin-submission-export-to-assessment-result.utils";
+import { PHONE } from "@/components/common/mobile/phone";
 
 type TabValue = "overview" | "details" | "questions" | "submissions" | "analytics";
 type QuestionsSubTab = "mcq" | "coding" | "written" | "project";
@@ -1684,7 +1685,7 @@ export default function AssessmentEditPage() {
   if (!assessment) {
     return (
       <MainLayout fullWidthContent>
-        <Box sx={{ p: 3 }}>
+        <Box sx={{ p: 3, [PHONE]: { px: 0, pt: 0 } }}>
           <Typography color="text.secondary">Assessment not found</Typography>
           <Button
             sx={{ mt: 2 }}
@@ -1702,7 +1703,7 @@ export default function AssessmentEditPage() {
 
   return (
     <MainLayout fullWidthContent>
-      <Box sx={{ p: { xs: 2, sm: 3 } }}>
+      <Box sx={{ p: { xs: 2, sm: 3 }, [PHONE]: { px: 0, pt: 0 } }}>
         <AssessmentBreadcrumb segments={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Assessments", href: "/admin/assessment" }, { label: displayTitle || `Assessment #${assessmentId}` }]} />
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}

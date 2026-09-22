@@ -30,6 +30,7 @@ import {
   MockInterviewTopicsView,
   type InterviewFiltersState,
 } from "@/components/admin/mock-interview";
+import { PHONE } from "@/components/common/mobile/phone";
 
 type TabValue = "overview" | "interviews" | "students" | "topics";
 
@@ -220,7 +221,7 @@ export default function AdminMockInterviewPage() {
 
   return (
     <MainLayout>
-      <Box sx={{ p: { xs: 2, sm: 3 } }}>
+      <Box sx={{ p: { xs: 2, sm: 3 }, [PHONE]: { px: 0, pt: 0 } }}>
         <Box sx={{ mb: 3 }}>
           <Typography variant="h5" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
             Interview Admin
