@@ -631,6 +631,13 @@ export interface AttachVideoResult {
   note: string;
 }
 
+/** The body of the builder's 409 when a new article repeats one the topic already has. */
+export interface DuplicateArticleConflict {
+  detail: string;
+  code: "duplicate_article";
+  duplicate_of: { id: number; title: string; similarity: number; same_title: boolean; reason: string };
+}
+
 export const adminAdaptiveCourseService = {
 
   /* -------------------------------------------------- manual authoring (no AI) */
@@ -688,8 +695,13 @@ export const adminAdaptiveCourseService = {
     return data as { modules_updated: number; submodules_updated: number };
   },
 
+  /**
+   * A 409 with `code: "duplicate_article"` means the topic already has an article with this title
+   * or a near-identical body (`DuplicateArticleConflict`). Re-send with `confirm_duplicate: true`
+   * to add it anyway.
+   */
   async addArticle(submoduleId: number, payload: {
-    title: string; body: string; summary?: string; reading_tier?: string;
+    title: string; body: string; summary?: string; reading_tier?: string; confirm_duplicate?: boolean;
   }) {
     const { data } = await apiClient.post(`${BASE}/submodules/${submoduleId}/article/`, payload);
     return data as { id: number; title: string; reading_tier: string };

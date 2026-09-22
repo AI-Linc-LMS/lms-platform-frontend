@@ -28,6 +28,7 @@ import {
   adminAdaptiveCourseService,
   type BankMcq,
   type BankCodingProblem,
+  type DuplicateArticleConflict,
   type SubmoduleSuggestions,
 } from "@/lib/services/admin/admin-adaptive-course.service";
 import {
@@ -401,6 +402,9 @@ export function AddContentDialog({
   const [artTitle, setArtTitle] = useState("");
   const [artBody, setArtBody] = useState("");
   const [artSummary, setArtSummary] = useState("");
+  // The server's 409 when this article repeats one the topic already has. Held until the admin
+  // chooses "Add anyway" (re-send with confirm_duplicate) or "Cancel" (send nothing).
+  const [artDuplicate, setArtDuplicate] = useState<DuplicateArticleConflict | null>(null);
 
   // Quiz
   const [quizMode, setQuizMode] = useState<"bank" | "write">("bank");
@@ -461,6 +465,7 @@ export function AddContentDialog({
     setArtTitle("");
     setArtBody("");
     setArtSummary("");
+    setArtDuplicate(null);
     setQuizMode("bank");
     setPickedMcqs(new Set());
     setDrafts([blankDraft()]);
@@ -554,21 +559,30 @@ export function AddContentDialog({
 
   /* -------------------------------------------------------------- submitters */
 
-  async function submitArticle() {
+  async function submitArticle(confirmDuplicate = false) {
     if (submoduleId == null) return;
+    setArtDuplicate(null);
     setSaving(true);
     try {
       const r = await adminAdaptiveCourseService.addArticle(submoduleId, {
         title: artTitle.trim(),
         body: artBody,
         summary: artSummary.trim() || undefined,
+        ...(confirmDuplicate ? { confirm_duplicate: true } : {}),
       });
       setArtTitle("");
       setArtBody("");
       setArtSummary("");
       afterAdd(`Added "${r.title}".`);
     } catch (e: unknown) {
-      showToast(getAxiosErrorDetail(e, "Couldn't add the article."), "error");
+      const res = (e as { response?: { status?: number; data?: Partial<DuplicateArticleConflict> } })?.response;
+      if (res?.status === 409 && res.data?.code === "duplicate_article" && res.data.duplicate_of) {
+        // Learners would see two READ rows teaching the same lesson. Ask rather than toast, and
+        // keep the draft so "Cancel" leaves the admin free to rewrite it.
+        setArtDuplicate(res.data as DuplicateArticleConflict);
+      } else {
+        showToast(getAxiosErrorDetail(e, "Couldn't add the article."), "error");
+      }
     } finally {
       setSaving(false);
     }
@@ -889,12 +903,56 @@ export function AddContentDialog({
           {/* ------------------------------------------------------- 1. article */}
           {tab === 0 && (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+              {artDuplicate && (
+                <Alert
+                  severity="warning"
+                  role="alertdialog"
+                  aria-label="Possible duplicate article"
+                  sx={{ "& .MuiAlert-message": { width: "100%" } }}
+                >
+                  <Typography sx={{ fontWeight: 700, fontSize: "0.85rem", [PHONE]: { fontSize: PHONE_TEXT } }}>
+                    This topic already has an article like this
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.8rem", mt: 0.5, [PHONE]: { fontSize: PHONE_TEXT } }}>
+                    It repeats &ldquo;{artDuplicate.duplicate_of.title}&rdquo; ({artDuplicate.duplicate_of.reason}).
+                    Learners would see both as separate readings.
+                  </Typography>
+                  <Box
+                    sx={{
+                      display: "flex", gap: 1, mt: 1, justifyContent: "flex-end",
+                      [PHONE]: { flexDirection: "column-reverse", alignItems: "stretch" },
+                    }}
+                  >
+                    <Button
+                      size="small"
+                      onClick={() => setArtDuplicate(null)}
+                      disabled={saving}
+                      sx={{ textTransform: "none", [PHONE]: { minHeight: TAP } }}
+                    >
+                      Cancel
+                    </Button>
+                    <LoadingButton
+                      size="small"
+                      variant="contained"
+                      color="warning"
+                      loading={saving}
+                      onClick={() => void submitArticle(true)}
+                      sx={{ textTransform: "none", [PHONE]: { minHeight: TAP } }}
+                    >
+                      Add anyway
+                    </LoadingButton>
+                  </Box>
+                </Alert>
+              )}
               <TextField
                 size="small"
                 fullWidth
                 label="Title"
                 value={artTitle}
-                onChange={(e) => setArtTitle(e.target.value)}
+                onChange={(e) => {
+                  setArtTitle(e.target.value);
+                  setArtDuplicate(null); // the warning was about the text as it was sent
+                }}
               />
               <TextField
                 fullWidth
@@ -903,7 +961,10 @@ export function AddContentDialog({
                 label="Body"
                 placeholder="Write the lesson. Markdown is fine."
                 value={artBody}
-                onChange={(e) => setArtBody(e.target.value)}
+                onChange={(e) => {
+                  setArtBody(e.target.value);
+                  setArtDuplicate(null);
+                }}
                 helperText={
                   artBody.trim().length < 20
                     ? `${20 - artBody.trim().length} more characters before this can be saved`
