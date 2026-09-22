@@ -1048,15 +1048,20 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                   background:
                     "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.4) 50%, transparent 100%)",
                 }}
+                // The same 3s sweep then a 4s pause, but the pause is spent parked back at -100%
+                // instead of at +200%. Either spot is clipped by the chip, so nothing on screen
+                // changes; parked at +200% the layer's box sat past a 360px screen's right edge
+                // for most of every cycle.
                 animate={{
-                  x: ["-100%", "200%"],
+                  x: ["-100%", "200%", "-100%", "-100%"],
                 }}
                 transition={{
-                  duration: 3,
+                  duration: 7,
+                  times: [0, 3 / 7, 3 / 7 + 0.0001, 1],
+                  ease: ["easeInOut", "linear", "linear"],
                   repeat: Infinity,
-                  repeatDelay: 4,
-                  ease: "easeInOut",
                 }}
+                data-testid="streak-shimmer"
               />
 
               {/* Pulsing background */}
