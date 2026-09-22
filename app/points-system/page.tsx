@@ -12,7 +12,7 @@ export default function PointsSystemPage() {
   return (
     <MainLayout fullWidthContent>
       <Box sx={{ maxWidth: 1600, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 2, md: 3 }, [PHONE]: { px: 0, pt: 0 } }}>
-        <ButtonBase onClick={() => router.back()} sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.85rem" }}>
+        <ButtonBase onClick={() => router.back()} sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.85rem", [PHONE]: { minHeight: 44, mb: "4px" } }}>
           <Icon icon="mdi:arrow-left" width={18} /> Back
         </ButtonBase>
         <PointsSystemContent />
