@@ -245,12 +245,7 @@ export function AdminQuizCard({ quiz, onAfterToggle, onRequestDelete }: AdminQui
         />
 
         {/* Meta line: bank count + session length + SE threshold */}
-        <Box
-          sx={{
-            display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap",
-            [PHONE]: { "& .MuiIconButton-root": { minWidth: TAP, minHeight: TAP } },
-          }}
-        >
+        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
           <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
             <Icon icon="mdi:database-outline" width={14} style={{ color: accentStart, flexShrink: 0 }} />
             <Typography sx={{ fontSize: "0.78rem", fontWeight: 700, color: "text.primary" }}>
