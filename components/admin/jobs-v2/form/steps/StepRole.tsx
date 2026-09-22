@@ -175,7 +175,7 @@ export function ChipBinField({
                   display: "inline-grid",
                   placeItems: "center",
                   width: 20,
-                  height: 20, [PHONE]: { width: 44, height: 44, my: "-8px", mr: "-12px" }, // PHONE: a 44px hit area; the negative margins keep the 28px chip as it was.
+                  height: 20, [PHONE]: { width: 44, height: 44, my: "-8px", marginInlineEnd: "-12px" }, // PHONE: a 44px hit area; the negative margins keep the 28px chip as it was.
                   p: 0,
                   border: "none",
                   cursor: "pointer",

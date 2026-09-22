@@ -13,6 +13,8 @@ import {
   LinearProgress,
   Pagination,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
@@ -95,6 +97,9 @@ function sessionDayKeys(s: LiveActivity): string[] {
 
 export default function AdminLiveSessionsPage() {
   const { t } = useTranslation("common");
+  // scrollOnPhone also switches off label wrapping and chip shrinking, at every width. Passing it
+  // only on a phone keeps the desktop chip rows wrapping exactly as they did.
+  const isPhone = useMediaQuery(useTheme().breakpoints.down("sm"));
   const router = useRouter();
   const searchParams = useSearchParams();
   const { showToast } = useToast();
@@ -548,7 +553,7 @@ export default function AdminLiveSessionsPage() {
                       the view switches sit under them. Above `sm` this is the wrapping row it was. */}
                   <Box sx={{ [PHONE]: { width: "100%", minWidth: 0 } }}>
                     <SessionFilterChips
-                      scrollOnPhone
+                      scrollOnPhone={isPhone}
                       ariaLabel={t("adminEngagementMobile.statusFilterLabel", "Session status filter")}
                       options={filterOptions}
                       value={filter}
@@ -591,7 +596,7 @@ export default function AdminLiveSessionsPage() {
                 {/* Batch/course facet filter - only when the tenant actually spans several. */}
                 {facetOptions.length >= 2 && (
                   <SessionFilterChips
-                    scrollOnPhone
+                    scrollOnPhone={isPhone}
                     ariaLabel={t("adminEngagementMobile.facetFilterLabel", "Batch and course filter")}
                     options={[
                       { key: "", label: t("adminLiveSessions.filterAllFacets", "All batches & courses") },
