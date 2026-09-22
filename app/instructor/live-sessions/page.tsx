@@ -1050,6 +1050,7 @@ function AttendanceDialog({ session, onClose }: { session: InstructorLiveSession
     <InstructorDialog
       open={!!session}
       onClose={onClose}
+      busy={confirming !== null}
       maxWidth="xs"
       title={<>Attendance
         <Typography component="span" sx={{ ml: 1, fontSize: "0.85rem", color: "text.secondary", fontWeight: 600 }}>
