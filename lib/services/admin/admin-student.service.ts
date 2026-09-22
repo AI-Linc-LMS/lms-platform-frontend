@@ -1,6 +1,21 @@
 import apiClient from "../api";
 import { config } from "../../config";
 
+/** One saved resume of a student, as Manage Students may read it. No storage URL is sent. */
+export interface ManagedStudentResume {
+  id: number;
+  display_name: string;
+  created_at: string;
+}
+
+/** A student's saved resumes, newest first. `has_saved_resume: false` is an empty answer, not an error. */
+export interface ManagedStudentResumes {
+  student_id: number;
+  student_name: string;
+  has_saved_resume: boolean;
+  resumes: ManagedStudentResume[];
+}
+
 export interface Student {
   id: number;
   user_id: number;
@@ -460,6 +475,23 @@ export const adminStudentService = {
   getStudent: async (studentId: number): Promise<StudentDetail> => {
     const response = await apiClient.get<StudentDetail>(
       `/admin-dashboard/api/clients/${config.clientId}/manage-student/${studentId}/`
+    );
+    return response.data;
+  },
+
+  /** A student's saved resumes, for a student this admin can see in Manage Students. */
+  getStudentResumes: async (studentId: number): Promise<ManagedStudentResumes> => {
+    const response = await apiClient.get<ManagedStudentResumes>(
+      `/admin-dashboard/api/clients/${config.clientId}/manage-student/${studentId}/resumes/`
+    );
+    return response.data;
+  },
+
+  /** One saved resume's PDF. Streamed by the API, so it carries the admin's auth header. */
+  getStudentResumePdf: async (studentId: number, resumeId: number): Promise<Blob> => {
+    const response = await apiClient.get<Blob>(
+      `/admin-dashboard/api/clients/${config.clientId}/manage-student/${studentId}/resumes/${resumeId}/file/`,
+      { responseType: "blob" }
     );
     return response.data;
   },

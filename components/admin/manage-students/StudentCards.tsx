@@ -22,6 +22,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { ScrollRow } from "@/components/common/mobile/ScrollRow";
 import type { CourseCompletionStats, Student } from "@/lib/services/admin/admin-student.service";
 import { CardStat } from "./mobile";
+import { StudentResumeDialog } from "./StudentResumeDialog";
 
 /* ==========================================================================
  * The student directory on a phone: one card per student.
@@ -130,10 +131,19 @@ export function StudentCards({
   const theme = useTheme();
   const menuEdge = theme.direction === "rtl" ? "left" : "right";
 
+  // The student whose saved resume is open, as a bottom sheet.
+  const [resumeFor, setResumeFor] = useState<Student | null>(null);
+  const [resumeOpen, setResumeOpen] = useState(false);
+
   const closeMenu = () => setMenu(null);
   const go = (href: string) => {
     closeMenu();
     router.push(href);
+  };
+  const openResume = (student: Student) => {
+    closeMenu();
+    setResumeFor(student);
+    setResumeOpen(true);
   };
 
   return (
@@ -345,16 +355,40 @@ export function StudentCards({
                   ) : null}
                 </CardStat>
                 <CardStat label={t("adminManageStudents.savedResume")}>
-                  <Chip
-                    label={student.has_saved_resume ? t("adminManageStudents.resumeYes") : t("adminManageStudents.resumeNo")}
-                    size="small"
-                    sx={{
-                      backgroundColor: student.has_saved_resume ? "#dcfce7" : "#f3f4f6",
-                      color: student.has_saved_resume ? "#166534" : "#6b7280",
-                      fontWeight: 600,
-                      fontSize: "0.75rem",
-                    }}
-                  />
+                  {student.has_saved_resume ? (
+                    <Chip
+                      label={t("adminManageStudents.resumeViewer.view", "View resume")}
+                      size="small"
+                      icon={<IconWrapper icon="mdi:file-eye-outline" size={16} color="#166534" />}
+                      onClick={() => openResume(student)}
+                      aria-label={t("adminManageStudents.resumeViewer.viewOf", {
+                        name: student.name,
+                        defaultValue: "View {{name}}'s resume",
+                      })}
+                      data-testid={`view-resume-${student.id}`}
+                      sx={{
+                        backgroundColor: "#dcfce7",
+                        color: "#166534",
+                        fontWeight: 700,
+                        fontSize: "0.75rem",
+                        height: 32,
+                        position: "relative",
+                        // A 32px pill that takes a 44px thumb: the hit area reaches past the paint.
+                        "&::after": { content: '""', position: "absolute", inset: "-6px -2px" },
+                      }}
+                    />
+                  ) : (
+                    <Chip
+                      label={t("adminManageStudents.resumeNo")}
+                      size="small"
+                      sx={{
+                        backgroundColor: "#f3f4f6",
+                        color: "#6b7280",
+                        fontWeight: 600,
+                        fontSize: "0.75rem",
+                      }}
+                    />
+                  )}
                 </CardStat>
                 <CardStat label={t("adminManageStudents.mobile.batches", "Batches")}>
                   {student.cohorts && student.cohorts.length > 0 ? (
@@ -430,6 +464,14 @@ export function StudentCards({
           </ListItemIcon>
           {t("manageStudents.courseManagement")}
         </MenuItem>
+        {menu?.student.has_saved_resume && (
+          <MenuItem sx={{ minHeight: 48 }} onClick={() => menu && openResume(menu.student)}>
+            <ListItemIcon>
+              <IconWrapper icon="mdi:file-eye-outline" size={20} color="#6366f1" />
+            </ListItemIcon>
+            {t("adminManageStudents.resumeViewer.view", "View resume")}
+          </MenuItem>
+        )}
         {onDelete && (
           <MenuItem
             sx={{ minHeight: 48, color: "#ef4444" }}
@@ -446,6 +488,13 @@ export function StudentCards({
           </MenuItem>
         )}
       </Menu>
+
+      <StudentResumeDialog
+        open={resumeOpen}
+        onClose={() => setResumeOpen(false)}
+        studentId={resumeFor?.id ?? null}
+        studentName={resumeFor?.name}
+      />
     </Box>
   );
 }

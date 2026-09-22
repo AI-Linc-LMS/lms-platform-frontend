@@ -39,6 +39,7 @@ import {
 } from "@/components/admin/manage-students/detail/shared";
 import { PHONE } from "@/components/common/mobile/phone";
 import { PHONE_TAP } from "@/components/admin/manage-students/mobile";
+import { StudentResumeDialog } from "@/components/admin/manage-students/StudentResumeDialog";
 
 type TabKey =
   | "overview"
@@ -61,6 +62,7 @@ export default function StudentDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [journeyLoading, setJourneyLoading] = useState(true);
   const [tab, setTab] = useState<TabKey>("overview");
+  const [resumeOpen, setResumeOpen] = useState(false);
 
   // Manage-tab edit state
   const [editing, setEditing] = useState(false);
@@ -284,7 +286,7 @@ export default function StudentDetailsPage() {
           subtitle={pi.email}
           iconBadge={{ icon: "mdi:account-school", gradient: ADAPTIVE.gradient }}
           rightSlot={
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, [PHONE]: { flexWrap: "wrap", gap: 1 } }}>
               <Chip
                 size="small"
                 label={pi.is_active ? "Active" : "Inactive"}
@@ -296,6 +298,15 @@ export default function StudentDetailsPage() {
                     : "color-mix(in srgb, #94a3b8 16%, transparent)",
                 }}
               />
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<IconWrapper icon="mdi:file-account-outline" size={18} />}
+                onClick={() => setResumeOpen(true)}
+                sx={{ borderColor: ADAPTIVE.indigo, color: ADAPTIVE.indigo, fontWeight: 700, ...PHONE_TAP }}
+              >
+                {t("adminManageStudents.resumeViewer.view", "View resume")}
+              </Button>
               <Button
                 variant="outlined"
                 size="small"
@@ -390,6 +401,13 @@ export default function StudentDetailsPage() {
             </>
           )}
         </SectionShell>
+
+        <StudentResumeDialog
+          open={resumeOpen}
+          onClose={() => setResumeOpen(false)}
+          studentId={studentId}
+          studentName={name}
+        />
       </Box>
     </MainLayout>
   );

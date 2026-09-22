@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import {
   Box,
   Typography,
@@ -28,6 +28,7 @@ import {
 } from "@/lib/services/admin/admin-student.service";
 import { StudentCards } from "./StudentCards";
 import { useIsPhone } from "./mobile";
+import { StudentResumeDialog } from "./StudentResumeDialog";
 
 type SortOption =
   | "name"
@@ -112,6 +113,9 @@ export function StudentsTable({
   const { t } = useTranslation("common");
   const colCount = selectable ? 8 : 7;
   const isPhone = useIsPhone();
+  // The student whose saved resume is open. "Saved resume: Yes" used to be a dead label.
+  const [resumeFor, setResumeFor] = useState<Student | null>(null);
+  const [resumeOpen, setResumeOpen] = useState(false);
 
   const shell = (children: ReactNode) =>
     wrapInPaper ? (
@@ -697,20 +701,43 @@ export function StudentsTable({
                         display: { xs: "none", sm: "table-cell" },
                       }}
                     >
-                      <Chip
-                        label={
-                          student.has_saved_resume
-                            ? t("adminManageStudents.resumeYes")
-                            : t("adminManageStudents.resumeNo")
-                        }
-                        size="small"
-                        sx={{
-                          backgroundColor: student.has_saved_resume ? "#dcfce7" : "#f3f4f6",
-                          color: student.has_saved_resume ? "#166534" : "#6b7280",
-                          fontWeight: 600,
-                          fontSize: { xs: "0.7rem", sm: "0.75rem" },
-                        }}
-                      />
+                      {student.has_saved_resume ? (
+                        <Tooltip title={t("adminManageStudents.resumeViewer.view", "View resume")}>
+                          <Chip
+                            label={t("adminManageStudents.resumeYes")}
+                            size="small"
+                            icon={<IconWrapper icon="mdi:file-eye-outline" size={14} color="#166534" />}
+                            onClick={() => {
+                              setResumeFor(student);
+                              setResumeOpen(true);
+                            }}
+                            aria-label={t("adminManageStudents.resumeViewer.viewOf", {
+                              name: student.name,
+                              defaultValue: "View {{name}}'s resume",
+                            })}
+                            data-testid={`view-resume-${student.id}`}
+                            sx={{
+                              backgroundColor: "#dcfce7",
+                              color: "#166534",
+                              fontWeight: 600,
+                              fontSize: { xs: "0.7rem", sm: "0.75rem" },
+                              cursor: "pointer",
+                              "&:hover": { backgroundColor: "#bbf7d0" },
+                            }}
+                          />
+                        </Tooltip>
+                      ) : (
+                        <Chip
+                          label={t("adminManageStudents.resumeNo")}
+                          size="small"
+                          sx={{
+                            backgroundColor: "#f3f4f6",
+                            color: "#6b7280",
+                            fontWeight: 600,
+                            fontSize: { xs: "0.7rem", sm: "0.75rem" },
+                          }}
+                        />
+                      )}
                     </TableCell>
                     <TableCell
                       sx={{
@@ -912,6 +939,12 @@ export function StudentsTable({
             )}
           </TableBody>
         </Table>
+        <StudentResumeDialog
+          open={resumeOpen}
+          onClose={() => setResumeOpen(false)}
+          studentId={resumeFor?.id ?? null}
+          studentName={resumeFor?.name}
+        />
       </TableContainer>
   );
 }
