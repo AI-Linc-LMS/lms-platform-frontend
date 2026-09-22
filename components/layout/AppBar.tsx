@@ -12,8 +12,6 @@ import {
   Divider,
   Popover,
   Tooltip,
-  useMediaQuery,
-  useTheme,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { useRouter } from "next/navigation";
@@ -120,23 +118,32 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
   // certificates print on white, so it reads on this white bar (the login logo is made for the
   // dark auth panel, and its light parts vanish here). If no image loads, the tenant name
   // stands in as a wordmark: never the browser's broken-image glyph with raw alt text.
-  const muiTheme = useTheme();
-  const isPhone = useMediaQuery(muiTheme.breakpoints.down("sm"));
+  //
+  // The choice is a <picture> <source media>, not a JS media query: useMediaQuery is false during
+  // hydration, so a phone fetched the icon and then the logo. The browser now fetches only one.
+  // Each slot has its own order; a failure moves both past the url that failed.
   const tenantName = clientInfo?.name?.trim() || "";
-  // In order of preference: a phone falls back from the app logo to the icon, then to the name.
-  const barLogo = useLogoFallback(
-    isPhone ? [clientInfo?.app_logo_url, clientInfo?.app_icon_url] : [clientInfo?.app_icon_url],
-  );
+  const barLogo = useLogoFallback([clientInfo?.app_logo_url, clientInfo?.app_icon_url]);
+  const phoneLogoUrl = barLogo.pick([clientInfo?.app_logo_url, clientInfo?.app_icon_url]);
+  const baseLogoUrl = barLogo.pick([clientInfo?.app_icon_url, clientInfo?.app_logo_url]);
+  const logoFailed = !phoneLogoUrl && !baseLogoUrl;
 
   const [leaderboardAnchorEl, setLeaderboardAnchorEl] =
     useState<null | HTMLElement>(null);
   const [streakAnchorEl, setStreakAnchorEl] = useState<null | HTMLElement>(
     null
   );
+  // Whether the streak chip is being driven by touch (see its handlers). The ref gates the
+  // handlers within one gesture; the state decides whether the open card takes pointer events
+  // (a touch-opened card must catch the tap outside that closes it; a hover-opened one must not,
+  // or it steals the pointer from the chip and closes and re-opens on every move).
+  const streakTouchRef = useRef(false);
+  const [streakByTouch, setStreakByTouch] = useState(false);
+  // Today's Leaders opened from the phone overflow menu (no hover to close it; it needs its
+  // backdrop to catch the tap outside).
+  const [leaderboardFromMenu, setLeaderboardFromMenu] = useState(false);
   // Phone only: the guide and Today's Leaders leave the bar for this overflow menu, so the
   // tenant logo has room to be read. The guide dialog itself is the same instance as desktop's.
-  // Whether the streak chip is being driven by touch (see its handlers).
-  const streakTouchRef = useRef(false);
   const [overflowAnchorEl, setOverflowAnchorEl] = useState<null | HTMLElement>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const [notificationAnchorEl, setNotificationAnchorEl] =
@@ -173,6 +180,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
   };
 
   const handleLeaderboardHover = (event: React.MouseEvent<HTMLElement>) => {
+    setLeaderboardFromMenu(false);
     setLeaderboardAnchorEl(event.currentTarget);
   };
 
@@ -384,7 +392,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
           {/* The phone menu: every module this tenant has, as a launcher. */}
           <MobileMenuButton />
 
-          {(barLogo.url || tenantName) && (
+          {(!logoFailed || tenantName) && (
             <Box
               onClick={() =>
                 router.push(
@@ -407,7 +415,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                   transform: "scale(1.05)",
                 },
                 // No usable image: the name as text, without the icon tile around it.
-                ...(barLogo.failed && {
+                ...(logoFailed && {
                   width: "auto",
                   maxWidth: 160,
                   minWidth: 0,
@@ -421,7 +429,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                 [PHONE]: {
                   flex: "0 1 120px",
                   width: "auto",
-                  minWidth: barLogo.failed ? 0 : 88,
+                  minWidth: logoFailed ? 0 : 88,
                   maxWidth: 120,
                   height: 32,
                   border: "none",
@@ -434,7 +442,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               }}
               data-testid="appbar-logo"
             >
-              {barLogo.failed ? (
+              {logoFailed ? (
                 <Typography
                   component="span"
                   data-testid="tenant-wordmark"
@@ -457,13 +465,18 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                 /* Plain <img>, not next/image, as the sidebar and auth logos already are: tenant
                    assets are admin-supplied urls (often SVG, or a backend url that 302s to signed
                    S3) that the optimizer can reject, and the failure must reach onError here. */
-                /* eslint-disable-next-line @next/next/no-img-element */
-                <img
-                  src={barLogo.url}
-                  alt={tenantName || "Client"}
-                  {...barLogo.imgProps}
-                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }}
-                />
+                <picture>
+                  {phoneLogoUrl && phoneLogoUrl !== baseLogoUrl && (
+                    <source media="(max-width:599.95px)" srcSet={phoneLogoUrl} />
+                  )}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={baseLogoUrl || phoneLogoUrl}
+                    alt={tenantName || "Client"}
+                    {...barLogo.imgProps}
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }}
+                  />
+                </picture>
               )}
             </Box>
           )}
@@ -585,14 +598,18 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                 }}
               >
                 {effectiveAdminMode && (
-                  <Box
-                    sx={{ display: "flex", alignItems: "center", gap: 1, px: 2, py: 1.25, color: "#92400e" }}
+                  /* A disabled item, not a bare Box: MenuList skips it when moving focus, so the
+                     first focus lands on a real action and the arrow keys cycle the actions. */
+                  <MenuItem
+                    disabled
+                    data-testid="appbar-overflow-admin-mode"
+                    sx={{ gap: 1, color: "#92400e", "&.Mui-disabled": { opacity: 1 } }}
                   >
                     <IconWrapper icon="mdi:shield-crown" size={18} color="#92400e" />
                     <Typography sx={{ fontSize: "0.85rem", fontWeight: 700, color: "#92400e" }}>
                       {t("common.adminMode")}
                     </Typography>
-                  </Box>
+                  </MenuItem>
                 )}
                 {!isInstructor && (
                   <MenuItem
@@ -612,6 +629,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                   <MenuItem
                     onClick={() => {
                       // The same Today's Leaders card, anchored under the overflow button.
+                      setLeaderboardFromMenu(true);
                       setLeaderboardAnchorEl(overflowAnchorEl);
                       setOverflowAnchorEl(null);
                     }}
@@ -694,10 +712,9 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
             transformOrigin={{ vertical: "top", horizontal: "left" }}
             disableRestoreFocus
             sx={{
-              pointerEvents: "none",
-              // Hover-driven on desktop; a phone has no hover, so the backdrop takes the tap
-              // that closes it.
-              [PHONE]: { pointerEvents: "auto" },
+              // Hover-driven from the bar chip, exactly as before. Opened from the phone overflow
+              // menu there is no hover to close it, so its backdrop takes the tap outside.
+              pointerEvents: leaderboardFromMenu ? "auto" : "none",
             }}
             PaperProps={{
               sx: {
@@ -965,7 +982,9 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               streakTouchRef.current = e.pointerType !== "mouse";
             }}
             onMouseEnter={(e) => {
-              if (!streakTouchRef.current) handleStreakHover(e);
+              if (streakTouchRef.current) return;
+              setStreakByTouch(false);
+              handleStreakHover(e);
             }}
             onMouseLeave={() => {
               if (!streakTouchRef.current) handleStreakLeave();
@@ -974,6 +993,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               // Clicks inside the card (a portal) bubble here through React; only the chip toggles.
               if (!streakTouchRef.current || !e.currentTarget.contains(e.target as Node)) return;
               const chip = e.currentTarget;
+              setStreakByTouch(true);
               setStreakAnchorEl((a) => (a ? null : chip));
             }}
             data-testid="streak-chip"
@@ -1123,7 +1143,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
               transformOrigin={{ vertical: "top", horizontal: "left" }}
               disableRestoreFocus
-              sx={{ pointerEvents: "none", [PHONE]: { pointerEvents: "auto" } }}
+              sx={{ pointerEvents: streakByTouch ? "auto" : "none" }}
               PaperProps={{
                 sx: {
                   mt: 1,

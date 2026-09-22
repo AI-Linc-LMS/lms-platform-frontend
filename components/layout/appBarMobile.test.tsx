@@ -47,6 +47,7 @@ const state = vi.hoisted(() => ({
     app_logo_url: "https://be.example/branding/asset/2/",
     features: [],
   } as Record<string, unknown>,
+  adminMode: false,
 }));
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn(), replace: vi.fn(), back: vi.fn(), prefetch: vi.fn() }),
@@ -66,7 +67,7 @@ vi.mock("@/lib/contexts/ClientInfoContext", () => ({
   useClientInfo: () => ({ clientInfo: state.clientInfo }),
   useHideLeaderboardView: () => false,
 }));
-vi.mock("@/lib/contexts/AdminModeContext", () => ({ useAdminMode: () => ({ isAdminMode: false, toggleAdminMode: vi.fn() }) }));
+vi.mock("@/lib/contexts/AdminModeContext", () => ({ useAdminMode: () => ({ isAdminMode: state.adminMode, toggleAdminMode: vi.fn() }) }));
 vi.mock("@/lib/hooks/useLeaderboardAndStreak", () => ({
   useLeaderboardAndStreak: () => ({
     leaderboard: [],
@@ -141,12 +142,18 @@ describe("AppBar on a phone", () => {
     expect(logo.unscoped).toContain("width:40px");
   });
 
-  it("uses the wide logo on a phone and the square icon from 600px up", () => {
-    renderBar();
-    expect(screen.getByRole("img", { name: "CodePaathshala" })).toHaveAttribute("src", "https://be.example/branding/asset/2/");
-    viewport(800);
-    const { container } = render(<AppBar DrawerWidth={260} />);
-    expect(container.querySelector("[data-testid=appbar-logo] img")).toHaveAttribute("src", "https://be.example/branding/asset/1/");
+  it("lets the browser pick one logo: the wide logo on a phone, the icon from 600px up", () => {
+    // A <picture>, so the choice does not wait for a JS media query (false during hydration,
+    // which made a phone fetch the icon and then the logo). Same markup at every width.
+    for (const w of [390, 800]) {
+      viewport(w);
+      const { container, unmount } = render(<AppBar DrawerWidth={260} />);
+      const source = container.querySelector("[data-testid=appbar-logo] picture source");
+      expect(source).toHaveAttribute("media", "(max-width:599.95px)");
+      expect(source).toHaveAttribute("srcset", "https://be.example/branding/asset/2/");
+      expect(container.querySelector("[data-testid=appbar-logo] picture img")).toHaveAttribute("src", "https://be.example/branding/asset/1/");
+      unmount();
+    }
   });
 
   it("makes the streak chip, avatar and hamburger 44px on a phone only", () => {
@@ -174,13 +181,92 @@ describe("AppBar on a phone", () => {
     fireEvent.click(document.querySelector(".MuiPopover-root .MuiBackdrop-root")!);
     await waitFor(() => expect(screen.queryByText("Keep it Going!")).toBeNull());
   });
+
+  it("with a mouse below 600px, a hover-opened card never takes the pointer (no open/close loop)", async () => {
+    renderBar();
+    const chip = screen.getByTestId("streak-chip");
+    fireEvent.pointerEnter(chip, { pointerType: "mouse" });
+    fireEvent.mouseEnter(chip);
+    expect(screen.getByText("Keep it Going!")).toBeInTheDocument();
+    // If the popover root took pointer events it would cover the chip, fire mouseleave (close)
+    // and then mouseenter on the next move (open), once per move.
+    const root = document.querySelector(".MuiPopover-root")!;
+    const css = cssByMedia(root);
+    expect(css.unscoped).toContain("pointer-events:none");
+    expect(css.phone).not.toContain("pointer-events:auto");
+    // Moving within the chip keeps it open; leaving closes it once.
+    fireEvent.mouseMove(chip);
+    expect(screen.getByText("Keep it Going!")).toBeInTheDocument();
+    fireEvent.mouseLeave(chip);
+    await waitFor(() => expect(screen.queryByText("Keep it Going!")).toBeNull());
+  });
+});
+
+describe("AppBar streak card by touch from 600px up (tablet, touch laptop)", () => {
+  it("a tap outside closes it, and the page scroll is not left locked", async () => {
+    viewport(800);
+    renderBar();
+    const chip = screen.getByTestId("streak-chip");
+    fireEvent.pointerDown(chip, { pointerType: "touch" });
+    fireEvent.mouseEnter(chip);
+    fireEvent.click(chip);
+    expect(screen.getByText("Keep it Going!")).toBeInTheDocument();
+    // Touch-opened: the backdrop must catch the tap outside.
+    expect(cssByMedia(document.querySelector(".MuiPopover-root")!).unscoped).toContain("pointer-events:auto");
+    fireEvent.mouseLeave(chip); // the compatibility event: ignored, the tap outside decides
+    fireEvent.click(document.querySelector(".MuiPopover-root .MuiBackdrop-root")!);
+    await waitFor(() => expect(screen.queryByText("Keep it Going!")).toBeNull());
+    await waitFor(() => expect(document.body.style.overflow).toBe(""));
+  });
+});
+
+describe("AppBar overflow menu with admin mode on", () => {
+  it("focuses the first action, not the admin-mode label, and the arrows cycle the actions", async () => {
+    state.adminMode = true;
+    try {
+      renderBar();
+      fireEvent.click(screen.getByTestId("appbar-overflow"));
+      const menu = screen.getByTestId("appbar-overflow-menu");
+      expect(within(menu).getByTestId("appbar-overflow-admin-mode")).toHaveAttribute("aria-disabled", "true");
+      const guide = within(menu).getByRole("menuitem", { name: /Platform guide/ });
+      const leaders = within(menu).getByRole("menuitem", { name: /Today's Leaders/ });
+      await waitFor(() => expect(document.activeElement).toBe(guide));
+      fireEvent.keyDown(document.activeElement!, { key: "ArrowDown" });
+      expect(document.activeElement).toBe(leaders);
+      fireEvent.keyDown(document.activeElement!, { key: "ArrowDown" });
+      expect(document.activeElement).toBe(guide);
+    } finally {
+      state.adminMode = false;
+    }
+  });
 });
 
 describe("AppBar logo fallback (every width)", () => {
   it("on a phone falls back from the app logo to the icon before the name", () => {
     renderBar();
-    fireEvent.error(screen.getByRole("img", { name: "CodePaathshala" }));
-    expect(screen.getByRole("img", { name: "CodePaathshala" })).toHaveAttribute("src", "https://be.example/branding/asset/1/");
+    const img = screen.getByRole("img", { name: "CodePaathshala" });
+    // The phone <source> was chosen: the browser reports it as currentSrc.
+    Object.defineProperty(img, "currentSrc", { configurable: true, value: "https://be.example/branding/asset/2/" });
+    fireEvent.error(img);
+    const logo = screen.getByTestId("appbar-logo");
+    // The failed logo is dropped from the phone source; every width now gets the icon.
+    expect(logo.querySelector("source")).toBeNull();
+    expect(within(logo).getByRole("img")).toHaveAttribute("src", "https://be.example/branding/asset/1/");
+  });
+
+  it("shows the tenant name for an image that failed before hydration", () => {
+    const complete = vi.spyOn(HTMLImageElement.prototype, "complete", "get").mockReturnValue(true);
+    const natural = vi.spyOn(HTMLImageElement.prototype, "naturalWidth", "get").mockReturnValue(0);
+    try {
+      renderBar();
+      // Both candidates arrive already failed (a <picture> falls through to the next on re-render).
+      const logo = screen.getByTestId("appbar-logo");
+      expect(within(logo).getByTestId("tenant-wordmark")).toHaveTextContent("CodePaathshala");
+      expect(logo.querySelector("img")).toBeNull();
+    } finally {
+      complete.mockRestore();
+      natural.mockRestore();
+    }
   });
 
   it.each([390, 800])("shows the tenant name when no logo loads at %ipx", (w) => {

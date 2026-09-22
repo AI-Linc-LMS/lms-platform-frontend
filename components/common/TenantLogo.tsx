@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type CSSProperties, type ReactNode } from "react";
+import { useState, type CSSProperties, type ReactNode, type SyntheticEvent } from "react";
 import { Typography, type SxProps, type Theme } from "@mui/material";
 
 /* ==========================================================================
@@ -15,27 +15,51 @@ import { Typography, type SxProps, type Theme } from "@mui/material";
  * not failed. Failures are remembered per url, so a new url (a tenant switch, a re-upload) gets a
  * fresh attempt. It also catches an image that failed BEFORE hydration, when React had not yet
  * attached onError: a complete image with no natural width is a failed one.
+ *
+ * Inside a <picture> the browser, not React, chooses which url loads; the failure is charged to
+ * the url the image actually resolved (`currentSrc`), and `pick` then gives each <source> and the
+ * <img> the next url in its own order.
  * ======================================================================== */
 
-export function useLogoFallback(src: string | null | undefined | ReadonlyArray<string | null | undefined>) {
-  const candidates = (Array.isArray(src) ? src : [src]).map((s) => (s ?? "").trim()).filter(Boolean);
+type MaybeUrl = string | null | undefined;
+const clean = (list: ReadonlyArray<MaybeUrl>) => list.map((s) => (s ?? "").trim()).filter(Boolean);
+
+/** Resolve an absolute `currentSrc` back to the candidate it came from. */
+function candidateFor(resolved: string, candidates: string[]): string | undefined {
+  return candidates.find((c) => {
+    if (c === resolved) return true;
+    try {
+      return new URL(c, window.location.href).href === resolved;
+    } catch {
+      return false;
+    }
+  });
+}
+
+export function useLogoFallback(src: MaybeUrl | ReadonlyArray<MaybeUrl>) {
+  const candidates = clean(Array.isArray(src) ? src : [src as MaybeUrl]);
   const [failedUrls, setFailedUrls] = useState<ReadonlySet<string>>(() => new Set());
-  const url = candidates.find((c) => !failedUrls.has(c)) ?? "";
+  const pick = (list: ReadonlyArray<MaybeUrl>) => clean(list).find((c) => !failedUrls.has(c)) ?? "";
+  const url = pick(candidates);
 
   const markFailed = (u: string) =>
     setFailedUrls((prev) => (prev.has(u) ? prev : new Set(prev).add(u)));
-  const onError = () => {
-    if (url) markFailed(url);
+  /** Charge a failure to the url this <img> actually resolved. */
+  const failImage = (img: HTMLImageElement) => {
+    const resolved = img.currentSrc || img.getAttribute("src") || "";
+    const u = candidateFor(resolved, candidates) ?? url;
+    if (u) markFailed(u);
   };
+  const onError = (e: SyntheticEvent<HTMLImageElement>) => failImage(e.currentTarget);
   // Runs when the <img> attaches: an image the server-rendered HTML already failed to load
   // (before React could listen for `error`) is complete with no natural width. Idempotent: a url
   // already marked returns the same set, so a re-run causes no render.
   const ref = (img: HTMLImageElement | null) => {
-    if (img && url && img.complete && img.naturalWidth === 0) markFailed(url);
+    if (img && img.complete && img.naturalWidth === 0 && (img.currentSrc || img.getAttribute("src"))) failImage(img);
   };
 
   const failed = !url;
-  return { url, failed, imgProps: { ref, onError } };
+  return { url, failed, pick, imgProps: { ref, onError } };
 }
 
 export interface TenantLogoProps {
