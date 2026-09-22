@@ -3,7 +3,10 @@
 import { useState } from "react";
 import { Box, ButtonBase, Collapse, FormControlLabel, Switch, TextField, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { phoneTapSx } from "@/components/admin/adaptive-course/coursePhone";
 import { ALL_CONTENT_TYPES, ALL_DIFFICULTIES, type ContentType, type Difficulty } from "./types";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_TEXT } from "@/components/admin/adaptive-course/coursePhone";
 
 const CONTENT_META: Record<ContentType, { label: string; icon: string }> = {
   article: { label: "Adaptive Article", icon: "mdi:book-open-variant" },
@@ -73,7 +76,7 @@ export function SharedGenerationConfig({
     <Box>
       <ButtonBase
         onClick={() => setAdvancedOpen((v) => !v)}
-        sx={{ gap: 0.5, fontWeight: 800, fontSize: "0.9rem", color: "text.primary", py: 0.5 }}
+        sx={{ gap: 0.5, fontWeight: 800, fontSize: "0.9rem", color: "text.primary", py: 0.5, ...phoneTapSx }}
       >
         <Icon icon={advancedOpen ? "mdi:chevron-down" : "mdi:chevron-right"} width={22} />
         <Icon icon="mdi:cog-outline" width={17} />
@@ -201,7 +204,7 @@ export function SharedGenerationConfig({
                 style={{ color: codingClipboard ? "#6366f1" : undefined }}
               />
               Allow copy-paste in the coding editor
-              <Typography component="span" sx={{ fontSize: "0.74rem", color: "text.disabled" }}>
+              <Typography component="span" sx={{ fontSize: "0.74rem", [PHONE]: { fontSize: PHONE_TEXT }, color: "text.disabled" }}>
                 (off = anti-paste hardening; changeable per set later)
               </Typography>
             </Box>
