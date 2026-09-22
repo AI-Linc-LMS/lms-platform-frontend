@@ -2982,5 +2982,11 @@
     "savingLocked": "Saving is locked",
     "downloadLocked": "Download is locked",
     "sidebarTooltip": "Complete your profile to unlock"
+  },
+  "adminPeoplePhone": {
+    "moreActions": "More actions for {{name}}",
+    "instructorCode": "Instructor code",
+    "moreCourses_one": "+{{count}} more",
+    "moreCourses_other": "+{{count}} more"
   }
 }
