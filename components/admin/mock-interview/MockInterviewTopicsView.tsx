@@ -4,6 +4,7 @@ import { Box, Typography, Paper, Chip, Skeleton } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { AdminTopicItem, TopicsResponse } from "@/lib/services/admin/admin-mock-interview.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface MockInterviewTopicsViewProps {
   data: TopicsResponse | null;
@@ -162,7 +163,7 @@ export function MockInterviewTopicsView({
                           label={`${diff}: ${count}`}
                           size="small"
                           sx={{
-                            fontSize: "0.7rem",
+                            fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                             backgroundColor:
                               "color-mix(in srgb, var(--font-secondary) 12%, var(--surface) 88%)",
                             color: "var(--font-primary)",

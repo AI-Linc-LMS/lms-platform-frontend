@@ -24,6 +24,7 @@ import {
   MockInterviewTopicsView,
   type InterviewFiltersState,
 } from "@/components/admin/mock-interview";
+import { PhoneFloor } from "@/components/admin/PhoneSheetParts";
 
 type TabValue = "overview" | "interviews" | "students" | "topics";
 
@@ -270,6 +271,7 @@ export default function AdminMockInterviewPage() {
 
   return (
     <PageShell>
+      <PhoneFloor>
       <ModulePageHeader
         eyebrow="Engagement"
         title="Interview"
@@ -549,6 +551,7 @@ export default function AdminMockInterviewPage() {
             loading={topicsLoading}
           />
         )}
+      </PhoneFloor>
     </PageShell>
   );
 }

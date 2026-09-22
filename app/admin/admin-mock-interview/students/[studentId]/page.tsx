@@ -35,6 +35,8 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { PhoneFloor } from "@/components/admin/PhoneSheetParts";
+import { PHONE_TABLE_CARDS } from "@/components/admin/phoneFloor";
 
 function formatDate(dateStr?: string) {
   if (!dateStr) return "-";
@@ -168,6 +170,7 @@ export default function AdminMockInterviewStudentDetailPage() {
 
   return (
     <MainLayout>
+        <PhoneFloor>
       <Box
         sx={{
           minHeight: "100%",
@@ -453,7 +456,7 @@ export default function AdminMockInterviewStudentDetailPage() {
               <Typography variant="h6" sx={{ fontWeight: 600, mb: 2, color: "var(--font-primary)" }}>
                 {t("adminMockInterview.recentInterviews")}
               </Typography>
-              <TableContainer>
+              <TableContainer sx={PHONE_TABLE_CARDS}>
                 <Table size="small">
                   <TableHead>
                     <TableRow sx={{ bgcolor: "var(--surface)" }}>
@@ -474,10 +477,10 @@ export default function AdminMockInterviewStudentDetailPage() {
                           "&:hover": { bgcolor: "var(--surface)" },
                         }}
                       >
-                        <TableCell sx={{ color: "var(--font-primary)" }}>{i.title}</TableCell>
-                        <TableCell sx={{ color: "var(--font-secondary)" }}>{i.topic}</TableCell>
-                        <TableCell sx={{ color: "var(--font-secondary)" }}>{i.difficulty}</TableCell>
-                        <TableCell>
+                        <TableCell data-label={t("adminMockInterview.titleColumn")} sx={{ color: "var(--font-primary)" }}>{i.title}</TableCell>
+                        <TableCell data-label={t("adminMockInterview.topic")} sx={{ color: "var(--font-secondary)" }}>{i.topic}</TableCell>
+                        <TableCell data-label={t("adminMockInterview.difficulty")} sx={{ color: "var(--font-secondary)" }}>{i.difficulty}</TableCell>
+                        <TableCell data-label={t("adminMockInterview.status")}>
                           <Chip
                             label={i.status.replace("_", " ")}
                             size="small"
@@ -501,11 +504,11 @@ export default function AdminMockInterviewStudentDetailPage() {
                             }}
                           />
                         </TableCell>
-                        <TableCell sx={{ color: "var(--font-secondary)" }}>
+                        <TableCell data-label={t("adminMockInterview.score")} sx={{ color: "var(--font-secondary)" }}>
                           {i.overall_score != null ? `${i.overall_score}%` : "-"}
                         </TableCell>
-                        <TableCell sx={{ color: "var(--font-secondary)" }}>{formatDate(i.created_at)}</TableCell>
-                        <TableCell align="right">
+                        <TableCell data-label={t("adminMockInterview.date")} sx={{ color: "var(--font-secondary)" }}>{formatDate(i.created_at)}</TableCell>
+                        <TableCell data-label={t("adminMockInterview.action")} align="right">
                           <Button
                             size="small"
                             onClick={() => handleViewInterview(i.id)}
@@ -530,6 +533,7 @@ export default function AdminMockInterviewStudentDetailPage() {
           )}
         </Box>
       </Box>
-    </MainLayout>
+      </PhoneFloor>
+      </MainLayout>
   );
 }

@@ -12,6 +12,8 @@ import interviewService, {
   type AdminQuestionDetail,
   type AdminSessionDetail,
 } from "@/lib/services/interview.service";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PhoneFloor } from "@/components/admin/PhoneSheetParts";
 
 /**
  * One attempt, for the examiner.
@@ -46,7 +48,7 @@ function Panel({ title, children }: { title: string; children: React.ReactNode }
     >
       <Typography
         sx={{
-          fontSize: "0.74rem",
+          fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" },
           fontWeight: 600,
           letterSpacing: "0.06em",
           textTransform: "uppercase",
@@ -276,6 +278,7 @@ export default function AdminInterviewSessionDetailPage({
 
   return (
     <PageShell maxWidth={1000}>
+        <PhoneFloor>
       <ModulePageHeader
         eyebrow="Interview management"
         title={detail.student.name}
@@ -383,7 +386,7 @@ export default function AdminInterviewSessionDetailPage({
                   <Box key={turn.seq}>
                     <Typography
                       sx={{
-                        fontSize: "0.7rem",
+                        fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                         fontWeight: 600,
                         letterSpacing: "0.05em",
                         textTransform: "uppercase",
@@ -405,6 +408,7 @@ export default function AdminInterviewSessionDetailPage({
           </Panel>
         ) : null}
       </Box>
-    </PageShell>
+      </PhoneFloor>
+      </PageShell>
   );
 }

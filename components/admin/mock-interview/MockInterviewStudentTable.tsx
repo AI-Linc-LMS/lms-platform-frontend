@@ -18,6 +18,8 @@ import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { AdminStudentListItem } from "@/lib/services/admin/admin-mock-interview.service";
 import { PaginationControls } from "@/components/admin/assessment/PaginationControls";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_TABLE_CARDS } from "@/components/admin/phoneFloor";
 
 interface MockInterviewStudentTableProps {
   students: AdminStudentListItem[];
@@ -198,6 +200,8 @@ export function MockInterviewStudentTable({
             sx={{
               maxHeight: { xs: "60vh", sm: "none" },
               overflowX: "auto",
+              // Phone: one card per row, its actions in a bar at the card's foot.
+              ...PHONE_TABLE_CARDS,
             }}
           >
             <Table stickyHeader size="small">
@@ -232,25 +236,25 @@ export function MockInterviewStudentTable({
               <TableBody>
                 {students.map((row) => (
                   <TableRow key={row.student_id} hover>
-                    <TableCell>
+                    <TableCell data-label={t("adminMockInterview.student")}>
                       <Box>
                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
                           {row.student_name}
                         </Typography>
                         <Typography
                           variant="caption"
-                          sx={{ color: "var(--font-secondary)", fontSize: "0.7rem" }}
+                          sx={{ color: "var(--font-secondary)", fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" } }}
                         >
                           {row.student_email}
                         </Typography>
                       </Box>
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t("adminMockInterview.completedColumn")}>
                       <Typography variant="body2">
                         {row.completed_interviews}/{row.total_interviews}
                       </Typography>
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t("adminMockInterview.avgScore")}>
                       <Typography
                         variant="body2"
                         sx={{
@@ -266,12 +270,12 @@ export function MockInterviewStudentTable({
                         {row.average_score?.toFixed(1)}%
                       </Typography>
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t("adminMockInterview.highestColumn")}>
                       <Typography variant="body2" sx={{ fontWeight: 600, color: "var(--success-500)" }}>
                         {row.highest_score}%
                       </Typography>
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t("adminMockInterview.completion")}>
                       <Chip
                         label={`${row.completion_rate?.toFixed(0) ?? 0}%`}
                         size="small"
@@ -280,22 +284,22 @@ export function MockInterviewStudentTable({
                             "color-mix(in srgb, var(--success-500) 16%, transparent)",
                           color: "var(--success-500)",
                           fontWeight: 600,
-                          fontSize: "0.7rem",
+                          fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                         }}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t("adminMockInterview.topics")}>
                       <Typography variant="body2" sx={{ maxWidth: 120 }}>
                         {row.topics_attempted?.slice(0, 2).join(", ") ?? "-"}
                         {(row.topics_attempted?.length ?? 0) > 2 ? "..." : ""}
                       </Typography>
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t("adminMockInterview.lastInterview")}>
                       <Typography variant="body2" sx={{ color: "var(--font-secondary)" }}>
                         {formatDate(row.last_interview_date)}
                       </Typography>
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t("adminMockInterview.actions")}>
                       <Button
                         variant="outlined"
                         size="small"

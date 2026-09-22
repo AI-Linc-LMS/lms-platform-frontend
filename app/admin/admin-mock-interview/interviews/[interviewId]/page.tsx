@@ -8,6 +8,7 @@ import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import adminMockInterviewService from "@/lib/services/admin/admin-mock-interview.service";
 import { AdminInterviewResultAdapter } from "@/components/admin/mock-interview";
+import { PhoneFloor } from "@/components/admin/PhoneSheetParts";
 
 export default function AdminMockInterviewInterviewDetailPage() {
   const params = useParams();
@@ -54,6 +55,7 @@ export default function AdminMockInterviewInterviewDetailPage() {
   if (loading) {
     return (
       <MainLayout>
+        <PhoneFloor>
         <Box
           sx={{
             display: "flex",
@@ -64,6 +66,7 @@ export default function AdminMockInterviewInterviewDetailPage() {
         >
           <CircularProgress />
         </Box>
+        </PhoneFloor>
       </MainLayout>
     );
   }

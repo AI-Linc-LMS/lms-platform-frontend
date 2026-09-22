@@ -9,6 +9,7 @@ import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { StatStrip } from "@/components/admin/assessment/shared/StatStrip";
 import interviewService, { type AdminSessionRow } from "@/lib/services/interview.service";
+import { PhoneFloor } from "@/components/admin/PhoneSheetParts";
 
 /**
  * Every realtime interview attempt for this tenant, for the reviewer.
@@ -104,6 +105,7 @@ export default function AdminInterviewSessionsPage() {
 
   return (
     <PageShell maxWidth={1180}>
+      <PhoneFloor>
       <ModulePageHeader
         eyebrow="Interview management"
         title="Interview attempts"
@@ -292,6 +294,7 @@ export default function AdminInterviewSessionsPage() {
           ))}
         </Box>
       )}
+      </PhoneFloor>
     </PageShell>
   );
 }
