@@ -4,6 +4,7 @@ import { useState, type ReactNode } from "react";
 import { Box, Tooltip, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
 import {
   CompanyLogo,
   J,
@@ -174,7 +175,7 @@ export function ChipBinField({
                   display: "inline-grid",
                   placeItems: "center",
                   width: 20,
-                  height: 20,
+                  height: 20, [PHONE]: { width: 44, height: 44, my: "-8px", mr: "-12px" }, // PHONE: a 44px hit area; the negative margins keep the 28px chip as it was.
                   p: 0,
                   border: "none",
                   cursor: "pointer",

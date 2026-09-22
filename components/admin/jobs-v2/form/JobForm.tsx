@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box } from "@mui/material";
+import { PHONE } from "@/components/common/mobile/phone";
 import { useTranslation } from "react-i18next";
 import {
   adminJobsV2Service,
@@ -351,7 +352,7 @@ export function JobForm({
       </Box>
 
       {/* Spacer for the fixed bar below md, so the last control is never under it. */}
-      <Box aria-hidden sx={{ height: { xs: 88, md: 0 } }} />
+      <Box aria-hidden sx={{ height: { xs: 88, md: 0 }, [PHONE]: { height: 0 } }} />
 
       {/*
         `MainLayout` gives ancestors `overflow: auto`, which makes them the containing block for
@@ -377,6 +378,28 @@ export function JobForm({
           alignItems: "center",
           justifyContent: "space-between",
           gap: 1.25,
+          // PHONE: in the flow, at the end of the step, as on a desktop. Pinned to bottom: 0 it
+          // sat UNDER the floating dock (z-index 1200, 76px tall), which covered Next and Save
+          // entirely; and wrapped into three rows it hid a third of the form besides.
+          [PHONE]: {
+            position: "static",
+            zIndex: "auto",
+            mt: 3,
+            p: 2,
+            pb: 2,
+            borderRadius: R.card,
+            border: `1px solid ${J.hairline}`,
+            boxShadow: "none",
+            display: "grid",
+            gridTemplateColumns: "minmax(0, 1fr)",
+            gap: 1.5,
+            // Next and Save share the row; Back and Cancel share the row above them.
+            "& > div": { display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))" },
+            "& > div > *": { width: "100%", minWidth: 0 },
+            // On the last step Save is alone in its row and takes all of it.
+            "& > div > *:only-child": { gridColumn: "1 / -1" },
+            "& .MuiButton-root": { width: "100%" },
+          },
         }}
       >
         {/* Back and Cancel are ADJACENT on the leading edge: the two "go backwards" actions

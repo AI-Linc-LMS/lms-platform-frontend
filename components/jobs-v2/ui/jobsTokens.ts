@@ -10,6 +10,8 @@
  * Same pattern as `authTokens.ts` / `profileTokens.ts` / `roadmapTokens.ts`.
  */
 
+import { PHONE } from "@/components/common/mobile/phone";
+
 /** The palette. Colours are var() strings so the scope's dark block re-points them. */
 export const J = {
   canvas: "var(--j-canvas)",
@@ -94,6 +96,24 @@ export const focusRing = {
 export const focusRingOnDark = {
   "&:focus-visible": { outline: "none", boxShadow: "var(--j-focus-ring-on-dark)" },
 } as const;
+
+/**
+ * Phone-only rules for the ADMIN jobs surface, and nowhere else.
+ *
+ * The primitives here are shared with the student board, which shipped its own phone pass
+ * (#1641) and must not move. `JobsScope surface="admin"` writes `data-jobs-surface="admin"`, so
+ * a rule nested under this selector inside the phone media query reaches an admin screen on a
+ * phone and leaves the student board and every desktop exactly as they were.
+ *
+ *   sx={{ fontSize: "0.6875rem", ...adminPhone({ fontSize: "0.75rem" }) }}
+ *
+ * Spread it LAST in an sx object that has no `[PHONE]` key of its own, or one key overwrites
+ * the other.
+ */
+export const ADMIN_SURFACE = '[data-jobs-surface="admin"] &';
+export function adminPhone(styles: Record<string, unknown>) {
+  return { [PHONE]: { [ADMIN_SURFACE]: styles } } as const;
+}
 
 /** RTL guard. Every uppercase + tracked style MUST spread this. */
 export const rtlLabel = {
