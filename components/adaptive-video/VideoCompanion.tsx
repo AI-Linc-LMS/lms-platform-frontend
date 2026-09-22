@@ -24,6 +24,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { CompanionCard } from "./CompanionCard";
 import { WatchModeSelector, AutoChapters, LiveTakeaways } from "./RailPanels";
 import { toEmbedUrl } from "@/lib/utils/video-embed";
+import { PHONE } from "@/components/common/mobile/phone";
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 const TABS: { label: string; icon: string }[] = [
@@ -403,7 +404,7 @@ export function VideoCompanion({
         accent="indigo"
         rightSlot={
           <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.6, px: 1.5, py: 0.7, borderRadius: 999,
-            background: "linear-gradient(135deg, #6366f1, #ec4899)", color: "#fff", fontWeight: 800, fontSize: "0.74rem",
+            background: "linear-gradient(135deg, #6366f1, #ec4899)", color: "#fff", fontWeight: 800, fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" },
             boxShadow: "0 12px 26px -14px rgba(168,85,247,0.7)" }}>
             <Box sx={{ width: 7, height: 7, borderRadius: 999, bgcolor: "#fff", animation: "acb-pulse 1.4s ease-in-out infinite" }} />
             Companion ON
@@ -428,6 +429,12 @@ export function VideoCompanion({
               background: "#0f0c29",
               border: "1px solid var(--border-default, #ececf1)",
               boxShadow: "0 1px 2px rgba(16,24,40,0.04), 0 18px 40px -28px rgba(16,24,40,0.35)",
+              // A phone-width 16/9 player is ~200px tall: a check-in or checkpoint painted inside it
+              // had a question and four answers to fit in that. While one is open (the video is
+              // paused), the box grows to give it room, then returns to 16/9.
+              ...((activeCheckIn || checkpoint !== null) && !isFullscreen
+                ? { [PHONE]: { aspectRatio: "auto", height: "min(560px, 72vh)" } }
+                : {}),
             }}
           >
             <iframe
@@ -448,6 +455,7 @@ export function VideoCompanion({
                 position: "absolute", right: 8, bottom: 52, zIndex: 15,
                 color: "#fff", bgcolor: "rgba(15,12,41,0.55)",
                 "&:hover": { bgcolor: "rgba(15,12,41,0.8)" },
+                [PHONE]: { width: 44, height: 44 },
               }}
             >
               <IconWrapper
@@ -513,6 +521,7 @@ export function VideoCompanion({
                 disabled={markedWatched}
                 sx={{
                   px: 2, py: 0.9, borderRadius: 999, fontWeight: 800, fontSize: "0.8rem", gap: 0.6,
+                  [PHONE]: { minHeight: 44 },
                   color: "#fff", background: markedWatched
                     ? "linear-gradient(135deg, #10b981, #059669)"
                     : "linear-gradient(135deg, #6366f1, #a855f7)",
@@ -546,13 +555,15 @@ export function VideoCompanion({
                         border: "2.5px solid var(--card-bg, #fff)",
                         boxShadow: isAnswered ? "0 0 0 3px color-mix(in srgb,#16a34a 25%,transparent)" : "0 0 10px color-mix(in srgb,#a855f7 70%,transparent)",
                         transition: "transform 120ms ease", "&:hover": { transform: "translate(-50%, -50%) scale(1.25)" },
+                        // A 13px dot is not a target for a thumb: an invisible 44px hit area around it.
+                        [PHONE]: { "&::after": { content: '""', position: "absolute", inset: -16, borderRadius: "50%" } },
                       }}
                     />
                   </Tooltip>
                 );
               })}
           </Box>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2.25 }}>
+          <Box data-testid="video-progress-meta" sx={{ display: "flex", alignItems: "center", gap: 1.5, mb: 2.25, [PHONE]: { flexWrap: "wrap", rowGap: 1 } }}>
             <Typography sx={{ fontSize: "0.78rem", color: "text.secondary", fontVariantNumeric: "tabular-nums", fontWeight: 700 }}>
               {fmt(currentTime)} / {fmt(duration)}
             </Typography>
@@ -560,18 +571,18 @@ export function VideoCompanion({
             <Chip icon="mdi:lightning-bolt" label={`${answered.size}/${companion.check_ins.length} checks`} />
             {finished ? (
               <Box data-testid="video-completed" sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 1, py: 0.25, borderRadius: 999,
-                fontSize: "0.72rem", fontWeight: 800, color: "#15803d", bgcolor: "color-mix(in srgb, #16a34a 12%, transparent)" }}>
+                fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, color: "#15803d", bgcolor: "color-mix(in srgb, #16a34a 12%, transparent)" }}>
                 <Icon icon="mdi:check-circle" width={14} /> Completed
               </Box>
             ) : watchedPct >= 1 ? (
-              <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, color: "text.secondary" }}>{Math.round(watchedPct)}% watched</Typography>
+              <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 700, color: "text.secondary" }}>{Math.round(watchedPct)}% watched</Typography>
             ) : null}
           </Box>
           {resumeAt !== null && !resumeDismissed && (
-            <Box data-testid="resumed-note" sx={{ display: "flex", alignItems: "center", gap: 1, mt: -1.5, mb: 2, fontSize: "0.78rem", color: "text.secondary" }}>
+            <Box data-testid="resumed-note" sx={{ display: "flex", alignItems: "center", gap: 1, mt: -1.5, mb: 2, fontSize: "0.78rem", color: "text.secondary", [PHONE]: { flexWrap: "wrap", rowGap: 0 } }}>
               <Icon icon="mdi:history" width={15} />
               Picked up at {fmt(resumeAt)}, where you left off.
-              <ButtonBase onClick={() => { seekTo(0); setResumeDismissed(true); }} sx={{ fontWeight: 700, color: "#6366f1", fontSize: "0.78rem" }}>
+              <ButtonBase onClick={() => { seekTo(0); setResumeDismissed(true); }} sx={{ fontWeight: 700, color: "#6366f1", fontSize: "0.78rem", [PHONE]: { minHeight: 44 } }}>
                 Start from the beginning
               </ButtonBase>
             </Box>
@@ -597,6 +608,7 @@ export function VideoCompanion({
                 label={t.label}
                 sx={{
                   textTransform: "none", minHeight: 0, py: 0.85, px: 1.75, mr: 1, borderRadius: 999, fontWeight: 700, fontSize: "0.84rem",
+                  [PHONE]: { minHeight: 44 },
                   color: "text.secondary", border: "1px solid transparent", minWidth: 0,
                   "&.Mui-selected": {
                     color: "#fff",
@@ -629,7 +641,7 @@ export function VideoCompanion({
                         "&:hover": { background: "color-mix(in srgb, #6366f1 6%, transparent)" },
                       }}
                     >
-                      <Typography sx={{ fontSize: "0.74rem", color: active ? "#6366f1" : "text.secondary", minWidth: 44, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
+                      <Typography sx={{ fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" }, color: active ? "#6366f1" : "text.secondary", minWidth: 44, fontWeight: 700, fontVariantNumeric: "tabular-nums" }}>
                         {fmt(s.start_seconds)}
                       </Typography>
                       <Typography sx={{ fontSize: "0.86rem", fontWeight: active ? 700 : 400 }}>{s.text}</Typography>
@@ -687,7 +699,7 @@ export function VideoCompanion({
 function Chip({ icon, label }: { icon: string; label: string }) {
   return (
     <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, px: 1, py: 0.35, borderRadius: 999,
-      background: "color-mix(in srgb, #6366f1 9%, transparent)", color: "#6366f1", fontSize: "0.72rem", fontWeight: 800 }}>
+      background: "color-mix(in srgb, #6366f1 9%, transparent)", color: "#6366f1", fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800 }}>
       <Icon icon={icon} width={13} />
       {label}
     </Box>

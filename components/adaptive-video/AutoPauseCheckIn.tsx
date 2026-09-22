@@ -5,6 +5,7 @@ import { Icon } from "@iconify/react";
 import { useState } from "react";
 import { AIPill } from "@/components/adaptive-quiz/shared/AIPill";
 import type { CheckInMarker, CheckInResult } from "@/lib/services/adaptive-video.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface Props {
   checkIn: CheckInMarker;
@@ -88,10 +89,10 @@ export function AutoPauseCheckIn({ checkIn, onAnswer, onContinue, onRewind }: Pr
           background: "linear-gradient(90deg, #6366f1, #a855f7, #ec4899)" }} />
 
         {/* Scrolling body - everything that can grow with the question's length. */}
-        <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", px: 3, pt: 3.25, pb: 2 }}>
+        <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", px: 3, pt: 3.25, pb: 2, [PHONE]: { px: 2, pt: 2.5 } }}>
           <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1.5 }}>
             <AIPill icon={<Icon icon="mdi:lightning-bolt" />}>Quick check</AIPill>
-            <Typography sx={{ fontSize: "0.72rem", color: "text.secondary" }}>
+            <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary" }}>
               auto · pauses video
             </Typography>
           </Box>
@@ -159,6 +160,7 @@ export function AutoPauseCheckIn({ checkIn, onAnswer, onContinue, onRewind }: Pr
               py: 1.75,
               borderTop: "1px solid color-mix(in srgb, #6366f1 14%, transparent)",
               background: "var(--card-bg, #fff)",
+              [PHONE]: { px: 2, "& .MuiButton-root": { minHeight: 44 } },
             }}
           >
             {!result.is_correct && result.rewind_to_seconds != null && (

@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { Icon } from "@iconify/react";
 import { AIBeacon } from "../shared/AIBeacon";
 import type { SectionStatus } from "@/hooks/useStreamingNarration";
+import { PHONE } from "@/components/common/mobile/phone";
 
 type Section = "headline" | "per_question" | "misconceptions" | "remediation_path";
 
@@ -105,7 +106,7 @@ export function NarrationComposer({ status, onRetry }: NarrationComposerProps) {
             <Box sx={{ flex: 1, minWidth: 0 }}>
               <Typography
                 sx={{
-                  fontSize: "0.62rem",
+                  fontSize: "0.62rem", [PHONE]: { fontSize: "0.75rem" },
                   fontWeight: 800,
                   letterSpacing: "0.18em",
                   textTransform: "uppercase",
@@ -163,7 +164,7 @@ export function NarrationComposer({ status, onRetry }: NarrationComposerProps) {
               </Typography>
               <Typography
                 sx={{
-                  fontSize: "0.6rem",
+                  fontSize: "0.6rem", [PHONE]: { fontSize: "0.75rem" },
                   color: "text.secondary",
                   letterSpacing: "0.14em",
                   textTransform: "uppercase",
@@ -261,7 +262,7 @@ function SectionChip({ label, status, onRetry }: SectionChipProps) {
         borderRadius: 999,
         bgcolor: `color-mix(in srgb, ${palette.fg} 9%, transparent)`,
         border: `1px solid color-mix(in srgb, ${palette.fg} 28%, transparent)`,
-        fontSize: "0.74rem",
+        fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" },
         fontWeight: 700,
         color: palette.fg,
         cursor: isClickable ? "pointer" : "default",

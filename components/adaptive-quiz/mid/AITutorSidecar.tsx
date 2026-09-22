@@ -7,6 +7,7 @@ import { AIPill } from "../shared/AIPill";
 import { AdaptiveInfoTip } from "../shared/AdaptiveInfoTip";
 import { certaintyBand } from "@/lib/utils/adaptive-confidence";
 import { prettySkill } from "@/lib/utils/skill-label.utils";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface AITutorSidecarProps {
   /** Pre-truncated hint teaser; full hint appears once the student spends a token. */
@@ -68,7 +69,7 @@ export function AITutorSidecar({
       <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
         <AIBeacon size={32} />
         <Box>
-          <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "text.secondary" }}>
+          <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.16em", textTransform: "uppercase", color: "text.secondary" }}>
             AI Tutor
           </Typography>
           <Typography sx={{ fontSize: "0.85rem", fontWeight: 800, lineHeight: 1.2 }}>
@@ -97,7 +98,7 @@ export function AITutorSidecar({
                 bgcolor: "color-mix(in srgb, #6366f1 12%, transparent)",
                 border: "1px solid color-mix(in srgb, #6366f1 32%, transparent)",
                 color: "#6366f1",
-                fontSize: "0.72rem",
+                fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                 fontWeight: 800,
               }}
             >
@@ -219,6 +220,7 @@ export function AITutorSidecar({
                 fontWeight: 800,
                 letterSpacing: "0.05em",
                 "&:disabled": { cursor: "not-allowed" },
+                [PHONE]: { fontSize: "0.75rem", minHeight: 44, px: 2 },
               }}
             >
               {hintLoading
@@ -274,7 +276,7 @@ export function AITutorSidecar({
         </Box>
       </Box>
 
-      <Typography sx={{ fontSize: "0.66rem", color: "text.secondary", fontStyle: "italic", textAlign: "center", mt: 1 }}>
+      <Typography sx={{ fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", fontStyle: "italic", textAlign: "center", mt: 1 }}>
         Powered by AI Linc Adaptive Engine
       </Typography>
     </Box>

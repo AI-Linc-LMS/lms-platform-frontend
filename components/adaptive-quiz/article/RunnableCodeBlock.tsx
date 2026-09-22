@@ -6,6 +6,7 @@ import { Icon } from "@iconify/react";
 import { CodeEditor } from "@/components/editor/MonacoEditor";
 import { LANGUAGE_DISPLAY_NAMES, getMonacoLanguage } from "@/components/coding/utils/languageUtils";
 import { adaptiveCourseService, type RunSnippetResult } from "@/lib/services/adaptive-course.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 function errMessage(e: unknown): string {
   const anyE = e as { response?: { data?: { detail?: string } }; message?: string };
@@ -77,7 +78,7 @@ export function RunnableCodeBlock({ initialCode, language }: { initialCode: stri
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.85 }}>
           <Icon icon="mdi:flask-outline" width={16} style={{ color: "#a855f7" }} />
-          <Box component="span" sx={{ fontSize: "0.72rem", fontWeight: 700, color: "#94a3b8", letterSpacing: "0.05em" }}>
+          <Box component="span" sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.05em" }}>
             Try it yourself · {label}
           </Box>
         </Box>
@@ -86,7 +87,7 @@ export function RunnableCodeBlock({ initialCode, language }: { initialCode: stri
             onClick={reset}
             size="small"
             startIcon={<Icon icon="mdi:restore" width={15} />}
-            sx={{ color: "#94a3b8", textTransform: "none", fontWeight: 700, minWidth: 0, "&:hover": { color: "#e2e8f0" } }}
+            sx={{ color: "#94a3b8", textTransform: "none", fontWeight: 700, minWidth: 0, "&:hover": { color: "#e2e8f0" }, [PHONE]: { minHeight: 44 } }}
           >
             Reset
           </Button>
@@ -106,6 +107,7 @@ export function RunnableCodeBlock({ initialCode, language }: { initialCode: stri
               background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
               boxShadow: "none",
               "&:hover": { boxShadow: "0 6px 18px -8px var(--module-tile-to, #a855f7)" },
+              [PHONE]: { minHeight: 44 },
             }}
           >
             {running ? "Running…" : "Run"}
@@ -143,7 +145,7 @@ export function RunnableCodeBlock({ initialCode, language }: { initialCode: stri
               width={14}
               style={{ color: ok ? "#27c93f" : "#ff6b6b" }}
             />
-            <Box component="span" sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "#94a3b8" }}>
+            <Box component="span" sx={{ fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "#94a3b8" }}>
               Output{result?.status ? ` · ${result.status}` : ""}
             </Box>
           </Box>

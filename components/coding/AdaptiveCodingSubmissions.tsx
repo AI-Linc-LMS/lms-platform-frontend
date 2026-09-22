@@ -8,6 +8,7 @@ import {
   adaptiveCodingService,
   type CodingSubmissionHistoryItem,
 } from "@/lib/services/adaptive-coding.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * "Submissions" for the current problem on the AI Coding Mentor page.
@@ -81,7 +82,7 @@ export function AdaptiveCodingSubmissions({
             px: 0.75,
             py: 0.1,
             borderRadius: 999,
-            fontSize: "0.7rem",
+            fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
             fontWeight: 800,
             color: "#6366f1",
             background: "color-mix(in srgb, #6366f1 12%, transparent)",
@@ -161,7 +162,7 @@ function SubmissionRow({
           {!sub.all_passed && sub.whats_wrong && (
             <Typography
               sx={{
-                fontSize: "0.72rem",
+                fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                 color: "text.secondary",
                 overflow: "hidden",
                 textOverflow: "ellipsis",
@@ -174,11 +175,11 @@ function SubmissionRow({
         </Box>
         <Box sx={{ textAlign: "right", flexShrink: 0 }}>
           <Typography
-            sx={{ fontSize: "0.7rem", fontWeight: 700, color: "text.secondary", textTransform: "uppercase" }}
+            sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 700, color: "text.secondary", textTransform: "uppercase" }}
           >
             {sub.language}
           </Typography>
-          <Typography sx={{ fontSize: "0.7rem", color: "text.secondary" }}>
+          <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary" }}>
             {formatWhen(sub.created_at)}
           </Typography>
         </Box>
@@ -201,7 +202,7 @@ function SubmissionRow({
                 px: 0.85,
                 py: 0.25,
                 borderRadius: 999,
-                fontSize: "0.68rem",
+                fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" },
                 fontWeight: 700,
                 color: "#b45309",
                 background: "color-mix(in srgb, #f59e0b 14%, transparent)",

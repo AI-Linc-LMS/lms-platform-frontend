@@ -19,6 +19,7 @@ import {
 } from "@/components/adaptive-quiz/AdaptiveQuizCard";
 import { RecentAttemptsRow } from "@/components/adaptive-quiz/RecentAttemptsRow";
 import { asStringList } from "@/lib/utils/as-list";
+import { PHONE } from "@/components/common/mobile/phone";
 
 type Filter = "all" | "personal" | "public" | "archived";
 
@@ -166,6 +167,7 @@ export default function AdaptiveQuizListPage() {
                       gap: 0.75,
                       transition: "transform 120ms ease",
                       "&:hover": { transform: "translateY(-1px)" },
+                      [PHONE]: { minHeight: 44 },
                     }}
                   >
                     {b.label}
@@ -175,7 +177,7 @@ export default function AdaptiveQuizListPage() {
                         px: 0.6,
                         py: 0.1,
                         borderRadius: 999,
-                        fontSize: "0.66rem",
+                        fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" },
                         fontWeight: 800,
                         bgcolor: active ? "color-mix(in srgb, white 22%, transparent)" : "color-mix(in srgb, currentColor 10%, transparent)",
                         color: "inherit",
