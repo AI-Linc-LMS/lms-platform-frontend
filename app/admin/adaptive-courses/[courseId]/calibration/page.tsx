@@ -6,6 +6,7 @@ import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { CalibrationAdminSection } from "@/components/admin/adaptive-course/CalibrationAdminSection";
 import { CalibrationResultsSection } from "@/components/admin/adaptive-course/CalibrationResultsSection";
+import { PHONE } from "@/components/common/mobile/phone";
 
 export default function AdminCalibrationPage() {
   const router = useRouter();
@@ -13,7 +14,7 @@ export default function AdminCalibrationPage() {
 
   return (
     <MainLayout fullWidthContent>
-      <Box sx={{ maxWidth: 1100, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 4 } }}>
+      <Box sx={{ maxWidth: 1100, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 4 }, [PHONE]: { px: 0, pt: 0 } }}>
         <ButtonBase
           onClick={() => router.push(`/admin/adaptive-courses/${courseId}`)}
           sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}

@@ -18,6 +18,7 @@ import {
   type MyProjectsResponse,
 } from "@/lib/services/project-workspace.service";
 import { assessmentService } from "@/lib/services/assessment.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The learner's project surface.
@@ -132,7 +133,7 @@ export default function LearnerProjectPage() {
   if (error) {
     return (
       <MainLayout>
-        <Box sx={{ p: { xs: 2, sm: 3 } }}>
+        <Box sx={{ p: { xs: 2, sm: 3 }, [PHONE]: { px: 0, pt: 0 } }}>
           <Paper
             elevation={0}
             sx={{
@@ -160,7 +161,7 @@ export default function LearnerProjectPage() {
   if (!data) {
     return (
       <MainLayout>
-        <Box sx={{ p: { xs: 2, sm: 3 } }}>
+        <Box sx={{ p: { xs: 2, sm: 3 }, [PHONE]: { px: 0, pt: 0 } }}>
           <Typography sx={{ color: "var(--font-secondary)" }}>Opening your projects…</Typography>
         </Box>
       </MainLayout>
@@ -172,7 +173,7 @@ export default function LearnerProjectPage() {
 
   return (
     <MainLayout>
-      <Box sx={{ p: { xs: 2, sm: 3 } }}>
+      <Box sx={{ p: { xs: 2, sm: 3 }, [PHONE]: { px: 0, pt: 0 } }}>
         <Box
           sx={{
             display: "flex",

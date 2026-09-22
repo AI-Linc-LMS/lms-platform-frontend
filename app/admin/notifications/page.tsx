@@ -40,6 +40,7 @@ import {
 } from "@/lib/services/admin/admin-student.service";
 import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
 import { adminCohortsService } from "@/lib/services/admin/admin-cohorts.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 type TargetType = "individual" | "adaptive_course" | "cohort" | "client";
 
@@ -241,7 +242,7 @@ export default function AdminNotificationsPage() {
 
   return (
     <PageShell maxWidth={720}>
-      <Box sx={{ p: { xs: 2, md: 3 } }}>
+      <Box sx={{ p: { xs: 2, md: 3 }, [PHONE]: { px: 0, pt: 0 } }}>
         <ModulePageHeader
           eyebrow="Communications"
           title="Notifications"

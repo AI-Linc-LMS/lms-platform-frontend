@@ -26,6 +26,7 @@ import {
   RUNTIME_LABELS,
   type AdminProjectTemplate,
 } from "@/lib/services/admin/admin-projects.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The project brief library.
@@ -209,7 +210,7 @@ export default function ProjectLibraryPage() {
 
   return (
     <MainLayout>
-      <Box sx={{ p: { xs: 2, sm: 3 } }}>
+      <Box sx={{ p: { xs: 2, sm: 3 }, [PHONE]: { px: 0, pt: 0 } }}>
         <AssessmentBreadcrumb
           segments={[
             { label: "Admin", href: "/admin/dashboard" },

@@ -22,6 +22,7 @@ import { withFrom } from "@/lib/utils/return-to";
 import { flowSteps } from "@/lib/adaptive/courseFlow";
 import { asStringList } from "@/lib/utils/as-list";
 import { attachmentLook, formatFileSize } from "@/lib/utils/attachment-display";
+import { PHONE } from "@/components/common/mobile/phone";
 
 type FlowKind = "video" | "article" | "quiz" | "coding";
 type StepStatus = "done" | "current" | "upcoming";
@@ -230,7 +231,7 @@ export default function AdaptiveCourseSubmodulePage() {
 
   return (
     <MainLayout fullWidthContent>
-      <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 4 } }}>
+      <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 4 }, [PHONE]: { px: 0, pt: 0 } }}>
         {loading && <AdaptiveSubmoduleSkeleton />}
         {error && (
           <Typography sx={{ color: "#ef4444", fontWeight: 700, textAlign: "center", py: 6 }}>{error}</Typography>

@@ -44,6 +44,7 @@ import {
   INTERVIEW_TOPICS,
   CUSTOM_TOPIC_VALUE,
 } from "@/lib/constants/interview-topics";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * Admin: Create Interview page.
@@ -530,7 +531,7 @@ export default function AdminInterviewTemplatesPage() {
 
   return (
     <MainLayout>
-      <Box sx={{ p: { xs: 2, sm: 3 } }}>
+      <Box sx={{ p: { xs: 2, sm: 3 }, [PHONE]: { px: 0, pt: 0 } }}>
         {/* Header + back link */}
         <Box
           sx={{

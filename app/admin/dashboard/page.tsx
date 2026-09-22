@@ -25,6 +25,7 @@ import { LeaderboardPanel } from "@/components/admin/dashboard/v2/LeaderboardPan
 // re-bundled by Turbopack into EVERY entry chunk that statically reached it —
 // 11 near-identical copies across the admin/analytics surface.
 import dynamic from "next/dynamic";
+import { PHONE } from "@/components/common/mobile/phone";
 const AtRiskPanel = dynamic(() => import("@/components/admin/insights/PulseSection").then(m => m.AtRiskPanel), { ssr: false });
 const PulseTrendPanel = dynamic(() => import("@/components/admin/insights/PulseSection").then(m => m.PulseTrendPanel), { ssr: false });
 const EngagementSection = dynamic(() => import("@/components/admin/insights/EngagementSection").then(m => m.EngagementSection), { ssr: false });
@@ -227,7 +228,7 @@ export default function AdminDashboardPage() {
 
   return (
     <PageShell>
-      <Box className="profile-surface" sx={{ p: { xs: 2, md: 4 } }}>
+      <Box className="profile-surface" sx={{ p: { xs: 2, md: 4 }, [PHONE]: { px: 0, pt: 0 } }}>
         <Box data-tour-id="dashboard-filters">
         <DashboardHero
           tenantName={clientInfo?.name || undefined}

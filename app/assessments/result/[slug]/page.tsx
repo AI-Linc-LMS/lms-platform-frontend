@@ -52,6 +52,7 @@ import {
   COMPOSER_HERO_BG,
   COMPOSER_HERO_SHADOW,
 } from "@/lib/theme/gradients";
+import { PHONE } from "@/components/common/mobile/phone";
 
 async function getAssessmentResultWithRetry(
   slug: string,
@@ -378,7 +379,7 @@ export default function AssessmentResultPage() {
 
   return (
     <MainLayout fullWidthContent>
-      <Box sx={{ bgcolor: "var(--canvas)", minHeight: "100%", p: { xs: 2, sm: 3, md: 4 } }}>
+      <Box sx={{ bgcolor: "var(--canvas)", minHeight: "100%", p: { xs: 2, sm: 3, md: 4 }, [PHONE]: { px: 0, pt: 0 } }}>
       <Box
         sx={{
           maxWidth: "1200px",

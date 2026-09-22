@@ -33,6 +33,7 @@ import {
   adminInstructorsService,
   InstructorRow,
 } from "@/lib/services/admin/admin-instructors.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 const MAX_ATTACHMENTS = 5;
 const MAX_FILE_MB = 50; // matches the backend cap for the report_issue module (images + video)
@@ -286,7 +287,7 @@ export default function AdminTicketDetailPage() {
 
   return (
     <MainLayout>
-      <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 980, mx: "auto" }}>
+      <Box sx={{ p: { xs: 2, md: 4 }, maxWidth: 980, mx: "auto", [PHONE]: { px: 0, pt: 0 } }}>
         <Button
           variant="text"
           onClick={() => router.push("/admin/tickets")}

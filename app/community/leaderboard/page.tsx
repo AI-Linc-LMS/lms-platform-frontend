@@ -19,6 +19,7 @@ import {
   LeaderboardEntry,
 } from "@/lib/services/community.service";
 import { useToast } from "@/components/common/Toast";
+import { PHONE } from "@/components/common/mobile/phone";
 
 type Period = "all" | "week" | "month";
 
@@ -62,7 +63,7 @@ export default function LeaderboardPage() {
 
   return (
     <MainLayout fullWidthContent>
-      <Box sx={{ py: 2, maxWidth: 880, mx: "auto", width: "100%", px: { xs: 2, md: 0 } }}>
+      <Box sx={{ py: 2, maxWidth: 880, mx: "auto", width: "100%", px: { xs: 2, md: 0 }, [PHONE]: { px: 0, pt: 0 } }}>
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={16} />}
           onClick={() => router.push("/community")}

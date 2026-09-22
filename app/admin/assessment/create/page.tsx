@@ -63,6 +63,7 @@ import {
   applyAssessmentDetailToBasicFields,
   mapQuestionsExportToAuthoringState,
 } from "@/lib/utils/assessment-authoring-from-export.utils";
+import { PHONE } from "@/components/common/mobile/phone";
 
 type MCQInputMethod = "manual" | "existing" | "csv" | "ai";
 
@@ -2198,7 +2199,7 @@ function CreateAssessmentPageContent() {
 
   return (
     <MainLayout>
-      <Box sx={{ p: { xs: 2, sm: 3 } }}>
+      <Box sx={{ p: { xs: 2, sm: 3 }, [PHONE]: { px: 0, pt: 0 } }}>
         <AssessmentBreadcrumb segments={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Assessments", href: "/admin/assessment" }, { label: "Create assessment" }]} />
         {/* Header - adaptive design (Phase 2 revamp) */}
         <Box sx={{ mb: 3 }}>

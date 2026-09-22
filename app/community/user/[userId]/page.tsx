@@ -26,6 +26,7 @@ import {
 } from "@/lib/services/community.service";
 import { useToast } from "@/components/common/Toast";
 import { formatDistanceToNow } from "@/lib/utils/date-utils";
+import { PHONE } from "@/components/common/mobile/phone";
 
 const TIER_COLOR: Record<string, string> = {
   bronze: "#cd7f32",
@@ -190,7 +191,7 @@ export default function CommunityUserPage() {
 
   return (
     <MainLayout fullWidthContent>
-      <Box sx={{ py: 2, maxWidth: 1200, mx: "auto", width: "100%", px: { xs: 2, md: 0 } }}>
+      <Box sx={{ py: 2, maxWidth: 1200, mx: "auto", width: "100%", px: { xs: 2, md: 0 }, [PHONE]: { px: 0, pt: 0 } }}>
         {/* Back link */}
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={16} />}

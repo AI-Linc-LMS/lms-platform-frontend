@@ -46,6 +46,7 @@ import { adminCohortsService } from "@/lib/services/admin/admin-cohorts.service"
 import { useAuth } from "@/lib/auth/auth-context";
 import { isScopedAdminRole } from "@/lib/auth/role-utils";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * Author one project brief.
@@ -284,7 +285,7 @@ export default function ProjectEditorPage() {
   if (loading) {
     return (
       <MainLayout>
-        <Box sx={{ p: { xs: 2, sm: 3 } }}>
+        <Box sx={{ p: { xs: 2, sm: 3 }, [PHONE]: { px: 0, pt: 0 } }}>
           <AssessmentFormSkeleton />
         </Box>
       </MainLayout>
@@ -293,7 +294,7 @@ export default function ProjectEditorPage() {
 
   return (
     <MainLayout>
-      <Box sx={{ p: { xs: 2, sm: 3 } }}>
+      <Box sx={{ p: { xs: 2, sm: 3 }, [PHONE]: { px: 0, pt: 0 } }}>
         <AssessmentBreadcrumb
           segments={[
             { label: "Admin", href: "/admin/dashboard" },

@@ -5,6 +5,7 @@ import { Box, Container, Typography } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { AdaptiveQuizLayout } from "@/components/adaptive-quiz/AdaptiveQuizLayout";
 import { useAdaptiveFeatureGuard } from "@/hooks/useAdaptiveFeatureGuard";
+import { PHONE } from "@/components/common/mobile/phone";
 
 export default function AdaptiveQuizSessionPage() {
   const params = useParams<{ sessionId: string }>();
@@ -29,7 +30,7 @@ export default function AdaptiveQuizSessionPage() {
 
   return (
     <MainLayout fullWidthContent>
-      <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 2, md: 4 } }}>
+      <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 2, md: 4 }, [PHONE]: { px: 0, pt: 0 } }}>
         <AdaptiveQuizLayout sessionId={params.sessionId} />
       </Box>
     </MainLayout>

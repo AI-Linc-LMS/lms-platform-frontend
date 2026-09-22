@@ -64,6 +64,7 @@ import { CertificateAdminSection } from "@/components/admin/adaptive-course/Cert
 import type { CourseImageTarget } from "@/lib/services/admin/admin-adaptive-course.service";
 import { asStringList } from "@/lib/utils/as-list";
 import { attachmentLook, formatFileSize } from "@/lib/utils/attachment-display";
+import { PHONE } from "@/components/common/mobile/phone";
 
 type DialogState =
   | { kind: "module" }
@@ -627,7 +628,7 @@ export default function AdminAdaptiveCourseDetailPage() {
 
   return (
     <MainLayout fullWidthContent>
-      <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 } }}>
+      <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 }, [PHONE]: { px: 0, pt: 0 } }}>
         <ButtonBase
           onClick={() => push("/admin/adaptive-courses")}
           sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}
