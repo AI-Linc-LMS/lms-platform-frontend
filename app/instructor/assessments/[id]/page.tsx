@@ -22,6 +22,8 @@ import {
   Tab,
   Tabs,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
@@ -50,6 +52,8 @@ import { sectionCounts, totalDiscarded } from "@/app/admin/assessment/sectionSer
 import { generateAssessmentResultPdfVector } from "@/lib/utils/assessment-result-pdf.utils";
 import { preloadPdfBrandAssets } from "@/lib/utils/assessment-pdf-assets";
 import { useToast } from "@/components/common/Toast";
+import { pf, PHONE_TAP } from "@/components/instructor/phoneSx";
+import { PHONE } from "@/components/common/mobile/phone";
 
 const CARD = {
   p: 2.25,
@@ -69,7 +73,7 @@ function Labelled({ label, children }: { label: string; children: React.ReactNod
   return (
     <Box sx={{ minWidth: 0 }}>
       <Typography
-        sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "text.secondary", mb: 0.5 }}
+        sx={{ ...pf(0.7), fontWeight: 800, letterSpacing: "0.06em", textTransform: "uppercase", color: "text.secondary", mb: 0.5 }}
       >
         {label}
       </Typography>
@@ -128,7 +132,7 @@ function MCQCard({ q, index }: { q: QuestionsExportMCQQuestion; index: number })
               <Box
                 sx={{
                   width: 22, height: 22, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center",
-                  fontWeight: 800, fontSize: "0.72rem",
+                  fontWeight: 800, ...pf(0.72),
                   color: isCorrect ? "#fff" : "text.secondary",
                   bgcolor: isCorrect ? "#10b981" : "var(--surface-muted, rgba(127,127,127,0.12))",
                 }}
@@ -315,6 +319,8 @@ function SubmissionsPanel({ assessmentId }: { assessmentId: number }) {
    * Fetched lazily on first click: it is a much heavier payload than the roster, and most
    * visits to this tab never download anything.
    */
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const [exportData, setExportData] = useState<SubmissionsExportResponse | null>(null);
   const [downloadingFor, setDownloadingFor] = useState<number | null>(null);
 
@@ -375,13 +381,60 @@ function SubmissionsPanel({ assessmentId }: { assessmentId: number }) {
           {pending} awaiting your review
         </Box>
       )}
+      {isPhone ? (
+        <Stack spacing={1.25} data-testid="submission-cards">
+          {rows.map((r) => (
+            <Box key={r.submission_id} data-testid="submission-card"
+              sx={{ p: 1.5, borderRadius: 3, border: "1px solid var(--border-default)", bgcolor: "var(--card-bg)" }}>
+              <Stack direction="row" spacing={1} alignItems="flex-start">
+                <Box sx={{ minWidth: 0, flex: 1 }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: "0.9rem" }}>{r.name}</Typography>
+                  {r.email && (
+                    <Typography sx={{ fontSize: "0.75rem", color: "text.secondary", overflowWrap: "anywhere" }}>{r.email}</Typography>
+                  )}
+                </Box>
+                {r.score === null ? (
+                  <Typography sx={{ fontSize: "0.85rem", color: "text.secondary", fontStyle: "italic", flexShrink: 0 }}>not graded</Typography>
+                ) : (
+                  <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", flexShrink: 0 }}>
+                    {r.score}
+                    {r.max_marks ? <Box component="span" sx={{ color: "text.secondary", fontWeight: 600 }}>/{r.max_marks}</Box> : null}
+                  </Typography>
+                )}
+              </Stack>
+              <Stack direction="row" spacing={1} alignItems="center" sx={{ mt: 1, flexWrap: "wrap", gap: 1 }}>
+                <Chip size="small"
+                  label={r.review_status === "pending_evaluation" ? "Needs review" : (r.status || "submitted")}
+                  sx={{ fontWeight: 700, textTransform: "capitalize",
+                    ...(r.review_status === "pending_evaluation"
+                      ? { bgcolor: "color-mix(in srgb,#f59e0b 16%,transparent)", color: "#b45309" }
+                      : {}) }} />
+                <Typography sx={{ fontSize: "0.8rem", color: "text.secondary" }}>
+                  {r.submitted_at ? new Date(r.submitted_at).toLocaleString() : "—"}
+                </Typography>
+              </Stack>
+              <Button
+                fullWidth
+                variant="outlined"
+                disabled={downloadingFor === r.submission_id}
+                onClick={() => handleDownloadReport(r)}
+                startIcon={<Icon icon="mdi:file-download-outline" width={16} />}
+                sx={{ mt: 1.25, minHeight: 44, textTransform: "none", fontWeight: 700, borderRadius: 2,
+                  color: "var(--accent-indigo)", borderColor: "var(--border-default)" }}
+              >
+                {downloadingFor === r.submission_id ? "Preparing…" : "Download report"}
+              </Button>
+            </Box>
+          ))}
+        </Stack>
+      ) : (
       <Box sx={{ overflowX: "auto", borderRadius: 3, border: "1px solid var(--border-default)" }}>
         <Box component="table" sx={{ width: "100%", borderCollapse: "collapse", minWidth: 620 }}>
           <Box component="thead" sx={{ bgcolor: "color-mix(in srgb, var(--font-primary) 4%, transparent)" }}>
             <Box component="tr">
               {["Student", "Score", "Status", "Submitted", ""].map((h) => (
                 <Box key={h || "actions"} component="th" sx={{ textAlign: h === "Score" ? "right" : "left", p: 1.25,
-                  fontSize: "0.72rem", fontWeight: 800, letterSpacing: 0.4, color: "text.secondary", whiteSpace: "nowrap" }}>
+                  ...pf(0.72), fontWeight: 800, letterSpacing: 0.4, color: "text.secondary", whiteSpace: "nowrap" }}>
                   {h.toUpperCase()}
                 </Box>
               ))}
@@ -432,6 +485,7 @@ function SubmissionsPanel({ assessmentId }: { assessmentId: number }) {
           </Box>
         </Box>
       </Box>
+      )}
     </>
   );
 }
@@ -506,13 +560,15 @@ export default function InstructorAssessmentDetailPage() {
         sx={{
           mb: 2, px: 1.25, py: 0.5, borderRadius: 2, cursor: "pointer", display: "inline-flex", alignItems: "center", gap: 0.5,
           border: "1px solid var(--border-default)", bgcolor: "transparent", color: "text.secondary", font: "inherit", fontWeight: 700,
+          ...PHONE_TAP,
         }}
       >
         <Icon icon="mdi:arrow-left" width={16} /> Gradebook
       </Box>
 
       <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2, minHeight: 40,
-        "& .MuiTab-root": { minHeight: 40, fontWeight: 800, textTransform: "none" } }}>
+        "& .MuiTab-root": { minHeight: 40, fontWeight: 800, textTransform: "none" },
+        [PHONE]: { minHeight: 44, "& .MuiTab-root": { minHeight: 44 } } }}>
         <Tab label="Submissions" />
         <Tab label="Question paper" />
       </Tabs>

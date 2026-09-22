@@ -2983,16 +2983,6 @@
     "downloadLocked": "Download is locked",
     "sidebarTooltip": "Complete your profile to unlock"
   },
-  "roadmapsMobile": {
-    "mapHint": "Tap a step to open it. Press and hold to mark it done, in progress or skipped."
-  },
-  "mobileChrome": {
-    "more": "More",
-    "platformGuide": "Platform guide"
-  },
-  "adaptiveCoursesAdmin": {
-    "deleteCourse": "Delete {{title}}"
-  },
   "learningPlayerMobile": {
     "workspaceTabs": "Coding workspace",
     "problemTab": "Problem",
@@ -3000,6 +2990,13 @@
     "resultsTab": "Results",
     "noResultsYet": "Run your code to see the test results and the mentor's read here.",
     "resultsReady": "New results are ready"
+  },
+  "roadmapsMobile": {
+    "mapHint": "Tap a step to open it. Press and hold to mark it done, in progress or skipped."
+  },
+  "mobileChrome": {
+    "more": "More",
+    "platformGuide": "Platform guide"
   },
   "adminPeoplePhone": {
     "moreActions": "More actions for {{name}}",
@@ -3013,11 +3010,18 @@
     "deleteProjectTitle": "Delete this project?",
     "deleteProjectBody": "Assessments that use it will lose the section. This cannot be undone."
   },
-  "adminEngagementMobile": {
-    "statusFilterLabel": "Session status filter",
-    "facetFilterLabel": "Batch and course filter"
+  "instructorMobile": {
+    "cohortsFilter": "Cohorts",
+    "batchesFilter": "Batches"
   },
   "purchases": {
     "reference": "Reference"
+  },
+  "adaptiveCoursesAdmin": {
+    "deleteCourse": "Delete {{title}}"
+  },
+  "adminEngagementMobile": {
+    "statusFilterLabel": "Session status filter",
+    "facetFilterLabel": "Batch and course filter"
   }
 }

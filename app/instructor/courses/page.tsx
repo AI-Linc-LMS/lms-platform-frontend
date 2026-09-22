@@ -10,6 +10,7 @@ import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { instructorService, type InstructorCourse } from "@/lib/services/instructor.service";
 import { ManualCourseDialog } from "@/components/admin/adaptive-course/ManualCourseDialog";
 import { HeaderActionButton } from "@/components/common/ModulePageHeader";
+import { PHONE } from "@/components/common/mobile/phone";
 import { cardGridSx } from "@/components/common/cardGrid";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 
@@ -148,7 +149,7 @@ export default function InstructorCoursesPage() {
                     onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); push(`/instructor/courses/${c.id}`); } }}
                     onMouseEnter={() => prefetch(`/instructor/courses/${c.id}`)}
                     sx={{ mt: 0.75, fontSize: "0.82rem", fontWeight: 800, color: "#6366f1", width: "fit-content",
-                      "&:hover": { textDecoration: "underline" } }}
+                      "&:hover": { textDecoration: "underline" }, [PHONE]: { minHeight: 44 } }}
                   >
                     <Icon icon="mdi:account-group-outline" width={16} />
                     View students
@@ -169,7 +170,7 @@ export default function InstructorCoursesPage() {
                     onKeyDown={(e) => { if (e.key === "Enter") { e.stopPropagation(); push(`/adaptive-courses/${c.id}`); } }}
                     onMouseEnter={() => prefetch(`/adaptive-courses/${c.id}`)}
                     sx={{ mt: 0.75, fontSize: "0.82rem", fontWeight: 800, color: "#10b981", width: "fit-content",
-                      "&:hover": { textDecoration: "underline" } }}
+                      "&:hover": { textDecoration: "underline" }, [PHONE]: { minHeight: 44 } }}
                   >
                     <Icon icon="mdi:eye-outline" width={16} />
                     View content

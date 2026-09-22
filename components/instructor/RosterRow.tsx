@@ -1,6 +1,6 @@
 "use client";
 
-import { Box, Stack, Typography } from "@mui/material";
+import { Box, Stack, Typography, useMediaQuery, useTheme } from "@mui/material";
 
 /** A single clickable student row shared by the cohort + course rosters. */
 export function RosterRow({
@@ -8,12 +8,17 @@ export function RosterRow({
   email,
   onClick,
   right,
+  phoneMeta,
 }: {
   name: string;
   email: string;
   onClick?: () => void;
   right?: React.ReactNode;
+  /** A line shown under the email on a phone only, for a column the phone layout hides. */
+  phoneMeta?: React.ReactNode;
 }) {
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   return (
     <Box
       onClick={onClick}
@@ -48,6 +53,11 @@ export function RosterRow({
       <Box sx={{ minWidth: 0, flex: 1 }}>
         <Typography sx={{ fontWeight: 700, fontSize: "0.92rem" }} noWrap>{name || "-"}</Typography>
         <Typography sx={{ color: "text.secondary", fontSize: "0.8rem" }} noWrap>{email}</Typography>
+        {isPhone && phoneMeta ? (
+          <Typography data-testid="roster-phone-meta" sx={{ color: "text.secondary", fontSize: "0.75rem", fontWeight: 700, mt: 0.25 }}>
+            {phoneMeta}
+          </Typography>
+        ) : null}
       </Box>
       {right && <Box sx={{ flexShrink: 0 }}>{right}</Box>}
     </Box>

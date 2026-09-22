@@ -1,9 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Box, CircularProgress, Divider, Drawer, Stack, Typography } from "@mui/material";
+import { Box, CircularProgress, Divider, Drawer, Stack, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { instructorService, type InstructorStudentDetail } from "@/lib/services/instructor.service";
+import { pf } from "@/components/instructor/phoneSx";
+import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
 
 /** A right-side drawer showing a student, restricted to what the instructor shares with them
  *  (server-enforced: only the instructor's own courses/cohorts appear). */
@@ -19,6 +21,8 @@ export function StudentDetailDrawer({
   const [detail, setDetail] = useState<InstructorStudentDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
 
   useEffect(() => {
     if (!open || studentId == null) return;
@@ -41,14 +45,8 @@ export function StudentDetailDrawer({
     };
   }, [open, studentId]);
 
-  return (
-    <Drawer anchor="right" open={open} onClose={onClose}
-      PaperProps={{ sx: {
-        width: { xs: "100%", sm: 420 }, p: 2.5,
-        // Clear the fixed top app bar (Toolbar minHeight 56/64) so the header isn't clipped under it.
-        pt: { xs: "calc(56px + 20px)", sm: "calc(64px + 20px)" },
-        overflowY: "auto",
-      } }}>
+  const content = (
+    <>
       {loading && (
         <Box sx={{ display: "grid", placeItems: "center", minHeight: 200 }}>
           <CircularProgress />
@@ -89,6 +87,29 @@ export function StudentDetailDrawer({
           </Typography>
         </>
       )}
+    </>
+  );
+
+  // On a phone the full-width right drawer covered the whole screen with no close control and
+  // no backdrop to tap, so the only way out was the browser's back button. There it is a bottom
+  // sheet with a close button and swipe-down instead; sm and up keep the original drawer.
+  if (isPhone) {
+    return (
+      <ResponsiveDialog open={open} onClose={onClose} data-testid="student-detail-sheet">
+        {content}
+      </ResponsiveDialog>
+    );
+  }
+
+  return (
+    <Drawer anchor="right" open={open} onClose={onClose}
+      PaperProps={{ sx: {
+        width: { xs: "100%", sm: 420 }, p: 2.5,
+        // Clear the fixed top app bar (Toolbar minHeight 56/64) so the header isn't clipped under it.
+        pt: { xs: "calc(56px + 20px)", sm: "calc(64px + 20px)" },
+        overflowY: "auto",
+      } }}>
+      {content}
     </Drawer>
   );
 }
@@ -120,7 +141,7 @@ function DetailList({
               border: "1px solid var(--border-default)" }}>
               <Typography sx={{ fontSize: "0.86rem", fontWeight: 600 }} noWrap>{it.primary}</Typography>
               {it.secondary && (
-                <Typography sx={{ fontSize: "0.72rem", color: "text.secondary", textTransform: "uppercase", fontWeight: 700 }}>
+                <Typography sx={{ ...pf(0.72), color: "text.secondary", textTransform: "uppercase", fontWeight: 700 }}>
                   {it.secondary}
                 </Typography>
               )}
