@@ -5,6 +5,8 @@ import { Box, ButtonBase, LinearProgress, MenuItem, Select, Stack, Typography } 
 import { Icon } from "@iconify/react";
 import type { DashboardCourse } from "@/lib/types/dashboard";
 import { PanelCard } from "./parts";
+import { phoneText } from "@/components/common/mobile/phoneText";
+import { tapHeight } from "@/components/common/phoneTap";
 
 const SKILL_STYLE = {
   strong: { color: "#15803d", bg: "#dcfce7", bar: "#22c55e", label: "Strong" },
@@ -33,13 +35,13 @@ export function SkillProfilePanel({
             <Icon icon="mdi:brain" width={17} />
           </Box>
           <Box>
-            <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.6, color: "#7c3aed" }}>
+            <Typography sx={{ fontSize: phoneText(0.6), fontWeight: 800, letterSpacing: 0.6, color: "#7c3aed" }}>
               ADAPTIVE{tier ? ` · ${tier}` : ""}
             </Typography>
             <Typography sx={{ fontWeight: 800, color: "#0f172a", fontSize: "0.95rem", lineHeight: 1.1 }}>Your Skill Profile</Typography>
           </Box>
         </Stack>
-        <ButtonBase onClick={() => router.push(`/adaptive-courses/${active.id}`)} sx={{ fontSize: "0.74rem", fontWeight: 700, color: "#7c3aed", flexShrink: 0, gap: 0.25 }}>
+        <ButtonBase onClick={() => router.push(`/adaptive-courses/${active.id}`)} sx={{ fontSize: phoneText(0.74), fontWeight: 700, color: "#7c3aed", flexShrink: 0, gap: 0.25, ...tapHeight(18) }}>
           Full report →
         </ButtonBase>
       </Stack>
@@ -93,17 +95,17 @@ export function SkillProfilePanel({
       )}
 
       <Box sx={{ p: 1.5, borderRadius: 3, bgcolor: "#f5f3ff", border: "1px solid #ede9fe", mb: 1.5 }}>
-        <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, color: "#94a3b8" }}>MASTERY · THIS COURSE</Typography>
+        <Typography sx={{ fontSize: phoneText(0.62), fontWeight: 800, letterSpacing: 0.5, color: "#94a3b8" }}>MASTERY · THIS COURSE</Typography>
         <Stack direction="row" alignItems="baseline" justifyContent="space-between">
           {sp.mastery == null ? (
             <Typography sx={{ fontWeight: 800, fontSize: "1.15rem", lineHeight: 1.1, color: "#94a3b8" }}>Not started yet</Typography>
           ) : (
             <Typography sx={{ fontWeight: 900, fontSize: "2.2rem", lineHeight: 1, color: "#6366f1" }}>{sp.mastery}%</Typography>
           )}
-          <Typography sx={{ fontSize: "0.72rem", color: "#94a3b8" }}>{sp.skillsTracked} skills tracked</Typography>
+          <Typography sx={{ fontSize: phoneText(0.72), color: "#94a3b8" }}>{sp.skillsTracked} skills tracked</Typography>
         </Stack>
         {crossCourseMastery != null && (
-          <Typography sx={{ fontSize: "0.72rem", color: "#94a3b8", mt: 0.5 }}>Across all courses: <b style={{ color: "#475569" }}>{crossCourseMastery}%</b></Typography>
+          <Typography sx={{ fontSize: phoneText(0.72), color: "#94a3b8", mt: 0.5 }}>Across all courses: <b style={{ color: "#475569" }}>{crossCourseMastery}%</b></Typography>
         )}
       </Box>
 
@@ -116,7 +118,7 @@ export function SkillProfilePanel({
                 <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.4 }}>
                   <Typography sx={{ fontSize: "0.82rem", fontWeight: 700, color: "#0f172a" }}>{sk.skill}</Typography>
                   <Stack direction="row" spacing={0.75} alignItems="center">
-                    <Box component="span" sx={{ px: 0.75, py: 0.15, borderRadius: 999, fontSize: "0.6rem", fontWeight: 800, color: s.color, bgcolor: s.bg }}>{s.label}</Box>
+                    <Box component="span" sx={{ px: 0.75, py: 0.15, borderRadius: 999, fontSize: phoneText(0.6), fontWeight: 800, color: s.color, bgcolor: s.bg }}>{s.label}</Box>
                     <Typography sx={{ fontWeight: 800, fontSize: "0.82rem", color: s.color, minWidth: 36, textAlign: "right" }}>{sk.percent}%</Typography>
                   </Stack>
                 </Stack>
@@ -135,7 +137,7 @@ export function SkillProfilePanel({
       {sp.aiTip && (
         <Stack direction="row" spacing={0.6} alignItems="flex-start" sx={{ mt: 1.5, p: 1.25, borderRadius: 2, bgcolor: "#f5f3ff" }}>
           <Icon icon="mdi:star-four-points" width={13} color="#6d28d9" style={{ flexShrink: 0, marginTop: 2 }} />
-          <Typography sx={{ fontSize: "0.74rem", color: "#6d28d9", fontWeight: 600, lineHeight: 1.45 }}>{sp.aiTip}</Typography>
+          <Typography sx={{ fontSize: phoneText(0.74), color: "#6d28d9", fontWeight: 600, lineHeight: 1.45 }}>{sp.aiTip}</Typography>
         </Stack>
       )}
     </PanelCard>

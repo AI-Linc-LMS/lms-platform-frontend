@@ -6,6 +6,7 @@ import { Icon } from "@iconify/react";
 import { AIPill } from "@/components/adaptive-quiz/shared/AIPill";
 import type { CodingProblem } from "@/lib/services/adaptive-coding.service";
 import { asStringList } from "@/lib/utils/as-list";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * Structured, student-facing problem panel for the AI Coding Mentor.
@@ -135,7 +136,7 @@ function Section({
           display: "flex",
           alignItems: "center",
           gap: 0.5,
-          fontSize: "0.7rem",
+          fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
           fontWeight: 800,
           letterSpacing: "0.06em",
           textTransform: "uppercase",
@@ -163,7 +164,10 @@ const RICH_TEXT_SX: SxProps<Theme> = {
     py: 0.1,
     borderRadius: 0.5,
     background: "color-mix(in srgb, var(--border-default) 30%, transparent)",
+    // 0.85em of the 0.86rem body is 11.7px; on a phone keep inline code at the 12px floor.
+    [PHONE]: { fontSize: "0.9em" },
   },
+  "& sup, & sub": { [PHONE]: { fontSize: "0.75rem" } },
 };
 
 function RichText({ html, sx }: { html: string; sx?: SxProps<Theme> }) {
@@ -202,7 +206,7 @@ function IoLabel({ children }: { children: React.ReactNode }) {
     <Typography
       sx={{
         display: "block",
-        fontSize: "0.66rem",
+        fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" },
         fontWeight: 700,
         textTransform: "uppercase",
         letterSpacing: "0.05em",
@@ -223,7 +227,7 @@ function Chip({ children, tone }: { children: React.ReactNode; tone: "skill" | "
         px: 0.85,
         py: 0.2,
         borderRadius: 999,
-        fontSize: "0.7rem",
+        fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
         fontWeight: 700,
         color: skill ? "#6366f1" : "text.secondary",
         background: skill
@@ -245,7 +249,7 @@ export function DifficultyChip({ level }: { level: "Easy" | "Medium" | "Hard" })
         px: 1,
         py: 0.3,
         borderRadius: 999,
-        fontSize: "0.7rem",
+        fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
         fontWeight: 800,
         color,
         background: `color-mix(in srgb, ${color} 12%, transparent)`,

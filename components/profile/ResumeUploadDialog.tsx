@@ -15,6 +15,7 @@ import {
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
+import { phoneSheetDialogSx } from "@/components/profile/phoneSheet";
 
 const MAX_SIZE_MB = 5;
 const ACCEPTED_TYPES = ["application/pdf"];
@@ -93,6 +94,7 @@ export function ResumeUploadDialog({
 
   return (
     <Dialog
+      sx={phoneSheetDialogSx}
       open={open}
       onClose={handleClose}
       maxWidth="sm"

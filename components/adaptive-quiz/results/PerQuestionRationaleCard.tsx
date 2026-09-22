@@ -8,6 +8,7 @@ import type {
   AdaptiveAINarration,
   AdaptiveResponseRow,
 } from "@/lib/types/adaptive-quiz";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface PerQuestionRationaleCardProps {
   response: AdaptiveResponseRow;
@@ -46,7 +47,7 @@ export function PerQuestionRationaleCard({
     >
       {/* Left: question + options */}
       <Box>
-        <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "text.secondary", mb: 0.5 }}>
+        <Typography sx={{ fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "text.secondary", mb: 0.5 }}>
           Question {response.order_index + 1}
         </Typography>
         <RichHtml html={mcq.question_text} sx={{ fontSize: "0.98rem", fontWeight: 700, lineHeight: 1.45, mb: 1.5 }} />
@@ -107,7 +108,7 @@ export function PerQuestionRationaleCard({
         </Typography>
         {rationale?.correct_concept && (
           <Box>
-            <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "text.secondary", mb: 0.25 }}>
+            <Typography sx={{ fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "text.secondary", mb: 0.25 }}>
               Correct concept
             </Typography>
             <Typography sx={{ fontSize: "0.86rem", color: "text.primary", lineHeight: 1.5 }}>
@@ -117,7 +118,7 @@ export function PerQuestionRationaleCard({
         )}
         {rationale?.your_mistake && (
           <Box>
-            <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "text.secondary", mb: 0.25 }}>
+            <Typography sx={{ fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "text.secondary", mb: 0.25 }}>
               Where you went off
             </Typography>
             <Typography sx={{ fontSize: "0.86rem", color: "text.primary", lineHeight: 1.5 }}>
@@ -134,7 +135,7 @@ export function PerQuestionRationaleCard({
               borderRadius: 999,
               border: "1px solid color-mix(in srgb, #a855f7 40%, transparent)",
               color: "#a855f7",
-              fontSize: "0.74rem",
+              fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" },
               fontWeight: 800,
               display: "inline-flex",
               alignItems: "center",
@@ -173,7 +174,7 @@ function MetaChip({ icon, label }: { icon: string; label: string }) {
         px: 0.9,
         py: 0.25,
         borderRadius: 999,
-        fontSize: "0.7rem",
+        fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
         fontWeight: 700,
         color: "text.secondary",
         bgcolor: "color-mix(in srgb, currentColor 8%, transparent)",

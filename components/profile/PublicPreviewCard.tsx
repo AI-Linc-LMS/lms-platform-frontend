@@ -21,6 +21,9 @@ import { ImageUrlDialog } from "./ImageUrlDialog";
 import { ProfilePanel } from "./theme/surfaces";
 import { PROFILE } from "./theme/profileTokens";
 import { phoneText } from "@/components/common/mobile/phoneText";
+import { phoneSheetDialogSx } from "@/components/profile/phoneSheet";
+import { hitSlop } from "@/components/common/phoneTap";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The cover photo and avatar, demoted out of the page header.
@@ -119,6 +122,7 @@ export function PublicPreviewCard({
                 bgcolor: "rgba(255,255,255,0.9)",
                 "&:hover": { bgcolor: "#fff" },
                 "&:focus-visible": { outline: "none", boxShadow: `0 0 0 2px rgba(15,10,44,.6), 0 0 0 4px #fff` },
+                [PHONE]: { width: 44, height: 44, top: 6, insetInlineEnd: 6 },
               }}
             >
               <IconWrapper icon="mdi:image-edit-outline" size={15} />
@@ -170,6 +174,7 @@ export function PublicPreviewCard({
                     p: 0,
                     "&:hover": { bgcolor: "color-mix(in srgb, var(--ai-violet, #7c3aed) 82%, #000)" },
                     "&:focus-visible": { outline: "none", boxShadow: `0 0 0 2px #fff, 0 0 0 4px ${PROFILE.violet}` },
+                    ...hitSlop(26),
                   }}
                 >
                   <IconWrapper icon="mdi:camera-outline" size={14} />
@@ -224,6 +229,7 @@ export function PublicPreviewCard({
                   p: 0,
                   "&:hover": { bgcolor: PROFILE.violetSoft },
                   "&:focus-visible": { outline: "none", boxShadow: `0 0 0 2px #fff, 0 0 0 4px ${PROFILE.violet}` },
+                  ...hitSlop(22, true),
                 }}
               >
                 <IconWrapper icon="mdi:pencil" size={13} />
@@ -263,6 +269,7 @@ export function PublicPreviewCard({
               transition: "background .15s",
               "&:hover": { bgcolor: "#ede9fe" },
               "&:focus-visible": { outline: "none", boxShadow: `0 0 0 2px #fff, 0 0 0 4px ${PROFILE.violet}` },
+              [PHONE]: { minHeight: 44 },
             }}
           >
             <IconWrapper icon="mdi:earth" size={16} />
@@ -298,6 +305,7 @@ export function PublicPreviewCard({
       )}
 
       <Dialog
+        sx={phoneSheetDialogSx}
         open={headlineDialogOpen}
         onClose={() => !savingHeadline && setHeadlineDialogOpen(false)}
         fullWidth

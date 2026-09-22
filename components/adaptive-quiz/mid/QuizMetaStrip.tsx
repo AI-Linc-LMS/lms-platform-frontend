@@ -4,6 +4,7 @@ import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { AdaptiveInfoTip } from "../shared/AdaptiveInfoTip";
 import { certaintyBand } from "@/lib/utils/adaptive-confidence";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface QuizMetaStripProps {
   quizTitle: string;
@@ -63,7 +64,7 @@ export function QuizMetaStrip({
       </Box>
 
       <Box sx={{ display: "flex", gap: 2, alignItems: "center", flexWrap: "wrap" }}>
-        <Typography sx={{ fontSize: "0.74rem", color: "text.secondary", fontWeight: 600 }}>
+        <Typography sx={{ fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", fontWeight: 600 }}>
           Question{" "}
           <Box component="span" sx={{ color: "text.primary", fontWeight: 800, fontVariantNumeric: "tabular-nums" }}>
             {answered + 1}
@@ -72,7 +73,7 @@ export function QuizMetaStrip({
         </Typography>
 
         <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
-          <Typography sx={{ fontSize: "0.74rem", color: "text.secondary", fontWeight: 600 }}>
+          <Typography sx={{ fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", fontWeight: 600 }}>
             AI&apos;s read:{" "}
             <Box component="span" sx={{ color: certainty.accent, fontWeight: 800 }}>
               {certainty.label}

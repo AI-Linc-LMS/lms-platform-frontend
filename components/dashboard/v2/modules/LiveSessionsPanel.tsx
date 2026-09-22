@@ -6,6 +6,7 @@ import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { nextSitting, studentLiveSessionsService, type NextSitting, type StudentLiveSession } from "@/lib/services/live-sessions";
 import { ModuleEmpty, ModuleHeader, ModulePanel, ModuleRowsSkeleton, Pill, fmtDateTime, timeUntil } from "./shared";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 const GRADIENT = "linear-gradient(135deg, #06b6d4, #3b82f6)";
 
@@ -108,7 +109,7 @@ export function LiveSessionsPanel() {
                         <Pill icon="mdi:calendar-clock" color="#0e7490" bg="#ecfeff">{t?.text ?? fmtDateTime(n.startIso)}</Pill>
                       )}
                       {s.course_detail?.title && (
-                        <Typography noWrap sx={{ fontSize: "0.68rem", color: "#94a3b8", fontWeight: 600, maxWidth: 120 }}>{s.course_detail.title}</Typography>
+                        <Typography noWrap sx={{ fontSize: phoneText(0.68), color: "#94a3b8", fontWeight: 600, maxWidth: 120 }}>{s.course_detail.title}</Typography>
                       )}
                     </Stack>
                   </Box>
@@ -119,7 +120,7 @@ export function LiveSessionsPanel() {
                       tabIndex={0}
                       onClick={(e) => { e.stopPropagation(); window.open(url, "_blank", "noopener,noreferrer"); }}
                       onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.stopPropagation(); window.open(url, "_blank", "noopener,noreferrer"); } }}
-                      sx={{ flexShrink: 0, px: 1.5, py: 0.6, borderRadius: 999, fontSize: "0.72rem", fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #06b6d4, #2563eb)", cursor: "pointer", "&:hover": { filter: "brightness(1.05)" } }}
+                      sx={{ flexShrink: 0, px: 1.5, py: 0.6, borderRadius: 999, fontSize: phoneText(0.72), fontWeight: 800, color: "#fff", background: "linear-gradient(135deg, #06b6d4, #2563eb)", cursor: "pointer", "&:hover": { filter: "brightness(1.05)" } }}
                     >
                       Join
                     </Box>

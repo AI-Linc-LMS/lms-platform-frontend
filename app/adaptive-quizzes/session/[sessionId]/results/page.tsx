@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Box, ButtonBase, Container, Typography } from "@mui/material";
+import { PHONE } from "@/components/common/mobile/phone";
 import { AnimatePresence, motion } from "framer-motion";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { KpiRail } from "@/components/scorecard/shared";
@@ -244,6 +245,7 @@ export default function AdaptiveQuizResultsPage() {
                   color: "text.secondary",
                   border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
                   fontSize: "0.82rem",
+                  [PHONE]: { minHeight: 44 },
                 }}
               >
                 ← {returnTo.label}
@@ -310,6 +312,9 @@ export default function AdaptiveQuizResultsPage() {
                           : { xs: "1fr", lg: "minmax(0, 1.4fr) minmax(0, 1fr)" },
                       gap: 2.5,
                       alignItems: "flex-start",
+                      // A bare 1fr track grows to its widest child, which pushed the path card's
+                      // "0/3 done" past the screen edge. On a phone the track may not exceed the screen.
+                      [PHONE]: { gridTemplateColumns: "minmax(0, 1fr)" },
                     }}
                   >
                     {skillMasteryReady ? (

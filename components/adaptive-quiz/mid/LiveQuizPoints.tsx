@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Box, LinearProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type { QuestionPointsDecay } from "@/lib/types/adaptive-quiz";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /** Mirror of the backend engine.points_after_decay - keep in lockstep so the live number
  *  matches what gets awarded. */
@@ -61,7 +62,7 @@ export function LiveQuizPoints({ decay, running = true, hints = 0, startedAtMs }
     >
       <Stack direction="row" spacing={0.5} alignItems="center" justifyContent="center">
         <Icon icon="mdi:star-four-points" width={13} color="#7c3aed" />
-        <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "text.secondary" }}>
+        <Typography sx={{ fontSize: "0.6rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "text.secondary" }}>
           Points on offer
         </Typography>
       </Stack>
@@ -83,7 +84,7 @@ export function LiveQuizPoints({ decay, running = true, hints = 0, startedAtMs }
         sx={{ mt: 1, height: 7, borderRadius: 4, bgcolor: "rgba(148,163,184,0.2)", "& .MuiLinearProgress-bar": { bgcolor: color, borderRadius: 4, transition: "transform .3s ease, background-color .3s" } }}
       />
 
-      <Typography sx={{ fontSize: "0.72rem", color: inGrace ? "#15803d" : atFloor ? "#b91c1c" : "#b45309", fontWeight: 700, mt: 0.85, lineHeight: 1.4 }}>
+      <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: inGrace ? "#15803d" : atFloor ? "#b91c1c" : "#b45309", fontWeight: 700, mt: 0.85, lineHeight: 1.4 }}>
         {inGrace
           ? `Full points for ${fmtSecs(graceLeft)} more`
           : atFloor
@@ -93,7 +94,7 @@ export function LiveQuizPoints({ decay, running = true, hints = 0, startedAtMs }
           ? ` · −${Math.round((decay.hint_penalty ?? 0) * 100 * hints)}% from hint`
           : ""}
       </Typography>
-      <Typography sx={{ fontSize: "0.64rem", color: "text.secondary", mt: 0.25 }}>
+      <Typography sx={{ fontSize: "0.64rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", mt: 0.25 }}>
         {hints > 0 ? "A hint trims your points - but a right answer still counts" : "Answer fast & right to keep more"}
       </Typography>
     </Box>

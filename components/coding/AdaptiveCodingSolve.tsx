@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Box, Button, CircularProgress, FormControl, MenuItem, Select, Stack, TextField, Typography } from "@mui/material";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Box, Button, CircularProgress, FormControl, MenuItem, Select, Stack, TextField, Typography, useMediaQuery, useTheme } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@iconify/react";
 
 import { CodeEditor } from "@/components/editor/MonacoEditor";
@@ -31,6 +32,10 @@ import {
   type OptimizationChallenge,
   type TestResults,
 } from "@/lib/services/adaptive-coding.service";
+import { PHONE } from "@/components/common/mobile/phone";
+
+/** The phone workspace's three panes. Desktop shows all of them side by side. */
+type PhoneTab = "problem" | "code" | "results";
 
 interface AdaptiveCodingSolveProps {
   configId: number;
@@ -100,6 +105,10 @@ function writeLangPref(pid: number, lang: string) {
  */
 export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: AdaptiveCodingSolveProps) {
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
+  const [phoneTab, setPhoneTab] = useState<PhoneTab>("problem");
 
   const [problem, setProblem] = useState<CodingProblem | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -135,6 +144,32 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
     }
   }, [solvedAlready, onSolved]);
   const [masteryRefresh, setMasteryRefresh] = useState(0);
+
+  // On a phone the verdict lands on a tab the learner is not looking at, so when a Run or Submit
+  // finishes, show them the Results tab. Watching the busy flags (not the handlers) leaves every
+  // request path exactly as it was, and a resumed session's old result does not steal the view.
+  const wasBusyRef = useRef(false);
+  const resultsAtStartRef = useRef<TestResults | null>(null);
+  const [resultsUnseen, setResultsUnseen] = useState(false);
+  useEffect(() => {
+    const busy = running || submitting;
+    if (busy && !wasBusyRef.current) resultsAtStartRef.current = testResults;
+    if (wasBusyRef.current && !busy && isPhone) {
+      // A request that failed left the old results in place: do not present them as this run's.
+      const fresh = testResults !== resultsAtStartRef.current;
+      // Moving to another tab would blur the editor and drop the phone keyboard mid-sentence, so
+      // while focus is in the Code pane the Results tab only gets a "ready" dot.
+      const focused = document.activeElement as HTMLElement | null;
+      const typing = !!focused?.closest?.('[data-phone-pane="code"]') && !!focused.matches?.('textarea, input, [contenteditable="true"]');
+      if (fresh && typing) setResultsUnseen(true);
+      else if (fresh) setPhoneTab("results");
+    }
+    wasBusyRef.current = busy;
+  }, [running, submitting, isPhone, testResults]);
+  const openTab = (tab: PhoneTab) => {
+    setPhoneTab(tab);
+    if (tab === "results") setResultsUnseen(false);
+  };
   const [allowClipboard, setAllowClipboard] = useState(false);
 
   // Offer a consistent algorithmic language set (Python/JS/TS/Java/C++/C#) rather than only the
@@ -411,7 +446,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
             component="button"
             onClick={onBack}
             sx={{
-              all: "unset", cursor: "pointer", color: "#6366f1", fontWeight: 700, fontSize: "0.85rem",
+              all: "unset", cursor: "pointer", color: "#6366f1", fontWeight: 700, fontSize: "0.85rem", [PHONE]: { minHeight: 44 },
               display: "inline-flex", alignItems: "center", gap: 0.5,
             }}
           >
@@ -423,234 +458,366 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
     );
   }
 
+  // The workspace pieces, composed two ways: the desktop grid below (unchanged), and on a phone
+  // a Problem / Code / Results tab set so the editor is not a screen and a half below the statement.
+  const backLink = onBack && (
+    <Box
+      component="button"
+      onClick={onBack}
+      sx={{
+        all: "unset", cursor: "pointer", color: "#6366f1", fontWeight: 700, fontSize: "0.85rem", [PHONE]: { minHeight: 44 },
+        display: "inline-flex", alignItems: "center", gap: 0.5,
+      }}
+    >
+      <Icon icon="mdi:arrow-left" width={16} /> Back to submodule
+    </Box>
+  );
+  const problemPanel = (
+    <AdaptiveCodingProblemPanel problem={problem} />
+  );
+  const solvedBanner = solvedAlready && (
+    <Box
+      sx={{
+        display: "flex", alignItems: "center", gap: 1, px: 1.75, py: 1, borderRadius: 2,
+        background: "color-mix(in srgb, #10b981 12%, transparent)",
+        border: "1px solid color-mix(in srgb, #10b981 30%, transparent)",
+      }}
+    >
+      <Icon icon="mdi:check-circle" width={18} style={{ color: "#10b981" }} />
+      <Typography sx={{ fontSize: "0.85rem", fontWeight: 700, color: "#0f9d6b" }}>
+        You&apos;ve solved this - keep refining or try the challenge below.
+      </Typography>
+    </Box>
+  );
+  const mentorCard = (
+    <MentorAnalysisCard
+      diagnosis={diagnosis}
+      optimization={optimization}
+      failedCount={testResults?.failed ?? 0}
+      totalCount={testResults?.total ?? 0}
+      masteryDelta={masteryDelta}
+      hintLayers={hintLayers}
+      hintsRevealed={hintsRevealed}
+      revealedHints={revealedHints}
+      hintLoading={hintLoading}
+      onRevealHint={handleRevealHint}
+    />
+  );
+  const masteryPanel = (
+    <CodingMasteryPanel refreshKey={masteryRefresh} />
+  );
+  const submissionsPanel = (
+    <AdaptiveCodingSubmissions
+      problemId={problemId}
+      refreshKey={masteryRefresh}
+      onRestore={(src, lang) => {
+        // Stash the current work, then load the chosen submission back into the editor.
+        writeDraft(problemId, language, code);
+        const l = lang && problem?.template_code?.[lang] != null ? lang : language;
+        if (l !== language) writeLangPref(problemId, l);
+        setLanguage(l);
+        setCode(src);
+        resetMentorState();
+        showToast("Loaded that submission into the editor.", "success");
+      }}
+    />
+  );
+  const timerHud = sessionData?.points != null && started && (
+    <CodingTimerPoints
+      decay={sessionData.points}
+      startedAt={sessionData.started_at}
+      serverNow={sessionData.server_now}
+      running={!solvedAlready}
+      earned={solvedAlready ? pointsEarned : null}
+      hints={hintsRevealed}
+    />
+  );
+  const toolbar = (
+    <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", [PHONE]: { "& .MuiButton-root, & .MuiInputBase-root": { minHeight: 44 } } }}>
+      <FormControl size="small" sx={{ minWidth: 130 }}>
+        <Select
+          value={language}
+          onChange={(e) => handleLanguageChange(String(e.target.value))}
+          sx={{ fontWeight: 700, fontSize: "0.85rem" }}
+        >
+          {availableLanguages.map((l) => (
+            <MenuItem key={l.value} value={l.value} sx={{ fontSize: "0.85rem" }}>
+              {l.label}
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+      <Box sx={{ flex: 1 }} />
+      <Button
+        onClick={() => setCustomOpen((v) => !v)}
+        startIcon={<Icon icon="mdi:console-line" width={16} />}
+        variant="text"
+        sx={{ textTransform: "none", fontWeight: 700, color: "var(--font-secondary)" }}
+      >
+        Custom input
+      </Button>
+      <Button
+        onClick={handleRun}
+        disabled={running || submitting || solvedAlready}
+        startIcon={running ? <CircularProgress size={14} /> : <Icon icon="mdi:play" width={16} />}
+        variant="outlined"
+        sx={{ textTransform: "none", fontWeight: 800, borderColor: "#6366f1", color: "#6366f1" }}
+      >
+        Run
+      </Button>
+      <Button
+        onClick={handleSubmit}
+        disabled={running || submitting || solvedAlready || !code.trim()}
+        startIcon={submitting ? <CircularProgress size={14} sx={{ color: "white" }} /> : <Icon icon="mdi:check" width={16} />}
+        variant="contained"
+        sx={{
+          textTransform: "none", fontWeight: 800, color: "white",
+          background: "linear-gradient(135deg,#10b981,#059669)",
+        }}
+      >
+        Submit
+      </Button>
+    </Box>
+  );
+  const editor = (
+    <CodeEditor
+      value={code}
+      onChange={(v) => setCode(v || "")}
+      language={getMonacoLanguage(language)}
+      height={isPhone ? "55vh" : "60vh"}
+      theme="vs-dark"
+      allowClipboard={allowClipboard}
+      glyphLine={diagnosis?.root_cause_line ?? null}
+      glyphMessage={diagnosis?.whats_wrong || ""}
+    />
+  );
+  const customPanel = customOpen && (
+    <Box
+      sx={{
+        display: "flex", flexDirection: "column", gap: 1.25, p: 1.75, borderRadius: 2, [PHONE]: { "& .MuiButton-root": { minHeight: 44 } },
+        border: "1px solid var(--border-subtle, rgba(148,163,184,0.35))",
+        backgroundColor: "var(--surface, rgba(15,23,42,0.03))",
+      }}
+    >
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Icon icon="mdi:console-line" width={16} />
+        <Typography sx={{ fontSize: "0.78rem", fontWeight: 800 }}>
+          Try your own input
+        </Typography>
+        <Box sx={{ flex: 1 }} />
+        <Button
+          onClick={handleRunCustom}
+          disabled={running || runningCustom || submitting || !code.trim()}
+          startIcon={
+            runningCustom
+              ? <CircularProgress size={13} />
+              : <Icon icon="mdi:play-outline" width={15} />
+          }
+          size="small"
+          variant="outlined"
+          sx={{ textTransform: "none", fontWeight: 700 }}
+        >
+          Run with this input
+        </Button>
+      </Box>
+
+      <TextField
+        value={customInput}
+        onChange={(e) => setCustomInput(e.target.value)}
+        placeholder={"Whatever your program reads from input.\nOne value per line, as the problem describes."}
+        multiline
+        minRows={3}
+        fullWidth
+        size="small"
+        // The input IS the data: a program reading two lines must get two lines, so nothing
+        // here trims or reflows what was typed.
+        InputProps={{ sx: { fontFamily: "monospace", fontSize: "0.8rem" } }}
+      />
+
+      {customResult && (
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+          {customResult.status && (
+            <Typography sx={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--error-500)" }}>
+              {customResult.status}
+            </Typography>
+          )}
+          <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 700, color: "text.secondary" }}>
+            OUTPUT
+          </Typography>
+          {/* A program that printed nothing must not look like a button that did nothing. */}
+          <Box
+            component="pre"
+            sx={{
+              m: 0, p: 1.25, borderRadius: 1.5, overflowX: "auto", whiteSpace: "pre-wrap",
+              fontFamily: "monospace", fontSize: "0.78rem",
+              backgroundColor: "rgba(15,23,42,0.06)",
+            }}
+          >
+            {customResult.stdout !== ""
+              ? customResult.stdout
+              : "(your program printed nothing)"}
+          </Box>
+          {(customResult.compile_output || customResult.stderr) && (
+            <Box
+              component="pre"
+              sx={{
+                m: 0, p: 1.25, borderRadius: 1.5, overflowX: "auto", whiteSpace: "pre-wrap",
+                fontFamily: "monospace", fontSize: "0.75rem",
+                color: "var(--error-500)", backgroundColor: "rgba(239,68,68,0.08)",
+              }}
+            >
+              {customResult.compile_output || customResult.stderr}
+            </Box>
+          )}
+          <Typography sx={{ fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary" }}>
+            Nothing here is graded - this is only what your code prints for this input.
+          </Typography>
+        </Box>
+      )}
+    </Box>
+  );
+  const testStrip = testResults && (testResults.total > 0 || testResults.compile_error) && (
+    <TestStrip testResults={testResults} />
+  );
+  const mentorNote = (
+    <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary" }}>
+      The mentor reads your code on Run and Submit - it names the line and the concept, never writes the fix.
+    </Typography>
+  );
+
+  const hasResults = Boolean(testResults && (testResults.total > 0 || testResults.compile_error));
+  const tabs: Array<{ key: PhoneTab; label: string; badge?: string }> = [
+    { key: "problem", label: t("learningPlayerMobile.problemTab") },
+    { key: "code", label: t("learningPlayerMobile.codeTab") },
+    {
+      key: "results",
+      label: t("learningPlayerMobile.resultsTab"),
+      badge: testResults && testResults.total > 0 ? `${testResults.passed}/${testResults.total}` : undefined,
+    },
+  ];
+  // Where each piece sits on a phone: its tab, and its order in the single stacked column.
+  const slot = (pane: PhoneTab | "always", order: number) => ({ isPhone, pane, order, active: phoneTab });
+
+  // ONE tree at every width. A phone and a desktop render the same components in the same
+  // positions; only styles differ (the columns become `display: contents` and each piece's slot
+  // gets an order and a visibility). Rotating across 600px therefore never remounts the editor,
+  // the timer, or the panels that fetch on mount.
   return (
     // minmax(0,1fr) + minWidth:0 keep the Monaco editor and wide test output from blowing a column
     // past 50% and shoving the page into horizontal overflow (esp. after a run/submit adds output).
-    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1fr) minmax(0, 1fr)" }, gap: 2.5, alignItems: "start" }}>
-      {/* Left - problem + mentor analysis */}
-      <Box sx={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-        {onBack && (
-          <Box
-            component="button"
-            onClick={onBack}
-            sx={{
-              all: "unset", cursor: "pointer", color: "#6366f1", fontWeight: 700, fontSize: "0.85rem",
-              display: "inline-flex", alignItems: "center", gap: 0.5,
-            }}
-          >
-            <Icon icon="mdi:arrow-left" width={16} /> Back to submodule
-          </Box>
-        )}
-
-        <AdaptiveCodingProblemPanel problem={problem} />
-
-        {solvedAlready && (
-          <Box
-            sx={{
-              display: "flex", alignItems: "center", gap: 1, px: 1.75, py: 1, borderRadius: 2,
-              background: "color-mix(in srgb, #10b981 12%, transparent)",
-              border: "1px solid color-mix(in srgb, #10b981 30%, transparent)",
-            }}
-          >
-            <Icon icon="mdi:check-circle" width={18} style={{ color: "#10b981" }} />
-            <Typography sx={{ fontSize: "0.85rem", fontWeight: 700, color: "#0f9d6b" }}>
-              You&apos;ve solved this - keep refining or try the challenge below.
-            </Typography>
-          </Box>
-        )}
-
-        <MentorAnalysisCard
-          diagnosis={diagnosis}
-          optimization={optimization}
-          failedCount={testResults?.failed ?? 0}
-          totalCount={testResults?.total ?? 0}
-          masteryDelta={masteryDelta}
-          hintLayers={hintLayers}
-          hintsRevealed={hintsRevealed}
-          revealedHints={revealedHints}
-          hintLoading={hintLoading}
-          onRevealHint={handleRevealHint}
-        />
-
-        <CodingMasteryPanel refreshKey={masteryRefresh} />
-
-        <AdaptiveCodingSubmissions
-          problemId={problemId}
-          refreshKey={masteryRefresh}
-          onRestore={(src, lang) => {
-            // Stash the current work, then load the chosen submission back into the editor.
-            writeDraft(problemId, language, code);
-            const l = lang && problem?.template_code?.[lang] != null ? lang : language;
-            if (l !== language) writeLangPref(problemId, l);
-            setLanguage(l);
-            setCode(src);
-            resetMentorState();
-            showToast("Loaded that submission into the editor.", "success");
+    <Box
+      data-testid="coding-workspace"
+      data-layout={isPhone ? "phone" : "desktop"}
+      sx={{
+        display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1fr) minmax(0, 1fr)" }, gap: 2.5, alignItems: "start",
+        ...(isPhone ? { display: "flex", flexDirection: "column", gap: 1.5, minWidth: 0 } : {}),
+      }}
+    >
+      {isPhone && (
+        <Box
+          role="tablist"
+          aria-label={t("learningPlayerMobile.workspaceTabs")}
+          sx={{
+            order: 2, position: "sticky", top: 0, zIndex: 3, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 0.5,
+            p: 0.5, borderRadius: 3, bgcolor: "var(--card-bg, #fff)",
+            border: "1px solid var(--border-default, #e5e7eb)", boxShadow: "0 8px 20px -16px rgba(15,23,42,0.35)",
           }}
-        />
+        >
+          {tabs.map((tab) => {
+            const active = phoneTab === tab.key;
+            const unseen = tab.key === "results" && resultsUnseen && !active;
+            return (
+              <Box
+                key={tab.key}
+                component="button"
+                role="tab"
+                aria-selected={active}
+                onClick={() => openTab(tab.key)}
+                sx={{
+                  all: "unset", cursor: "pointer", minHeight: 44, borderRadius: 2.5, display: "inline-flex", position: "relative",
+                  alignItems: "center", justifyContent: "center", gap: 0.6, fontSize: "0.85rem", fontWeight: 800,
+                  color: active ? "white" : "var(--font-secondary)",
+                  background: active ? "linear-gradient(135deg, var(--module-tile-from, #6366f1), var(--module-tile-to, #a855f7))" : "transparent",
+                  "&:focus-visible": { outline: "2px solid #6366f1", outlineOffset: 2 },
+                }}
+              >
+                {tab.label}
+                {tab.badge && (
+                  <Box component="span" sx={{ px: 0.75, borderRadius: 999, fontSize: "0.75rem", bgcolor: active ? "rgba(255,255,255,0.22)" : "color-mix(in srgb, currentColor 12%, transparent)" }}>
+                    {tab.badge}
+                  </Box>
+                )}
+                {unseen && (
+                  <Box
+                    component="span"
+                    data-testid="results-ready"
+                    aria-label={t("learningPlayerMobile.resultsReady")}
+                    sx={{ position: "absolute", top: 6, insetInlineEnd: 8, width: 8, height: 8, borderRadius: "50%", bgcolor: "#ef4444" }}
+                  />
+                )}
+              </Box>
+            );
+          })}
+        </Box>
+      )}
+      {/* Left - problem + mentor analysis */}
+      <Box sx={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2, ...(isPhone ? { display: "contents" } : {}) }}>
+        <Slot {...slot("always", 0)}>{backLink}</Slot>
+
+        <Slot {...slot("problem", 10)}>{problemPanel}</Slot>
+
+        <Slot {...slot("problem", 11)}>{solvedBanner}</Slot>
+
+        <Slot {...slot("results", 31)}>{mentorCard}</Slot>
+
+        <Slot {...slot("problem", 12)}>{masteryPanel}</Slot>
+
+        <Slot {...slot("problem", 13)}>{submissionsPanel}</Slot>
       </Box>
 
       {/* Right - editor + live timer/points HUD + toolbar (the ready gate is shown earlier, before
           the problem is revealed) */}
-      <Box sx={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 1.25 }}>
-        {sessionData?.points != null && started && (
-          <CodingTimerPoints
-            decay={sessionData.points}
-            startedAt={sessionData.started_at}
-            serverNow={sessionData.server_now}
-            running={!solvedAlready}
-            earned={solvedAlready ? pointsEarned : null}
-            hints={hintsRevealed}
-          />
-        )}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
-          <FormControl size="small" sx={{ minWidth: 130 }}>
-            <Select
-              value={language}
-              onChange={(e) => handleLanguageChange(String(e.target.value))}
-              sx={{ fontWeight: 700, fontSize: "0.85rem" }}
-            >
-              {availableLanguages.map((l) => (
-                <MenuItem key={l.value} value={l.value} sx={{ fontSize: "0.85rem" }}>
-                  {l.label}
-                </MenuItem>
-              ))}
-            </Select>
-          </FormControl>
-          <Box sx={{ flex: 1 }} />
-          <Button
-            onClick={() => setCustomOpen((v) => !v)}
-            startIcon={<Icon icon="mdi:console-line" width={16} />}
-            variant="text"
-            sx={{ textTransform: "none", fontWeight: 700, color: "var(--font-secondary)" }}
-          >
-            Custom input
-          </Button>
-          <Button
-            onClick={handleRun}
-            disabled={running || submitting || solvedAlready}
-            startIcon={running ? <CircularProgress size={14} /> : <Icon icon="mdi:play" width={16} />}
-            variant="outlined"
-            sx={{ textTransform: "none", fontWeight: 800, borderColor: "#6366f1", color: "#6366f1" }}
-          >
-            Run
-          </Button>
-          <Button
-            onClick={handleSubmit}
-            disabled={running || submitting || solvedAlready || !code.trim()}
-            startIcon={submitting ? <CircularProgress size={14} sx={{ color: "white" }} /> : <Icon icon="mdi:check" width={16} />}
-            variant="contained"
-            sx={{
-              textTransform: "none", fontWeight: 800, color: "white",
-              background: "linear-gradient(135deg,#10b981,#059669)",
-            }}
-          >
-            Submit
-          </Button>
-        </Box>
+      <Box sx={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 1.25, ...(isPhone ? { display: "contents" } : {}) }}>
+        <Slot {...slot("always", 1)}>{timerHud}</Slot>
+        <Slot {...slot("code", 20)}>{toolbar}</Slot>
 
-        <CodeEditor
-          value={code}
-          onChange={(v) => setCode(v || "")}
-          language={getMonacoLanguage(language)}
-          height="60vh"
-          theme="vs-dark"
-          allowClipboard={allowClipboard}
-          glyphLine={diagnosis?.root_cause_line ?? null}
-          glyphMessage={diagnosis?.whats_wrong || ""}
-        />
-        {customOpen && (
-          <Box
-            sx={{
-              display: "flex", flexDirection: "column", gap: 1.25, p: 1.75, borderRadius: 2,
-              border: "1px solid var(--border-subtle, rgba(148,163,184,0.35))",
-              backgroundColor: "var(--surface, rgba(15,23,42,0.03))",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              <Icon icon="mdi:console-line" width={16} />
-              <Typography sx={{ fontSize: "0.78rem", fontWeight: 800 }}>
-                Try your own input
-              </Typography>
-              <Box sx={{ flex: 1 }} />
-              <Button
-                onClick={handleRunCustom}
-                disabled={running || runningCustom || submitting || !code.trim()}
-                startIcon={
-                  runningCustom
-                    ? <CircularProgress size={13} />
-                    : <Icon icon="mdi:play-outline" width={15} />
-                }
-                size="small"
-                variant="outlined"
-                sx={{ textTransform: "none", fontWeight: 700 }}
-              >
-                Run with this input
-              </Button>
-            </Box>
-
-            <TextField
-              value={customInput}
-              onChange={(e) => setCustomInput(e.target.value)}
-              placeholder={"Whatever your program reads from input.\nOne value per line, as the problem describes."}
-              multiline
-              minRows={3}
-              fullWidth
-              size="small"
-              // The input IS the data: a program reading two lines must get two lines, so nothing
-              // here trims or reflows what was typed.
-              InputProps={{ sx: { fontFamily: "monospace", fontSize: "0.8rem" } }}
-            />
-
-            {customResult && (
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
-                {customResult.status && (
-                  <Typography sx={{ fontSize: "0.75rem", fontWeight: 800, color: "var(--error-500)" }}>
-                    {customResult.status}
-                  </Typography>
-                )}
-                <Typography sx={{ fontSize: "0.7rem", fontWeight: 700, color: "text.secondary" }}>
-                  OUTPUT
-                </Typography>
-                {/* A program that printed nothing must not look like a button that did nothing. */}
-                <Box
-                  component="pre"
-                  sx={{
-                    m: 0, p: 1.25, borderRadius: 1.5, overflowX: "auto", whiteSpace: "pre-wrap",
-                    fontFamily: "monospace", fontSize: "0.78rem",
-                    backgroundColor: "rgba(15,23,42,0.06)",
-                  }}
-                >
-                  {customResult.stdout !== ""
-                    ? customResult.stdout
-                    : "(your program printed nothing)"}
-                </Box>
-                {(customResult.compile_output || customResult.stderr) && (
-                  <Box
-                    component="pre"
-                    sx={{
-                      m: 0, p: 1.25, borderRadius: 1.5, overflowX: "auto", whiteSpace: "pre-wrap",
-                      fontFamily: "monospace", fontSize: "0.75rem",
-                      color: "var(--error-500)", backgroundColor: "rgba(239,68,68,0.08)",
-                    }}
-                  >
-                    {customResult.compile_output || customResult.stderr}
-                  </Box>
-                )}
-                <Typography sx={{ fontSize: "0.68rem", color: "text.secondary" }}>
-                  Nothing here is graded - this is only what your code prints for this input.
-                </Typography>
-              </Box>
-            )}
-          </Box>
-        )}
-        {testResults && (testResults.total > 0 || testResults.compile_error) && (
-          <TestStrip testResults={testResults} />
-        )}
-        <Typography sx={{ fontSize: "0.72rem", color: "text.secondary" }}>
-          The mentor reads your code on Run and Submit - it names the line and the concept, never writes the fix.
-        </Typography>
+        <Slot {...slot("code", 21)}>{editor}</Slot>
+        <Slot {...slot("code", 22)}>{customPanel}</Slot>
+        <Slot {...slot("results", 30)}>
+          {testStrip}
+          {isPhone && !hasResults && (
+            <Typography sx={{ fontSize: "0.85rem", color: "text.secondary", textAlign: "center", py: 3 }}>
+              {t("learningPlayerMobile.noResultsYet")}
+            </Typography>
+          )}
+        </Slot>
+        <Slot {...slot("results", 32)}>{mentorNote}</Slot>
       </Box>
+    </Box>
+  );
+}
+
+/**
+ * One piece of the coding workspace. From 600px up it is `display: contents` - no box of its own -
+ * so the desktop columns lay out exactly as if the piece were their direct child. On a phone it is
+ * a box in the single stacked column with an `order`, shown only while its tab is open.
+ *
+ * Defined at module scope so its identity is stable: a component declared inside the parent would
+ * be a new type on every render and remount everything under it.
+ */
+function Slot({ isPhone, pane, order, active, children }: {
+  isPhone: boolean; pane: PhoneTab | "always"; order: number; active: PhoneTab; children: ReactNode;
+}) {
+  return (
+    <Box
+      data-phone-pane={pane}
+      sx={
+        isPhone
+          ? { order, minWidth: 0, display: pane === "always" || pane === active ? "block" : "none", "&:empty": { display: "none" } }
+          : { display: "contents" }
+      }
+    >
+      {children}
     </Box>
   );
 }
@@ -679,7 +846,7 @@ function CodingReadyGate({ problem, starting, onBegin }: { problem: CodingProble
       <Typography sx={{ fontWeight: 800, fontSize: "1.25rem" }}>Ready to begin?</Typography>
       <Stack direction="row" spacing={1} alignItems="center" justifyContent="center" sx={{ mt: 0.5, mb: 2 }}>
         <Typography sx={{ fontSize: "0.9rem", color: "text.secondary" }}>{problem.title}</Typography>
-        <Box sx={{ px: 0.9, py: 0.2, borderRadius: 999, fontSize: "0.66rem", fontWeight: 800, color: diffColor,
+        <Box sx={{ px: 0.9, py: 0.2, borderRadius: 999, fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, color: diffColor,
           bgcolor: `color-mix(in srgb, ${diffColor} 14%, transparent)`, border: `1px solid color-mix(in srgb, ${diffColor} 30%, transparent)` }}>
           {problem.difficulty_level}
         </Box>
@@ -698,7 +865,7 @@ function CodingReadyGate({ problem, starting, onBegin }: { problem: CodingProble
         startIcon={starting ? <CircularProgress size={16} sx={{ color: "white" }} /> : <Icon icon="mdi:flash" width={18} />}
         variant="contained"
         sx={{ textTransform: "none", fontWeight: 800, color: "white", px: 3, py: 1,
-          background: "linear-gradient(135deg,var(--module-tile-from, #6366f1),var(--module-tile-to, #a855f7))" }}
+          background: "linear-gradient(135deg,var(--module-tile-from, #6366f1),var(--module-tile-to, #a855f7))", [PHONE]: { minHeight: 48 } }}
       >
         Begin · start the timer
       </Button>
@@ -762,7 +929,7 @@ function TestStrip({ testResults }: { testResults: TestResults }) {
                 component="button"
                 onClick={() => setSelected(r.index)}
                 sx={{
-                  all: "unset", cursor: "pointer", px: 1, py: 0.4, borderRadius: 1.5, fontSize: "0.74rem", fontWeight: 800,
+                  all: "unset", cursor: "pointer", px: 1, py: 0.4, borderRadius: 1.5, fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem", minHeight: 44, px: 1.5 }, fontWeight: 800,
                   display: "inline-flex", alignItems: "center", gap: 0.4, color: c,
                   background: active ? `color-mix(in srgb, ${c} 16%, transparent)` : `color-mix(in srgb, ${c} 6%, transparent)`,
                   border: `1px solid color-mix(in srgb, ${c} ${active ? 45 : 28}%, transparent)`,
@@ -785,7 +952,7 @@ function TestStrip({ testResults }: { testResults: TestResults }) {
           >
             <Typography
               sx={{
-                fontSize: "0.68rem", fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", mb: 0.5,
+                fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, textTransform: "uppercase", letterSpacing: "0.05em", mb: 0.5,
                 display: "flex", alignItems: "center", gap: 0.4, color: sel.passed ? "#10b981" : "#ef4444",
               }}
             >
@@ -805,7 +972,7 @@ function TestStrip({ testResults }: { testResults: TestResults }) {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <Box sx={{ display: "flex", gap: 1, mb: 0.25 }}>
-      <Typography component="span" sx={{ fontSize: "0.72rem", fontWeight: 800, color: "text.secondary", minWidth: 64 }}>
+      <Typography component="span" sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, color: "text.secondary", minWidth: 64 }}>
         {label}
       </Typography>
       <Typography component="span" sx={{ fontSize: "0.76rem", fontFamily: "monospace", whiteSpace: "pre-wrap", wordBreak: "break-all" }}>

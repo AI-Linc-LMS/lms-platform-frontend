@@ -11,6 +11,7 @@
 import * as React from "react";
 import { Box, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
 
 export type ChipTone = "success" | "warning" | "error" | "info" | "neutral" | "ai" | "proctored";
 
@@ -59,6 +60,8 @@ export function StatusChip({ label, tone = "neutral", icon }: StatusChipProps) {
         lineHeight: 1,
         whiteSpace: "nowrap",
         maxWidth: "100%",
+        // 11.5px on a phone is below the 12px reading floor.
+        [PHONE]: { fontSize: "0.75rem", height: 26 },
       }}
     >
       {icon ? <IconWrapper icon={icon} size={13} color={color} /> : null}

@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Button, CircularProgress, TextField, Typography } from "@mui/material";
+import { PHONE } from "@/components/common/mobile/phone";
 import { Icon } from "@iconify/react";
 import { useState } from "react";
 import { AIPill } from "@/components/adaptive-quiz/shared/AIPill";
@@ -77,7 +78,7 @@ export function CheckpointOverlay({ timestamp, onAsk, onResume }: Props) {
             />
             <Button
               onClick={() => void ask()} disabled={loading || !q.trim()} variant="contained"
-              sx={{ borderRadius: 2, background: "linear-gradient(135deg,#6366f1,#a855f7)", minWidth: 64, fontWeight: 800 }}
+              sx={{ borderRadius: 2, background: "linear-gradient(135deg,#6366f1,#a855f7)", minWidth: 64, fontWeight: 800, [PHONE]: { minHeight: 44 } }}
             >
               {loading ? <CircularProgress size={16} sx={{ color: "#fff" }} /> : "Ask"}
             </Button>
@@ -90,7 +91,8 @@ export function CheckpointOverlay({ timestamp, onAsk, onResume }: Props) {
           )}
         </Box>
         <Box sx={{ flexShrink: 0, px: 2.5, pb: 2, pt: 1,
-          borderTop: "1px solid color-mix(in srgb, #6366f1 12%, transparent)", bgcolor: "var(--card-bg, #fff)" }}>
+          borderTop: "1px solid color-mix(in srgb, #6366f1 12%, transparent)", bgcolor: "var(--card-bg, #fff)",
+          [PHONE]: { "& .MuiButton-root": { minHeight: 44 } } }}>
           <Button fullWidth onClick={onResume} variant="text" sx={{ fontWeight: 800, color: "#6366f1", gap: 0.5 }}>
             <Icon icon="mdi:play" width={18} /> Resume
           </Button>

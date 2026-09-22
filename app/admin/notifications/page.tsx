@@ -274,6 +274,26 @@ export default function AdminNotificationsPage() {
             onChange={(_, v) => v && setTargetType(v)}
             sx={{
               mb: 2,
+              // Phone: four icon+label buttons are ~470px wide in one row. A 2x2 grid of equal
+              // 44px buttons fits and keeps every audience one tap away.
+              [PHONE]: {
+                display: "grid",
+                gridTemplateColumns: "repeat(2, minmax(0, 1fr))",
+                gap: 1,
+                width: "100%",
+                "& .MuiToggleButtonGroup-grouped.MuiToggleButton-root": {
+                  m: 0,
+                  minHeight: 44,
+                  borderRadius: 2,
+                  borderLeftWidth: 1,
+                  borderLeftStyle: "solid",
+                  borderLeftColor: "divider",
+                  px: 1,
+                },
+                "& .MuiToggleButtonGroup-grouped.MuiToggleButton-root.Mui-selected": {
+                  borderLeftColor: "var(--accent-indigo)",
+                },
+              },
               "& .MuiToggleButtonGroup-grouped": {
                 border: "1px solid",
                 borderColor: "divider",
@@ -538,6 +558,7 @@ export default function AdminNotificationsPage() {
                   onClick={() => setActionUrl(link.url)}
                   sx={{
                     cursor: "pointer",
+                    [PHONE]: { height: 44, borderRadius: 22, px: 0.75, fontSize: "0.85rem" },
                     "&:hover": {
                       backgroundColor:
                         "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
@@ -592,6 +613,7 @@ export default function AdminNotificationsPage() {
               px: 3,
               py: 1.25,
               borderRadius: 2,
+              [PHONE]: { width: "100%", minHeight: 48 },
               backgroundColor: "var(--accent-indigo)",
               color: "var(--font-light)",
               "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },

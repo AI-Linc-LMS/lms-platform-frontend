@@ -5,6 +5,7 @@ import { Box, Typography } from "@mui/material";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import { Icon } from "@iconify/react";
 import type { AdaptiveAINarration, AdaptiveResponseRow } from "@/lib/types/adaptive-quiz";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface MisconceptionCalloutProps {
   misconceptions: AdaptiveAINarration["misconceptions"];
@@ -127,10 +128,10 @@ export function MisconceptionCallout({ misconceptions, responses }: Misconceptio
         >
           <Icon icon="mdi:chart-bell-curve-cumulative" width={22} />
         </Box>
-        <Box sx={{ flex: 1, minWidth: 0 }}>
+        <Box sx={{ flex: 1, minWidth: 0, [PHONE]: { flexBasis: "calc(100% - 50px)" } }}>
           <Typography
             sx={{
-              fontSize: "0.62rem",
+              fontSize: "0.62rem", [PHONE]: { fontSize: "0.75rem" },
               fontWeight: 800,
               letterSpacing: "0.18em",
               textTransform: "uppercase",
@@ -156,7 +157,7 @@ export function MisconceptionCallout({ misconceptions, responses }: Misconceptio
             border: "1px solid color-mix(in srgb, #f43f5e 28%, transparent)",
             color: "#f43f5e",
             fontWeight: 800,
-            fontSize: "0.72rem",
+            fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem", marginInlineStart: "50px" },
             letterSpacing: "0.08em",
             textTransform: "uppercase",
             fontVariantNumeric: "tabular-nums",
@@ -183,6 +184,8 @@ export function MisconceptionCallout({ misconceptions, responses }: Misconceptio
           display: "grid",
           gridTemplateColumns: { xs: "1fr", md: "minmax(160px, 220px) 1fr" },
           gap: { xs: 1, md: 2 },
+          // Zero-floored on a phone so a long pattern title ellipsises instead of widening the plot.
+          [PHONE]: { gridTemplateColumns: "minmax(0, 1fr)" },
         }}
       >
         {/* Track labels rail (sits left of the SVG so they don't fight for space inside the plot) */}
@@ -239,7 +242,7 @@ export function MisconceptionCallout({ misconceptions, responses }: Misconceptio
                   </Typography>
                   <Typography
                     sx={{
-                      fontSize: "0.66rem",
+                      fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" },
                       fontWeight: 700,
                       color: "text.secondary",
                       letterSpacing: "0.08em",
@@ -496,7 +499,7 @@ export function MisconceptionCallout({ misconceptions, responses }: Misconceptio
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
                 <Typography
                   sx={{
-                    fontSize: "0.6rem",
+                    fontSize: "0.6rem", [PHONE]: { fontSize: "0.75rem" },
                     fontWeight: 800,
                     letterSpacing: "0.18em",
                     textTransform: "uppercase",
@@ -512,7 +515,7 @@ export function MisconceptionCallout({ misconceptions, responses }: Misconceptio
                   <Typography
                     sx={{
                       ml: "auto",
-                      fontSize: "0.66rem",
+                      fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" },
                       fontWeight: 800,
                       color: "text.secondary",
                       letterSpacing: "0.1em",
@@ -559,7 +562,7 @@ export function MisconceptionCallout({ misconceptions, responses }: Misconceptio
                   <Box sx={{ flex: 1, minWidth: 0 }}>
                     <Typography
                       sx={{
-                        fontSize: "0.6rem",
+                        fontSize: "0.6rem", [PHONE]: { fontSize: "0.75rem" },
                         fontWeight: 800,
                         letterSpacing: "0.18em",
                         textTransform: "uppercase",
@@ -597,7 +600,7 @@ function LegendDot({ kind, label }: { kind: PointKind; label: string }) {
           boxShadow: `0 0 0 1.5px rgba(255,255,255,0.6), 0 4px 12px -3px color-mix(in srgb, ${color} 55%, transparent)`,
         }}
       />
-      <Typography sx={{ fontSize: "0.72rem", color: "text.secondary", fontWeight: 600 }}>
+      <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", fontWeight: 600 }}>
         {label}
       </Typography>
     </Box>
@@ -615,7 +618,7 @@ function LegendLine({ label }: { label: string }) {
           background: "linear-gradient(90deg, #f43f5e 0%, #a855f7 100%)",
         }}
       />
-      <Typography sx={{ fontSize: "0.72rem", color: "text.secondary", fontWeight: 600 }}>
+      <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", fontWeight: 600 }}>
         {label}
       </Typography>
     </Box>

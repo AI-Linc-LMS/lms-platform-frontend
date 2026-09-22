@@ -36,6 +36,8 @@ import {
   type Badge,
   type BadgeCriteriaType,
 } from "@/lib/services/admin/admin-badges.service";
+import { PHONE } from "@/components/common/mobile/phone";
+import { CardFact, PHONE_FIELD_SX, PhoneSheet, TAP, useIsPhone } from "@/components/admin/adminPhone";
 
 const CRITERIA_TYPES: Array<{
   value: BadgeCriteriaType;
@@ -124,7 +126,7 @@ function StatChip({ label, value, color }: { label: string; value: number; color
       <Typography
         variant="caption"
         color="text.secondary"
-        sx={{ fontWeight: 600, letterSpacing: 0.3, textTransform: "uppercase", fontSize: "0.65rem" }}
+        sx={{ fontWeight: 600, letterSpacing: 0.3, textTransform: "uppercase", fontSize: "0.65rem", [PHONE]: { fontSize: "0.75rem" } }}
       >
         {label}
       </Typography>
@@ -147,6 +149,7 @@ export default function AdminScorecardBadgesPage() {
   const { showToast } = useToast();
   const [badges, setBadges] = useState<Badge[]>([]);
   const [loading, setLoading] = useState(true);
+  const isPhone = useIsPhone();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<Badge | null>(null);
   const [name, setName] = useState("");
@@ -268,9 +271,109 @@ export default function AdminScorecardBadgesPage() {
     [showToast],
   );
 
+  const criteriaSummary = (b: Badge) => {
+    const criteria = (b.criteriaJson || {}) as { type?: string } & Record<string, unknown>;
+    const spec = CRITERIA_TYPES.find((c) => c.value === criteria.type);
+    return spec?.fields.length
+      ? `${spec.label} · ${spec.fields.map((f) => `${f.label}=${criteria[f.name] ?? "?"}`).join(", ")}`
+      : spec?.label ?? String(criteria.type ?? "-");
+  };
+
   const criteriaSpec = useMemo(
     () => CRITERIA_TYPES.find((c) => c.value === criteriaForm.type),
     [criteriaForm.type],
+  );
+
+  const editorBody = (
+      <Box sx={{ display: "grid", gap: 2, pt: 1, ...PHONE_FIELD_SX }}>
+        <TextField
+          autoFocus
+          label="Name"
+          size="small"
+          fullWidth
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g. 7-Day Streak"
+        />
+        <TextField
+          label="Description"
+          size="small"
+          fullWidth
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+          placeholder="What the learner did to earn this"
+        />
+        <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: "2fr 1fr" }}>
+          <TextField
+            label="Icon slug"
+            size="small"
+            fullWidth
+            value={iconSlug}
+            onChange={(e) => setIconSlug(e.target.value)}
+            placeholder="mdi:trophy-outline"
+            helperText="MDI / Iconify slug"
+          />
+          <TextField
+            label="Points"
+            size="small"
+            type="number"
+            inputProps={{ min: 0 }}
+            fullWidth
+            value={points}
+            onChange={(e) => setPoints(e.target.value)}
+          />
+        </Box>
+
+        <Box>
+          <FormControl size="small" fullWidth>
+            <InputLabel id="criteria-type-label">Criteria type</InputLabel>
+            <Select
+              labelId="criteria-type-label"
+              label="Criteria type"
+              value={criteriaForm.type}
+              onChange={(e) =>
+                setCriteriaForm({
+                  type: e.target.value as BadgeCriteriaType,
+                  values: {},
+                })
+              }
+            >
+              {CRITERIA_TYPES.map((c) => (
+                <MenuItem key={c.value} value={c.value}>
+                  {c.label}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          {criteriaSpec?.helperText && (
+            <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: "block" }}>
+              {criteriaSpec.helperText}
+            </Typography>
+          )}
+        </Box>
+
+        {criteriaSpec?.fields.length ? (
+          <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: criteriaSpec.fields.length === 1 ? "1fr" : "1fr 1fr" }}>
+            {criteriaSpec.fields.map((f) => (
+              <TextField
+                key={f.name}
+                label={f.label}
+                size="small"
+                type={f.type}
+                fullWidth
+                placeholder={f.placeholder}
+                value={criteriaForm.values[f.name] ?? ""}
+                onChange={(e) =>
+                  setCriteriaForm((prev) => ({
+                    ...prev,
+                    values: { ...prev.values, [f.name]: e.target.value },
+                  }))
+                }
+              />
+            ))}
+          </Box>
+        ) : null}
+      </Box>
   );
 
   return (
@@ -326,6 +429,71 @@ export default function AdminScorecardBadgesPage() {
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1.5 }}>
                 No badges yet. The Phase 8 seed migration adds 6 defaults - run <code>python manage.py migrate scorecard</code> if you don&apos;t see them.
               </Typography>
+            </Box>
+          ) : isPhone ? (
+            <Box data-testid="badge-cards" sx={{ display: "flex", flexDirection: "column" }}>
+              {badges.map((b) => (
+                <Box
+                  key={b.id}
+                  data-testid="badge-card"
+                  sx={{
+                    px: 2,
+                    py: 1.5,
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 0.75,
+                    borderBottom: "1px solid var(--border-default)",
+                    "&:last-of-type": { borderBottom: "none" },
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, minWidth: 0 }}>
+                    <Box
+                      sx={{
+                        width: 36,
+                        height: 36,
+                        borderRadius: "50%",
+                        flexShrink: 0,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        bgcolor: "color-mix(in srgb, #fbbf24 16%, transparent)",
+                        color: "#d97706",
+                      }}
+                    >
+                      <IconWrapper icon={b.iconSlug || "mdi:trophy-outline"} size={18} />
+                    </Box>
+                    <Box sx={{ flex: 1, minWidth: 0 }}>
+                      <Typography sx={{ fontWeight: 700, color: "var(--font-primary)", fontSize: "0.95rem", overflowWrap: "anywhere" }}>
+                        {b.name}
+                      </Typography>
+                      {b.description && (
+                        <Typography sx={{ fontSize: "0.8125rem", color: "var(--font-secondary)", overflowWrap: "anywhere" }}>
+                          {b.description}
+                        </Typography>
+                      )}
+                    </Box>
+                    <IconButton
+                      onClick={() => openEdit(b)}
+                      aria-label={`Edit ${b.name}`}
+                      sx={{ width: TAP, height: TAP, flexShrink: 0, color: "var(--font-secondary)" }}
+                    >
+                      <IconWrapper icon="mdi:pencil-outline" size={20} />
+                    </IconButton>
+                    <IconButton
+                      onClick={() => void handleDelete(b)}
+                      aria-label={`Deactivate ${b.name}`}
+                      sx={{ width: TAP, height: TAP, flexShrink: 0, color: "var(--font-secondary)" }}
+                    >
+                      <IconWrapper icon="mdi:archive-outline" size={20} />
+                    </IconButton>
+                  </Box>
+                  <CardFact label="Criteria">{criteriaSummary(b)}</CardFact>
+                  <CardFact label="Points">
+                    <Box component="span" sx={{ fontWeight: 700, color: "#f59e0b" }}>{b.points}</Box>
+                  </CardFact>
+                  <CardFact label="Awarded">{b.awardedCount}</CardFact>
+                </Box>
+              ))}
             </Box>
           ) : (
             <TableContainer>
@@ -451,6 +619,20 @@ export default function AdminScorecardBadgesPage() {
         </Paper>
 
         {/* Editor dialog */}
+        {isPhone ? (
+          <PhoneSheet
+            open={editorOpen}
+            onClose={closeEditor}
+            busy={saving}
+            title={editing ? `Edit ${editing.name}` : "Create new badge"}
+            cancelLabel="Cancel"
+            confirmLabel={editing ? "Save changes" : "Create"}
+            confirmDisabled={!name.trim()}
+            onConfirm={() => void handleSave()}
+          >
+            {editorBody}
+          </PhoneSheet>
+        ) : (
         <Dialog
           open={editorOpen}
           onClose={closeEditor}
@@ -461,95 +643,7 @@ export default function AdminScorecardBadgesPage() {
             {editing ? `Edit ${editing.name}` : "Create new badge"}
           </DialogTitle>
           <DialogContent>
-            <Box sx={{ display: "grid", gap: 2, pt: 1 }}>
-              <TextField
-                autoFocus
-                label="Name"
-                size="small"
-                fullWidth
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. 7-Day Streak"
-              />
-              <TextField
-                label="Description"
-                size="small"
-                fullWidth
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="What the learner did to earn this"
-              />
-              <Box sx={{ display: "grid", gap: 2, gridTemplateColumns: "2fr 1fr" }}>
-                <TextField
-                  label="Icon slug"
-                  size="small"
-                  fullWidth
-                  value={iconSlug}
-                  onChange={(e) => setIconSlug(e.target.value)}
-                  placeholder="mdi:trophy-outline"
-                  helperText="MDI / Iconify slug"
-                />
-                <TextField
-                  label="Points"
-                  size="small"
-                  type="number"
-                  inputProps={{ min: 0 }}
-                  fullWidth
-                  value={points}
-                  onChange={(e) => setPoints(e.target.value)}
-                />
-              </Box>
-
-              <Box>
-                <FormControl size="small" fullWidth>
-                  <InputLabel id="criteria-type-label">Criteria type</InputLabel>
-                  <Select
-                    labelId="criteria-type-label"
-                    label="Criteria type"
-                    value={criteriaForm.type}
-                    onChange={(e) =>
-                      setCriteriaForm({
-                        type: e.target.value as BadgeCriteriaType,
-                        values: {},
-                      })
-                    }
-                  >
-                    {CRITERIA_TYPES.map((c) => (
-                      <MenuItem key={c.value} value={c.value}>
-                        {c.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                {criteriaSpec?.helperText && (
-                  <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, display: "block" }}>
-                    {criteriaSpec.helperText}
-                  </Typography>
-                )}
-              </Box>
-
-              {criteriaSpec?.fields.length ? (
-                <Box sx={{ display: "grid", gap: 1.5, gridTemplateColumns: criteriaSpec.fields.length === 1 ? "1fr" : "1fr 1fr" }}>
-                  {criteriaSpec.fields.map((f) => (
-                    <TextField
-                      key={f.name}
-                      label={f.label}
-                      size="small"
-                      type={f.type}
-                      fullWidth
-                      placeholder={f.placeholder}
-                      value={criteriaForm.values[f.name] ?? ""}
-                      onChange={(e) =>
-                        setCriteriaForm((prev) => ({
-                          ...prev,
-                          values: { ...prev.values, [f.name]: e.target.value },
-                        }))
-                      }
-                    />
-                  ))}
-                </Box>
-              ) : null}
-            </Box>
+            {editorBody}
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
             <Button onClick={closeEditor} disabled={saving} sx={{ textTransform: "none" }}>
@@ -570,6 +664,7 @@ export default function AdminScorecardBadgesPage() {
             </Button>
           </DialogActions>
         </Dialog>
+        )}
     </PageShell>
   );
 }

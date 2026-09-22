@@ -6,6 +6,7 @@ import { Icon } from "@iconify/react";
 import { SyntaxHighlighter } from "@/components/common/prism-light";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { LANGUAGE_DISPLAY_NAMES, getMonacoLanguage } from "@/components/coding/utils/languageUtils";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * Read-only, syntax-highlighted code block with a macOS-style chrome + copy button.
@@ -55,12 +56,18 @@ export function CodeBlock({ code, language }: { code: string; language?: string 
               <Box key={c} sx={{ width: 11, height: 11, borderRadius: "50%", bgcolor: c }} />
             ))}
           </Box>
-          <Box component="span" sx={{ fontSize: "0.72rem", fontWeight: 700, color: "#94a3b8", letterSpacing: "0.05em" }}>
+          <Box component="span" sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 700, color: "#94a3b8", letterSpacing: "0.05em" }}>
             {label}
           </Box>
         </Box>
         <Tooltip title={copied ? "Copied!" : "Copy"}>
-          <IconButton size="small" onClick={copy} sx={{ color: copied ? "#27c93f" : "#94a3b8" }}>
+          <IconButton
+            size="small"
+            onClick={copy}
+            aria-label={copied ? "Copied" : "Copy code"}
+            // 44px to the thumb on a phone; the negative margin keeps the header bar its desktop height.
+            sx={{ color: copied ? "#27c93f" : "#94a3b8", [PHONE]: { width: 44, height: 44, my: -1, marginInlineEnd: -1 } }}
+          >
             <Icon icon={copied ? "mdi:check" : "mdi:content-copy"} width={15} />
           </IconButton>
         </Tooltip>

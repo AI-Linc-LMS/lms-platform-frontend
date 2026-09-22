@@ -17,6 +17,8 @@ import {
   TableRow,
   Tabs,
   Tab,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@iconify/react";
@@ -109,6 +111,9 @@ export default function AssessmentEmailJobDetailPage() {
   const [data, setData] = useState<AssessmentEmailJobDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [tabValue, setTabValue] = useState(0);
+  const theme = useTheme();
+  // Four fixed-width tabs are wider than a phone card; there they scroll instead of being clipped.
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const load = useCallback(async () => {
@@ -206,7 +211,7 @@ export default function AssessmentEmailJobDetailPage() {
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
           onClick={() => router.push("/admin/emails?tab=assessment")}
-          sx={{ mb: 1.5, textTransform: "none", color: "var(--font-secondary)" }}
+          sx={{ mb: 1.5, textTransform: "none", color: "var(--font-secondary)", [PHONE]: { minHeight: 44 } }}
         >
           {t("adminEmailJobs.backToEmailJobs")}
         </Button>
@@ -281,6 +286,7 @@ export default function AssessmentEmailJobDetailPage() {
                 onClick={() => jobAttachment.url && window.open(jobAttachment.url, "_blank", "noopener,noreferrer")}
                 sx={{
                   maxWidth: 360,
+                  [PHONE]: { maxWidth: "100%", height: 44, borderRadius: 22 },
                   bgcolor: "color-mix(in srgb, var(--accent-indigo) 12%, var(--surface) 88%)",
                   color: "var(--accent-indigo)",
                   "& .MuiChip-icon": { color: "var(--accent-indigo)" },
@@ -306,7 +312,9 @@ export default function AssessmentEmailJobDetailPage() {
           <Tabs
             value={tabValue}
             onChange={(_, v) => setTabValue(v)}
-            sx={{ borderBottom: 1, borderColor: "divider", px: 2 }}
+            variant={isPhone ? "scrollable" : "standard"}
+            scrollButtons={false}
+            sx={{ borderBottom: 1, borderColor: "divider", px: 2, [PHONE]: { px: 0.5 } }}
           >
             <Tab label={t("adminEmailJobs.allRecipients")} />
             <Tab label={t("adminEmailJobs.successful")} />

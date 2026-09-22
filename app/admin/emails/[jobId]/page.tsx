@@ -16,6 +16,8 @@ import {
   TableRow,
   Tabs,
   Tab,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@iconify/react";
@@ -103,6 +105,9 @@ export default function EmailJobDetailPage() {
   const [data, setData] = useState<EmailJobDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [tabValue, setTabValue] = useState(0);
+  const theme = useTheme();
+  // Four fixed-width tabs are wider than a phone card; there they scroll instead of being clipped.
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
 
   useEffect(() => {
     if (!jobId) return;
@@ -169,7 +174,7 @@ export default function EmailJobDetailPage() {
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
           onClick={() => router.push("/admin/emails")}
-          sx={{ mb: 1.5, textTransform: "none", color: "var(--font-secondary)" }}
+          sx={{ mb: 1.5, textTransform: "none", color: "var(--font-secondary)", [PHONE]: { minHeight: 44 } }}
         >
           {t("adminEmailJobs.backToEmailJobs")}
         </Button>
@@ -231,7 +236,9 @@ export default function EmailJobDetailPage() {
           <Tabs
             value={tabValue}
             onChange={(_, v) => setTabValue(v)}
-            sx={{ borderBottom: 1, borderColor: "divider", px: 2 }}
+            variant={isPhone ? "scrollable" : "standard"}
+            scrollButtons={false}
+            sx={{ borderBottom: 1, borderColor: "divider", px: 2, [PHONE]: { px: 0.5 } }}
           >
             <Tab label={t("adminEmailJobs.allRecipients")} />
             <Tab label={t("adminEmailJobs.successful")} />
