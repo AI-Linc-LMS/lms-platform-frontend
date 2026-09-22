@@ -24,6 +24,7 @@ import {
   type TutorDashboard,
   type TutorLevel,
 } from "@/lib/services/ai-tutor.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The AI Tutor dashboard.
@@ -232,6 +233,7 @@ export default function AiTutorPage() {
                   fontSize: "0.88rem",
                   fontWeight: 500,
                   color: "var(--ai-violet)",
+                  [PHONE]: { minHeight: 44 },
                   "&:focus-visible": {
                     outline: "none",
                     boxShadow: "0 0 0 2px var(--canvas), 0 0 0 4px var(--ai-violet)",
@@ -487,5 +489,6 @@ function trackChipSx(active: boolean) {
       ? "color-mix(in srgb, var(--ai-violet) 8%, transparent)"
       : "transparent",
     color: active ? "var(--ai-violet)" : "var(--font-secondary)",
+    [PHONE]: { minHeight: 44 },
   } as const;
 }

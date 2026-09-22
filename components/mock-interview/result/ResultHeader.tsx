@@ -4,6 +4,7 @@ import { Box, Container, Typography, Button, Chip } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { cleanInterviewTitle } from "@/lib/utils/mock-interview-title";
 import { memo } from "react";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface ResultHeaderProps {
   title: string;
@@ -72,6 +73,7 @@ const ResultHeaderComponent = ({
                 color: "#ffffff",
                 mb: 2,
                 "&:hover": { backgroundColor: "rgba(255, 255, 255, 0.1)" },
+                [PHONE]: { minHeight: 44 },
               }}
             >
               {backLabel}
@@ -160,6 +162,7 @@ const ResultHeaderComponent = ({
                 sx={{
                   color: "var(--font-secondary)",
                   fontSize: "0.65rem",
+                  [PHONE]: { fontSize: "0.75rem" },
                   mt: 0.5,
                   letterSpacing: "0.05em",
                   textTransform: "uppercase",

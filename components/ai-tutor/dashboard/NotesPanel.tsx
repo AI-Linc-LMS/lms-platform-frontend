@@ -5,6 +5,7 @@ import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { TutorSurface } from "../shared/surfaces";
 import type { TutorNote } from "@/lib/services/ai-tutor.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * What the learner kept: flashcards and notes from past sessions.
@@ -128,11 +129,13 @@ export function NotesPanel({ notes }: { notes: TutorNote[] }) {
                   outline: "none",
                   boxShadow: "0 0 0 2px var(--card-bg), 0 0 0 4px var(--ai-violet)",
                 },
+                [PHONE]: { minHeight: 44 },
               }}
             >
               <Typography
                 sx={{
                   fontSize: "0.74rem",
+                  [PHONE]: { fontSize: "0.75rem" },
                   fontWeight: 600,
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
@@ -149,6 +152,7 @@ export function NotesPanel({ notes }: { notes: TutorNote[] }) {
                   borderRadius: 9999,
                   bgcolor: "var(--surface, #f1f5f9)",
                   fontSize: "0.72rem",
+                  [PHONE]: { fontSize: "0.75rem" },
                   fontWeight: 600,
                   color: "var(--font-secondary)",
                 }}
@@ -157,7 +161,7 @@ export function NotesPanel({ notes }: { notes: TutorNote[] }) {
               </Box>
               <Box sx={{ flex: 1 }} />
               <Typography
-                sx={{ fontSize: "0.74rem", color: "var(--ai-violet)", fontWeight: 500 }}
+                sx={{ fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" }, color: "var(--ai-violet)", fontWeight: 500 }}
               >
                 {group.items.every((i) => revealed.has(i.id)) ? "Hide all" : "Show all"}
               </Typography>
@@ -287,6 +291,7 @@ export function NotesPanel({ notes }: { notes: TutorNote[] }) {
             color: "var(--ai-violet)",
             cursor: "pointer",
             "&:hover": { bgcolor: "var(--surface, #f8fafc)" },
+            [PHONE]: { minHeight: 44 },
           }}
         >
           <Icon icon="mdi:chevron-down" width={17} />

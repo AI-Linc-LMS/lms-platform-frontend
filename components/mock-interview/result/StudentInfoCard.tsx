@@ -3,6 +3,7 @@
 import { Paper, Typography, Box, Avatar, Chip, Divider } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { memo } from "react";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface StudentInfoCardProps {
   student: {
@@ -48,6 +49,7 @@ const StudentInfoCardComponent = ({
               backgroundColor: "#f3f4f6",
               color: "#6b7280",
               fontSize: "0.7rem",
+              [PHONE]: { fontSize: "0.75rem" },
               height: 20,
               mt: 0.5,
             }}

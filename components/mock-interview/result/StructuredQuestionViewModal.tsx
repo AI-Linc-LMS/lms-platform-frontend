@@ -12,6 +12,8 @@ import {
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { CodingProblemBody, type CodingProblemData } from "../coding/CodingProblemBody";
+import { PHONE } from "@/components/common/mobile/phone";
+import { usePhoneSheet } from "@/components/mock-interview/usePhoneSheet";
 
 export interface StructuredQuestionViewModalProps {
   open: boolean;
@@ -58,6 +60,7 @@ const StructuredQuestionViewModalComponent = ({
   question,
   candidateAnswer,
 }: StructuredQuestionViewModalProps) => {
+  const { isPhone, sheetProps } = usePhoneSheet();
   if (!question) return null;
   const qtype = (question.type || "").toLowerCase();
   const isCoding = qtype === "coding" && !!question.coding_problem;
@@ -71,6 +74,7 @@ const StructuredQuestionViewModalComponent = ({
       onClose={onClose}
       maxWidth={isCoding ? "lg" : "sm"}
       fullWidth
+      {...(isCoding ? { fullScreen: isPhone || undefined } : sheetProps)}
       PaperProps={{
         sx: {
           borderRadius: 3,
@@ -99,7 +103,7 @@ const StructuredQuestionViewModalComponent = ({
             {isCoding ? "Coding Question" : "Multiple Choice Question"}
           </Typography>
         </Box>
-        <IconButton onClick={onClose} aria-label="Close" size="small">
+        <IconButton sx={{ [PHONE]: { minWidth: 44, minHeight: 44 } }} onClick={onClose} aria-label="Close" size="small">
           <IconWrapper icon="mdi:close" size={20} />
         </IconButton>
       </DialogTitle>
@@ -262,6 +266,7 @@ function MCQView({
                 color: isCorrect ? "var(--font-light)" : "var(--font-secondary)",
                 fontWeight: 700,
                 fontSize: "0.7rem",
+                [PHONE]: { fontSize: "0.75rem" },
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -296,6 +301,7 @@ function MCQView({
                   py: 0.15,
                   borderRadius: 1,
                   fontSize: "0.65rem",
+                  [PHONE]: { fontSize: "0.75rem" },
                   fontWeight: 700,
                   letterSpacing: "0.05em",
                   textTransform: "uppercase",
@@ -361,6 +367,7 @@ function Section({
               py: 0.1,
               borderRadius: 1,
               fontSize: "0.6rem",
+              [PHONE]: { fontSize: "0.75rem" },
               fontWeight: 700,
               letterSpacing: "0.06em",
               backgroundColor: "var(--surface-indigo-light)",

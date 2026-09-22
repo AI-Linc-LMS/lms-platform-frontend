@@ -57,9 +57,30 @@ import { useTenantShellTheme } from "@/lib/theme/useTenantShellTheme";
 import { normalizeThemeSettings } from "@/lib/theme/normalizeThemeSettings";
 import { buildSidebarLogoBrandingUi } from "@/lib/theme/authHeroBranding";
 import { resolveClientLogoUrl } from "@/lib/utils/resolveClientLogoUrl";
+import { TenantLogo } from "@/components/common/TenantLogo";
 
 const DRAWER_WIDTH = 264;
 const DRAWER_WIDTH_COLLAPSED = 64;
+
+/**
+ * The tenant name standing in for a logo that failed to load, in the logo's box.
+ *
+ * Block + centred text + a line-height equal to the box, not a centring flexbox: in a flex
+ * container text-overflow never applies, so a long name ("Kalinga Institute of Industrial
+ * Technology") was cut at both ends instead of ending in an ellipsis.
+ */
+export function sidebarWordmarkSx(logoHeightPx: number, color: string) {
+  return {
+    display: "block",
+    textAlign: "center",
+    lineHeight: `${logoHeightPx}px`,
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    fontSize: "1.05rem",
+    color,
+  } as const;
+}
 
 const SIDEBAR_SECTIONS_STORAGE_KEY = "sidebar_open_sections";
 const ALL_SECTION_IDS = [...STUDENT_SECTIONS, ...ADMIN_SECTIONS].map((s) => s.id);
@@ -689,11 +710,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <Box sx={sidebarLogoBoxSx}>
               {/* Plain <img>, NOT next/image: client-provided branding logos are often SVG or on
                   hosts the optimizer 400s on, which next/image silently dropped. */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
+              {/* A failed load (DNS, an expired signed url) shows the tenant name, not a broken
+                  image. */}
+              <TenantLogo
                 src={sidebarLogoUrl}
-                alt={clientInfo?.app_name || "Logo"}
-                style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                name={clientInfo?.app_name || clientInfo?.name || "Logo"}
+                imgStyle={{ width: "100%", height: "100%", objectFit: "contain" }}
+                wordmarkSx={sidebarWordmarkSx(sidebarLogoSizing.logoHeightPx, shell.nav)}
               />
             </Box>
           ) : (

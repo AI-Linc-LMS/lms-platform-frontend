@@ -5,6 +5,7 @@ import { Box, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { AnimatePresence, motion } from "framer-motion";
 import type { RoadmapCard } from "@/lib/services/roadmaps.service";
+import { PHONE } from "@/components/common/mobile/phone";
 import { DRAWER_WIDTH } from "@/components/layout/Sidebar";
 
 /**
@@ -143,6 +144,7 @@ export function CreateCourseBar({
                   alignItems: "center",
                   gap: 1,
                   "&:hover": { bgcolor: "var(--surface)" },
+                  [PHONE]: { minHeight: 44 },
                 }}
               >
                 <Icon icon="solar:map-point-wave-linear" width={15} />
@@ -199,6 +201,8 @@ export function CreateCourseBar({
                 font: "inherit",
                 fontSize: "0.95rem",
                 color: "var(--font-primary)",
+                // The whole 52px pill is the field on a phone, not the 23px line of text in it.
+                [PHONE]: { alignSelf: "stretch" },
               }}
             />
 

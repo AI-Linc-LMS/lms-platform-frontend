@@ -11,6 +11,7 @@ import {
 import { ProctoringVideoPreview } from "@/components/assessment/ProctoringVideoPreview";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { AIAvatar } from "./AIAvatar";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface VideoPreviewAreaProps {
   loading: boolean;
@@ -282,6 +283,7 @@ export const VideoPreviewArea = memo(function VideoPreviewArea({
               "&:hover": {
                 backgroundColor: "var(--accent-indigo-dark)",
               },
+              [PHONE]: { minHeight: 44 },
             }}
           >
             {isInitializing ? "Starting Interview..." : "Start Interview"}

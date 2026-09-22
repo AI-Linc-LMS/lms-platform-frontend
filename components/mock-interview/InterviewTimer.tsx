@@ -3,6 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { Box, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface InterviewTimerProps {
   durationMinutes: number;
@@ -137,6 +138,7 @@ export function InterviewTimer({
             fontWeight: 600,
             letterSpacing: "0.06em",
             fontSize: "0.65rem",
+            [PHONE]: { fontSize: "0.75rem" },
           }}
         >
           PAUSED

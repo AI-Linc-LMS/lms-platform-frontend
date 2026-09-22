@@ -14,6 +14,8 @@ import {
 import { CodeEditor } from "@/components/editor/MonacoEditor";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { CodingProblemBody, type CodingProblemData } from "./coding/CodingProblemBody";
+import { PHONE } from "@/components/common/mobile/phone";
+import { usePhoneSheet } from "@/components/mock-interview/usePhoneSheet";
 
 export type CodingProblemPayload = CodingProblemData & {
   starter_code: string;
@@ -49,6 +51,7 @@ function CodingQuestionModalComponent({
     () => (problem?.language || "python").toLowerCase(),
     [problem?.language],
   );
+  const { isPhone } = usePhoneSheet();
   const [language, setLanguage] = useState<string>(initialLang);
   const [code, setCode] = useState<string>(problem?.starter_code || "");
 
@@ -98,6 +101,8 @@ function CodingQuestionModalComponent({
       maxWidth="lg"
       fullWidth
       disableEscapeKeyDown
+      // An editor needs the whole phone, not a sheet.
+      fullScreen={isPhone || undefined}
       PaperProps={{
         sx: {
           borderRadius: 3,
@@ -107,7 +112,18 @@ function CodingQuestionModalComponent({
         },
       }}
     >
-      <Box sx={{ display: "flex", flexDirection: "column", height: "92vh" }}>
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          height: "92vh",
+          [PHONE]: {
+            height: "100dvh",
+            pt: "env(safe-area-inset-top)",
+            pb: "env(safe-area-inset-bottom)",
+          },
+        }}
+      >
         <Box
           sx={{
             display: "flex",
@@ -137,6 +153,7 @@ function CodingQuestionModalComponent({
                 backgroundColor: "var(--surface-indigo-light)",
                 color: "var(--accent-indigo)",
                 fontSize: "0.7rem",
+                [PHONE]: { fontSize: "0.75rem" },
                 fontWeight: 600,
                 letterSpacing: "0.04em",
               }}
@@ -186,6 +203,7 @@ function CodingQuestionModalComponent({
                   letterSpacing: "0.05em",
                   textTransform: "uppercase",
                   fontSize: "0.65rem",
+                  [PHONE]: { fontSize: "0.75rem" },
                   color: timerColor,
                   opacity: 0.85,
                 }}
@@ -316,6 +334,7 @@ function CodingQuestionModalComponent({
               fontWeight: 600,
               backgroundColor: "var(--accent-indigo)",
               "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
+              [PHONE]: { minHeight: 44 },
             }}
           >
             Submit Code &amp; Continue

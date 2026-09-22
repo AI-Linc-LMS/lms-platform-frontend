@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { PauseProgressBar } from "./PauseProgressBar";
 import { MicWaveform } from "./MicWaveform";
+import { PHONE } from "@/components/common/mobile/phone";
 
 export interface AnswerInputAreaProps {
   currentAnswer: string;
@@ -293,6 +294,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
               sx={{
                 height: 18,
                 fontSize: "0.7rem",
+                [PHONE]: { fontSize: "0.75rem" },
                 fontWeight: 700,
                 backgroundColor: "var(--surface)",
                 color: "var(--font-secondary)",
@@ -384,6 +386,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
                         alignItems: "center",
                         justifyContent: "center",
                         fontSize: "0.7rem",
+                        [PHONE]: { fontSize: "0.75rem" },
                         fontWeight: 700,
                         fontVariantNumeric: "tabular-nums",
                       }}
@@ -477,6 +480,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
                 borderColor: "var(--font-tertiary)",
                 backgroundColor: "var(--surface)",
               },
+              [PHONE]: { minHeight: 44 },
             }}
           >
             {t("mockInterview.previous")}
@@ -493,6 +497,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
                 borderColor: "var(--font-tertiary)",
                 backgroundColor: "var(--surface)",
               },
+              [PHONE]: { minHeight: 44 },
             }}
           >
             Save Answer
@@ -509,6 +514,7 @@ export const AnswerInputArea = memo(function AnswerInputArea({
             "&:hover": {
               backgroundColor: isLastQuestion ? "var(--ats-success-muted)" : "var(--accent-indigo-dark)",
             },
+            [PHONE]: { minHeight: 44 },
           }}
         >
           {isLastQuestion ? "Submit Interview" : "Next Question"}

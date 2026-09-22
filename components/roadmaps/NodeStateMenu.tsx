@@ -3,6 +3,7 @@
 import { Box, Menu, MenuItem, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type { SelfState } from "@/lib/services/roadmaps.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 export const NODE_STATES: {
   value: SelfState;
@@ -72,7 +73,7 @@ export function NodeStateMenu({
               onPick(active ? "pending" : s.value);
               onClose();
             }}
-            sx={{ gap: 1.25, py: 0.9, fontSize: "0.85rem" }}
+            sx={{ gap: 1.25, py: 0.9, fontSize: "0.85rem", [PHONE]: { minHeight: 48 } }}
           >
             <Icon icon={s.icon} width={17} color={active ? s.tone : "var(--font-tertiary)"} />
             <Typography
@@ -94,6 +95,8 @@ export function NodeStateMenu({
                 borderRadius: 1,
                 border: "1px solid var(--border-default)",
                 color: "var(--font-tertiary)",
+                // A keyboard shortcut means nothing on a touch screen, and at 10.9px it is noise.
+                [PHONE]: { display: "none" },
               }}
             >
               {s.key}

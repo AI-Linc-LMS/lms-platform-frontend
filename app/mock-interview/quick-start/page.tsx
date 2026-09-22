@@ -13,6 +13,7 @@ import mockInterviewService from "@/lib/services/mock-interview.service";
 import { useToast } from "@/components/common/Toast";
 import { useRouter } from "next/navigation";
 import { useStopCameraOnMount } from "@/lib/hooks/useStopCameraOnMount";
+import { PHONE } from "@/components/common/mobile/phone";
 
 export default function QuickStartPage() {
   const { showToast } = useToast();
@@ -83,6 +84,7 @@ export default function QuickStartPage() {
               "&:hover": {
                 backgroundColor: "#f3f4f6",
               },
+              [PHONE]: { minHeight: 44 },
             }}
           >
             Back to Interviews

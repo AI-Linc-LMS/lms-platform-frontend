@@ -6,6 +6,7 @@ import { Box, Button, CircularProgress, TextField, Typography } from "@mui/mater
 import { Icon } from "@iconify/react";
 
 import { DIFFICULTIES, INTERVIEW_TYPES } from "@/lib/services/interview.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * "What do you want to be interviewed on?" - the composer, in the hub's hero.
@@ -79,6 +80,7 @@ function Chip({
         "&:hover": { borderColor: active ? "transparent" : "rgba(255,255,255,0.5)" },
         "&:focus-visible": { boxShadow: "0 0 0 2px #1e1b4b, 0 0 0 4px #fff" },
         "@media (prefers-reduced-motion: reduce)": { transition: "none" },
+        [PHONE]: { minHeight: 44, display: "inline-flex", alignItems: "center", boxSizing: "border-box" },
       }}
     >
       {children}
@@ -91,6 +93,7 @@ function FieldLabel({ children }: { children: React.ReactNode }) {
     <Typography
       sx={{
         fontSize: "0.7rem",
+        [PHONE]: { fontSize: "0.75rem" },
         fontWeight: 700,
         letterSpacing: "0.08em",
         textTransform: "uppercase",
@@ -165,6 +168,8 @@ export function InterviewComposer() {
               WebkitTextFillColor: "#fff",
               caretColor: "#fff",
               fontSize: "0.95rem",
+              // 16px or iOS zooms the page on focus; 44px tall for a thumb.
+              [PHONE]: { fontSize: "1rem", py: "11.5px" },
             },
             "& .MuiInputBase-input::placeholder": {
               color: "rgba(255,255,255,0.7)",
@@ -195,13 +200,31 @@ export function InterviewComposer() {
             whiteSpace: "nowrap",
             "&:hover": { bgcolor: "rgba(255,255,255,0.9)" },
             "&.Mui-disabled": { bgcolor: "rgba(255,255,255,0.35)", color: "rgba(30,27,75,0.5)" },
+            [PHONE]: { width: "100%", minHeight: 44 },
           }}
         >
           {starting ? "Starting" : "Start practice"}
         </Button>
       </Box>
 
-      <Box sx={{ mt: 1.25, display: "flex", gap: 0.75, flexWrap: "wrap" }}>
+      <Box
+        sx={{
+          mt: 1.25,
+          display: "flex",
+          gap: 0.75,
+          flexWrap: "wrap",
+          // At 44px a chip, five wrapped suggestions were three rows of the header. On a phone
+          // they are one row that scrolls sideways.
+          [PHONE]: {
+            flexWrap: "nowrap",
+            overflowX: "auto",
+            scrollSnapType: "x proximity",
+            scrollbarWidth: "none",
+            "&::-webkit-scrollbar": { display: "none" },
+            "& > *": { flexShrink: 0, scrollSnapAlign: "start" },
+          },
+        }}
+      >
         {SUGGESTIONS.map((suggestion) => (
           <Box
             key={suggestion}
@@ -220,6 +243,7 @@ export function InterviewComposer() {
               transition: "border-color 150ms ease, color 150ms ease",
               "&:hover": { borderColor: "rgba(255,255,255,0.5)", color: "#fff" },
               "&:focus-visible": { boxShadow: "0 0 0 2px #1e1b4b, 0 0 0 4px #fff" },
+              [PHONE]: { minHeight: 44, display: "inline-flex", alignItems: "center", boxSizing: "border-box" },
             }}
           >
             {suggestion}

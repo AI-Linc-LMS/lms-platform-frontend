@@ -14,6 +14,7 @@ import { MockInterview } from "@/lib/services/mock-interview.service";
 import { memo, useCallback, useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { cleanInterviewTitle } from "@/lib/utils/mock-interview-title";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface PreviousInterviewsTableProps {
   interviews: MockInterview[];
@@ -131,6 +132,7 @@ const PreviousInterviewsTableComponent = ({
             sx={{
               p: 3,
               borderRadius: 3,
+              [PHONE]: { p: 2 },
               border: "1px solid var(--border-default)",
               transition: "all 0.3s ease",
               "&:hover": {
@@ -141,13 +143,14 @@ const PreviousInterviewsTableComponent = ({
               },
             }}
           >
-            <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start" }}>
+            <Box sx={{ display: "flex", gap: 3, alignItems: "flex-start", [PHONE]: { gap: 1.5 } }}>
               {/* Interview Icon */}
               <Box
                 sx={{
                   width: 80,
                   height: 80,
                   borderRadius: 3,
+                  [PHONE]: { width: 52, height: 52, "& .MuiTypography-h5": { fontSize: "1.2rem" }, "& svg": { width: 26, height: 26 } },
                   background:
                     "linear-gradient(135deg, var(--success-500) 0%, color-mix(in srgb, var(--success-500) 84%, var(--accent-indigo-dark)) 100%)",
                   display: "flex",
@@ -166,13 +169,14 @@ const PreviousInterviewsTableComponent = ({
               </Box>
 
               {/* Main Content */}
-              <Box sx={{ flex: 1 }}>
+              <Box sx={{ flex: 1, [PHONE]: { minWidth: 0 } }}>
                 <Box
                   sx={{
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "flex-start",
                     mb: 2,
+                    [PHONE]: { flexWrap: "wrap", gap: 1, mb: 1.5 },
                   }}
                 >
                   <Box>
@@ -259,6 +263,7 @@ const PreviousInterviewsTableComponent = ({
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
+                    [PHONE]: { flexDirection: "column", alignItems: "stretch", gap: 1.5, "& > * > *": { whiteSpace: "nowrap" } },
                   }}
                 >
                   <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
@@ -290,6 +295,7 @@ const PreviousInterviewsTableComponent = ({
                           backgroundColor:
                             "color-mix(in srgb, var(--success-500) 84%, var(--accent-indigo-dark))",
                         },
+                        [PHONE]: { minWidth: 44, minHeight: 44, width: "100%" },
                       }}
                     >
                       <IconWrapper icon="mdi:chart-box-outline" size={20} />

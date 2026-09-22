@@ -32,6 +32,7 @@ import {
 import { LIVE_PHASES, useRealtimeInterview } from "@/lib/hooks/useRealtimeInterview";
 import { useScreenWakeLock } from "@/lib/hooks/useScreenWakeLock";
 import interviewService, { type NextQuestion } from "@/lib/services/interview.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The live interview room.
@@ -428,6 +429,7 @@ function InterviewRoom() {
                     border: `1px solid ${ROOM_BORDER}`,
                     borderRadius: 999,
                     px: 2.5,
+                    [PHONE]: { minHeight: 44 },
                   }}
                 >
                   Back to interviews
@@ -450,7 +452,7 @@ function InterviewRoom() {
                     }}
                     variant="contained"
                     disableElevation
-                    sx={{ textTransform: "none", borderRadius: 999, px: 2.5, fontWeight: 600 }}
+                    sx={{ textTransform: "none", borderRadius: 999, px: 2.5, fontWeight: 600, [PHONE]: { minHeight: 44 } }}
                   >
                     Try again
                   </Button>
@@ -492,6 +494,7 @@ function InterviewRoom() {
                 border: `1px solid ${ROOM_BORDER}`,
                 borderRadius: 999,
                 px: 2.5,
+                [PHONE]: { minHeight: 44 },
               }}
             >
               {muted ? "Unmute" : "Mute"}
@@ -505,6 +508,7 @@ function InterviewRoom() {
                 border: `1px solid ${ROOM_BORDER}`,
                 borderRadius: 999,
                 px: 2.5,
+                [PHONE]: { minHeight: 44 },
               }}
             >
               End interview

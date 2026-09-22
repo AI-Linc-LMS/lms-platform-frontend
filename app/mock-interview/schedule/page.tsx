@@ -12,6 +12,7 @@ import mockInterviewService from "@/lib/services/mock-interview.service";
 import { useToast } from "@/components/common/Toast";
 import { useRouter } from "next/navigation";
 import { useStopCameraOnMount } from "@/lib/hooks/useStopCameraOnMount";
+import { PHONE } from "@/components/common/mobile/phone";
 
 export default function ScheduleInterviewPage() {
   const { showToast } = useToast();
@@ -53,6 +54,7 @@ export default function ScheduleInterviewPage() {
                 backgroundColor:
                   "color-mix(in srgb, var(--surface) 75%, var(--background) 25%)",
               },
+              [PHONE]: { minHeight: 44 },
             }}
           >
             Back to Interviews

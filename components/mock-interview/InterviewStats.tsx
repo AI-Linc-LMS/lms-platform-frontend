@@ -4,6 +4,7 @@ import { Box, Paper, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { memo } from "react";
 import { useTranslation } from "react-i18next";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface InterviewStatsProps {
   totalInterviews: number;
@@ -60,6 +61,9 @@ const InterviewStatsComponent = ({
           md: "repeat(4, 1fr)",
         },
         gap: 3,
+        // Four full-width 130px cards were a whole screen of numbers before anything to do. Two
+        // compact columns on a phone.
+        [PHONE]: { gridTemplateColumns: "repeat(2, minmax(0, 1fr))", gap: 1.5 },
       }}
     >
       {stats.map((stat, index) => (
@@ -68,6 +72,7 @@ const InterviewStatsComponent = ({
             elevation={0}
             sx={{
               p: 3,
+              [PHONE]: { p: 1.5 },
               borderRadius: 2,
               border: "1px solid",
               borderColor: "var(--border-default)",
@@ -80,11 +85,12 @@ const InterviewStatsComponent = ({
               },
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2, [PHONE]: { gap: 1.25 } }}>
               <Box
                 sx={{
                   width: 48,
                   height: 48,
+                  [PHONE]: { width: 36, height: 36, flexShrink: 0 },
                   borderRadius: 1.5,
                   backgroundColor: stat.bgColor,
                   display: "flex",
@@ -94,16 +100,25 @@ const InterviewStatsComponent = ({
               >
                 <IconWrapper icon={stat.icon} size={24} color={stat.color} />
               </Box>
-              <Box>
+              <Box sx={{ [PHONE]: { minWidth: 0 } }}>
                 <Typography
                   variant="h4"
-                  sx={{ fontWeight: 700, color: "var(--font-primary)", mb: 0.5 }}
+                  sx={{
+                    fontWeight: 700,
+                    color: "var(--font-primary)",
+                    mb: 0.5,
+                    [PHONE]: { fontSize: "1.5rem", mb: 0.25 },
+                  }}
                 >
                   {stat.value}
                 </Typography>
                 <Typography
                   variant="body2"
-                  sx={{ color: "var(--font-secondary)", fontSize: "0.875rem" }}
+                  sx={{
+                    color: "var(--font-secondary)",
+                    fontSize: "0.875rem",
+                    [PHONE]: { fontSize: "0.8rem", lineHeight: 1.25 },
+                  }}
                 >
                   {stat.label}
                 </Typography>

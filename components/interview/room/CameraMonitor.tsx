@@ -6,6 +6,7 @@ import { Box, Typography } from "@mui/material";
 import { useProctoring } from "@/lib/hooks/useProctoring";
 import { ROOM_BORDER, ROOM_GREEN, ROOM_TEXT_DIM } from "@/components/ai-tutor/room/roomTokens";
 import type { MonitorSnapshot } from "./monitoring";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The self view, and the face detector behind it, for the whole sitting.
@@ -147,7 +148,7 @@ export default function CameraMonitor({
           }}
         >
           <Box sx={{ width: 6, height: 6, borderRadius: "50%", bgcolor: tone }} />
-          <Typography sx={{ fontSize: "0.6rem", color: "#fff", letterSpacing: "0.04em" }}>
+          <Typography sx={{ fontSize: "0.6rem", [PHONE]: { fontSize: "0.75rem" }, color: "#fff", letterSpacing: "0.04em" }}>
             {state === "watching" ? "Monitoring" : state === "unavailable" ? "Not monitored" : "Starting"}
           </Typography>
         </Box>
