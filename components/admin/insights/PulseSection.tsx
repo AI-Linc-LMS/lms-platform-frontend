@@ -1,7 +1,10 @@
 "use client";
 
-import { Box, Chip, Skeleton, Tooltip, Typography } from "@mui/material";
+import Link from "next/link";
+import { Box, Button, Chip, Skeleton, Tooltip, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { AtRiskCriteria, InfoButton } from "@/components/common/InfoPopover";
+import { atRiskSegmentHref } from "@/lib/utils/student-risk";
 import {
   Area,
   CartesianGrid,
@@ -13,7 +16,7 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
-import type { PulsePayload, AtRiskRow } from "@/lib/services/admin/admin-insights.service";
+import type { PulsePayload, AtRiskPayload } from "@/lib/services/admin/admin-insights.service";
 import {
   Panel,
   EmptyState,
@@ -328,9 +331,12 @@ export function PulseTrendPanel({ data, loading }: { data: PulsePayload | null; 
 export function AtRiskPanel({
   atRisk,
   loading,
+  courseId = null,
 }: {
-  atRisk: { results: AtRiskRow[]; rules: Record<string, string> } | null;
+  atRisk: AtRiskPayload | null;
   loading: boolean;
+  /** The dashboard's adaptive course filter, carried into "View all" so both lists match. */
+  courseId?: number | null;
 }) {
   if (loading) {
     return (
@@ -342,17 +348,29 @@ export function AtRiskPanel({
     );
   }
   const riskRows = atRisk?.results ?? [];
+  const total = Math.max(atRisk?.total ?? riskRows.length, riskRows.length);
   const ruleLegend = Object.entries(atRisk?.rules ?? {});
+  const viewAllHref = atRiskSegmentHref(courseId);
   return (
     <Panel
       title="Needs attention"
       subtitle={
-        riskRows.length > 0
-          ? `${riskRows.length} student${riskRows.length === 1 ? "" : "s"} matched a risk rule`
+        total > 0
+          ? `${total.toLocaleString()} student${total === 1 ? "" : "s"} at risk${
+              total > riskRows.length ? ` · top ${riskRows.length} shown` : ""
+            }`
           : undefined
       }
       icon="mdi:account-alert-outline"
       accent={INSIGHT.pink}
+      action={
+        <InfoButton ariaLabel="What at risk means">
+          <AtRiskCriteria
+            rules={ruleLegend.length > 0 ? atRisk?.rules : undefined}
+            eligibility={atRisk?.eligibility}
+          />
+        </InfoButton>
+      }
     >
       {!atRisk ? (
         <EmptyState
@@ -364,7 +382,7 @@ export function AtRiskPanel({
         <EmptyState
           icon="mdi:emoticon-happy-outline"
           title="Nobody is falling behind right now"
-          hint="No student matched a risk rule in this range. This list fills itself as soon as one does."
+          hint="No enrolled student matches an at-risk rule right now. This list fills itself as soon as one does."
         />
       ) : (
         <Box sx={{ display: "flex", flexDirection: "column" }}>
@@ -462,6 +480,22 @@ export function AtRiskPanel({
               </Box>
             </Box>
           ))}
+
+          {/* The list is capped server-side; the full set is Manage Students' "At risk" segment,
+              which runs the same rule, so this count and that list always match. */}
+          <Button
+            component={Link}
+            href={viewAllHref}
+            data-testid="at-risk-view-all"
+            variant="outlined"
+            size="small"
+            endIcon={<IconWrapper icon="mdi:arrow-right" size={16} />}
+            sx={{ mt: 1.5, alignSelf: "flex-start", textTransform: "none", fontWeight: 700, minHeight: 36 }}
+          >
+            {total > riskRows.length
+              ? `View all ${total.toLocaleString()} in Manage Students`
+              : "Open in Manage Students"}
+          </Button>
 
           {ruleLegend.length > 0 && (
             <Box

@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Box, Paper, Typography } from "@mui/material";
+import { Box, Chip, Paper, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
@@ -75,6 +75,11 @@ type DirectoryState = {
   status: string;
   resumeFilter: "all" | "yes" | "no";
   segment: SegmentKey;
+  /**
+   * ADAPTIVE course the at-risk rule is evaluated for. Set by the dashboard's "View all" when
+   * its course filter is on, so this directory lists exactly the dashboard's set.
+   */
+  riskCourse: number | null;
   searchTerm: string;
   page: number;
   limit: number;
@@ -87,6 +92,7 @@ const DEFAULT_DIRECTORY_STATE: DirectoryState = {
   status: "all",
   resumeFilter: "all",
   segment: "all",
+  riskCourse: null,
   searchTerm: "",
   page: 1,
   limit: 10,
@@ -115,6 +121,7 @@ function parseDirectoryState(
   const status = params.get("status") || DEFAULT_DIRECTORY_STATE.status;
   const resume = params.get("resume");
   const segmentRaw = params.get("segment") as SegmentKey | null;
+  const riskCourseRaw = Number(params.get("riskCourse"));
   const sortByRaw = params.get("sortBy") as SortOption | null;
   const sortOrderRaw = params.get("sortOrder");
   return {
@@ -126,6 +133,8 @@ function parseDirectoryState(
       resume === "yes" || resume === "no" ? resume : "all",
     segment:
       segmentRaw && SEGMENT_KEYS.includes(segmentRaw) ? segmentRaw : "all",
+    riskCourse:
+      Number.isInteger(riskCourseRaw) && riskCourseRaw > 0 ? riskCourseRaw : null,
     searchTerm: params.get("q") || "",
     page: num("page", DEFAULT_DIRECTORY_STATE.page),
     limit: num("limit", DEFAULT_DIRECTORY_STATE.limit),
@@ -148,6 +157,7 @@ function serializeDirectoryState(state: DirectoryState): string {
     params.set("resume", state.resumeFilter);
   if (state.segment !== DEFAULT_DIRECTORY_STATE.segment)
     params.set("segment", state.segment);
+  if (state.riskCourse != null) params.set("riskCourse", String(state.riskCourse));
   if (state.searchTerm.trim()) params.set("q", state.searchTerm.trim());
   if (state.page !== DEFAULT_DIRECTORY_STATE.page)
     params.set("page", String(state.page));
@@ -235,6 +245,9 @@ export default function ManageStudentsPage() {
   const [segment, setSegment] = useState<SegmentKey>(
     initialDirectoryState.current.segment
   );
+  const [riskCourse, setRiskCourse] = useState<number | null>(
+    initialDirectoryState.current.riskCourse
+  );
   const [searchTerm, setSearchTerm] = useState<string>(
     initialDirectoryState.current.searchTerm
   );
@@ -308,6 +321,7 @@ export default function ManageStudentsPage() {
           limit: 10000,
           sort_by: "name",
           sort_order: "asc",
+          risk_course_id: riskCourse ?? undefined,
         });
         if (seq !== loadStudentsSeqRef.current) return;
         setAllStudents(response?.students ?? []);
@@ -442,6 +456,7 @@ export default function ManageStudentsPage() {
               limit: 10000,
               sort_by: "name",
               sort_order: "asc",
+              risk_course_id: riskCourse ?? undefined,
             })
           )
         );
@@ -502,6 +517,7 @@ export default function ManageStudentsPage() {
               limit: 10000,
               sort_by: "name",
               sort_order: "asc",
+              risk_course_id: riskCourse ?? undefined,
             })
           )
         );
@@ -540,7 +556,7 @@ export default function ManageStudentsPage() {
         setLoading(false);
       }
     }
-  }, [selectedCourses, showToast, t, courseManagerUser]);
+  }, [selectedCourses, showToast, t, courseManagerUser, riskCourse]);
 
   // Load students when course filter changes or on mount
   useEffect(() => {
@@ -556,6 +572,7 @@ export default function ManageStudentsPage() {
       status,
       resumeFilter,
       segment,
+      riskCourse,
       searchTerm,
       page,
       limit,
@@ -574,6 +591,7 @@ export default function ManageStudentsPage() {
     status,
     resumeFilter,
     segment,
+    riskCourse,
     searchTerm,
     page,
     limit,
@@ -985,6 +1003,25 @@ export default function ManageStudentsPage() {
             );
           })}
         </Box>
+        )}
+
+        {/* The dashboard's "View all" for a course-filtered "Needs attention" list lands here:
+            at-risk is then judged for that adaptive course only, so both lists are one set. */}
+        {riskCourse != null && (
+          <Box sx={{ mb: 2 }}>
+            <Chip
+              data-testid="risk-course-chip"
+              icon={<IconWrapper icon="mdi:alert-circle-outline" size={16} />}
+              label={`At risk judged for: ${
+                adaptiveCourses.find((c) => c.id === riskCourse)?.title ?? `course #${riskCourse}`
+              }`}
+              onDelete={() => {
+                setRiskCourse(null);
+                setPage(1);
+              }}
+              sx={{ fontWeight: 700, maxWidth: "100%" }}
+            />
+          </Box>
         )}
 
         <Box
