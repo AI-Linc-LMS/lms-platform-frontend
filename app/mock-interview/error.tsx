@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { Box, Button, Container, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * Route-level error boundary for everything under /mock-interview (take page, result page,
@@ -60,6 +61,7 @@ export default function MockInterviewError({
             backgroundColor: "var(--accent-indigo)",
             color: "var(--font-light)",
             "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
+            [PHONE]: { minHeight: 44 },
           }}
         >
           Try again
@@ -76,6 +78,7 @@ export default function MockInterviewError({
             fontWeight: 600,
             borderColor: "var(--border-default)",
             color: "var(--font-primary)",
+            [PHONE]: { minHeight: 44 },
           }}
         >
           Back to interviews

@@ -12,6 +12,8 @@ import {
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { memo } from "react";
+import { PHONE } from "@/components/common/mobile/phone";
+import { usePhoneSheet } from "@/components/mock-interview/usePhoneSheet";
 
 interface FullscreenWarningDialogProps {
   open: boolean;
@@ -22,6 +24,7 @@ export const FullscreenWarningDialog = memo(function FullscreenWarningDialog({
   open,
   onReEnterFullscreen,
 }: FullscreenWarningDialogProps) {
+  const { sheetProps } = usePhoneSheet();
   return (
     <Dialog
       open={open}
@@ -29,6 +32,7 @@ export const FullscreenWarningDialog = memo(function FullscreenWarningDialog({
       disableEscapeKeyDown
       maxWidth="sm"
       fullWidth
+      {...sheetProps}
     >
       <DialogTitle>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -68,6 +72,7 @@ export const FullscreenWarningDialog = memo(function FullscreenWarningDialog({
             "&:hover": {
               backgroundColor: "#1f2937",
             },
+            [PHONE]: { minHeight: 44 },
           }}
         >
           Enter Fullscreen Mode

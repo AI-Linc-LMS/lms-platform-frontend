@@ -16,6 +16,7 @@ import {
   QuestionPerformance,
   OverallFeedback,
 } from "@/components/mock-interview/result";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface InterviewResult {
   id: number;
@@ -372,6 +373,7 @@ export default function InterviewResultPage() {
                 backgroundColor: "var(--accent-indigo)",
                 color: "var(--font-light)",
                 "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
+                [PHONE]: { minHeight: 44 },
               }}
             >
               Back to interviews

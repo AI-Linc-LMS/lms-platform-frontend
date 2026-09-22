@@ -5,6 +5,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { InterviewTimer } from "./InterviewTimer";
 import { memo } from "react";
 import { cleanInterviewTitle } from "@/lib/utils/mock-interview-title";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface InterviewHeaderProps {
   title: string;
@@ -71,7 +72,7 @@ export const InterviewHeader = memo(function InterviewHeader({
     >
       <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
         {!interviewStarted && onBack && (
-          <IconButton onClick={onBack} sx={{ color: "var(--font-primary)" }}>
+          <IconButton onClick={onBack} sx={{ color: "var(--font-primary)", [PHONE]: { minWidth: 44, minHeight: 44 } }}>
             <IconWrapper icon="mdi:arrow-left" size={24} />
           </IconButton>
         )}
@@ -175,6 +176,7 @@ export const InterviewHeader = memo(function InterviewHeader({
                 "&:hover": {
                   backgroundColor: "var(--error-600, #dc2626)",
                 },
+                [PHONE]: { minHeight: 44 },
               }}
               startIcon={<IconWrapper icon="mdi:record" size={18} />}
             >
@@ -193,6 +195,7 @@ export const InterviewHeader = memo(function InterviewHeader({
                   borderColor: "var(--font-tertiary)",
                   backgroundColor: "var(--surface)",
                 },
+                [PHONE]: { minHeight: 44 },
               }}
             >
               End Interview

@@ -17,6 +17,7 @@ import { useState, useCallback, memo, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isClientOrgAdminRole } from "@/lib/auth/role-utils";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface QuickStartFormProps {
   onSubmit: (data: QuickStartFormData) => void;
@@ -339,6 +340,7 @@ const QuickStartFormComponent = ({
                       sx={{
                         fontWeight: 600,
                         fontSize: "0.72rem",
+                        [PHONE]: { fontSize: "0.75rem" },
                         letterSpacing: "0.02em",
                         mt: 0.25,
                         color: selected ? "var(--course-cta)" : "var(--font-secondary)",
@@ -356,6 +358,7 @@ const QuickStartFormComponent = ({
                           py: 0.1,
                           borderRadius: 999,
                           fontSize: "0.6rem",
+                          [PHONE]: { fontSize: "0.75rem" },
                           fontWeight: 700,
                           letterSpacing: "0.06em",
                           textTransform: "uppercase",
@@ -402,6 +405,7 @@ const QuickStartFormComponent = ({
                   borderColor: "#d1d5db",
                   backgroundColor: "#f9fafb",
                 },
+                [PHONE]: { minHeight: 44 },
               }}
             >
               Cancel
@@ -421,6 +425,7 @@ const QuickStartFormComponent = ({
                 "&:hover": {
                   backgroundColor: "#059669",
                 },
+                [PHONE]: { minHeight: 44 },
               }}
             >
               Start Interview

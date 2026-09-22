@@ -15,6 +15,7 @@ import {
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { memo, useState, useCallback } from "react";
 import { StructuredQuestionViewModal } from "./StructuredQuestionViewModal";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface Question {
   id: number;
@@ -163,6 +164,7 @@ const QuestionPerformanceComponent = ({
                             question.type === "practical" ? "#dbeafe" : "#f3f4f6",
                           color: question.type === "practical" ? "#1e40af" : "#374151",
                           fontSize: "0.7rem",
+                          [PHONE]: { fontSize: "0.75rem" },
                           height: 20,
                         }}
                       />
@@ -233,6 +235,7 @@ const QuestionPerformanceComponent = ({
                             backgroundColor: "var(--surface-indigo-light)",
                             borderColor: "var(--accent-indigo-dark)",
                           },
+                          [PHONE]: { minHeight: 44 },
                         }}
                       >
                         {hasCoding ? "View coding problem" : "View MCQ"}
