@@ -12,6 +12,8 @@ import {
   Badge,
   IconButton,
   Tooltip,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { Bell, CheckCheck } from "lucide-react";
 import { motion } from "framer-motion";
@@ -145,12 +147,15 @@ export function NotificationPopover({
   onNotificationClick,
   onMarkAllRead,
 }: NotificationPopoverProps) {
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   return (
     <Popover
       open={Boolean(anchorEl)}
       anchorEl={anchorEl}
       onClose={onClose}
-      marginThreshold={8}
+      // An 8px gutter on a phone, where the panel is screen-wide; MUI's 16px from 600px up.
+      marginThreshold={isPhone ? 8 : 16}
       anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       transformOrigin={{ vertical: "top", horizontal: "right" }}
       data-testid="notification-popover"
