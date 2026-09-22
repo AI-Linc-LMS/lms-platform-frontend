@@ -68,6 +68,9 @@ export function QuestionCard({
     <Box
       sx={{
         p: { xs: 2.5, md: 3.5 },
+        // The card sits inside the section shell's own padding: at 360px every px of card
+        // padding is a px the option text does not get.
+        [PHONE]: { p: 1.75, minWidth: 0 },
         borderRadius: 4,
         bgcolor: "color-mix(in srgb, var(--card-bg, #ffffff) 65%, transparent)",
         border: "1px solid color-mix(in srgb, var(--border-default, #e5e7eb) 60%, transparent)",
@@ -162,6 +165,10 @@ export function QuestionCard({
                 textAlign: "left",
                 width: "100%",
                 minHeight: 64,
+                // A ButtonBase centres its content, so an option wider than the card (a long
+                // code expression) overflowed BOTH edges and neither end could be read. On a
+                // phone the row starts at the badge and the text wraps inside the card.
+                [PHONE]: { justifyContent: "flex-start", minWidth: 0, px: 1.5, gap: 1.25 },
                 border: selected
                   ? "1.5px solid #6366f1"
                   : "1.5px solid color-mix(in srgb, var(--border-default, #e5e7eb) 80%, transparent)",
@@ -199,6 +206,13 @@ export function QuestionCard({
                   fontWeight: 500,
                   color: "text.primary",
                   lineHeight: 1.5,
+                  [PHONE]: {
+                    minWidth: 0,
+                    overflowWrap: "anywhere",
+                    "& code": { overflowWrap: "anywhere", whiteSpace: "normal" },
+                    "& pre": { maxWidth: "100%", overflowX: "auto", whiteSpace: "pre" },
+                    "& pre code": { whiteSpace: "pre" },
+                  },
                 }}
               />
             </ButtonBase>
