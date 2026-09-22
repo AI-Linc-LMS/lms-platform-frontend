@@ -13,6 +13,8 @@ import { AdaptiveCardBackdrop } from "@/components/adaptive-quiz/shared/Adaptive
 import { AdaptiveInfoTip } from "@/components/adaptive-quiz/shared/AdaptiveInfoTip";
 import { confidenceTier } from "@/lib/utils/adaptive-confidence";
 import { asStringList } from "@/lib/utils/as-list";
+import { PHONE } from "@/components/common/mobile/phone";
+import { TAP, phoneTextFloor } from "@/components/admin/adaptive-course/coursePhone";
 
 interface AdminQuizCardProps {
   quiz: AdminAdaptiveQuiz;
@@ -151,6 +153,7 @@ export function AdminQuizCard({ quiz, onAfterToggle, onRequestDelete }: AdminQui
                 textTransform: "uppercase",
                 color: accentStart,
                 lineHeight: 1,
+                ...phoneTextFloor,
               }}
             >
               {isActive ? "Adaptive · Live" : "Adaptive · Off"}
@@ -187,7 +190,7 @@ export function AdminQuizCard({ quiz, onAfterToggle, onRequestDelete }: AdminQui
 
         {/* Sub-skill chips */}
         {skills.length === 0 ? (
-          <Typography sx={{ fontSize: "0.74rem", color: "text.secondary", fontStyle: "italic" }}>
+          <Typography sx={{ fontSize: "0.74rem", color: "text.secondary", fontStyle: "italic", ...phoneTextFloor }}>
             Skills auto-derive from the MCQ bank.
           </Typography>
         ) : (
@@ -202,6 +205,7 @@ export function AdminQuizCard({ quiz, onAfterToggle, onRequestDelete }: AdminQui
                   fontSize: "0.68rem",
                   fontWeight: 700,
                   color: accentEnd,
+                  ...phoneTextFloor,
                   bgcolor: `color-mix(in srgb, ${accentEnd} 9%, transparent)`,
                   border: `1px solid color-mix(in srgb, ${accentEnd} 20%, transparent)`,
                 }}
@@ -218,6 +222,7 @@ export function AdminQuizCard({ quiz, onAfterToggle, onRequestDelete }: AdminQui
                   fontSize: "0.68rem",
                   fontWeight: 700,
                   color: "text.secondary",
+                  ...phoneTextFloor,
                   bgcolor: "color-mix(in srgb, currentColor 6%, transparent)",
                   border: "1px solid color-mix(in srgb, currentColor 18%, transparent)",
                 }}
@@ -240,7 +245,12 @@ export function AdminQuizCard({ quiz, onAfterToggle, onRequestDelete }: AdminQui
         />
 
         {/* Meta line: bank count + session length + SE threshold */}
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
+        <Box
+          sx={{
+            display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap",
+            [PHONE]: { "& .MuiIconButton-root": { minWidth: TAP, minHeight: TAP } },
+          }}
+        >
           <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
             <Icon icon="mdi:database-outline" width={14} style={{ color: accentStart, flexShrink: 0 }} />
             <Typography sx={{ fontSize: "0.78rem", fontWeight: 700, color: "text.primary" }}>
@@ -325,6 +335,7 @@ export function AdminQuizCard({ quiz, onAfterToggle, onRequestDelete }: AdminQui
                 border: "1px solid color-mix(in srgb, #ef4444 30%, transparent)",
                 borderRadius: 2.5,
                 "&:hover": { background: "color-mix(in srgb, #ef4444 8%, transparent)" },
+                [PHONE]: { minWidth: TAP, minHeight: TAP, flexShrink: 0 },
               }}
             >
               <Icon icon="mdi:trash-can-outline" width={18} />
