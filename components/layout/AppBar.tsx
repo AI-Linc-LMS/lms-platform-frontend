@@ -12,6 +12,8 @@ import {
   Divider,
   Popover,
   Tooltip,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
 import { useRouter } from "next/navigation";
@@ -25,7 +27,7 @@ import {
 import { LogOut, User, Menu as MenuIcon, Ticket,
   ReceiptText,
 } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { DRAWER_WIDTH } from "./Sidebar";
 import {
   getUserDisplayName,
@@ -34,7 +36,6 @@ import {
 } from "@/lib/utils/user-utils";
 import { useClientInfo, useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
 import { useAdminMode } from "@/lib/contexts/AdminModeContext";
-import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLeaderboardAndStreak } from "@/lib/hooks/useLeaderboardAndStreak";
 import { useStreakCelebration, primeNavStreak } from "@/lib/streak/streakCelebration";
@@ -50,6 +51,7 @@ import { config } from "@/lib/config";
 import { useVisibilityRefresh } from "@/lib/hooks/useVisibilityRefresh";
 import { MobileMenuButton } from "./MobileMenu";
 import { PHONE } from "@/components/common/mobile/phone";
+import { useLogoFallback } from "@/components/common/TenantLogo";
 import {
   notificationService,
   type Notification,
@@ -113,6 +115,19 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
+  // The bar's logo. From 600px up (below md) it is the square app icon in a 40px tile, as it
+  // always was. A phone has 120px for it, so it prefers the wide app logo - the one emails and
+  // certificates print on white, so it reads on this white bar (the login logo is made for the
+  // dark auth panel, and its light parts vanish here). If no image loads, the tenant name
+  // stands in as a wordmark: never the browser's broken-image glyph with raw alt text.
+  const muiTheme = useTheme();
+  const isPhone = useMediaQuery(muiTheme.breakpoints.down("sm"));
+  const tenantName = clientInfo?.name?.trim() || "";
+  // In order of preference: a phone falls back from the app logo to the icon, then to the name.
+  const barLogo = useLogoFallback(
+    isPhone ? [clientInfo?.app_logo_url, clientInfo?.app_icon_url] : [clientInfo?.app_icon_url],
+  );
+
   const [leaderboardAnchorEl, setLeaderboardAnchorEl] =
     useState<null | HTMLElement>(null);
   const [streakAnchorEl, setStreakAnchorEl] = useState<null | HTMLElement>(
@@ -120,6 +135,8 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
   );
   // Phone only: the guide and Today's Leaders leave the bar for this overflow menu, so the
   // tenant logo has room to be read. The guide dialog itself is the same instance as desktop's.
+  // Whether the streak chip is being driven by touch (see its handlers).
+  const streakTouchRef = useRef(false);
   const [overflowAnchorEl, setOverflowAnchorEl] = useState<null | HTMLElement>(null);
   const [guideOpen, setGuideOpen] = useState(false);
   const [notificationAnchorEl, setNotificationAnchorEl] =
@@ -367,7 +384,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
           {/* The phone menu: every module this tenant has, as a launcher. */}
           <MobileMenuButton />
 
-          {clientInfo?.app_icon_url && (
+          {(barLogo.url || tenantName) && (
             <Box
               onClick={() =>
                 router.push(
@@ -389,12 +406,23 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                   borderColor: "var(--accent-indigo)",
                   transform: "scale(1.05)",
                 },
+                // No usable image: the name as text, without the icon tile around it.
+                ...(barLogo.failed && {
+                  width: "auto",
+                  maxWidth: 160,
+                  minWidth: 0,
+                  alignItems: "center",
+                  border: "none",
+                  backgroundColor: "transparent",
+                  "&:hover": { transform: "none" },
+                }),
                 // A wordmark squeezed into a 40px square read as 6px type. On a phone the logo
                 // gets the room the guide and leaders chips gave up: up to 120px wide, 32px tall.
                 [PHONE]: {
                   flex: "0 1 120px",
                   width: "auto",
-                  minWidth: 88,
+                  minWidth: barLogo.failed ? 0 : 88,
+                  maxWidth: 120,
                   height: 32,
                   border: "none",
                   borderRadius: 0,
@@ -406,13 +434,37 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               }}
               data-testid="appbar-logo"
             >
-              <Image
-                src={clientInfo.app_icon_url}
-                alt={clientInfo.name || "Client"}
-                fill
-                style={{ objectFit: "contain" }}
-                sizes="(max-width: 599.95px) 120px, 40px"
-              />
+              {barLogo.failed ? (
+                <Typography
+                  component="span"
+                  data-testid="tenant-wordmark"
+                  title={tenantName}
+                  sx={{
+                    display: "block",
+                    minWidth: 0,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    fontWeight: 800,
+                    fontSize: "1rem",
+                    lineHeight: 1.2,
+                    color: "var(--font-primary)",
+                  }}
+                >
+                  {tenantName}
+                </Typography>
+              ) : (
+                /* Plain <img>, not next/image, as the sidebar and auth logos already are: tenant
+                   assets are admin-supplied urls (often SVG, or a backend url that 302s to signed
+                   S3) that the optimizer can reject, and the failure must reach onError here. */
+                /* eslint-disable-next-line @next/next/no-img-element */
+                <img
+                  src={barLogo.url}
+                  alt={tenantName || "Client"}
+                  {...barLogo.imgProps}
+                  style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }}
+                />
+              )}
             </Box>
           )}
         </Box>
@@ -903,11 +955,27 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
           </Popover>
           {/* Monthly Streak Badge — hidden for instructors (student gamification). */}
           <Box
-            onMouseEnter={handleStreakHover}
-            onMouseLeave={handleStreakLeave}
-            // A phone has no hover: a tap opens the same card (a no-op on desktop, where the
-            // pointer entering already did).
-            onClick={handleStreakHover}
+            // Desktop: hover opens the card, exactly as before. Touch has no hover, and the
+            // compatibility mouse events a tap fires would open it and then re-open it after a
+            // tap outside, so for touch a tap toggles it instead and the hover handlers stand down.
+            onPointerEnter={(e) => {
+              if (e.pointerType === "mouse") streakTouchRef.current = false;
+            }}
+            onPointerDown={(e) => {
+              streakTouchRef.current = e.pointerType !== "mouse";
+            }}
+            onMouseEnter={(e) => {
+              if (!streakTouchRef.current) handleStreakHover(e);
+            }}
+            onMouseLeave={() => {
+              if (!streakTouchRef.current) handleStreakLeave();
+            }}
+            onClick={(e) => {
+              // Clicks inside the card (a portal) bubble here through React; only the chip toggles.
+              if (!streakTouchRef.current || !e.currentTarget.contains(e.target as Node)) return;
+              const chip = e.currentTarget;
+              setStreakAnchorEl((a) => (a ? null : chip));
+            }}
             data-testid="streak-chip"
             sx={{
               position: "relative",
