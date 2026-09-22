@@ -3,6 +3,7 @@
 import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type { ConceptMap as ConceptMapData } from "@/lib/services/adaptive-video.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * Live concept map (spec §3.3a): the center concept with branch nodes, ones the
@@ -27,7 +28,7 @@ export function ConceptMap({ data, currentTime }: { data: ConceptMapData; curren
     <Box>
       <Box sx={{ display: "flex", justifyContent: "space-between", alignItems: "center", mb: 1.5 }}>
         <Typography sx={{ fontWeight: 800, fontSize: "0.95rem" }}>What the video has covered</Typography>
-        <Typography sx={{ fontSize: "0.7rem", color: "text.secondary", fontWeight: 700 }}>
+        <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", fontWeight: 700 }}>
           {reachedCount}/{branches.length} concepts
         </Typography>
       </Box>
