@@ -1,7 +1,8 @@
 'use client';
 
-import { Box, Typography, Pagination } from '@mui/material';
+import { Box, Typography, Pagination, useMediaQuery, useTheme } from '@mui/material';
 import { memo, useMemo } from 'react';
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface JobPaginationProps {
   totalCount: number;
@@ -16,6 +17,8 @@ const JobPaginationComponent = ({
   page,
   onPageChange,
 }: JobPaginationProps) => {
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down('sm'));
   const { totalPages, startItem, endItem, shouldShow } = useMemo(() => {
     const shouldShow = totalCount > pageSize;
     if (!shouldShow) {
@@ -51,12 +54,15 @@ const JobPaginationComponent = ({
         onChange={onPageChange}
         color="primary"
         size="small"
-        showFirstButton
-        showLastButton
+        // On a phone the first/last arrows would push the row past 390px once the items are
+        // 44px. Page 1 and the last page stay in the row, so both ends remain one tap away.
+        showFirstButton={!isPhone}
+        showLastButton={!isPhone}
         siblingCount={0}
         sx={{
           '& .MuiPaginationItem-root': {
             fontSize: { xs: '0.75rem', sm: '0.875rem' },
+            [PHONE]: { minWidth: 44, height: 44, borderRadius: '22px' },
             '&.Mui-selected': {
               backgroundColor: 'var(--accent-indigo)',
               color: 'var(--font-light)',

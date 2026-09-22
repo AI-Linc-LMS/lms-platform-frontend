@@ -4,6 +4,8 @@ import type { ReactNode } from "react";
 import { Box, ButtonBase, Skeleton, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PanelCard } from "../parts";
+import { phoneText } from "@/components/common/mobile/phoneText";
+import { tapHeight } from "@/components/common/phoneTap";
 
 /**
  * Shared chrome + helpers for the tenant-gated dashboard module widgets
@@ -35,7 +37,7 @@ export function ModuleHeader({
         {title}
       </Typography>
       {onViewAll && (
-        <ButtonBase onClick={onViewAll} sx={{ fontSize: "0.74rem", fontWeight: 700, color: "#7c3aed", gap: 0.25, flexShrink: 0 }}>
+        <ButtonBase onClick={onViewAll} sx={{ fontSize: phoneText(0.74), fontWeight: 700, color: "#7c3aed", gap: 0.25, flexShrink: 0, ...tapHeight(18) }}>
           {viewAllLabel}
           <Icon icon="mdi:arrow-right" width={14} />
         </ButtonBase>
@@ -82,7 +84,7 @@ export function ModuleEmpty({ icon, message }: { icon: string; message: string }
 /** A small pill used for timing / status / counts inside rows. */
 export function Pill({ icon, children, color, bg }: { icon?: string; children: ReactNode; color: string; bg: string }) {
   return (
-    <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.35, px: 0.85, py: 0.25, borderRadius: 999, fontSize: "0.66rem", fontWeight: 800, color, bgcolor: bg, whiteSpace: "nowrap" }}>
+    <Box component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.35, px: 0.85, py: 0.25, borderRadius: 999, fontSize: phoneText(0.66), fontWeight: 800, color, bgcolor: bg, whiteSpace: "nowrap" }}>
       {icon && <Icon icon={icon} width={12} />}
       {children}
     </Box>

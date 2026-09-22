@@ -7,6 +7,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { UserProfile, Achievement } from "@/lib/services/profile.service";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { PROFILE, TILE_GRADIENT } from "./theme/profileTokens";
+import { phoneSheetDialogSx } from "@/components/profile/phoneSheet";
 
 interface AchievementsSectionProps {
   profile: UserProfile;
@@ -442,7 +443,8 @@ export function AchievementsSection({
         )}
       </Paper>
 
-      <Dialog 
+      <Dialog
+        sx={phoneSheetDialogSx}
         open={dialogOpen} 
         onClose={() => setDialogOpen(false)} 
         maxWidth="sm" 

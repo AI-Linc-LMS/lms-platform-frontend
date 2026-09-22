@@ -26,6 +26,7 @@ const MAX_RESUMES_PER_USER = 10;
 import { ResumeUploadDialog } from "./ResumeUploadDialog";
 import { ResumeViewerModal } from "./ResumeViewerModal";
 import { useToast } from "@/components/common/Toast";
+import { phoneSheetDialogSx } from "@/components/profile/phoneSheet";
 
 function formatRelativeTime(dateStr: string): string {
   try {
@@ -650,6 +651,7 @@ export function SavedResumesSection({ isActive = true }: SavedResumesSectionProp
       />
 
       <Dialog
+        sx={phoneSheetDialogSx}
         open={!!resumeToDelete}
         onClose={() => !deletingId && setResumeToDelete(null)}
         PaperProps={{

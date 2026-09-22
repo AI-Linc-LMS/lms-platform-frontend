@@ -3,6 +3,7 @@
 import { Paper, TextField, InputAdornment, IconButton } from '@mui/material';
 import { Search, X } from 'lucide-react';
 import { memo, useCallback } from 'react';
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface JobSearchBarProps {
   searchQuery: string;
@@ -64,6 +65,8 @@ const JobSearchBarComponent = ({
           '& .MuiInputBase-input': {
             fontSize: size === 'small' ? '0.95rem' : '1rem',
             py: 0.5,
+            // A 44px-tall field on a phone, so a tap on the bar lands in the input.
+            [PHONE]: { py: '10px' },
           },
         }}
       />
