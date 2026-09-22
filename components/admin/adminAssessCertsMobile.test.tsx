@@ -203,6 +203,19 @@ describe("MockInterviewTable on a phone", () => {
   });
 });
 
+// ---- Sheet body / footer ----------------------------------------------------------------------
+describe("PHONE_TABLE_CARDS", () => {
+  it("never reaches a desktop: every card rule is inside the phone block", async () => {
+    const { PHONE_TABLE_CARDS } = await import("@/components/admin/phoneFloor");
+    render(<Box data-testid="cards" sx={PHONE_TABLE_CARDS}><table><tbody><tr><td>x</td></tr></tbody></table></Box>);
+    const el = screen.getByTestId("cards");
+    expectPhoneOnly(el, /display:block/);
+    expectPhoneOnly(el, /border-top:1px solid var\(--border-default\)/);
+    // Outside the phone block the element has an empty rule and nothing else.
+    expect(cssByMedia(el).unscoped.replace(/\.css-[\w-]+\{\}/g, "").trim()).toBe("");
+  });
+});
+
 // ---- Assessment list cards --------------------------------------------------------------------
 describe("AssessmentTable card layout", () => {
   const assessment: Assessment = {

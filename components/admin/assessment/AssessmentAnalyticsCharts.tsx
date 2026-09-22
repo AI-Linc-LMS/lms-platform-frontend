@@ -806,7 +806,16 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
   const passRate = summary.pass_rate_percent;
 
   return (
-    <Box sx={{ display: "flex", flexDirection: "column", gap: { xs: 2.5, md: 3.25 } }}>
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        gap: { xs: 2.5, md: 3.25 },
+        // Recharts writes its 11px axis ticks as an SVG attribute, which a media query cannot
+        // reach; CSS font-size outranks a presentation attribute, so a phone gets 12px here.
+        [PHONE]: { "& .recharts-text, & .recharts-cartesian-axis-tick text": { fontSize: 12 } },
+      }}
+    >
       <Box
         sx={{
           display: "grid",
