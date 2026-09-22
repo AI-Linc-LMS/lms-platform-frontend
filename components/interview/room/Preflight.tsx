@@ -15,6 +15,7 @@ import {
 } from "@/components/ai-tutor/room/roomTokens";
 import { getAudioConstraints, VIDEO_CAMERA_CONSTRAINTS } from "@/lib/utils/audio-constraints";
 import type { MonitorSnapshot } from "./monitoring";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * Everything checked before the call is dialled, on one calm screen inside the room route.
@@ -399,6 +400,7 @@ export function Preflight({
             border: `1px solid ${ROOM_BORDER}`,
             borderRadius: 999,
             px: 1.75,
+            [PHONE]: { minHeight: 44 },
           }}
         >
           Play test tone
@@ -406,14 +408,14 @@ export function Preflight({
         <Button
           onClick={() => setHeardTone("ok")}
           size="small"
-          sx={{ textTransform: "none", color: ROOM_GREEN, borderRadius: 999, px: 1.5 }}
+          sx={{ textTransform: "none", color: ROOM_GREEN, borderRadius: 999, px: 1.5, [PHONE]: { minHeight: 44 } }}
         >
           I heard it
         </Button>
         <Button
           onClick={() => setHeardTone("warn")}
           size="small"
-          sx={{ textTransform: "none", color: ROOM_TEXT_DIM, borderRadius: 999, px: 1.5 }}
+          sx={{ textTransform: "none", color: ROOM_TEXT_DIM, borderRadius: 999, px: 1.5, [PHONE]: { minHeight: 44 } }}
         >
           I heard nothing
         </Button>
@@ -460,6 +462,7 @@ export function Preflight({
             border: `1px solid ${ROOM_BORDER}`,
             borderRadius: 999,
             px: 2.5,
+            [PHONE]: { minHeight: 44 },
           }}
         >
           Cancel
@@ -476,7 +479,7 @@ export function Preflight({
               <Icon icon="solar:microphone-3-bold" width={16} />
             )
           }
-          sx={{ textTransform: "none", borderRadius: 999, px: 3, fontWeight: 600 }}
+          sx={{ textTransform: "none", borderRadius: 999, px: 3, fontWeight: 600, [PHONE]: { minHeight: 44 } }}
         >
           {blocked ? "Cannot start" : canProceed ? "Start interview" : "Checking"}
         </Button>
