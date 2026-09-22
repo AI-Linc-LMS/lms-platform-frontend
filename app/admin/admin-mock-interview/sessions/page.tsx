@@ -10,6 +10,7 @@ import { ModulePageHeader } from "@/components/common/ModulePageHeader";
 import { StatStrip } from "@/components/admin/assessment/shared/StatStrip";
 import interviewService, { type AdminSessionRow } from "@/lib/services/interview.service";
 import { PhoneFloor } from "@/components/admin/PhoneSheetParts";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * Every realtime interview attempt for this tenant, for the reviewer.
@@ -146,6 +147,8 @@ export default function AdminInterviewSessionsPage() {
                 "&:focus-visible": {
                   boxShadow: "0 0 0 2px var(--card-bg), 0 0 0 4px var(--accent-purple)",
                 },
+                // Phone: a 44px filter pill.
+                [PHONE]: { minHeight: 44, display: "inline-flex", alignItems: "center", boxSizing: "border-box" },
               }}
             >
               {filter.label}

@@ -409,7 +409,12 @@ export default function AdminSubmissionEvaluationPage() {
       >
         <Breadcrumbs
           separator={<IconWrapper icon="mdi:chevron-right" size={16} />}
-          sx={{ mb: 2, "& .MuiBreadcrumbs-separator": { mx: 0.5, opacity: 0.55 } }}
+          sx={{
+            mb: 2,
+            "& .MuiBreadcrumbs-separator": { mx: 0.5, opacity: 0.55 },
+            // Phone: each crumb is a 44px target.
+            [PHONE]: { "& .MuiBreadcrumbs-li > a": { minHeight: 44, display: "inline-flex", alignItems: "center" } },
+          }}
         >
           <MuiLink
             component={Link}

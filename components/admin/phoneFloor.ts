@@ -25,6 +25,12 @@ const floorRules = {
   "& .MuiChip-clickable .MuiChip-label, & .MuiChip-deletable .MuiChip-label": { whiteSpace: "normal" },
   "& .MuiChip-deleteIcon": { fontSize: 22 },
   "& .MuiInputBase-root:not(.MuiInputBase-multiline)": { minHeight: PHONE_TARGET },
+  // The field itself, not only its frame: the input box is what the thumb lands on.
+  "& .MuiInputBase-root:not(.MuiInputBase-multiline) input.MuiInputBase-input, & .MuiInputBase-root .MuiSelect-select.MuiInputBase-input": {
+    boxSizing: "border-box",
+    minHeight: PHONE_TARGET,
+  },
+  "& .MuiInputBase-root .MuiSelect-select.MuiInputBase-input": { display: "flex", alignItems: "center" },
   "& .MuiPaginationItem-root": { minWidth: PHONE_TARGET, height: PHONE_TARGET },
   "& .MuiCheckbox-root, & .MuiRadio-root": { minWidth: PHONE_TARGET, minHeight: PHONE_TARGET },
   "& .MuiSwitch-root": { minHeight: PHONE_TARGET, alignItems: "center" },

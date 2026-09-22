@@ -48,6 +48,7 @@ import {
   slugify,
 } from "./shared";
 import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_TABLE_CARDS } from "@/components/admin/phoneFloor";
 import { SheetDialog } from "@/components/admin/SheetDialog";
 
 /**
@@ -497,7 +498,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
 
       {/* The table */}
       <Surface padded={false} sx={{ overflow: "hidden" }}>
-        <Box sx={{ overflowX: "auto" }}>
+        <Box sx={{ overflowX: "auto", ...PHONE_TABLE_CARDS }}>
           <Table size="small" sx={{ minWidth: 1320 }}>
             <TableHead>
               <TableRow
@@ -543,14 +544,14 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                 const bound = row.template_id ? templateById.get(row.template_id) : undefined;
                 return (
                   <TableRow key={row.key} hover>
-                    <TableCell>
+                    <TableCell data-label={t("certificatesUpload.colRank", "Rank")}>
                       <MetaPill
                         color="var(--ai-violet)"
                         label={index + 1}
                         sx={{ minWidth: 34, justifyContent: "center", fontWeight: 800 }}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t("certificatesUpload.colTierName", "Name")}>
                       <TextField
                         size="small"
                         variant="standard"
@@ -566,7 +567,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                         InputProps={{ disableUnderline: false, sx: { fontWeight: 700, fontSize: 14 } }}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t("certificatesUpload.colSlug", "Slug")}>
                       <TextField
                         size="small"
                         variant="standard"
@@ -580,7 +581,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                         }}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t("certificatesUpload.colCode", "Code")}>
                       <TextField
                         size="small"
                         variant="standard"
@@ -595,7 +596,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                         InputProps={{ sx: { fontWeight: 800, letterSpacing: "0.08em" } }}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t("certificatesUpload.colShortName", "Short name")}>
                       <TextField
                         size="small"
                         variant="standard"
@@ -605,7 +606,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                         onChange={(e) => patchRow(row.key, { short_name: e.target.value })}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t("certificatesUpload.colTagline", "Tagline")}>
                       {/* The tagline is PRINTED on the certificate and the
                           backend has always stored it; the ladder simply never
                           sent it, so an admin had no way to set the line their
@@ -622,7 +623,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                         onChange={(e) => patchRow(row.key, { tagline: e.target.value })}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t("certificatesUpload.colPoints", "Points")}>
                       <TextField
                         size="small"
                         variant="standard"
@@ -638,7 +639,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                         InputProps={{ sx: { fontWeight: 700 } }}
                       />
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t("certificatesUpload.colTemplate", "Design")}>
                       <Stack direction="row" spacing={0.5} alignItems="center">
                         <TextField
                           select
@@ -674,7 +675,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                         </Tooltip>
                       </Stack>
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t("certificatesUpload.colIssued", "Issued")}>
                       <Typography
                         sx={{
                           fontSize: "0.85rem",
@@ -686,7 +687,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                         {row.issued_count > 0 ? formatPoints(row.issued_count) : "-"}
                       </Typography>
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-label={t("certificatesUpload.colActive", "Active")}>
                       {/* Deactivating a rung that has awarded credentials is not
                           the same as deleting one, but it still stops a ladder
                           the learners are climbing. Removing it outright is what
@@ -718,7 +719,7 @@ export function PointsLadderTab({ clientId, issuer }: PointsLadderTabProps) {
                         />
                       </Tooltip>
                     </TableCell>
-                    <TableCell align="right">
+                    <TableCell data-label={t("certificatesUpload.colActions", "Actions")} align="right">
                       <Stack direction="row" spacing={0} justifyContent="flex-end">
                         <IconButton
                           size="small"
