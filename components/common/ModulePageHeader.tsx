@@ -7,6 +7,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { PageGuide } from "@/components/common/PageGuide";
 import { resolveGuide } from "@/lib/guide/registry";
 import { MODULE_HERO_SHADOW } from "@/lib/theme/gradients";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /** Accent tones - drive the icon badge, the ambient glow, and the solid CTA. */
 const ACCENTS = {
@@ -141,6 +142,8 @@ export function ModulePageHeader({
                 letterSpacing: "0.16em",
                 textTransform: "uppercase",
                 color: "rgba(255,255,255,0.6)",
+                // 11.2px is a caption on a monitor and texture on a phone.
+                [PHONE]: { fontSize: "0.75rem" },
               }}
             >
               {eyebrow}
@@ -172,7 +175,18 @@ export function ModulePageHeader({
           </Box>
         </Stack>
         {(guide || action) && (
-          <Box sx={{ flexShrink: 0, display: "flex", alignItems: "center", gap: 1.25 }}>
+          <Box
+            data-testid="module-header-actions"
+            sx={{
+              flexShrink: 0,
+              display: "flex",
+              alignItems: "center",
+              gap: 1.25,
+              // On a phone the actions sit under the title; two or three pills wrap onto a
+              // second line instead of running off the right edge of a 390px screen.
+              [PHONE]: { flexWrap: "wrap", maxWidth: "100%", minWidth: 0, rowGap: 1 },
+            }}
+          >
             {guide && <PageGuide content={guide} />}
             {action}
           </Box>
@@ -213,6 +227,7 @@ export function HeaderActionButton({
         gap: 0.75,
         color: "white",
         opacity: disabled ? 0.5 : 1,
+        [PHONE]: { minHeight: 44 },
         transition: "filter .15s, background .15s",
         ...(variant === "solid"
           ? {

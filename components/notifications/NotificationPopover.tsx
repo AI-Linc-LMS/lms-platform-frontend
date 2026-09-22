@@ -12,12 +12,15 @@ import {
   Badge,
   IconButton,
   Tooltip,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { Bell, CheckCheck } from "lucide-react";
 import { motion } from "framer-motion";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { formatRelativeTime } from "@/lib/utils/date-utils";
 import type { Notification } from "@/lib/services/notification.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 const NOTIFICATION_TYPE_CONFIG: Record<
   string,
@@ -144,19 +147,35 @@ export function NotificationPopover({
   onNotificationClick,
   onMarkAllRead,
 }: NotificationPopoverProps) {
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   return (
     <Popover
       open={Boolean(anchorEl)}
       anchorEl={anchorEl}
       onClose={onClose}
+      // An 8px gutter on a phone, where the panel is screen-wide; MUI's 16px from 600px up.
+      marginThreshold={isPhone ? 8 : 16}
       anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
       transformOrigin={{ vertical: "top", horizontal: "right" }}
+      data-testid="notification-popover"
       PaperProps={{
         sx: {
           mt: 1.5,
           minWidth: 380,
           maxWidth: 420,
           maxHeight: 480,
+          // A 380px-minimum panel on a 390px screen hangs off one edge. On a phone it is the
+          // width of the screen less an 8px gutter each side (MUI's positioning keeps it inside
+          // the viewport), and as tall as the screen allows so more than three rows show.
+          [PHONE]: {
+            minWidth: 0,
+            width: "calc(100vw - 16px)",
+            maxWidth: "calc(100vw - 16px)",
+            maxHeight: "calc(100dvh - 88px)",
+            display: "flex",
+            flexDirection: "column",
+          },
           borderRadius: 3,
           border: "1px solid",
           borderColor: "divider",
@@ -216,6 +235,7 @@ export function NotificationPopover({
               textTransform: "none",
               fontWeight: 600,
               color: "var(--primary-500)",
+              [PHONE]: { minHeight: 44, flexShrink: 0 },
               "&:hover": { backgroundColor: "color-mix(in srgb, var(--primary-500) 10%, transparent)" },
             }}
           >
@@ -225,7 +245,7 @@ export function NotificationPopover({
       </Box>
 
       {/* Content */}
-      <Box sx={{ maxHeight: 360, overflow: "auto" }}>
+      <Box sx={{ maxHeight: 360, overflow: "auto", [PHONE]: { maxHeight: "none", flex: 1, minHeight: 0 } }}>
         {loading ? (
           <Box
             sx={{
@@ -288,6 +308,7 @@ export function NotificationPopover({
                     py: 1.5,
                     px: 2,
                     gap: 1.5,
+                    [PHONE]: { minHeight: 64 },
                     borderBottom: "1px solid",
                     borderColor: "divider",
                     "&:last-child": { borderBottom: "none" },
@@ -436,6 +457,7 @@ export function NotificationBell({ unreadCount, onClick }: NotificationBellProps
           sx={{
             "& .MuiBadge-badge": {
               fontSize: "0.7rem",
+              [PHONE]: { fontSize: "0.75rem" },
               minWidth: 20,
               height: 20,
               fontWeight: 700,

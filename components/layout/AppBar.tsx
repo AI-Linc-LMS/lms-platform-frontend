@@ -25,7 +25,7 @@ import {
 import { LogOut, User, Menu as MenuIcon, Ticket,
   ReceiptText,
 } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { DRAWER_WIDTH } from "./Sidebar";
 import {
   getUserDisplayName,
@@ -34,7 +34,6 @@ import {
 } from "@/lib/utils/user-utils";
 import { useClientInfo, useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
 import { useAdminMode } from "@/lib/contexts/AdminModeContext";
-import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLeaderboardAndStreak } from "@/lib/hooks/useLeaderboardAndStreak";
 import { useStreakCelebration, primeNavStreak } from "@/lib/streak/streakCelebration";
@@ -49,6 +48,8 @@ import { useToast } from "@/components/common/Toast";
 import { config } from "@/lib/config";
 import { useVisibilityRefresh } from "@/lib/hooks/useVisibilityRefresh";
 import { MobileMenuButton } from "./MobileMenu";
+import { PHONE } from "@/components/common/mobile/phone";
+import { useLogoFallback } from "@/components/common/TenantLogo";
 import {
   notificationService,
   type Notification,
@@ -112,11 +113,39 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
 
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
+  // The bar's logo. From 600px up (below md) it is the square app icon in a 40px tile, as it
+  // always was. A phone has 120px for it, so it prefers the wide app logo - the one emails and
+  // certificates print on white, so it reads on this white bar (the login logo is made for the
+  // dark auth panel, and its light parts vanish here). If no image loads, the tenant name
+  // stands in as a wordmark: never the browser's broken-image glyph with raw alt text.
+  //
+  // The choice is a <picture> <source media>, not a JS media query: useMediaQuery is false during
+  // hydration, so a phone fetched the icon and then the logo. The browser now fetches only one.
+  // Each slot has its own order; a failure moves both past the url that failed.
+  const tenantName = clientInfo?.name?.trim() || "";
+  const barLogo = useLogoFallback([clientInfo?.app_logo_url, clientInfo?.app_icon_url]);
+  const phoneLogoUrl = barLogo.pick([clientInfo?.app_logo_url, clientInfo?.app_icon_url]);
+  const baseLogoUrl = barLogo.pick([clientInfo?.app_icon_url, clientInfo?.app_logo_url]);
+  const logoFailed = !phoneLogoUrl && !baseLogoUrl;
+
   const [leaderboardAnchorEl, setLeaderboardAnchorEl] =
     useState<null | HTMLElement>(null);
   const [streakAnchorEl, setStreakAnchorEl] = useState<null | HTMLElement>(
     null
   );
+  // Whether the streak chip is being driven by touch (see its handlers). The ref gates the
+  // handlers within one gesture; the state decides whether the open card takes pointer events
+  // (a touch-opened card must catch the tap outside that closes it; a hover-opened one must not,
+  // or it steals the pointer from the chip and closes and re-opens on every move).
+  const streakTouchRef = useRef(false);
+  const [streakByTouch, setStreakByTouch] = useState(false);
+  // Today's Leaders opened from the phone overflow menu (no hover to close it; it needs its
+  // backdrop to catch the tap outside).
+  const [leaderboardFromMenu, setLeaderboardFromMenu] = useState(false);
+  // Phone only: the guide and Today's Leaders leave the bar for this overflow menu, so the
+  // tenant logo has room to be read. The guide dialog itself is the same instance as desktop's.
+  const [overflowAnchorEl, setOverflowAnchorEl] = useState<null | HTMLElement>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
   const [notificationAnchorEl, setNotificationAnchorEl] =
     useState<null | HTMLElement>(null);
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -151,6 +180,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
   };
 
   const handleLeaderboardHover = (event: React.MouseEvent<HTMLElement>) => {
+    setLeaderboardFromMenu(false);
     setLeaderboardAnchorEl(event.currentTarget);
   };
 
@@ -344,6 +374,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
           minHeight: { xs: 56, sm: 64 },
           px: { xs: 1.5, sm: 2.5 },
           flexDirection: rtl ? "row-reverse" : "row",
+          [PHONE]: { px: 1 },
         }}
       >
         {/* LEFT (LTR) / RIGHT (RTL) - Client Logo (Mobile) and Leaderboard */}
@@ -354,13 +385,14 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
             gap: 2,
             flex: 1,
             ...(rtl && { justifyContent: "flex-end" }),
+            [PHONE]: { gap: 1, minWidth: 0 },
           }}
         >
           {/* Admin Mode Indicator */}
           {/* The phone menu: every module this tenant has, as a launcher. */}
           <MobileMenuButton />
 
-          {clientInfo?.app_icon_url && (
+          {(!logoFailed || tenantName) && (
             <Box
               onClick={() =>
                 router.push(
@@ -382,15 +414,70 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                   borderColor: "var(--accent-indigo)",
                   transform: "scale(1.05)",
                 },
+                // No usable image: the name as text, without the icon tile around it.
+                ...(logoFailed && {
+                  width: "auto",
+                  maxWidth: 160,
+                  minWidth: 0,
+                  alignItems: "center",
+                  border: "none",
+                  backgroundColor: "transparent",
+                  "&:hover": { transform: "none" },
+                }),
+                // A wordmark squeezed into a 40px square read as 6px type. On a phone the logo
+                // gets the room the guide and leaders chips gave up: up to 120px wide, 32px tall.
+                [PHONE]: {
+                  flex: "0 1 120px",
+                  width: "auto",
+                  minWidth: logoFailed ? 0 : 88,
+                  maxWidth: 120,
+                  height: 32,
+                  border: "none",
+                  borderRadius: 0,
+                  backgroundColor: "transparent",
+                  "&:hover": { transform: "none" },
+                  // A wordmark reads from the start edge, next to the menu button.
+                  "& img": { objectPosition: rtl ? "right center" : "left center" },
+                },
               }}
+              data-testid="appbar-logo"
             >
-              <Image
-                src={clientInfo.app_icon_url}
-                alt={clientInfo.name || "Client"}
-                fill
-                style={{ objectFit: "contain" }}
-                sizes="40px"
-              />
+              {logoFailed ? (
+                <Typography
+                  component="span"
+                  data-testid="tenant-wordmark"
+                  title={tenantName}
+                  sx={{
+                    display: "block",
+                    minWidth: 0,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                    fontWeight: 800,
+                    fontSize: "1rem",
+                    lineHeight: 1.2,
+                    color: "var(--font-primary)",
+                  }}
+                >
+                  {tenantName}
+                </Typography>
+              ) : (
+                /* Plain <img>, not next/image, as the sidebar and auth logos already are: tenant
+                   assets are admin-supplied urls (often SVG, or a backend url that 302s to signed
+                   S3) that the optimizer can reject, and the failure must reach onError here. */
+                <picture>
+                  {phoneLogoUrl && phoneLogoUrl !== baseLogoUrl && (
+                    <source media="(max-width:599.95px)" srcSet={phoneLogoUrl} />
+                  )}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={baseLogoUrl || phoneLogoUrl}
+                    alt={tenantName || "Client"}
+                    {...barLogo.imgProps}
+                    style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "contain" }}
+                  />
+                </picture>
+              )}
             </Box>
           )}
         </Box>
@@ -440,6 +527,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               <Box
                 sx={{
                   display: { xs: "flex", sm: "none" },
+                  [PHONE]: { display: "none" },
                   alignItems: "center",
                   justifyContent: "center",
                   width: 36,
@@ -466,7 +554,95 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               label="Guide"
               tooltip="Take a platform guide"
               tourStartPath="/dashboard"
+              open={guideOpen}
+              onOpenChange={setGuideOpen}
+              triggerSx={{ [PHONE]: { display: "none" } }}
             />
+          )}
+          {/* Phone: one overflow button for what left the bar (guide, Today's Leaders, the
+              admin-mode marker). Hidden from 600px up, where each still sits on the bar. */}
+          {(effectiveAdminMode || !isInstructor) && (
+            <>
+              <IconButton
+                onClick={(e) => setOverflowAnchorEl(e.currentTarget)}
+                aria-label={t("mobileChrome.more", "More") as string}
+                aria-haspopup="menu"
+                aria-expanded={Boolean(overflowAnchorEl)}
+                data-testid="appbar-overflow"
+                sx={{
+                  display: "none",
+                  [PHONE]: { display: "inline-flex" },
+                  width: 44,
+                  height: 44,
+                  borderRadius: 2,
+                  color: "var(--font-secondary)",
+                }}
+              >
+                <IconWrapper icon="mdi:dots-vertical" size={22} />
+              </IconButton>
+              <Menu
+                anchorEl={overflowAnchorEl}
+                open={Boolean(overflowAnchorEl)}
+                onClose={() => setOverflowAnchorEl(null)}
+                anchorOrigin={{ vertical: "bottom", horizontal: rtl ? "left" : "right" }}
+                transformOrigin={{ vertical: "top", horizontal: rtl ? "left" : "right" }}
+                data-testid="appbar-overflow-menu"
+                PaperProps={{
+                  sx: {
+                    mt: 1,
+                    minWidth: 220,
+                    borderRadius: 2,
+                    border: "1px solid var(--border-default)",
+                    boxShadow: "0 8px 24px rgba(0,0,0,0.15)",
+                  },
+                }}
+              >
+                {effectiveAdminMode && (
+                  /* A disabled item, not a bare Box: MenuList skips it when moving focus, so the
+                     first focus lands on a real action and the arrow keys cycle the actions. */
+                  <MenuItem
+                    disabled
+                    data-testid="appbar-overflow-admin-mode"
+                    sx={{ gap: 1, color: "#92400e", "&.Mui-disabled": { opacity: 1 } }}
+                  >
+                    <IconWrapper icon="mdi:shield-crown" size={18} color="#92400e" />
+                    <Typography sx={{ fontSize: "0.85rem", fontWeight: 700, color: "#92400e" }}>
+                      {t("common.adminMode")}
+                    </Typography>
+                  </MenuItem>
+                )}
+                {!isInstructor && (
+                  <MenuItem
+                    onClick={() => {
+                      setOverflowAnchorEl(null);
+                      setGuideOpen(true);
+                    }}
+                    sx={{ minHeight: 48 }}
+                  >
+                    <Box component="span" sx={{ marginInlineEnd: 1.5, display: "inline-flex" }}>
+                      <IconWrapper icon="mdi:compass-outline" size={18} color="var(--primary-700)" />
+                    </Box>
+                    {t("mobileChrome.platformGuide", "Platform guide")}
+                  </MenuItem>
+                )}
+                {!hideLeaderboardView && !isInstructor && (
+                  <MenuItem
+                    onClick={() => {
+                      // The same Today's Leaders card, anchored under the overflow button.
+                      setLeaderboardFromMenu(true);
+                      setLeaderboardAnchorEl(overflowAnchorEl);
+                      setOverflowAnchorEl(null);
+                    }}
+                    sx={{ minHeight: 48 }}
+                  >
+                    <Box component="span" sx={{ marginInlineEnd: 1.5, display: "inline-flex" }}>
+                      <IconWrapper icon="mdi:clock-outline" size={18} color="var(--primary-700)" />
+                    </Box>
+                    {t("common.todaysLeaders")}
+                  </MenuItem>
+                )}
+              </Menu>
+            </>
           )}
           {/* Daily Progress Leaderboard - hidden when no_leaderboard_view, and for instructors. */}
           {!hideLeaderboardView && !isInstructor && (
@@ -525,48 +701,8 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               </Typography>
             </Box>
           </Box>
-          <Box
-            sx={{
-              display: { xs: "block", sm: "none" },
-            }}
-          >
-            {/* Today's Leaders Button */}
-            <Box
-              onMouseEnter={handleLeaderboardHover}
-              onMouseLeave={handleLeaderboardLeave}
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-                cursor: "pointer",
-                px: 2,
-                py: 1,
-                borderRadius: 2,
-                backgroundColor: "var(--surface-indigo-light)",
-                border: "1px solid",
-                borderColor: "var(--primary-200)",
-                transition: "all 0.2s ease",
-                boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
-                "&:hover": {
-                  backgroundColor: "var(--primary-100)",
-                  boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
-                  transform: "translateY(-1px)",
-                },
-              }}
-            >
-              <IconWrapper icon="mdi:clock-outline" size={16} color="var(--primary-700)" />
-              <Typography
-                variant="body2"
-                sx={{
-                  fontSize: "0.875rem",
-                  fontWeight: 600,
-                  color: "var(--primary-700)",
-                }}
-              >
-                TL
-              </Typography>
-            </Box>
-          </Box>
+          {/* Phone: Today's Leaders is in the overflow menu (appbar-overflow) instead of a "TL"
+              chip, so the tenant logo keeps its room. */}
           {/* Leaderboard Popover */}
           <Popover
             open={Boolean(leaderboardAnchorEl)}
@@ -576,7 +712,9 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
             transformOrigin={{ vertical: "top", horizontal: "left" }}
             disableRestoreFocus
             sx={{
-              pointerEvents: "none",
+              // Hover-driven from the bar chip, exactly as before. Opened from the phone overflow
+              // menu there is no hover to close it, so its backdrop takes the tap outside.
+              pointerEvents: leaderboardFromMenu ? "auto" : "none",
             }}
             PaperProps={{
               sx: {
@@ -834,11 +972,38 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
           </Popover>
           {/* Monthly Streak Badge — hidden for instructors (student gamification). */}
           <Box
-            onMouseEnter={handleStreakHover}
-            onMouseLeave={handleStreakLeave}
+            // Desktop: hover opens the card, exactly as before. Touch has no hover, and the
+            // compatibility mouse events a tap fires would open it and then re-open it after a
+            // tap outside, so for touch a tap toggles it instead and the hover handlers stand down.
+            onPointerEnter={(e) => {
+              if (e.pointerType === "mouse") streakTouchRef.current = false;
+            }}
+            onPointerDown={(e) => {
+              streakTouchRef.current = e.pointerType !== "mouse";
+            }}
+            onMouseEnter={(e) => {
+              if (streakTouchRef.current) return;
+              setStreakByTouch(false);
+              handleStreakHover(e);
+            }}
+            onMouseLeave={() => {
+              if (!streakTouchRef.current) handleStreakLeave();
+            }}
+            onClick={(e) => {
+              // Clicks inside the card (a portal) bubble here through React; only the chip toggles.
+              if (!streakTouchRef.current || !e.currentTarget.contains(e.target as Node)) return;
+              const chip = e.currentTarget;
+              setStreakByTouch(true);
+              setStreakAnchorEl((a) => (a ? null : chip));
+            }}
+            data-testid="streak-chip"
             sx={{
               position: "relative",
               display: isInstructor ? "none" : { xs: "block", sm: "block" },
+              ...(!isInstructor && {
+                // 44px tall on a phone; the pill keeps its look, only its height grows.
+                [PHONE]: { display: "flex", "& > div:first-of-type": { minHeight: 44 } },
+              }),
             }}
           >
             <motion.div
@@ -978,7 +1143,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
               transformOrigin={{ vertical: "top", horizontal: "left" }}
               disableRestoreFocus
-              sx={{ pointerEvents: "none" }}
+              sx={{ pointerEvents: streakByTouch ? "auto" : "none" }}
               PaperProps={{
                 sx: {
                   mt: 1,
@@ -1089,7 +1254,9 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               height: 36,
               cursor: "pointer",
               border: "2px solid var(--border-default)",
+              [PHONE]: { width: 44, height: 44 },
             }}
+            data-testid="appbar-avatar-mobile"
           >
             {getUserInitials(user)}
           </Avatar>

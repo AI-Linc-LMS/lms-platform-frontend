@@ -2985,5 +2985,9 @@
   },
   "roadmapsMobile": {
     "mapHint": "Tap a step to open it. Press and hold to mark it done, in progress or skipped."
+  },
+  "mobileChrome": {
+    "more": "More",
+    "platformGuide": "Platform guide"
   }
 }
