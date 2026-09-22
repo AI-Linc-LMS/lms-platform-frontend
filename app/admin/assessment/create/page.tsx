@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import type { MCQBankQuery } from "@/components/admin/assessment/MCQSelectionSection";
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/auth-context";
-import { isCourseManagerRole, normalizeUserRole } from "@/lib/auth/auth-utils";
+import { isCourseManagerRole } from "@/lib/auth/auth-utils";
+import { audienceStepError, resolveBatchRequired } from "@/lib/utils/assessment-audience-rules";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import {
   Box,
@@ -86,9 +87,24 @@ function CreateAssessmentPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loading: authLoading } = useAuth();
-  // The server refuses an instructor's paper with no batch; the form has to say so up front
-  // rather than letting them fill the whole wizard and fail on save.
-  const isInstructor = normalizeUserRole(user?.role) === "instructor";
+  // The server refuses a non-admin's new paper with no batch; the form has to say so up front
+  // rather than letting them fill the whole wizard and fail on save. The server reports the rule
+  // itself (builder-config), so the marker and the refusal cannot drift; the role rule is only
+  // the fallback for an older backend or a failed request.
+  const [serverBatchRequired, setServerBatchRequired] = useState<boolean | null>(null);
+  useEffect(() => {
+    if (!config.clientId) return;
+    let cancelled = false;
+    void adminAssessmentService.getAssessmentBuilderConfig(config.clientId).then((cfg) => {
+      if (!cancelled) setServerBatchRequired(cfg ? cfg.batch_required : null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const batchRequired = resolveBatchRequired(serverBatchRequired, user?.role);
+  // Shown once the author has tried to leave the step, not on a pristine form.
+  const [audienceAttempted, setAudienceAttempted] = useState(false);
   const { clientInfo } = useClientInfo();
   const canConfigureLiveStreaming =
     clientInfo?.live_proctoring_enabled === true;
@@ -587,6 +603,17 @@ function CreateAssessmentPageContent() {
         showToast("Allowed tab switches must be at least 1", "error");
         return;
       }
+      // Stop here, on the step that has the field, instead of letting the author build every
+      // section and only hear about it from the server on the final click.
+      const audienceError = audienceStepError(batchRequired, cohortIds);
+      if (audienceError) {
+        setAudienceAttempted(true);
+        showToast(audienceError, "error");
+        document
+          .getElementById("assessment-batches-field")
+          ?.scrollIntoView({ behavior: "smooth", block: "center" });
+        return;
+      }
     }
     if (activeStep === 1) {
       // Validate questions for each section
@@ -1077,14 +1104,14 @@ function CreateAssessmentPageContent() {
 
       const skipSectionValidation = Boolean(options?.skipSectionValidation);
 
-      // An instructor authors for the batches they teach, and the server refuses a paper with
-      // none. Caught here so they are told at the point of saving rather than after the whole
-      // wizard, and not on the draft path, where nothing is published to anyone yet.
-      if (!skipSectionValidation && isInstructor && cohortIds.length === 0) {
-        showToast(
-          "Select at least one batch. An assessment you create is for the batches you teach, not for the whole institute.",
-          "error",
-        );
+      // Checked again at save, not only on Continue: the step can be reached without it (a
+      // loaded draft, the stepper). A new DRAFT is checked too, because creating one is a POST
+      // and the server refuses that without a batch just the same; only a save of an existing
+      // paper (a PATCH, which does not carry the rule) skips it on the draft path.
+      const audienceError = audienceStepError(batchRequired, cohortIds);
+      if (audienceError && (!skipSectionValidation || !editingAssessmentId)) {
+        showToast(audienceError, "error");
+        setAudienceAttempted(true);
         setActiveStep(0);
         setCreating(false);
         return;
@@ -1874,7 +1901,8 @@ function CreateAssessmentPageContent() {
               onDescriptionChange={setDescription}
             />
             <AssessmentSettingsSection
-            batchRequired={isInstructor}
+              batchRequired={batchRequired}
+              batchError={audienceAttempted ? audienceStepError(batchRequired, cohortIds) : null}
               durationMinutes={durationMinutes}
               startTime={startTime}
               endTime={endTime}
