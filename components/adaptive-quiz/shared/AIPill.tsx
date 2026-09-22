@@ -2,6 +2,7 @@
 
 import { Box, Typography } from "@mui/material";
 import type { ReactNode } from "react";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface AIPillProps {
   children: ReactNode;
@@ -38,7 +39,7 @@ export function AIPill({ children, variant = "soft", icon }: AIPillProps) {
       <Typography
         component="span"
         sx={{
-          fontSize: "0.68rem",
+          fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" },
           fontWeight: 800,
           letterSpacing: "0.1em",
           textTransform: "uppercase",

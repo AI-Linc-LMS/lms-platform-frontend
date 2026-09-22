@@ -3,6 +3,7 @@
 import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type { ReactNode } from "react";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface CompanionCardProps {
   /** Hex accent - used sparingly: the small header icon only. */
@@ -72,7 +73,7 @@ export function CompanionCard({
           )}
           <Typography
             sx={{
-              fontSize: "0.72rem",
+              fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
               fontWeight: 800,
               letterSpacing: "0.07em",
               textTransform: "uppercase",

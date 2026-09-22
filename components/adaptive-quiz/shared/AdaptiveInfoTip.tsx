@@ -2,6 +2,7 @@
 
 import { useState, type ReactNode, type MouseEvent } from "react";
 import { Box, IconButton, Popover, Typography } from "@mui/material";
+import { PHONE } from "@/components/common/mobile/phone";
 import { Icon } from "@iconify/react";
 
 interface AdaptiveInfoTipProps {
@@ -64,6 +65,8 @@ export function AdaptiveInfoTip({
           ml: 0.25,
           color: "text.secondary",
           "&:hover": { color: "#6366f1", bgcolor: "color-mix(in srgb, #6366f1 8%, transparent)" },
+          // The glyph stays 15px inline with its label; on a phone an invisible 44px hit area surrounds it.
+          [PHONE]: { position: "relative", "&::after": { content: '""', position: "absolute", inset: -12 } },
         }}
       >
         <Icon icon="mdi:information-outline" width={15} />

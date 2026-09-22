@@ -10,6 +10,7 @@ import { AIPill } from "../shared/AIPill";
 import { adaptiveQuizService } from "@/lib/services/adaptive-quiz.service";
 import { useVisibilityRefresh } from "@/lib/hooks/useVisibilityRefresh";
 import type { AdaptiveAINarration, RemediationProgress } from "@/lib/types/adaptive-quiz";
+import { PHONE } from "@/components/common/mobile/phone";
 
 type RemediationStep = AdaptiveAINarration["remediation_path"][number];
 
@@ -149,7 +150,7 @@ export function RemediationPathCard({ steps, sessionId, onStartPath }: Remediati
             <Typography sx={{ fontSize: "1.4rem", fontWeight: 900, lineHeight: 1, color: "#7c3aed" }}>
               {steps.filter((s) => doneByStep[s.step]).length}/{steps.length}
             </Typography>
-            <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "text.secondary" }}>
+            <Typography sx={{ fontSize: "0.62rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", color: "text.secondary" }}>
               done
             </Typography>
           </Box>
@@ -184,6 +185,8 @@ export function RemediationPathCard({ steps, sessionId, onStartPath }: Remediati
                   : done ? "color-mix(in srgb, #10b981 32%, transparent)" : "color-mix(in srgb, #a855f7 18%, transparent)"}`,
                 opacity: locked ? 0.65 : 1,
                 transition: "background-color .25s, border-color .25s, opacity .25s",
+                // The action drops under the step on a phone instead of squeezing its title.
+                [PHONE]: { flexWrap: "wrap", rowGap: 1.25 },
               }}
             >
               <Box
@@ -201,7 +204,7 @@ export function RemediationPathCard({ steps, sessionId, onStartPath }: Remediati
               >
                 <Icon icon={noteStep ? "mdi:information-outline" : done ? "mdi:check" : locked ? "mdi:lock-outline" : (ACTION_ICON[step.action_kind] ?? "mdi:book-open-page-variant-outline")} width={18} />
               </Box>
-              <Box sx={{ flex: 1, minWidth: 0 }}>
+              <Box sx={{ flex: 1, minWidth: 0, [PHONE]: { flexBasis: "calc(100% - 48px)" } }}>
                 <Typography sx={{ fontSize: "0.95rem", fontWeight: 800, color: "text.primary", lineHeight: 1.3 }}>
                   Step {step.step} · {step.title}
                 </Typography>
@@ -214,14 +217,14 @@ export function RemediationPathCard({ steps, sessionId, onStartPath }: Remediati
                   <Chip label={reqStep ? "RE-QUIZ" : noteStep ? "NOTE" : step.action_kind.toUpperCase()} accent />
                 </Box>
                 {locked && (
-                  <Typography sx={{ fontSize: "0.72rem", color: "#b45309", fontWeight: 700, mt: 0.75 }}>
+                  <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "#b45309", fontWeight: 700, mt: 0.75 }}>
                     Finish the steps above to unlock your follow-up quiz.
                   </Typography>
                 )}
               </Box>
               {/* A note carries no link + no action - show a passive "Reflect" hint, not a dead button. */}
               {noteStep ? (
-                <Typography sx={{ alignSelf: "center", flexShrink: 0, px: 1.25, fontSize: "0.72rem", fontWeight: 700, color: "text.secondary" }}>
+                <Typography sx={{ alignSelf: "center", flexShrink: 0, px: 1.25, fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 700, color: "text.secondary" }}>
                   Reflect &amp; move on
                 </Typography>
               ) : (
@@ -295,6 +298,7 @@ function StepButton({
         border: `1px solid ${success ? "color-mix(in srgb, #10b981 35%, transparent)" : "color-mix(in srgb, #a855f7 35%, transparent)"}`,
         "&:hover": { bgcolor: success ? "color-mix(in srgb, #10b981 22%, white)" : "color-mix(in srgb, #a855f7 22%, white)" },
         "&:disabled": { opacity: 0.55, color: "text.secondary", bgcolor: "color-mix(in srgb, #64748b 10%, transparent)" },
+        [PHONE]: { minHeight: 44, marginInlineStart: "48px", alignSelf: "flex-start" },
       }}
     >
       <Icon icon={icon} width={15} />
@@ -307,7 +311,7 @@ function Chip({ label, accent }: { label: string; accent?: boolean }) {
   return (
     <Box
       sx={{
-        px: 1, py: 0.3, borderRadius: 999, fontSize: "0.66rem", fontWeight: 800, letterSpacing: "0.1em",
+        px: 1, py: 0.3, borderRadius: 999, fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.1em",
         textTransform: "uppercase",
         bgcolor: accent ? "color-mix(in srgb, #a855f7 18%, transparent)" : "color-mix(in srgb, currentColor 10%, transparent)",
         color: accent ? "#a855f7" : "text.secondary",

@@ -4,6 +4,7 @@ import { useState, type MouseEvent } from "react";
 import { useRouter } from "next/navigation";
 import { Box, ButtonBase, IconButton, Popover, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { infoHitArea } from "@/components/common/phoneTap";
 
 /**
  * Small "i" affordance shown beside any points figure. Opens a short explainer popover
@@ -25,7 +26,7 @@ export function PointsInfo({ size = 15, color = "#94a3b8" }: { size?: number; co
         size="small"
         onClick={open}
         aria-label="How points work"
-        sx={{ p: 0.2, color, "&:hover": { color: "#7c3aed", bgcolor: "transparent" } }}
+        sx={{ p: 0.2, color, "&:hover": { color: "#7c3aed", bgcolor: "transparent" }, ...infoHitArea(size) }}
       >
         <Icon icon="mdi:information-outline" width={size} />
       </IconButton>

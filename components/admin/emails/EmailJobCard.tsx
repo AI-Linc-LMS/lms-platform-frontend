@@ -2,6 +2,8 @@
 
 import { Box, Typography, ButtonBase, CircularProgress } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { PHONE } from "@/components/common/mobile/phone";
+import { phoneText } from "@/components/common/mobile/phoneText";
 import type { EmailJob } from "@/lib/services/admin/admin-email-jobs.service";
 import type { AssessmentEmailJob } from "@/lib/services/admin/admin-assessment-email-jobs.service";
 
@@ -55,7 +57,7 @@ function Metric({ icon, value, label, color }: { icon: string; value: number | s
       <Typography sx={{ fontSize: "0.8rem", fontWeight: 700, color: "var(--font-primary)", fontVariantNumeric: "tabular-nums" }}>
         {value}
       </Typography>
-      <Typography sx={{ fontSize: "0.72rem", color: "var(--font-tertiary, var(--font-secondary))" }}>{label}</Typography>
+      <Typography sx={{ fontSize: phoneText(0.72), color: "var(--font-tertiary, var(--font-secondary))" }}>{label}</Typography>
     </Box>
   );
 }
@@ -99,7 +101,7 @@ export function EmailJobCard({ job, displayName, createdLabel, isFailed, retryin
           sx={{ flexShrink: 0, display: "inline-flex", alignItems: "center", gap: 0.5, px: 1, py: 0.4, borderRadius: 999, bgcolor: tone.bg }}
         >
           <Icon icon={tone.icon} width={13} style={{ color: tone.color }} />
-          <Typography sx={{ fontSize: "0.68rem", fontWeight: 700, color: tone.color, textTransform: "capitalize" }}>
+          <Typography sx={{ fontSize: phoneText(0.68), fontWeight: 700, color: tone.color, textTransform: "capitalize" }}>
             {tone.label}
           </Typography>
         </Box>
@@ -109,7 +111,7 @@ export function EmailJobCard({ job, displayName, createdLabel, isFailed, retryin
       {trig ? (
         <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, alignSelf: "flex-start", px: 0.9, py: 0.3, borderRadius: 999, border: `1px solid color-mix(in srgb, ${trig.color} 35%, transparent)` }}>
           <Icon icon={trig.icon} width={13} style={{ color: trig.color }} />
-          <Typography sx={{ fontSize: "0.7rem", fontWeight: 600, color: trig.color }}>{trig.label}</Typography>
+          <Typography sx={{ fontSize: phoneText(0.7), fontWeight: 600, color: trig.color }}>{trig.label}</Typography>
         </Box>
       ) : null}
 
@@ -125,8 +127,14 @@ export function EmailJobCard({ job, displayName, createdLabel, isFailed, retryin
       ) : null}
 
       {/* footer: created + actions */}
-      <Box sx={{ mt: "auto", pt: 0.5, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1 }}>
-        <Typography sx={{ fontSize: "0.72rem", color: "var(--font-tertiary, var(--font-secondary))" }} title={createdLabel}>
+      <Box
+        sx={{
+          mt: "auto", pt: 0.5, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 1,
+          // Phone: the date and the two buttons wrap rather than squeeze, and each button is a 44px target.
+          [PHONE]: { flexWrap: "wrap", "& .MuiButtonBase-root": { minHeight: 44, px: 2 } },
+        }}
+      >
+        <Typography sx={{ fontSize: phoneText(0.72), color: "var(--font-tertiary, var(--font-secondary))" }} title={createdLabel}>
           {createdLabel}
         </Typography>
         <Box sx={{ display: "flex", gap: 0.75 }}>

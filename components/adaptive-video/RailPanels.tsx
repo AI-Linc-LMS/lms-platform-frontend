@@ -4,6 +4,7 @@ import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { CompanionCard } from "./CompanionCard";
 import type { Chapter, WatchMode } from "@/lib/services/adaptive-video.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
@@ -42,7 +43,7 @@ export function WatchModeSelector({
       icon="mdi:tune-vertical"
       right={
         <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 1, py: 0.3, borderRadius: 999,
-          background: "linear-gradient(135deg, #6366f1, #ec4899)", color: "#fff", fontSize: "0.6rem", fontWeight: 800, letterSpacing: "0.08em" }}>
+          background: "linear-gradient(135deg, #6366f1, #ec4899)", color: "#fff", fontSize: "0.6rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.08em" }}>
           <Icon icon="mdi:sparkles" width={11} /> ADAPTIVE
         </Box>
       }
@@ -72,7 +73,7 @@ export function WatchModeSelector({
               <Icon icon={m.icon} width={17} style={{ color: active ? "#6366f1" : "#94a3b8", flexShrink: 0 }} />
               <Box sx={{ minWidth: 0 }}>
                 <Typography sx={{ fontSize: "0.84rem", fontWeight: active ? 800 : 600, lineHeight: 1.2 }}>{m.label}</Typography>
-                <Typography sx={{ fontSize: "0.7rem", color: "text.secondary" }}>{m.hint}</Typography>
+                <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary" }}>{m.hint}</Typography>
               </Box>
               {active && <Icon icon="mdi:check-circle" width={16} style={{ color: "#6366f1", marginLeft: "auto" }} />}
             </Box>
@@ -101,7 +102,7 @@ export function AutoChapters({
       accent="#a855f7"
       title="Auto chapters"
       icon="mdi:format-list-bulleted"
-      right={<Typography sx={{ fontSize: "0.66rem", color: "text.secondary", fontWeight: 700 }}>{chapters.length} detected</Typography>}
+      right={<Typography sx={{ fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", fontWeight: 700 }}>{chapters.length} detected</Typography>}
     >
       <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25 }}>
         {chapters.map((c, i) => {
@@ -151,7 +152,7 @@ export function LiveTakeaways({ takeaways, currentTime, chapters }: { takeaways:
       right={
         <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
           <Box sx={{ width: 6, height: 6, borderRadius: 999, bgcolor: "#34d399", boxShadow: "0 0 8px #34d399" }} />
-          <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, color: "#34d399" }}>{visible}/{takeaways.length}</Typography>
+          <Typography sx={{ fontSize: "0.62rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, color: "#34d399" }}>{visible}/{takeaways.length}</Typography>
         </Box>
       }
     >

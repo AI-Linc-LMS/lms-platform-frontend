@@ -6,6 +6,7 @@ import { AnimatedRing } from "@/components/scorecard/shared/AnimatedRing";
 import { AIPill } from "../shared/AIPill";
 import { AIBeacon } from "../shared/AIBeacon";
 import type { AdaptiveAINarration } from "@/lib/types/adaptive-quiz";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface ResultStripProps {
   narration: AdaptiveAINarration;
@@ -97,7 +98,7 @@ function Stat({ label, value, accent }: { label: string; value: string; accent: 
         border: `1px solid color-mix(in srgb, ${accent} 22%, transparent)`,
       }}
     >
-      <Typography sx={{ fontSize: "0.62rem", color: "text.secondary", letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 800 }}>
+      <Typography sx={{ fontSize: "0.62rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", letterSpacing: "0.14em", textTransform: "uppercase", fontWeight: 800 }}>
         {label}
       </Typography>
       <Typography sx={{ fontSize: "1.3rem", fontWeight: 900, color: accent, lineHeight: 1.1, fontVariantNumeric: "tabular-nums" }}>

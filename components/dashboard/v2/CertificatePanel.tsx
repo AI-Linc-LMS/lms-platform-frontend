@@ -5,6 +5,7 @@ import { Box, ButtonBase, LinearProgress, Stack, Typography } from "@mui/materia
 import { Icon } from "@iconify/react";
 import type { DashboardCourse } from "@/lib/types/dashboard";
 import { PanelCard } from "./parts";
+import { phoneText } from "@/components/common/mobile/phoneText";
 
 export function CertificatePanel({ course }: { course: DashboardCourse }) {
   const router = useRouter();
@@ -17,7 +18,7 @@ export function CertificatePanel({ course }: { course: DashboardCourse }) {
         <Box sx={{ width: 56, height: 56, mx: "auto", mb: 1, borderRadius: 3, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, #7c3aed, #a855f7)", boxShadow: "0 12px 26px -12px rgba(124,58,237,0.6)" }}>
           <Icon icon="mdi:certificate" width={28} />
         </Box>
-        <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.6, color: "#7c3aed", textTransform: "uppercase" }}>
+        <Typography sx={{ fontSize: phoneText(0.6), fontWeight: 800, letterSpacing: 0.6, color: "#7c3aed", textTransform: "uppercase" }}>
           Certificate · {course.title}
         </Typography>
         <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", color: "#0f172a", mt: 0.5 }}>
@@ -31,8 +32,8 @@ export function CertificatePanel({ course }: { course: DashboardCourse }) {
       <Box sx={{ mt: 1.5 }}>
         <LinearProgress variant="determinate" value={Math.min(100, pct)} sx={{ height: 8, borderRadius: 4, bgcolor: "#eef2f7", "& .MuiLinearProgress-bar": { borderRadius: 4, background: "linear-gradient(90deg, #7c3aed, #ec4899)" } }} />
         <Stack direction="row" justifyContent="space-between" sx={{ mt: 0.5 }}>
-          <Typography sx={{ fontSize: "0.68rem", color: "#94a3b8", fontWeight: 700 }}>{pct}% done</Typography>
-          <Typography sx={{ fontSize: "0.68rem", color: "#94a3b8", fontWeight: 700 }}>{threshold}% to unlock</Typography>
+          <Typography sx={{ fontSize: phoneText(0.68), color: "#94a3b8", fontWeight: 700 }}>{pct}% done</Typography>
+          <Typography sx={{ fontSize: phoneText(0.68), color: "#94a3b8", fontWeight: 700 }}>{threshold}% to unlock</Typography>
         </Stack>
       </Box>
 

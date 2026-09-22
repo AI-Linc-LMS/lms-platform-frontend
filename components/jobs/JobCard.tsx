@@ -20,6 +20,7 @@ import {
   DollarSign,
   Briefcase,
 } from "lucide-react";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface JobCardProps {
   job: Job;
@@ -154,6 +155,8 @@ const JobCardComponent = ({ job }: JobCardProps) => {
                 "&:hover": {
                   backgroundColor: "color-mix(in srgb, var(--accent-indigo) 10%, transparent)",
                 },
+                // 44px to the thumb; the negative margin keeps the title row the same height.
+                [PHONE]: { minWidth: 44, minHeight: 44, m: "-8px" },
               }}
             >
               <Heart size={18} fill={isFavorite ? "var(--accent-indigo)" : "none"} />
@@ -331,6 +334,7 @@ const JobCardComponent = ({ job }: JobCardProps) => {
                 boxShadow: "none",
                 flex: { xs: "1 1 auto", sm: "0 0 auto" },
                 minWidth: { xs: "auto", sm: 120 },
+                [PHONE]: { minHeight: 44 },
                 "&:hover": {
                   backgroundColor: "var(--accent-indigo-dark)",
                   boxShadow: "0 2px 8px color-mix(in srgb, var(--accent-indigo) 35%, transparent)",
@@ -354,6 +358,7 @@ const JobCardComponent = ({ job }: JobCardProps) => {
                 fontWeight: 600,
                 flex: { xs: "1 1 auto", sm: "0 0 auto" },
                 minWidth: { xs: "auto", sm: 140 },
+                [PHONE]: { minHeight: 44 },
                 "&:hover": {
                   borderColor: "var(--accent-indigo-dark)",
                   backgroundColor:

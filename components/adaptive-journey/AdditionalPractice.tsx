@@ -11,6 +11,7 @@ import {
   type PracticeKind,
   type PracticeState,
 } from "@/lib/services/adaptive-course.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 const KIND_CARDS: { kind: PracticeKind; icon: string; title: string; sub: string }[] = [
   { kind: "article", icon: "mdi:file-document-outline", title: "Article", sub: "Explainer at your level" },
@@ -104,7 +105,7 @@ export function AdditionalPractice({ courseId, submoduleId }: { courseId: number
               <Typography sx={{ fontWeight: 800, fontSize: "1.15rem", color: "#1e1b4b" }}>Additional Practice</Typography>
               <Stack direction="row" spacing={0.3} alignItems="center" sx={{ px: 1, py: 0.3, borderRadius: 999, color: "white", background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)" }}>
                 <Icon icon="mdi:plus" width={12} />
-                <Typography sx={{ fontSize: "0.66rem", fontWeight: 800 }}>Generate</Typography>
+                <Typography sx={{ fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800 }}>Generate</Typography>
               </Stack>
             </Stack>
             <Typography sx={{ fontSize: "0.84rem", color: "#475569", mt: 0.25 }}>
@@ -120,9 +121,9 @@ export function AdditionalPractice({ courseId, submoduleId }: { courseId: number
             <Box sx={{ height: 6, borderRadius: 999, bgcolor: "#ede9fe", mt: 0.5, overflow: "hidden" }}>
               <Box sx={{ height: "100%", width: `${pct}%`, borderRadius: 999, background: "linear-gradient(90deg, #7c3aed 0%, #ec4899 100%)", transition: "width .3s" }} />
             </Box>
-            <Typography sx={{ fontSize: "0.7rem", color: "#94a3b8", mt: 0.4 }}>{left} left for this topic</Typography>
+            <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, color: "#94a3b8", mt: 0.4 }}>{left} left for this topic</Typography>
           </Box>
-          <ButtonBase onClick={() => setOpen((o) => !o)} sx={{ width: 30, height: 30, borderRadius: 2, border: "1px solid #ddd6fe", color: "#7c3aed", flexShrink: 0 }}>
+          <ButtonBase onClick={() => setOpen((o) => !o)} sx={{ width: 30, height: 30, borderRadius: 2, border: "1px solid #ddd6fe", color: "#7c3aed", flexShrink: 0, [PHONE]: { width: 44, height: 44 } }}>
             <Icon icon={open ? "mdi:chevron-up" : "mdi:chevron-down"} width={20} />
           </ButtonBase>
         </Stack>
@@ -145,7 +146,7 @@ export function AdditionalPractice({ courseId, submoduleId }: { courseId: number
                   {active && <Icon icon="mdi:check" width={16} color={m.color} style={{ position: "absolute", top: 8, right: 8 }} />}
                   <Box sx={{ color: active ? m.color : "#94a3b8" }}><Icon icon={c.icon} width={28} /></Box>
                   <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: active ? m.color : "#334155" }}>{c.title}</Typography>
-                  <Typography sx={{ fontSize: "0.74rem", color: "#94a3b8" }}>{c.sub}</Typography>
+                  <Typography sx={{ fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" }, color: "#94a3b8" }}>{c.sub}</Typography>
                 </ButtonBase>
               );
             })}
@@ -229,7 +230,7 @@ export function AdditionalPractice({ courseId, submoduleId }: { courseId: number
 
           <Stack direction="row" spacing={0.6} alignItems="flex-start">
             <Icon icon="mdi:information-outline" width={14} style={{ color: "#94a3b8", marginTop: 2, flexShrink: 0 }} />
-            <Typography sx={{ fontSize: "0.74rem", color: "#94a3b8", lineHeight: 1.5 }}>
+            <Typography sx={{ fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" }, color: "#94a3b8", lineHeight: 1.5 }}>
               Generated practice is unlimited to retry but capped at{" "}
               <Box component="span" sx={{ fontWeight: 800, color: "#475569" }}>{limit} new items per topic</Box>{" "}
               to keep your path focused. Resets if the topic is re-published.
@@ -240,12 +241,12 @@ export function AdditionalPractice({ courseId, submoduleId }: { courseId: number
           {items.length > 0 && (
             <Box sx={{ mt: 2.5, pt: 2.5, borderTop: "1px solid #f1f5f9" }}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.25 }}>
-                <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: 0.6, color: "#64748b" }}>
+                <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: 0.6, color: "#64748b" }}>
                   YOUR GENERATED PRACTICE ({items.length})
                 </Typography>
                 <Stack direction="row" spacing={0.75} alignItems="center">
-                  <Box sx={{ px: 1, py: 0.3, borderRadius: 999, bgcolor: "#f1f5f9", fontSize: "0.66rem", fontWeight: 800, color: "#475569" }}>Practice · no points</Box>
-                  <Typography sx={{ fontSize: "0.7rem", color: "#94a3b8", display: { xs: "none", sm: "block" } }}>doesn&apos;t affect score or rank</Typography>
+                  <Box sx={{ px: 1, py: 0.3, borderRadius: 999, bgcolor: "#f1f5f9", fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, color: "#475569" }}>Practice · no points</Box>
+                  <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, color: "#94a3b8", display: { xs: "none", sm: "block" } }}>doesn&apos;t affect score or rank</Typography>
                 </Stack>
               </Stack>
               <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", md: "1fr 1fr" }, gap: 1.25 }}>
@@ -258,7 +259,7 @@ export function AdditionalPractice({ courseId, submoduleId }: { courseId: number
                       </Box>
                       <Box sx={{ minWidth: 0, flex: 1 }}>
                         <Typography sx={{ fontWeight: 700, fontSize: "0.88rem", color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.title}</Typography>
-                        <Typography sx={{ fontSize: "0.72rem", color: "#94a3b8", textTransform: "capitalize" }}>
+                        <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "#94a3b8", textTransform: "capitalize" }}>
                           {it.kind} · {it.item_count} {it.kind === "article" ? "explainer" : it.kind === "coding" ? "problem" + (it.item_count > 1 ? "s" : "") : "MCQ" + (it.item_count > 1 ? "s" : "")}
                         </Typography>
                       </Box>
@@ -279,7 +280,7 @@ export function AdditionalPractice({ courseId, submoduleId }: { courseId: number
 
 function StepLabel({ n, text, hint }: { n: number; text: string; hint?: string }) {
   return (
-    <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: 0.6, color: "#64748b", mb: 1 }}>
+    <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: 0.6, color: "#64748b", mb: 1 }}>
       {n} · {text}{hint ? <Box component="span" sx={{ color: "#cbd5e1", ml: 0.75 }}>({hint})</Box> : null}
     </Typography>
   );
