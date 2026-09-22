@@ -2982,5 +2982,9 @@
     "savingLocked": "Saving is locked",
     "downloadLocked": "Download is locked",
     "sidebarTooltip": "Complete your profile to unlock"
+  },
+  "mobileChrome": {
+    "more": "More",
+    "platformGuide": "Platform guide"
   }
 }

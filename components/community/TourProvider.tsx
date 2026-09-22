@@ -12,6 +12,7 @@ import {
 import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Box, Button, IconButton, Switch, Typography } from "@mui/material";
+import { PHONE } from "@/components/common/mobile/phone";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { communityService } from "@/lib/services/community.service";
 
@@ -395,10 +396,12 @@ function TourOverlay({
       height: rect.height + PADDING * 2,
     };
     const placement = step.placement ?? "bottom";
-    const TIP_W = 360;
     const TIP_GAP = 14;
     const MARGIN = 16;
     const vw = window.innerWidth;
+    // The card is 360px, capped by CSS at 100vw - 32px. Positioning must use the width it
+    // actually renders at: with a fixed 360 a 360px-wide phone put the card's left edge at -16px.
+    const TIP_W = Math.min(360, vw - MARGIN * 2);
     const vh = window.innerHeight;
 
     const below = padded.top + padded.height + TIP_GAP; // card top if placed below the target
@@ -545,10 +548,10 @@ function TourOverlay({
               <Typography sx={{ fontSize: "0.95rem", fontWeight: 700, color: "#f1f5f9", flex: 1 }}>
                 {step.title}
               </Typography>
-              <Typography sx={{ fontSize: "0.7rem", fontWeight: 700, color: "#94a3b8" }}>
+              <Typography sx={{ fontSize: "0.7rem", fontWeight: 700, color: "#94a3b8", [PHONE]: { fontSize: "0.75rem" } }}>
                 {stepIdx + 1}/{totalSteps}
               </Typography>
-              <IconButton size="small" onClick={onStop} sx={{ color: "#94a3b8" }}>
+              <IconButton size="small" onClick={onStop} aria-label="Close tour" sx={{ color: "#94a3b8", [PHONE]: { width: 44, height: 44, mr: -1 } }}>
                 <IconWrapper icon="mdi:close" size={16} />
               </IconButton>
             </Box>
@@ -572,7 +575,15 @@ function TourOverlay({
             </Typography>
 
             {/* Footer */}
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                // Thumb-sized actions on a phone; Back / Skip / Next are 30px buttons otherwise.
+                [PHONE]: { gap: 0.5, "& .MuiButton-root": { minHeight: 44, minWidth: 44 } },
+              }}
+            >
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                 <IconWrapper icon={narrating ? "mdi:volume-high" : "mdi:volume-off"} size={14} color="#94a3b8" />
                 <Switch

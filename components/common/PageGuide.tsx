@@ -7,6 +7,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { useTour } from "@/components/community/TourProvider";
 import { buildTour, type PageGuideContent } from "@/lib/guide/registry";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * Substitute `{brand}` with the tenant's own name.
@@ -32,6 +33,9 @@ export function PageGuide({
   label,
   tooltip = "Guide to this page",
   tourStartPath,
+  open: openProp,
+  onOpenChange,
+  triggerSx,
 }: {
   content: PageGuideContent;
   /** "hero" = translucent-white icon for the dark page header; "nav" = light pill for the top nav. */
@@ -42,10 +46,22 @@ export function PageGuide({
   /** If the tour anchors to another page's elements (e.g. the platform tour spotlights
    *  the dashboard), navigate here first so the targets exist before the spotlight measures. */
   tourStartPath?: string;
+  /** Controlled open state. Lets another surface (the top bar's phone overflow menu) open the
+   *  same guide dialog while this trigger is hidden. Omit both for the self-managed default. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  /** Extra sx for the nav trigger (the top bar hides it on a phone, where the overflow menu
+   *  carries the guide instead). */
+  triggerSx?: object;
 }) {
   const { clientInfo } = useClientInfo();
   const brandName = clientInfo?.name?.trim() || "AI Linc";
-  const [open, setOpen] = useState(false);
+  const [openState, setOpenState] = useState(false);
+  const open = openProp ?? openState;
+  const setOpen = (next: boolean) => {
+    if (openProp === undefined) setOpenState(next);
+    onOpenChange?.(next);
+  };
   const { startTour } = useTour();
   const router = useRouter();
   const pathname = usePathname();
@@ -105,6 +121,9 @@ export function PageGuide({
                 boxShadow: "0 2px 6px rgba(0,0,0,0.15)",
                 transform: "translateY(-1px)",
               },
+              // The label is hidden on a phone, so this is an icon button there: a 44px square.
+              [PHONE]: { width: 44, height: 44, px: 0, py: 0, justifyContent: "center" },
+              ...triggerSx,
             }}
           >
             <IconWrapper icon="mdi:compass-outline" size={16} color="var(--primary-700)" />
@@ -130,6 +149,7 @@ export function PageGuide({
             sx={{
               width: 38,
               height: 38,
+              [PHONE]: { width: 44, height: 44 },
               color: "#fff",
               border: "1px solid rgba(255,255,255,0.22)",
               backgroundColor: "rgba(255,255,255,0.12)",
@@ -155,6 +175,8 @@ export function PageGuide({
             borderRadius: "16px",
             border: "1px solid var(--border-default)",
             overflow: "hidden",
+            // 16px gutters on a phone instead of MUI's 32px, so the list is not a narrow column.
+            [PHONE]: { m: 2, width: "calc(100% - 32px)", maxHeight: "calc(100% - 32px)" },
           },
         }}
       >
@@ -186,6 +208,7 @@ export function PageGuide({
               right: 12,
               color: "#fff",
               "&:hover": { backgroundColor: "rgba(255,255,255,0.15)" },
+              [PHONE]: { width: 44, height: 44, top: 6, right: 6 },
             }}
           >
             <IconWrapper icon="mdi:close" size={18} color="#fff" />
@@ -254,7 +277,7 @@ export function PageGuide({
           )}
 
           <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
-            <Button onClick={() => setOpen(false)} sx={{ textTransform: "none", color: "var(--font-secondary)" }}>
+            <Button onClick={() => setOpen(false)} sx={{ textTransform: "none", color: "var(--font-secondary)", [PHONE]: { minHeight: 44 } }}>
               {hasTour ? "Close" : "Got it"}
             </Button>
             {hasTour && (
@@ -269,6 +292,7 @@ export function PageGuide({
                   background: "linear-gradient(135deg, var(--module-cta-from, #a78bfa), var(--module-cta-to, #ec4899))",
                   boxShadow: "none",
                   "&:hover": { filter: "brightness(0.92)", boxShadow: "none" },
+                  [PHONE]: { minHeight: 44 },
                 }}
               >
                 Take a tour
