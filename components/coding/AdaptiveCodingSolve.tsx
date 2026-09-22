@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Box, Button, CircularProgress, FormControl, MenuItem, Select, Stack, TextField, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { Icon } from "@iconify/react";
@@ -149,11 +149,27 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
   // finishes, show them the Results tab. Watching the busy flags (not the handlers) leaves every
   // request path exactly as it was, and a resumed session's old result does not steal the view.
   const wasBusyRef = useRef(false);
+  const resultsAtStartRef = useRef<TestResults | null>(null);
+  const [resultsUnseen, setResultsUnseen] = useState(false);
   useEffect(() => {
     const busy = running || submitting;
-    if (wasBusyRef.current && !busy && isPhone) setPhoneTab("results");
+    if (busy && !wasBusyRef.current) resultsAtStartRef.current = testResults;
+    if (wasBusyRef.current && !busy && isPhone) {
+      // A request that failed left the old results in place: do not present them as this run's.
+      const fresh = testResults !== resultsAtStartRef.current;
+      // Moving to another tab would blur the editor and drop the phone keyboard mid-sentence, so
+      // while focus is in the Code pane the Results tab only gets a "ready" dot.
+      const focused = document.activeElement as HTMLElement | null;
+      const typing = !!focused?.closest?.('[data-phone-pane="code"]') && !!focused.matches?.('textarea, input, [contenteditable="true"]');
+      if (fresh && typing) setResultsUnseen(true);
+      else if (fresh) setPhoneTab("results");
+    }
     wasBusyRef.current = busy;
-  }, [running, submitting, isPhone]);
+  }, [running, submitting, isPhone, testResults]);
+  const openTab = (tab: PhoneTab) => {
+    setPhoneTab(tab);
+    if (tab === "results") setResultsUnseen(false);
+  };
   const [allowClipboard, setAllowClipboard] = useState(false);
 
   // Offer a consistent algorithmic language set (Python/JS/TS/Java/C++/C#) rather than only the
@@ -669,41 +685,56 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
     </Typography>
   );
 
-  if (isPhone) {
-    const hasResults = Boolean(testResults && (testResults.total > 0 || testResults.compile_error));
-    const tabs: Array<{ key: PhoneTab; label: string; badge?: string }> = [
-      { key: "problem", label: t("learningPlayerMobile.problemTab") },
-      { key: "code", label: t("learningPlayerMobile.codeTab") },
-      {
-        key: "results",
-        label: t("learningPlayerMobile.resultsTab"),
-        badge: testResults && testResults.total > 0 ? `${testResults.passed}/${testResults.total}` : undefined,
-      },
-    ];
-    return (
-      <Box data-testid="coding-phone" sx={{ display: "flex", flexDirection: "column", gap: 1.5, minWidth: 0 }}>
-        {backLink}
-        {timerHud}
+  const hasResults = Boolean(testResults && (testResults.total > 0 || testResults.compile_error));
+  const tabs: Array<{ key: PhoneTab; label: string; badge?: string }> = [
+    { key: "problem", label: t("learningPlayerMobile.problemTab") },
+    { key: "code", label: t("learningPlayerMobile.codeTab") },
+    {
+      key: "results",
+      label: t("learningPlayerMobile.resultsTab"),
+      badge: testResults && testResults.total > 0 ? `${testResults.passed}/${testResults.total}` : undefined,
+    },
+  ];
+  // Where each piece sits on a phone: its tab, and its order in the single stacked column.
+  const slot = (pane: PhoneTab | "always", order: number) => ({ isPhone, pane, order, active: phoneTab });
+
+  // ONE tree at every width. A phone and a desktop render the same components in the same
+  // positions; only styles differ (the columns become `display: contents` and each piece's slot
+  // gets an order and a visibility). Rotating across 600px therefore never remounts the editor,
+  // the timer, or the panels that fetch on mount.
+  return (
+    // minmax(0,1fr) + minWidth:0 keep the Monaco editor and wide test output from blowing a column
+    // past 50% and shoving the page into horizontal overflow (esp. after a run/submit adds output).
+    <Box
+      data-testid="coding-workspace"
+      data-layout={isPhone ? "phone" : "desktop"}
+      sx={{
+        display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1fr) minmax(0, 1fr)" }, gap: 2.5, alignItems: "start",
+        ...(isPhone ? { display: "flex", flexDirection: "column", gap: 1.5, minWidth: 0 } : {}),
+      }}
+    >
+      {isPhone && (
         <Box
           role="tablist"
           aria-label={t("learningPlayerMobile.workspaceTabs")}
           sx={{
-            position: "sticky", top: 0, zIndex: 3, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 0.5,
+            order: 2, position: "sticky", top: 0, zIndex: 3, display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 0.5,
             p: 0.5, borderRadius: 3, bgcolor: "var(--card-bg, #fff)",
             border: "1px solid var(--border-default, #e5e7eb)", boxShadow: "0 8px 20px -16px rgba(15,23,42,0.35)",
           }}
         >
           {tabs.map((tab) => {
             const active = phoneTab === tab.key;
+            const unseen = tab.key === "results" && resultsUnseen && !active;
             return (
               <Box
                 key={tab.key}
                 component="button"
                 role="tab"
                 aria-selected={active}
-                onClick={() => setPhoneTab(tab.key)}
+                onClick={() => openTab(tab.key)}
                 sx={{
-                  all: "unset", cursor: "pointer", minHeight: 44, borderRadius: 2.5, display: "inline-flex",
+                  all: "unset", cursor: "pointer", minHeight: 44, borderRadius: 2.5, display: "inline-flex", position: "relative",
                   alignItems: "center", justifyContent: "center", gap: 0.6, fontSize: "0.85rem", fontWeight: 800,
                   color: active ? "white" : "var(--font-secondary)",
                   background: active ? "linear-gradient(135deg, var(--module-tile-from, #6366f1), var(--module-tile-to, #a855f7))" : "transparent",
@@ -716,65 +747,77 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
                     {tab.badge}
                   </Box>
                 )}
+                {unseen && (
+                  <Box
+                    component="span"
+                    data-testid="results-ready"
+                    aria-label={t("learningPlayerMobile.resultsReady")}
+                    sx={{ position: "absolute", top: 6, insetInlineEnd: 8, width: 8, height: 8, borderRadius: "50%", bgcolor: "#ef4444" }}
+                  />
+                )}
               </Box>
             );
           })}
         </Box>
-        {/* Hidden rather than unmounted: the editor keeps its undo history and cursor across tabs. */}
-        <Box role="tabpanel" hidden={phoneTab !== "problem"} sx={{ display: phoneTab === "problem" ? "flex" : "none", flexDirection: "column", gap: 2, minWidth: 0 }}>
-          {problemPanel}
-          {solvedBanner}
-          {masteryPanel}
-          {submissionsPanel}
-        </Box>
-        <Box role="tabpanel" hidden={phoneTab !== "code"} sx={{ display: phoneTab === "code" ? "flex" : "none", flexDirection: "column", gap: 1.25, minWidth: 0 }}>
-          {toolbar}
-          {editor}
-          {customPanel}
-        </Box>
-        <Box role="tabpanel" hidden={phoneTab !== "results"} sx={{ display: phoneTab === "results" ? "flex" : "none", flexDirection: "column", gap: 1.5, minWidth: 0 }}>
-          {hasResults ? testStrip : (
-            <Typography sx={{ fontSize: "0.85rem", color: "text.secondary", textAlign: "center", py: 3 }}>
-              {t("learningPlayerMobile.noResultsYet")}
-            </Typography>
-          )}
-          {mentorCard}
-          {mentorNote}
-        </Box>
-      </Box>
-    );
-  }
-
-  return (
-    // minmax(0,1fr) + minWidth:0 keep the Monaco editor and wide test output from blowing a column
-    // past 50% and shoving the page into horizontal overflow (esp. after a run/submit adds output).
-    <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1fr) minmax(0, 1fr)" }, gap: 2.5, alignItems: "start" }}>
+      )}
       {/* Left - problem + mentor analysis */}
-      <Box sx={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2 }}>
-        {backLink}
+      <Box sx={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 2, ...(isPhone ? { display: "contents" } : {}) }}>
+        <Slot {...slot("always", 0)}>{backLink}</Slot>
 
-        {problemPanel}
+        <Slot {...slot("problem", 10)}>{problemPanel}</Slot>
 
-        {solvedBanner}
+        <Slot {...slot("problem", 11)}>{solvedBanner}</Slot>
 
-        {mentorCard}
+        <Slot {...slot("results", 31)}>{mentorCard}</Slot>
 
-        {masteryPanel}
+        <Slot {...slot("problem", 12)}>{masteryPanel}</Slot>
 
-        {submissionsPanel}
+        <Slot {...slot("problem", 13)}>{submissionsPanel}</Slot>
       </Box>
 
       {/* Right - editor + live timer/points HUD + toolbar (the ready gate is shown earlier, before
           the problem is revealed) */}
-      <Box sx={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 1.25 }}>
-        {timerHud}
-        {toolbar}
+      <Box sx={{ minWidth: 0, display: "flex", flexDirection: "column", gap: 1.25, ...(isPhone ? { display: "contents" } : {}) }}>
+        <Slot {...slot("always", 1)}>{timerHud}</Slot>
+        <Slot {...slot("code", 20)}>{toolbar}</Slot>
 
-        {editor}
-        {customPanel}
-        {testStrip}
-        {mentorNote}
+        <Slot {...slot("code", 21)}>{editor}</Slot>
+        <Slot {...slot("code", 22)}>{customPanel}</Slot>
+        <Slot {...slot("results", 30)}>
+          {testStrip}
+          {isPhone && !hasResults && (
+            <Typography sx={{ fontSize: "0.85rem", color: "text.secondary", textAlign: "center", py: 3 }}>
+              {t("learningPlayerMobile.noResultsYet")}
+            </Typography>
+          )}
+        </Slot>
+        <Slot {...slot("results", 32)}>{mentorNote}</Slot>
       </Box>
+    </Box>
+  );
+}
+
+/**
+ * One piece of the coding workspace. From 600px up it is `display: contents` - no box of its own -
+ * so the desktop columns lay out exactly as if the piece were their direct child. On a phone it is
+ * a box in the single stacked column with an `order`, shown only while its tab is open.
+ *
+ * Defined at module scope so its identity is stable: a component declared inside the parent would
+ * be a new type on every render and remount everything under it.
+ */
+function Slot({ isPhone, pane, order, active, children }: {
+  isPhone: boolean; pane: PhoneTab | "always"; order: number; active: PhoneTab; children: ReactNode;
+}) {
+  return (
+    <Box
+      data-phone-pane={pane}
+      sx={
+        isPhone
+          ? { order, minWidth: 0, display: pane === "always" || pane === active ? "block" : "none", "&:empty": { display: "none" } }
+          : { display: "contents" }
+      }
+    >
+      {children}
     </Box>
   );
 }

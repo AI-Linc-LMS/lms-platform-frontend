@@ -2988,7 +2988,8 @@
     "problemTab": "Problem",
     "codeTab": "Code",
     "resultsTab": "Results",
-    "noResultsYet": "Run your code to see the test results and the mentor's read here."
+    "noResultsYet": "Run your code to see the test results and the mentor's read here.",
+    "resultsReady": "New results are ready"
   },
   "roadmapsMobile": {
     "mapHint": "Tap a step to open it. Press and hold to mark it done, in progress or skipped."
