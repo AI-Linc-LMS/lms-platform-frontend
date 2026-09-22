@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { TutorSurface } from "../shared/surfaces";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The full transcript, collapsed.
@@ -67,6 +68,7 @@ export function RecapTranscript({ turns }: { turns: Turn[] }) {
             outline: "none",
             boxShadow: "0 0 0 2px var(--card-bg), 0 0 0 4px var(--ai-violet)",
           },
+          [PHONE]: { minHeight: 44 },
         }}
       >
         <Icon
@@ -140,6 +142,7 @@ export function RecapTranscript({ turns }: { turns: Turn[] }) {
                     display: "grid",
                     placeItems: "center",
                     p: 0.25,
+                    [PHONE]: { minHeight: 44 },
                   }}
                 >
                   <Icon icon="mdi:close" width={15} style={{ color: "var(--font-secondary)" }} />
@@ -171,6 +174,7 @@ export function RecapTranscript({ turns }: { turns: Turn[] }) {
                       <Typography
                         sx={{
                           fontSize: "0.7rem",
+                          [PHONE]: { fontSize: "0.75rem" },
                           fontWeight: 600,
                           letterSpacing: "0.08em",
                           textTransform: "uppercase",
@@ -187,6 +191,7 @@ export function RecapTranscript({ turns }: { turns: Turn[] }) {
                       <Typography
                         sx={{
                           fontSize: "0.72rem",
+                          [PHONE]: { fontSize: "0.75rem" },
                           color: "var(--font-secondary)",
                           fontVariantNumeric: "tabular-nums",
                         }}

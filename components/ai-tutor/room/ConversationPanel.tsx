@@ -15,6 +15,7 @@ import {
   ROOM_VIOLET,
   roomFocusRing,
 } from "./roomTokens";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * What was said, so far.
@@ -127,6 +128,7 @@ export function ConversationPanel({
             transition: "color 160ms ease, background-color 160ms ease",
             "&:hover": { color: ROOM_TEXT, bgcolor: "rgba(255,255,255,0.08)" },
             "&:focus-visible": roomFocusRing,
+            [PHONE]: { minWidth: 44, minHeight: 44 },
           }}
         >
           <Icon icon="mdi:close" width={17} />
@@ -190,6 +192,7 @@ function Turn({
         <Typography
           sx={{
             fontSize: "0.7rem",
+            [PHONE]: { fontSize: "0.75rem" },
             fontWeight: 600,
             letterSpacing: "0.08em",
             textTransform: "uppercase",
@@ -200,7 +203,7 @@ function Turn({
           {tutor ? "Tutor" : "You"}
         </Typography>
         {pending ? (
-          <Typography sx={{ fontSize: "0.7rem", color: ROOM_TEXT_FAINT }}>speaking</Typography>
+          <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, color: ROOM_TEXT_FAINT }}>speaking</Typography>
         ) : null}
       </Box>
       <Typography

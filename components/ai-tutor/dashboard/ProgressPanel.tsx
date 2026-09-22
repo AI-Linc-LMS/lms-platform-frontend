@@ -4,6 +4,7 @@ import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { TutorTintSurface } from "../shared/surfaces";
 import type { TutorStats } from "@/lib/services/ai-tutor.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The learner's totals, as a rail panel rather than a four-across strip.
@@ -45,6 +46,7 @@ export function ProgressPanel({ stats }: { stats?: TutorStats }) {
         <Typography
           sx={{
             fontSize: "0.74rem",
+            [PHONE]: { fontSize: "0.75rem" },
             fontWeight: 600,
             letterSpacing: "0.08em",
             textTransform: "uppercase",
