@@ -8,6 +8,7 @@ import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { StudentDetailDrawer } from "@/components/instructor/StudentDetailDrawer";
+import { PHONE } from "@/components/common/mobile/phone";
 import { instructorService, type CohortRoster } from "@/lib/services/instructor.service";
 import { RosterRow } from "@/components/instructor/RosterRow";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
@@ -72,7 +73,7 @@ export default function InstructorCohortPage() {
             placeholder="Search students…"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            sx={{ maxWidth: 380, mb: 2, "& .MuiOutlinedInput-root": { borderRadius: 2, bgcolor: "var(--surface)" } }}
+            sx={{ maxWidth: 380, mb: 2, "& .MuiOutlinedInput-root": { borderRadius: 2, bgcolor: "var(--surface)" }, [PHONE]: { "& .MuiOutlinedInput-root": { minHeight: 44 } } }}
             InputProps={{ startAdornment: <Icon icon="mdi:magnify" width={18} style={{ marginRight: 6, opacity: 0.6 }} /> }}
           />
 

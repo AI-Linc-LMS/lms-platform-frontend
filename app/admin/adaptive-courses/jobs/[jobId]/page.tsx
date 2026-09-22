@@ -17,6 +17,8 @@ import {
 import { LiveGenerationBento } from "@/components/admin/adaptive-course/LiveGenerationBento";
 import { statusLabel } from "@/lib/utils/course-job-status";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_TEXT, TAP, phoneTapSx } from "@/components/admin/adaptive-course/coursePhone";
 
 const POLL_INTERVAL_MS = 2000;
 const ORDER = ["pending", "generating_outline", "creating_structure", "generating_content", "completed"];
@@ -112,7 +114,7 @@ export default function AdaptiveCourseJobPage() {
       <Container maxWidth="xl" sx={{ py: { xs: 3, md: 5 } }}>
         <ButtonBase
           onClick={() => push("/admin/adaptive-courses")}
-          sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}
+          sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem", ...phoneTapSx }}
         >
           <Icon icon="mdi:arrow-left" width={18} />
           Back to Adaptive Course Builder
@@ -168,6 +170,7 @@ export default function AdaptiveCourseJobPage() {
                       sx={{
                         px: 3, py: 1.3, borderRadius: 999, fontWeight: 800, color: "white", gap: 0.6,
                         background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
+                        ...phoneTapSx,
                       }}
                     >
                       <Icon icon="mdi:open-in-new" width={16} />
@@ -239,7 +242,7 @@ export default function AdaptiveCourseJobPage() {
               <Box sx={{ mt: 3 }}>
                 <ButtonBase
                   onClick={() => setShowRawLog((v) => !v)}
-                  sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, color: "text.secondary", fontWeight: 800, fontSize: "0.8rem" }}
+                  sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, color: "text.secondary", fontWeight: 800, fontSize: "0.8rem", ...phoneTapSx }}
                 >
                   <Icon icon="mdi:console" width={16} />
                   {showRawLog ? "Hide raw log" : "Show raw log"}
@@ -247,20 +250,20 @@ export default function AdaptiveCourseJobPage() {
                 </ButtonBase>
                 {showRawLog && (
                   <Box sx={{ mt: 1.5 }}>
-                    <Box sx={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 0.75, mb: 1 }}>
+                    <Box sx={{ display: "flex", justifyContent: "flex-end", alignItems: "center", gap: 0.75, mb: 1, [PHONE]: { flexWrap: "wrap" } }}>
                       {(["all", "Easy", "Medium", "Hard"] as LogFilter[]).map((f) => {
                         const active = logFilter === f;
                         const color = f === "all" ? "#6366f1" : DIFF_COLOR[f];
                         return (
                           <ButtonBase key={f} onClick={() => setLogFilter(f)}
                             sx={{ px: 1.1, py: 0.35, borderRadius: 999, fontWeight: 800, fontSize: "0.68rem",
-                              color: active ? "white" : color, bgcolor: active ? color : `color-mix(in srgb, ${color} 12%, transparent)` }}>
+                              color: active ? "white" : color, bgcolor: active ? color : `color-mix(in srgb, ${color} 12%, transparent)`, [PHONE]: { minHeight: TAP, px: 1.75, fontSize: PHONE_TEXT } }}>
                             {f === "all" ? "All" : f}
                           </ButtonBase>
                         );
                       })}
                       <ButtonBase onClick={() => setAutoScroll((v) => !v)} title="Auto-scroll"
-                        sx={{ px: 0.6, py: 0.35, borderRadius: 999, color: autoScroll ? "#6366f1" : "#94a3b8" }}>
+                        sx={{ px: 0.6, py: 0.35, borderRadius: 999, color: autoScroll ? "#6366f1" : "#94a3b8", [PHONE]: { minWidth: TAP, minHeight: TAP } }}>
                         <Icon icon={autoScroll ? "mdi:arrow-down-bold-circle" : "mdi:arrow-down-bold-circle-outline"} width={18} />
                       </ButtonBase>
                     </Box>
@@ -308,13 +311,13 @@ function StatsRail({ stats, status, percent, stalled }: { stats: AdaptiveCourseJ
         <Typography sx={{ fontWeight: 800, fontSize: "0.85rem" }}>
           {barTitle}
           {live && stalled && (
-            <Box component="span" sx={{ ml: 1, fontSize: "0.7rem", fontWeight: 800, color: "#f59e0b" }}>
+            <Box component="span" sx={{ ml: 1, fontSize: "0.7rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 800, color: "#f59e0b" }}>
               <Box component="span" sx={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", bgcolor: "#f59e0b", mr: 0.5 }} />
               STALLED
             </Box>
           )}
           {live && !stalled && (
-            <Box component="span" sx={{ ml: 1, fontSize: "0.7rem", fontWeight: 800, color: "#10b981" }}>
+            <Box component="span" sx={{ ml: 1, fontSize: "0.7rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 800, color: "#10b981" }}>
               <Box component="span" sx={{ display: "inline-block", width: 7, height: 7, borderRadius: "50%", bgcolor: "#10b981", mr: 0.5, animation: "acb-pulse 1.2s ease-in-out infinite" }} />
               LIVE
             </Box>
@@ -347,7 +350,7 @@ function StatCard({ label, value, accent, icon }: { label: string; value: string
     <Box sx={{ borderRadius: 3, p: 1.5, bgcolor: "color-mix(in srgb, var(--card-bg) 70%, transparent)", border: "1px solid color-mix(in srgb, var(--border-default) 75%, transparent)" }}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mb: 0.5 }}>
         <Icon icon={icon} width={15} style={{ color: accent }} />
-        <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, color: "text.secondary", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+        <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 800, color: "text.secondary", textTransform: "uppercase", letterSpacing: "0.05em" }}>
           {label}
         </Typography>
       </Box>
@@ -360,7 +363,7 @@ function DifficultyCard({ byDifficulty }: { byDifficulty: Record<string, number>
   const order: Array<keyof typeof DIFF_COLOR> = ["Easy", "Medium", "Hard"];
   return (
     <Box sx={{ borderRadius: 3, p: 1.5, bgcolor: "color-mix(in srgb, var(--card-bg) 70%, transparent)", border: "1px solid color-mix(in srgb, var(--border-default) 75%, transparent)" }}>
-      <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, color: "text.secondary", textTransform: "uppercase", letterSpacing: "0.05em", mb: 0.6 }}>
+      <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 800, color: "text.secondary", textTransform: "uppercase", letterSpacing: "0.05em", mb: 0.6 }}>
         By difficulty
       </Typography>
       <Box sx={{ display: "flex", gap: 1 }}>
@@ -479,7 +482,7 @@ function LogLine({ entry, text, done }: { entry: AdaptiveCourseJobLogEntry; text
       <Box component="span" sx={{ color: done ? "#10b981" : "#a855f7", flexShrink: 0 }}>
         {done ? "✓" : "✎"}
       </Box>
-      <Box component="span" sx={{ color: dColor, flexShrink: 0, fontSize: "0.7rem", pt: "1px", fontWeight: 700 }}>
+      <Box component="span" sx={{ color: dColor, flexShrink: 0, fontSize: "0.7rem", [PHONE]: { fontSize: PHONE_TEXT }, pt: "1px", fontWeight: 700 }}>
         [{tag}]
       </Box>
       <Box component="span" sx={{ color: "#e2e8f0", wordBreak: "break-word" }}>
@@ -566,7 +569,7 @@ function GatedPanel({
                 border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
               }}
             >
-              <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.08em", color: "text.secondary", mb: 0.5 }}>
+              <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 800, letterSpacing: "0.08em", color: "text.secondary", mb: 0.5 }}>
                 WHY
               </Typography>
               {/* Verbatim. A rejection with no reason just gets resubmitted unchanged. */}
@@ -585,7 +588,7 @@ function GatedPanel({
                     border: "1px solid color-mix(in srgb, var(--border-default) 75%, transparent)",
                   }}
                 >
-                  <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: "0.06em", color: "text.secondary" }}>
+                  <Typography sx={{ fontSize: "0.68rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 800, letterSpacing: "0.06em", color: "text.secondary" }}>
                     {f.label.toUpperCase()}
                   </Typography>
                   <Typography sx={{ fontWeight: 800, fontSize: "0.9rem" }}>{f.value}</Typography>
@@ -607,6 +610,7 @@ function GatedPanel({
                 px: 2.5, py: 1.1, borderRadius: 999, fontWeight: 800, gap: 0.6, fontSize: "0.85rem",
                 color: "var(--font-primary)", bgcolor: "var(--card-bg)",
                 border: "1px solid var(--border-default)",
+                ...phoneTapSx,
               }}
             >
               <Icon icon="mdi:arrow-left" width={16} />
@@ -619,6 +623,7 @@ function GatedPanel({
                 px: 2.5, py: 1.1, borderRadius: 999, fontWeight: 800, gap: 0.6, fontSize: "0.85rem",
                 color: "white",
                 background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)",
+                ...phoneTapSx,
               }}
             >
               <Icon icon="mdi:pencil-ruler" width={16} />

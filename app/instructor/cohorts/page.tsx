@@ -9,6 +9,7 @@ import { Reveal } from "@/components/scorecard/shared";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { instructorService, type InstructorCohortDetail } from "@/lib/services/instructor.service";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { pf, PHONE_TAP } from "@/components/instructor/phoneSx";
 
 const GRADS = [
   "linear-gradient(120deg,#6366f1,#f59e0b)",
@@ -52,7 +53,7 @@ function AvatarCascade({ count }: { count: number }) {
           {extra > 0 && (
             <Box sx={{ minWidth: 30, height: 30, px: 0.6, borderRadius: 999, display: "grid", placeItems: "center",
               bgcolor: "rgba(0,0,0,0.32)", border: "2px solid rgba(255,255,255,0.7)", ml: "-11px", zIndex: 0 }}>
-              <Typography sx={{ fontSize: "0.64rem", fontWeight: 900, color: "#fff" }}>+{extra}</Typography>
+              <Typography sx={{ ...pf(0.64), fontWeight: 900, color: "#fff" }}>+{extra}</Typography>
             </Box>
           )}
         </Box>
@@ -140,7 +141,7 @@ export default function InstructorCohortsPage() {
           </Typography>
         </Stack>
         <Button href="/tickets" startIcon={<Icon icon="mdi:headset" width={16} />}
-          sx={{ textTransform: "none", fontWeight: 700, color: "#6366f1" }}>Request a change</Button>
+          sx={{ textTransform: "none", fontWeight: 700, color: "#6366f1", ...PHONE_TAP }}>Request a change</Button>
       </Box>
 
       {error && <Typography sx={{ color: "#ef4444", fontWeight: 700, textAlign: "center", py: 4 }}>{error}</Typography>}
@@ -160,7 +161,7 @@ export default function InstructorCohortsPage() {
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Chip size="small" label={c.client_name || "Cohort"} sx={{ fontWeight: 700, color: "#fff",
                     bgcolor: "rgba(255,255,255,0.18)" }} />
-                  {c.end_date && <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: 0.6,
+                  {c.end_date && <Typography sx={{ ...pf(0.66), fontWeight: 800, letterSpacing: 0.6,
                     bgcolor: "rgba(0,0,0,0.2)", px: 1, py: 0.4, borderRadius: 999 }}>{fmtEnd(c.end_date)}</Typography>}
                 </Stack>
                 <Box sx={{ mt: 1.5 }}>
@@ -189,13 +190,13 @@ export default function InstructorCohortsPage() {
                         key={co.id}
                         size="small"
                         label={co.title}
-                        sx={{ fontWeight: 700, fontSize: "0.7rem", height: 22,
+                        sx={{ fontWeight: 700, ...pf(0.7), height: 22,
                               bgcolor: "color-mix(in srgb,#6366f1 12%,transparent)", color: "#4f46e5" }}
                       />
                     ))
                   )}
                   {(c.courses ?? []).length > 3 && (
-                    <Typography sx={{ fontSize: "0.74rem", color: "var(--font-tertiary)", fontWeight: 700 }}>
+                    <Typography sx={{ ...pf(0.74), color: "var(--font-tertiary)", fontWeight: 700 }}>
                       +{(c.courses ?? []).length - 3} more
                     </Typography>
                   )}
@@ -218,7 +219,7 @@ export default function InstructorCohortsPage() {
                   ].map((s, j) => (
                     <Box key={s.l} sx={{ p: 1.5, textAlign: "center", borderLeft: j ? "1px solid var(--border-default)" : "none" }}>
                       <Typography sx={{ fontWeight: 900, fontSize: "1.2rem", color: s.d ? "#ef4444" : "var(--font-primary)" }}>{s.n}</Typography>
-                      <Typography sx={{ fontSize: "0.62rem", color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.4 }}>{s.l}</Typography>
+                      <Typography sx={{ ...pf(0.62), color: "text.secondary", textTransform: "uppercase", letterSpacing: 0.4 }}>{s.l}</Typography>
                     </Box>
                   ))}
                 </Box>
@@ -228,11 +229,11 @@ export default function InstructorCohortsPage() {
                     onMouseEnter={() => prefetch(`/instructor/cohorts/${c.id}`)}
                     endIcon={<Icon icon="mdi:arrow-right" width={18} />}
                     sx={{ py: 1.1, borderRadius: 2.5, fontWeight: 800, textTransform: "none", color: "#fff",
-                      background: "linear-gradient(135deg,var(--module-cta-from, #7c3aed),var(--module-cta-to, #ec4899))", "&:hover": { filter: "brightness(1.06)" } }}>
+                      background: "linear-gradient(135deg,var(--module-cta-from, #7c3aed),var(--module-cta-to, #ec4899))", "&:hover": { filter: "brightness(1.06)" }, ...PHONE_TAP }}>
                     Student report
                   </Button>
                   <Button onClick={() => push("/instructor/live-sessions")}
-                    sx={{ minWidth: 48, borderRadius: 2.5, border: "1px solid var(--border-default)", color: "#6366f1" }}>
+                    sx={{ minWidth: 48, borderRadius: 2.5, border: "1px solid var(--border-default)", color: "#6366f1", ...PHONE_TAP }}>
                     <Icon icon="mdi:access-point" width={18} />
                   </Button>
                 </Stack>

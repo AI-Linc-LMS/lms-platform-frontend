@@ -21,6 +21,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
 import { googleService, GoogleCredentials, GoogleCredentialsInput } from "@/lib/services/google.service";
 import { GoogleSetupGuide } from "./GoogleSetupGuide";
+import { phoneSheetSx } from "./livePhone";
 
 interface GoogleCredentialsDialogProps {
   open: boolean;
@@ -106,7 +107,7 @@ export function GoogleCredentialsDialog({ open, creds, redirectUri, onClose, onC
   };
 
   return (
-    <Dialog
+    <Dialog sx={phoneSheetSx}
       open={open}
       onClose={onClose}
       maxWidth="sm"

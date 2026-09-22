@@ -3,6 +3,7 @@
 import { Box, ButtonBase, CircularProgress, IconButton, Tooltip, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
 import { StatusChip, type ChipTone } from "@/components/admin/assessment/shared";
 import { sessionTimeParts } from "@/lib/utils/session-time";
 
@@ -365,7 +366,7 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
             <Typography sx={{ fontFamily: "var(--font-mono)", fontWeight: 700, fontSize: "0.98rem", lineHeight: 1.2, color: "var(--font-primary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {cell.value}
             </Typography>
-            <Typography sx={{ mt: 0.25, fontSize: "0.68rem", letterSpacing: "0.02em", color: "var(--font-tertiary)" }}>
+            <Typography sx={{ mt: 0.25, fontSize: "0.68rem", letterSpacing: "0.02em", color: "var(--font-tertiary)", [PHONE]: { fontSize: "0.75rem" } }}>
               {cell.label}
             </Typography>
           </Box>
@@ -373,7 +374,7 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
       </Box>
 
       {timeParts.viewerTime && (
-        <Typography sx={{ mt: -0.75, textAlign: "center", fontSize: "0.72rem", color: "var(--font-tertiary)" }}>
+        <Typography sx={{ mt: -0.75, textAlign: "center", fontSize: "0.72rem", color: "var(--font-tertiary)", [PHONE]: { fontSize: "0.75rem" } }}>
           {t("liveSessions.yourTimeIs", "{{time}} your time", {
             time: timeParts.viewerZoneAbbr ? `${timeParts.viewerTime} ${timeParts.viewerZoneAbbr}` : timeParts.viewerTime,
           })}

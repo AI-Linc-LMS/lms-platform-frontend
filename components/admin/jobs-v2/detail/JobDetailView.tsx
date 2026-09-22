@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
 import { useToast } from "@/components/common/Toast";
 import { adminJobsV2Service } from "@/lib/services/admin/admin-jobs-v2.service";
 import type { JobApplicationV2, JobV2 } from "@/lib/services/jobs-v2.service";
@@ -540,6 +541,10 @@ export function JobDetailView({ jobId }: { jobId: number }) {
             gridTemplateColumns: { xs: "1fr", md: "1.2fr 1fr" },
             gap: 3,
             alignItems: "start",
+            // A bare `1fr` track is at least as wide as its longest unbreakable string - the
+            // external apply URL and a "Distributed systems" chip pushed every card 32px past
+            // a phone's edge, where the page clipped their right side.
+            [PHONE]: { gridTemplateColumns: "minmax(0, 1fr)" },
           }}
         >
           {/* ---- left: the job - its prose, skills, classification and links ---- */}

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Autocomplete, Box, InputBase, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
 import type { JobQuestionV2 } from "@/lib/services/admin/admin-jobs-v2.service";
 import {
   CountPill,
@@ -231,7 +232,7 @@ export function StepAudience({
                 isOptionEqualToValue={(option, value) =>
                   (option as CourseOption)?.id === (value as CourseOption)?.id
                 }
-                value={selectedAdaptive}
+                value={selectedAdaptive} sx={{ [PHONE]: { "& .MuiAutocomplete-popupIndicator, & .MuiAutocomplete-clearIndicator": { width: 44, height: 44 } } }}
                 onChange={(_, value) =>
                   setField(
                     "adaptive_course_ids",

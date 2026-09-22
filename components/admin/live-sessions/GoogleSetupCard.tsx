@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Box, Paper, Typography, Button, Chip, Skeleton, IconButton, Tooltip } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
 import { useToast } from "@/components/common/Toast";
 import { googleService, GoogleCredentials } from "@/lib/services/google.service";
 import { GoogleCredentialsDialog } from "./GoogleCredentialsDialog";
@@ -111,7 +112,7 @@ export function GoogleSetupCard({
         )}
       </Typography>
       <Button size="small" variant="contained" onClick={handleConnect} disabled={connecting}
-        sx={{ textTransform: "none", fontWeight: 700, bgcolor: "var(--warning-500)", "&:hover": { bgcolor: "var(--warning-600, var(--warning-500))" } }}>
+        sx={{ textTransform: "none", fontWeight: 700, bgcolor: "var(--warning-500)", "&:hover": { bgcolor: "var(--warning-600, var(--warning-500))" }, [PHONE]: { minHeight: 44 } }}>
         {t("adminLiveSessions.reconnectGoogle", "Reconnect Google")}
       </Button>
     </Paper>
@@ -150,7 +151,7 @@ export function GoogleSetupCard({
               </Typography>
             </Box>
           </Box>
-          <Button size="small" onClick={() => setSettingsOpen(true)} sx={{ textTransform: "none", color: accent }}>
+          <Button size="small" onClick={() => setSettingsOpen(true)} sx={{ textTransform: "none", color: accent, [PHONE]: { minHeight: 44 } }}>
             {t("adminLiveSessions.manageGoogle", "Manage")}
           </Button>
         </Paper>
@@ -181,7 +182,17 @@ export function GoogleSetupCard({
         }}
       >
         <Box sx={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 2, flexWrap: "wrap" }}>
-          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5, flex: "1 1 320px" }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "flex-start",
+              gap: 1.5,
+              flex: "1 1 320px",
+              // PHONE: a 320px basis inside a ~330px card, plus a nowrap redirect URI capped at
+              // 360px, made this row 442px wide - the copy ran 100px off the screen's edge.
+              [PHONE]: { flexBasis: "100%", minWidth: 0 },
+            }}
+          >
             <Box
               sx={{
                 width: 40,
@@ -197,7 +208,7 @@ export function GoogleSetupCard({
             >
               <IconWrapper icon="logos:google-meet" size={20} />
             </Box>
-            <Box>
+            <Box sx={{ [PHONE]: { minWidth: 0, flex: 1 } }}>
               <Box sx={{ display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap" }}>
                 <Typography variant="subtitle1" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
                   {t("adminLiveSessions.googleConnectTitle", "Connect Google to host Meet sessions")}
@@ -218,18 +229,32 @@ export function GoogleSetupCard({
               </Typography>
               {redirectUri && (
                 <Box sx={{ mb: 0.75 }}>
-                  <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mb: 0.25 }}>
+                  <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block", mb: 0.25, [PHONE]: { fontSize: "0.75rem" } }}>
                     {t("adminLiveSessions.googleRedirectUriHint", "First, add this redirect URI to your Google Cloud OAuth client (Authorized redirect URIs):")}
                   </Typography>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, [PHONE]: { minWidth: 0 } }}>
                     <Typography
                       variant="caption"
-                      sx={{ color: "var(--font-tertiary)", fontFamily: "monospace", fontSize: "0.72rem", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", maxWidth: 360 }}
+                      sx={{
+                        color: "var(--font-tertiary)",
+                        fontFamily: "monospace",
+                        fontSize: "0.72rem",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                        maxWidth: 360,
+                        [PHONE]: { fontSize: "0.75rem", minWidth: 0 },
+                      }}
                     >
                       {redirectUri}
                     </Typography>
                     <Tooltip title={t("adminLiveSessions.copyRedirectUri", "Copy redirect URI")}>
-                      <IconButton size="small" onClick={copyRedirectUri} aria-label={t("adminLiveSessions.copyRedirectUri", "Copy redirect URI")}>
+                      <IconButton
+                        size="small"
+                        onClick={copyRedirectUri}
+                        aria-label={t("adminLiveSessions.copyRedirectUri", "Copy redirect URI")}
+                        sx={{ [PHONE]: { width: 44, height: 44, flexShrink: 0 } }}
+                      >
                         <IconWrapper icon="mdi:content-copy" size={16} />
                       </IconButton>
                     </Tooltip>
@@ -237,13 +262,13 @@ export function GoogleSetupCard({
                 </Box>
               )}
               {creds?.connected_email && (
-                <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>
+                <Typography variant="caption" sx={{ color: "var(--font-tertiary)", [PHONE]: { fontSize: "0.75rem" } }}>
                   {t("adminLiveSessions.googleLastConnected", "Last connected: {{email}}", { email: creds.connected_email })}
                 </Typography>
               )}
             </Box>
           </Box>
-          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", [PHONE]: { width: "100%", "& > .MuiButton-root": { flex: 1, minHeight: 44 } } }}>
             <Button onClick={() => setSettingsOpen(true)} sx={{ textTransform: "none", color: "var(--font-secondary)" }}>
               {connected ? t("adminLiveSessions.settings", "Settings") : t("adminLiveSessions.setupGuide", "Setup guide")}
             </Button>

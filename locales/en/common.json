@@ -3033,5 +3033,16 @@
   },
   "purchases": {
     "reference": "Reference"
+  },
+  "instructorMobile": {
+    "cohortsFilter": "Cohorts",
+    "batchesFilter": "Batches"
+  },
+  "adaptiveCoursesAdmin": {
+    "deleteCourse": "Delete {{title}}"
+  },
+  "adminEngagementMobile": {
+    "statusFilterLabel": "Session status filter",
+    "facetFilterLabel": "Batch and course filter"
   }
 }

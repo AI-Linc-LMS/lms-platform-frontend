@@ -19,8 +19,11 @@ import {
   TextField,
   Tooltip,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
 import { useToast } from "@/components/common/Toast";
 import { RoleChip } from "@/components/live-sessions/ui/LiveSessionUI";
 import { AssignParticipantDialog } from "./AssignParticipantDialog";
@@ -97,6 +100,10 @@ const CONFIDENCE_COLOR: Record<string, string> = {
 export function AttendanceCenter({ liveClassId, isRecurring, occurrences, meetingStatus, cohortName }: Props) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
+  const theme = useTheme();
+  // A 4-column roster in 330px left names and emails as three-letter stubs and stacked every
+  // status chip over its "Mark present" link. On a phone each student is a card instead.
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
 
   // ---- date selection -----------------------------------------------------------------------
   const [dateOptions, setDateOptions] = useState<DateOption[] | null>(isRecurring ? null : []);
@@ -328,7 +335,7 @@ export function AttendanceCenter({ liveClassId, isRecurring, occurrences, meetin
             icon={<IconWrapper icon="mdi:account-group" size={13} />}
             label={cohortName}
             size="small"
-            sx={{ fontWeight: 700, fontSize: "0.72rem", bgcolor: "color-mix(in srgb, var(--ai-violet, #7c3aed) 14%, transparent)", color: "var(--ai-violet, #7c3aed)" }}
+            sx={{ fontWeight: 700, fontSize: "0.72rem", bgcolor: "color-mix(in srgb, var(--ai-violet, #7c3aed) 14%, transparent)", color: "var(--ai-violet, #7c3aed)", [PHONE]: { fontSize: "0.75rem", maxWidth: "100%" } }}
           />
         )}
         <Box sx={{ flex: 1 }} />
@@ -338,7 +345,7 @@ export function AttendanceCenter({ liveClassId, isRecurring, occurrences, meetin
             size="small"
             value={selectedOcc == null ? "" : String(selectedOcc)}
             onChange={(e) => setSelectedOcc(e.target.value === "" ? null : Number(e.target.value))}
-            sx={{ minWidth: 260 }}
+            sx={{ minWidth: 260, [PHONE]: { minWidth: 0, width: "100%", "& .MuiInputBase-root": { minHeight: 44 } } }}
             label={t("adminLiveSessions.classDate", "Class date")}
           >
             {dateOptions!.map((o) => (
@@ -378,7 +385,7 @@ export function AttendanceCenter({ liveClassId, isRecurring, occurrences, meetin
             disabled={syncing}
             onClick={() => void handleSync()}
             startIcon={syncing ? <CircularProgress size={13} color="inherit" /> : <IconWrapper icon="mdi:sync" size={15} />}
-            sx={{ textTransform: "none", fontSize: "0.74rem", fontWeight: 700, borderRadius: 999 }}
+            sx={{ textTransform: "none", fontSize: "0.74rem", fontWeight: 700, borderRadius: 999, [PHONE]: { minHeight: 44, fontSize: "0.8125rem" } }}
           >
             {t("adminLiveSessions.syncAttendance", "Sync attendance")}
           </Button>
@@ -389,7 +396,7 @@ export function AttendanceCenter({ liveClassId, isRecurring, occurrences, meetin
           placeholder={t("adminLiveSessions.searchStudents", "Search name or email…")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          sx={{ minWidth: 220 }}
+          sx={{ minWidth: 220, [PHONE]: { minWidth: 0, width: "100%", "& .MuiInputBase-root": { minHeight: 44 } } }}
           InputProps={{ startAdornment: <IconWrapper icon="mdi:magnify" size={16} color="var(--font-tertiary)" /> }}
         />
       </Box>
@@ -405,6 +412,71 @@ export function AttendanceCenter({ liveClassId, isRecurring, occurrences, meetin
         <Typography variant="body2" sx={{ color: "var(--font-secondary)", py: 1 }}>
           {t("adminLiveSessions.rosterNoStudents", "No students are enrolled in this course yet.")}
         </Typography>
+      ) : isPhone ? (
+        <Box data-testid="attendance-phone-roster" sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+          {students.length === 0 && (
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)", py: 2, textAlign: "center" }}>
+              {t("adminLiveSessions.noStudentsMatch", "No students match your search.")}
+            </Typography>
+          )}
+          {students.map((s) => {
+            const st = rowStatus(s);
+            const busy = markingId === s.user_profile_id;
+            // The same three conditional actions as the table row, at thumb size.
+            const phoneAction = { minHeight: 44, px: 1.5, fontSize: "0.8125rem", textTransform: "none", fontWeight: 700, borderRadius: 999 } as const;
+            return (
+              <Paper key={s.user_profile_id} variant="outlined" data-testid="attendance-phone-card" sx={{ p: 1.5, borderRadius: 2 }}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap", minWidth: 0 }}>
+                  <Typography sx={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--font-primary)", minWidth: 0, flex: "1 1 auto", overflowWrap: "anywhere" }}>
+                    {s.name}
+                  </Typography>
+                  <Chip
+                    label={st.label}
+                    size="small"
+                    sx={{ height: 24, fontSize: "0.75rem", fontWeight: 600, bgcolor: `color-mix(in srgb, ${st.color} 16%, transparent)`, color: st.color }}
+                  />
+                  <Box sx={{ display: "inline-flex", "& > .MuiBox-root": { fontSize: "0.75rem" } }}>
+                    <RoleChip role={s.role} />
+                  </Box>
+                </Box>
+                <Typography sx={{ fontSize: "0.8125rem", color: "var(--font-secondary)", overflowWrap: "anywhere", mt: 0.25 }}>
+                  {s.email}
+                </Typography>
+                {(s.attended || sessionEnded) && (
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1, mt: 1, flexWrap: "wrap" }}>
+                    {s.attended && (
+                      <Typography sx={{ fontSize: "0.8125rem", color: "var(--font-primary)", flex: 1, minWidth: 0 }}>
+                        {formatDurationSeconds(s.duration_seconds)}
+                        {s.join_time && (
+                          <Box component="span" sx={{ color: "var(--font-tertiary)" }}>
+                            {` · ${fmtClock(s.join_time)}–${fmtClock(s.leave_time)}`}
+                          </Box>
+                        )}
+                      </Typography>
+                    )}
+                    {sessionEnded && !s.attended && !s.overridden && (
+                      <Button size="small" variant="outlined" disabled={busy} onClick={() => void handleMark(s.user_profile_id, { present: true })} sx={phoneAction}>
+                        {t("adminLiveSessions.markPresent", "Mark present")}
+                      </Button>
+                    )}
+                    {sessionEnded && s.attended && !s.manual && (
+                      <Button size="small" variant="outlined" color="inherit" disabled={busy} onClick={() => void handleMark(s.user_profile_id, { present: false })}
+                        sx={{ ...phoneAction, color: "var(--error-500)" }}>
+                        {t("adminLiveSessions.markAbsent", "Mark absent")}
+                      </Button>
+                    )}
+                    {sessionEnded && ((s.attended && s.manual) || s.overridden) && (
+                      <Button size="small" color="inherit" disabled={busy} onClick={() => void handleMark(s.user_profile_id, { clear: true })}
+                        sx={{ ...phoneAction, fontWeight: 600, color: "var(--font-secondary)" }}>
+                        {t("adminLiveSessions.undo", "Undo")}
+                      </Button>
+                    )}
+                  </Box>
+                )}
+              </Paper>
+            );
+          })}
+        </Box>
       ) : (
         <TableContainer component={Paper} variant="outlined" sx={{ overflow: "hidden" }}>
           <Table size="small" sx={{ tableLayout: "fixed", width: "100%" }}>
@@ -493,7 +565,7 @@ export function AttendanceCenter({ liveClassId, isRecurring, occurrences, meetin
             tabIndex={0}
             onClick={() => setIdentifyOpen((o) => !o)}
             onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setIdentifyOpen((o) => !o); }}
-            sx={{ display: "flex", alignItems: "center", gap: 1, px: 1.5, py: 1, cursor: "pointer", bgcolor: "color-mix(in srgb, var(--warning-500) 8%, transparent)" }}
+            sx={{ display: "flex", alignItems: "center", gap: 1, px: 1.5, py: 1, cursor: "pointer", bgcolor: "color-mix(in srgb, var(--warning-500) 8%, transparent)", [PHONE]: { minHeight: 44 } }}
           >
             <IconWrapper icon="mdi:account-question-outline" size={17} color="var(--warning-500)" />
             <Typography variant="subtitle2" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
@@ -543,6 +615,7 @@ export function AttendanceCenter({ liveClassId, isRecurring, occurrences, meetin
                             sx={{
                               fontWeight: 700,
                               fontSize: "0.72rem",
+                              [PHONE]: { height: 44, borderRadius: 999, fontSize: "0.8125rem" },
                               cursor: "pointer",
                               color,
                               bgcolor: `color-mix(in srgb, ${color} 12%, transparent)`,
@@ -564,7 +637,7 @@ export function AttendanceCenter({ liveClassId, isRecurring, occurrences, meetin
                           leave_time: null,
                         })
                       }
-                      sx={{ minWidth: 0, px: 0.75, py: 0, fontSize: "0.7rem", textTransform: "none", fontWeight: 700, color: "var(--font-secondary)" }}
+                      sx={{ minWidth: 0, px: 0.75, py: 0, fontSize: "0.7rem", textTransform: "none", fontWeight: 700, color: "var(--font-secondary)", [PHONE]: { minHeight: 44, px: 1.5, fontSize: "0.8125rem" } }}
                     >
                       {t("adminLiveSessions.someoneElse", "Someone else…")}
                     </Button>
@@ -601,7 +674,7 @@ export function AttendanceCenter({ liveClassId, isRecurring, occurrences, meetin
           tabIndex={0}
           onClick={() => setRawOpen((o) => !o)}
           onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") setRawOpen((o) => !o); }}
-          sx={{ display: "flex", alignItems: "center", gap: 1, px: 1.5, py: 1, cursor: "pointer", "&:hover": { bgcolor: "color-mix(in srgb, var(--accent-indigo) 4%, transparent)" } }}
+          sx={{ display: "flex", alignItems: "center", gap: 1, px: 1.5, py: 1, cursor: "pointer", "&:hover": { bgcolor: "color-mix(in srgb, var(--accent-indigo) 4%, transparent)" }, [PHONE]: { minHeight: 44 } }}
         >
           <IconWrapper icon="mdi:file-search-outline" size={16} color="var(--font-secondary)" />
           <Typography variant="caption" sx={{ fontWeight: 700, color: "var(--font-secondary)" }}>
@@ -620,6 +693,27 @@ export function AttendanceCenter({ liveClassId, isRecurring, occurrences, meetin
               <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
                 {t("adminLiveSessions.noRawRecords", "No join records for this date.")}
               </Typography>
+            ) : isPhone ? (
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+                {rawParticipants.map((p, idx) => (
+                  <Box key={p.id ?? idx} sx={{ py: 1, borderBottom: "1px solid var(--border-default)", minWidth: 0 }}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, minWidth: 0 }}>
+                      <Typography sx={{ fontWeight: 700, fontSize: "0.85rem", color: "var(--font-primary)", minWidth: 0, overflowWrap: "anywhere" }}>
+                        {p.name}
+                      </Typography>
+                      <Box sx={{ display: "inline-flex", "& > .MuiBox-root": { fontSize: "0.75rem" } }}>
+                        <RoleChip role={p.role} />
+                      </Box>
+                    </Box>
+                    {p.email && p.email !== "-" && (
+                      <Typography sx={{ fontSize: "0.8rem", color: "var(--font-secondary)", overflowWrap: "anywhere" }}>{p.email}</Typography>
+                    )}
+                    <Typography sx={{ fontSize: "0.8rem", color: "var(--font-tertiary)" }}>
+                      {`${fmtClock(p.join_time)}–${fmtClock(p.leave_time)} · ${formatDurationSeconds(p.duration_seconds)}`}
+                    </Typography>
+                  </Box>
+                ))}
+              </Box>
             ) : (
               <TableContainer component={Paper} variant="outlined" sx={{ overflow: "hidden" }}>
                 <Table size="small" sx={{ tableLayout: "fixed", width: "100%" }}>

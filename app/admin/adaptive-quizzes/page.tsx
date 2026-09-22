@@ -16,6 +16,8 @@ import {
 } from "@/lib/services/admin/admin-adaptive-quiz.service";
 import { AdminQuizCard } from "@/components/admin/adaptive-quiz/AdminQuizCard";
 import { asStringList } from "@/lib/utils/as-list";
+import { PHONE } from "@/components/common/mobile/phone";
+import { phoneTapSx } from "@/components/admin/adaptive-course/coursePhone";
 
 export default function AdminAdaptiveQuizzesPage() {
   const router = useRouter();
@@ -107,6 +109,7 @@ export default function AdminAdaptiveQuizzesPage() {
                   gap: 0.75,
                   "&:hover": { transform: "translateY(-1px)" },
                   transition: "transform 120ms ease",
+                  ...phoneTapSx,
                 }}
               >
                 <Icon icon="mdi:auto-fix" width={16} />
@@ -166,6 +169,7 @@ export default function AdminAdaptiveQuizzesPage() {
                 gridTemplateColumns: { xs: "1fr", md: "repeat(2, 1fr)", lg: "repeat(3, 1fr)" },
                 gap: 2,
                 alignItems: "stretch",
+                [PHONE]: { gridTemplateColumns: "minmax(0, 1fr)" },
               }}
             >
               {items.map((q, idx) => (
@@ -195,6 +199,7 @@ export default function AdminAdaptiveQuizzesPage() {
             : ""
         }
         confirmText={deleting ? "Deleting…" : "Delete"}
+        busy={deleting}
         cancelText="Cancel"
         confirmColor="error"
         onConfirm={() => void handleConfirmDelete()}

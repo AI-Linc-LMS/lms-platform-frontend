@@ -14,8 +14,11 @@ import {
   InputAdornment,
   TextField,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { phoneIconTapSx, phoneSheetDialogSx, phoneTapSx } from "./coursePhone";
 import { useToast } from "@/components/common/Toast";
 import {
   adminStudentService,
@@ -62,6 +65,12 @@ export function EnrollAdaptiveStudentsDialog({
   const [totalPages, setTotalPages] = useState(1);
   const [selected, setSelected] = useState<Set<number>>(new Set());
   const [submitting, setSubmitting] = useState(false);
+  const theme = useTheme();
+  // On a phone the sheet holds itself open while the enrolment request runs.
+  const holdOpen = useMediaQuery(theme.breakpoints.down("sm")) && submitting;
+  const requestClose = () => {
+    if (!holdOpen) onClose();
+  };
   // Learners the course was refused to because it is paid, waiting on the admin's "give it free?",
   // with what the first pass already did so the final message can report both.
   const [compAsk, setCompAsk] = useState<{ ids: number[]; first: PassCounts } | null>(null);
@@ -213,7 +222,7 @@ export function EnrollAdaptiveStudentsDialog({
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 4 } }}>
+    <Dialog open={open} onClose={requestClose} maxWidth="sm" fullWidth sx={phoneSheetDialogSx} PaperProps={{ sx: { borderRadius: 4 } }}>
       <DialogTitle sx={{ fontWeight: 800, display: "flex", alignItems: "center", justifyContent: "space-between", pb: 1 }}>
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.25 }}>
           <Box sx={{ width: 34, height: 34, borderRadius: 2.5, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)" }}>
@@ -221,7 +230,7 @@ export function EnrollAdaptiveStudentsDialog({
           </Box>
           Enroll students
         </Box>
-        <IconButton onClick={onClose} size="small">
+        <IconButton onClick={requestClose} disabled={holdOpen} size="small" sx={phoneIconTapSx}>
           <Icon icon="mdi:close" width={20} />
         </IconButton>
       </DialogTitle>
@@ -315,6 +324,7 @@ export function EnrollAdaptiveStudentsDialog({
           <Box sx={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 2, mt: 1.5 }}>
             <Button
               size="small"
+              sx={phoneTapSx}
               disabled={page <= 1 || loading}
               onClick={() => {
                 const p = page - 1;
@@ -329,6 +339,7 @@ export function EnrollAdaptiveStudentsDialog({
             </Typography>
             <Button
               size="small"
+              sx={phoneTapSx}
               disabled={page >= totalPages || loading}
               onClick={() => {
                 const p = page + 1;
@@ -364,7 +375,7 @@ export function EnrollAdaptiveStudentsDialog({
           {submitting ? "Enrolling…" : "Enroll selected"}
         </Button>
       </DialogActions>
-      <Dialog open={compAsk !== null} onClose={declineComp} maxWidth="xs" fullWidth>
+      <Dialog open={compAsk !== null} onClose={declineComp} maxWidth="xs" fullWidth sx={phoneSheetDialogSx}>
         <DialogTitle sx={{ fontWeight: 800 }}>Give this paid course for free?</DialogTitle>
         <DialogContent>
           {compAsk && (

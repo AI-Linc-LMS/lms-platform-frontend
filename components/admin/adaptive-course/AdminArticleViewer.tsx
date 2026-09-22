@@ -13,6 +13,8 @@ import {
 import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
 import { ArticleBodySkeleton } from "@/components/courses/CourseSkeletons";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_TEXT } from "./coursePhone";
 
 /**
  * Admin view of an adaptive article: renders the content at a tier (switchable — uncached tiers
@@ -114,13 +116,13 @@ export function AdminArticleViewer({
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5, mt: 1 }}>
       {article.concepts.length > 0 && (
         <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap" }}>
-          <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, color: "#a855f7", fontWeight: 800, fontSize: "0.74rem" }}>
+          <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, color: "#a855f7", fontWeight: 800, fontSize: "0.74rem", [PHONE]: { fontSize: PHONE_TEXT } }}>
             <Icon icon="mdi:brain" width={14} />
             Builds:
           </Box>
           {article.concepts.map((c) => (
             <Box key={c} component="span" sx={{
-              px: 0.9, py: 0.25, borderRadius: 999, fontSize: "0.72rem", fontWeight: 700,
+              px: 0.9, py: 0.25, borderRadius: 999, fontSize: "0.72rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 700,
               color: "#6366f1", bgcolor: "color-mix(in srgb, #6366f1 12%, transparent)",
               border: "1px solid color-mix(in srgb, #6366f1 30%, transparent)",
             }}>
@@ -132,7 +134,7 @@ export function AdminArticleViewer({
 
       {/* Tier switcher */}
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, flexWrap: "wrap" }}>
-        <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, color: "text.secondary", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+        <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 800, color: "text.secondary", textTransform: "uppercase", letterSpacing: "0.05em" }}>
           Reading level
         </Typography>
         {READING_TIERS.map((t) => {
@@ -155,7 +157,7 @@ export function AdminArticleViewer({
               }}
               disabled={tierLoading}
               title={needsGeneration ? "Not written yet — generating this level uses AI credits" : undefined}
-              sx={{ px: 1.5, py: 0.5, borderRadius: 999, fontWeight: 800, fontSize: "0.74rem", gap: 0.4,
+              sx={{ px: 1.5, py: 0.5, borderRadius: 999, fontWeight: 800, fontSize: "0.74rem", [PHONE]: { fontSize: PHONE_TEXT }, gap: 0.4,
                 color: active ? "white" : needsGeneration ? "text.secondary" : "text.primary",
                 background: active ? "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)" : "color-mix(in srgb, var(--card-bg) 60%, transparent)",
                 border: active ? "1px solid transparent" : `1px ${needsGeneration ? "dashed" : "solid"} color-mix(in srgb, var(--border-default) 75%, transparent)`,
@@ -168,7 +170,7 @@ export function AdminArticleViewer({
         {tierLoading && (
           <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, color: "#a855f7" }}>
             <Icon icon="mdi:loading" width={14} className="acb-spin" />
-            <Typography sx={{ fontSize: "0.74rem", fontWeight: 700 }}>rendering…</Typography>
+            <Typography sx={{ fontSize: "0.74rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 700 }}>rendering…</Typography>
           </Box>
         )}
       </Box>
@@ -230,7 +232,7 @@ export function AdminArticleViewer({
         </Box>
         {glossary.length > 0 && (
           <Box sx={{ borderRadius: 3, p: 1.75, bgcolor: "color-mix(in srgb, var(--card-bg) 60%, transparent)", border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)" }}>
-            <Typography sx={{ fontWeight: 800, fontSize: "0.72rem", textTransform: "uppercase", letterSpacing: "0.06em", color: "#a855f7", mb: 1 }}>
+            <Typography sx={{ fontWeight: 800, fontSize: "0.72rem", [PHONE]: { fontSize: PHONE_TEXT }, textTransform: "uppercase", letterSpacing: "0.06em", color: "#a855f7", mb: 1 }}>
               Glossary · {glossary.length}
             </Typography>
             <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>

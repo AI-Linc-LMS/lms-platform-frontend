@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { resolveTone, type StatusKind } from "@/lib/jobs-v2/status";
 import { deadlineLabel, formatCount, type DeadlineUrgency } from "@/lib/jobs-v2/format";
-import { CTL_H, J, MOTION, R, SHADOW, TYPE, focusRing, rtlLabel, type Tone } from "./jobsTokens";
+import { CTL_H, J, MOTION, R, SHADOW, TYPE, adminPhone, focusRing, rtlLabel, type Tone } from "./jobsTokens";
 
 /* ==========================================================================
  * StatusPill — the one status chip. Replaces three status maps and two chip
@@ -77,6 +77,8 @@ export function StatusPill({
           letterSpacing: "0.08em",
           whiteSpace: "nowrap",
           ...rtlLabel,
+          // 10-11px is a desktop caption; on an admin's phone the status is read, so 12px.
+          ...adminPhone({ fontSize: "0.75rem" }),
         },
         clickable
           ? {

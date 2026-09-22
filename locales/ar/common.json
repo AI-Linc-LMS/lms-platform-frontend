@@ -2637,5 +2637,16 @@
   },
   "purchases": {
     "reference": "المرجع"
+  },
+  "instructorMobile": {
+    "cohortsFilter": "المجموعات",
+    "batchesFilter": "الدفعات"
+  },
+  "adaptiveCoursesAdmin": {
+    "deleteCourse": "حذف {{title}}"
+  },
+  "adminEngagementMobile": {
+    "statusFilterLabel": "تصفية الجلسات حسب الحالة",
+    "facetFilterLabel": "تصفية حسب الدفعة والدورة"
   }
 }
