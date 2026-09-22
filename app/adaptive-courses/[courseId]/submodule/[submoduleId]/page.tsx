@@ -9,9 +9,9 @@ import {
   type AdaptiveCourseAttachment,
   type AdaptiveCourseSubModule,
   type PointsBreakdownItem,
-  type PointsKind,
   type SubmodulePointsBreakdown,
 } from "@/lib/services/adaptive-course.service";
+import { displayEarned, displayTopicEarned, pointsFactors } from "@/lib/adaptive/pointsFactors";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { AdditionalPractice } from "@/components/adaptive-journey/AdditionalPractice";
 import { PointsInfo } from "@/components/common/PointsInfo";
@@ -42,11 +42,6 @@ interface FlowItem {
   onReview?: () => void;
   reviewHref?: string;
 }
-
-// "% correct"-style factor only means something for graded/timed content; articles are flat.
-const KIND_CORRECTNESS: Partial<Record<PointsKind, string>> = {
-  quiz: "correct", coding: "tests passed", video: "watched",
-};
 
 const VERB: Record<FlowKind, string> = { video: "watch", article: "read", quiz: "quiz", coding: "practice" };
 const KIND_ORDER: FlowKind[] = ["video", "article", "quiz", "coding"];
@@ -315,7 +310,7 @@ export default function AdaptiveCourseSubmodulePage() {
                     <Stack direction="row" spacing={0.6} alignItems="center" sx={{ pl: 1.25, pr: 0.5, py: 0.5, borderRadius: 999, bgcolor: "#fff7ed", border: "1px solid #fed7aa" }}>
                       <Icon icon="mdi:trophy" width={15} color="#f59e0b" />
                       <Typography sx={{ fontSize: "0.82rem", fontWeight: 800, color: "#9a3412" }}>
-                        {points.topic.earned}<Box component="span" sx={{ color: "#c2853a", fontWeight: 700 }}> / {points.topic.on_offer} pts</Box>
+                        {displayTopicEarned(points.items)}<Box component="span" sx={{ color: "#c2853a", fontWeight: 700 }}> / {points.topic.on_offer} pts</Box>
                       </Typography>
                       <PointsInfo size={14} color="#c2853a" />
                     </Stack>
@@ -430,14 +425,9 @@ function FactorChip({ text, tone = "muted" }: { text: string; tone?: "muted" | "
 
 /** Inline "how these points were earned" chips - base → time → accuracy → late → weight = earned. */
 function PointsFactors({ item }: { item: PointsBreakdownItem }) {
-  const b = item.breakdown;
-  if (!b) return null;
-  const factors: { text: string; tone?: "muted" | "warn" | "good" }[] = [{ text: `${b.base} base` }];
-  if (b.after_decay < b.base) factors.push({ text: `time −${Math.round(b.base - b.after_decay)}`, tone: "warn" });
-  const accLabel = KIND_CORRECTNESS[item.kind];
-  if (accLabel) factors.push({ text: `${Math.round(b.correctness_factor * 100)}% ${accLabel}` });
-  if (b.late_penalty_mult < 1) factors.push({ text: `late −${Math.round((1 - b.late_penalty_mult) * 100)}%`, tone: "warn" });
-  if (b.weight > 1) factors.push({ text: `×${b.weight} weight` });
+  const shown = pointsFactors(item);
+  if (!shown) return null;
+  const { factors, earned } = shown;
   return (
     <Stack direction="row" flexWrap="wrap" useFlexGap alignItems="center" sx={{ gap: 0.5, mt: 0.85 }}>
       {factors.map((f, i) => (
@@ -447,7 +437,7 @@ function PointsFactors({ item }: { item: PointsBreakdownItem }) {
         </Box>
       ))}
       <Icon icon="mdi:equal" width={11} color="#cbd5e1" style={{ marginLeft: 1 }} />
-      <FactorChip text={`${item.earned} pts`} tone="good" />
+      <FactorChip text={`${earned} pts`} tone="good" />
     </Stack>
   );
 }
@@ -544,7 +534,7 @@ function PathRow({ item, step, last, status, points, onPrefetch }: { item: FlowI
               {done ? (
                 <>
                   <Typography sx={{ fontWeight: 800, fontSize: "0.92rem", color: "#15803d", lineHeight: 1 }}>
-                    {points.earned}<Box component="span" sx={{ color: "#94a3b8", fontWeight: 600 }}>/{points.on_offer}</Box>
+                    {displayEarned(points)}<Box component="span" sx={{ color: "#94a3b8", fontWeight: 600 }}>/{points.on_offer}</Box>
                   </Typography>
                   <Typography sx={{ fontSize: "0.6rem", [PHONE]: { fontSize: "0.75rem" }, color: "#94a3b8", fontWeight: 700 }}>earned</Typography>
                 </>
