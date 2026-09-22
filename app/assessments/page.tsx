@@ -24,7 +24,6 @@ import {
   normalizeLearnerAssessmentStatus,
 } from "@/lib/utils/assessment-learner-status";
 import {
-  StatStrip,
   AssessmentEmptyState,
   AssessmentFilterBar,
 } from "@/components/admin/assessment/shared";
@@ -165,13 +164,6 @@ export default function AssessmentsPage() {
     setNextLoading(true);
     router.push(`/assessments/${nextUp.assessment.slug}`);
   };
-
-  const statItems = [
-    { label: t("assessments.available", { defaultValue: "Available now" }), value: counts.availableCount, icon: "mdi:lightning-bolt", tone: "var(--success-500)" },
-    { label: t("assessments.submittedUnderReview", { defaultValue: "Under review" }), value: counts.underReviewCount, icon: "mdi:progress-clock", tone: "var(--warning-500)" },
-    { label: t("assessments.completed", { defaultValue: "Completed" }), value: counts.completedCount, icon: "mdi:check-circle", tone: "var(--accent-indigo)" },
-    { label: t("assessments.totalAssessments", { defaultValue: "Total" }), value: counts.totalCount, icon: "mdi:clipboard-text", tone: "var(--ai-violet)" },
-  ];
 
   const tabs = [
     { value: "all" as FilterType, label: t("assessments.all", { defaultValue: "All" }), count: counts.totalCount },
@@ -368,11 +360,8 @@ export default function AssessmentsPage() {
           </Box>
         </Box>
 
-        {/* Stat strip */}
-        <Box data-tour-id="assessments-stats" sx={{ mt: 3 }}>
-          <StatStrip items={statItems} />
-        </Box>
-
+        {/* No stat strip: its four counts (available, under review, completed, total) are the
+            same numbers the status tabs below already carry on every tab. */}
         {/* Tabs. A scrolling chip row on a phone, the segmented track on a desktop. */}
         <Box data-tour-id="assessments-tabs" sx={{ mt: 3 }}>
           <AssessmentStatusFilter
