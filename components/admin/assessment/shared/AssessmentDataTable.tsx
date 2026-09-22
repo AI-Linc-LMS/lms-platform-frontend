@@ -34,6 +34,8 @@ import {
   TableHead,
   TableRow,
 } from "@mui/material";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_TABLE_CARDS } from "@/components/admin/phoneFloor";
 
 export interface AssessmentColumn<T> {
   /** Stable identity for the column; also the fallback value accessor when `render` is omitted. */
@@ -57,6 +59,11 @@ export interface AssessmentDataTableProps<T> {
   dense?: boolean;
   emptyState?: React.ReactNode;
   stickyHeader?: boolean;
+  /**
+   * Below `sm`, render each row as a card (header hidden, every cell labelled, the last column
+   * as the card's action bar). Off by default so a caller opts in; sm and up is unchanged.
+   */
+  phoneCards?: boolean;
 }
 
 /** Maps a `hideBelow` breakpoint to a responsive `display` sx that hides the cell below it. */
@@ -76,6 +83,7 @@ export function AssessmentDataTable<T>({
   dense,
   emptyState,
   stickyHeader = true,
+  phoneCards = false,
 }: AssessmentDataTableProps<T>): React.ReactElement {
   const clickable = Boolean(onRowClick);
   const size = dense ? "small" : "medium";
@@ -87,9 +95,12 @@ export function AssessmentDataTable<T>({
         border: "1px solid var(--border-default)",
         background: "var(--card-bg)",
         overflow: "hidden",
+        ...(phoneCards ? { [PHONE]: { border: "none", background: "transparent", overflow: "visible" } } : null),
       }}
     >
-      <TableContainer sx={{ overflowX: "auto", maxWidth: "100%" }}>
+      <TableContainer
+        sx={{ overflowX: "auto", maxWidth: "100%", ...(phoneCards ? PHONE_TABLE_CARDS : null) }}
+      >
         <Table stickyHeader={stickyHeader} size={size} aria-rowcount={rows.length}>
           <TableHead>
             <TableRow>
@@ -100,7 +111,7 @@ export function AssessmentDataTable<T>({
                   sx={{
                     background: "var(--surface)",
                     color: "var(--font-tertiary)",
-                    fontSize: "0.72rem",
+                    fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                     fontWeight: 600,
                     lineHeight: 1.4,
                     textTransform: "uppercase",
@@ -164,9 +175,16 @@ export function AssessmentDataTable<T>({
                       },
                     }}
                   >
-                    {columns.map((col) => (
+                    {columns.map((col, i) => (
                       <TableCell
                         key={col.key}
+                        // The phone card's caption for this value. The first column is the card's
+                        // title and the last its action bar, so neither needs one.
+                        data-label={
+                          phoneCards && i > 0 && i < columns.length - 1 && typeof col.header === "string"
+                            ? col.header
+                            : undefined
+                        }
                         align={col.align ?? "left"}
                         sx={{
                           color: "var(--font-primary)",
