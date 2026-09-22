@@ -23,6 +23,7 @@ import {
 } from "@/lib/services/admin/admin-live-activities.service";
 import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
 import { getZoomApiErrorMessage } from "@/lib/utils/live-session-errors";
+import { phoneSheetSx } from "./livePhone";
 
 interface AssignMeetingDialogProps {
   meeting: LiveActivity | null;
@@ -104,7 +105,7 @@ export function AssignMeetingDialog({
   };
 
   return (
-    <Dialog
+    <Dialog sx={phoneSheetSx}
       open={open}
       onClose={onClose}
       maxWidth="sm"

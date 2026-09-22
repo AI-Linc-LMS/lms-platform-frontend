@@ -25,6 +25,7 @@ import {
 import { getZoomApiErrorMessage } from "@/lib/utils/live-session-errors";
 import { InfoCallout } from "@/components/live-sessions/ui/LiveSessionUI";
 import { viewerTimeZone, timezoneOptions, wallClockToUtcIso, toLocalInputInZone } from "@/lib/utils/session-time";
+import { phoneSheetSx } from "./livePhone";
 
 interface Props {
   activity: LiveActivity;
@@ -95,7 +96,7 @@ export function EditWebinarDialog({ activity, open, onClose, onSaved }: Props) {
   };
 
   return (
-    <Dialog
+    <Dialog sx={phoneSheetSx}
       open={open}
       onClose={onClose}
       maxWidth="sm"

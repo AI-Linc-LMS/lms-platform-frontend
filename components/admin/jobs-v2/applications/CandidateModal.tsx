@@ -6,6 +6,7 @@ import { Box, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import type { JobApplicationV2 } from "@/lib/services/jobs-v2.service";
 import { formatDate } from "@/lib/jobs-v2/format";
+import { PHONE } from "@/components/common/mobile/phone";
 import {
   J,
   JAvatar,
@@ -182,7 +183,23 @@ export function CandidateModal({
       description={draft.student_email}
       footer={
         <>
-          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              gap: 1,
+              // PHONE: Cancel / Previous / Next as one even row. The disabled-reason captions
+              // ("This is the first candidate on the page") wrapped the row into three ragged
+              // lines; the disabled button and the "Candidate 1 of 10" eyebrow already say it.
+              [PHONE]: {
+                display: "grid",
+                gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+                "& > *, & > * > span": { minWidth: 0, width: "100%" },
+                "& .MuiButton-root": { width: "100%", px: 1 },
+                "& .MuiTypography-root": { display: "none" },
+              },
+            }}
+          >
             <JButton variant="ghost" onClick={onClose} disabled={saving}>
               {t("jobsV2.modal.cancel")}
             </JButton>
@@ -406,7 +423,13 @@ export function CandidateModal({
           <Box
             component={NextLink}
             href={`/admin/profile/${draft.student}`}
-            sx={{ color: J.azure, textDecoration: "none", "&:hover": { textDecoration: "underline" } }}
+            sx={{
+              color: J.azure,
+              textDecoration: "none",
+              "&:hover": { textDecoration: "underline" },
+              // A 15px inline link; on a phone its hit area grows to 44px without moving the line.
+              [PHONE]: { display: "inline-block", py: "14px", my: "-14px" },
+            }}
           >
             {t("jobsV2.candidate.openProfile", "Open the full profile")}
           </Box>

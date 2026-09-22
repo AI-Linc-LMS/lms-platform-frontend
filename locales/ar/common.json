@@ -2617,6 +2617,10 @@
     "deleteProjectTitle": "حذف هذا المشروع؟",
     "deleteProjectBody": "ستفقد التقييمات التي تستخدمه هذا القسم. لا يمكن التراجع عن هذا الإجراء."
   },
+  "adminEngagementMobile": {
+    "statusFilterLabel": "تصفية الجلسات حسب الحالة",
+    "facetFilterLabel": "تصفية حسب الدفعة والدورة"
+  },
   "purchases": {
     "reference": "المرجع"
   }

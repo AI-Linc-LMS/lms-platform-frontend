@@ -298,6 +298,7 @@ export default function AdminTicketDetailPage() {
             color: "var(--font-secondary)",
             mb: 2.5,
             "&:hover": { backgroundColor: "var(--ticket-row-divider)", color: "var(--ticket-text-strong)" },
+            [PHONE]: { minHeight: 44 },
           }}
         >
           Back to ticket management
@@ -357,6 +358,7 @@ export default function AdminTicketDetailPage() {
                         letterSpacing: 0.5,
                         textTransform: "uppercase",
                         fontSize: "0.7rem",
+                        [PHONE]: { fontSize: "0.75rem" },
                       }}
                     >
                       Ticket #{ticket.id}
@@ -375,6 +377,7 @@ export default function AdminTicketDetailPage() {
                       sx={{
                         height: 22,
                         fontSize: "0.7rem",
+                        [PHONE]: { height: 24, fontSize: "0.75rem" },
                         fontWeight: 600,
                         backgroundColor: "var(--surface-indigo-light)",
                         color: "var(--ticket-brand-strong)",
@@ -398,7 +401,18 @@ export default function AdminTicketDetailPage() {
                   direction="row"
                   spacing={1.25}
                   alignItems="center"
-                  sx={{ flexShrink: 0 }}
+                  sx={{
+                    flexShrink: 0,
+                    // PHONE: status and its actions wrap as one row of 44px pills; a Stack's
+                    // margin spacing cannot wrap, so the gap takes over.
+                    [PHONE]: {
+                      flexShrink: 1,
+                      flexWrap: "wrap",
+                      gap: 1,
+                      "& > :not(style) ~ :not(style)": { marginInlineStart: 0, marginLeft: 0 },
+                      "& > .MuiButton-root": { minHeight: 44 },
+                    },
+                  }}
                 >
                   <TicketStatusChip status={ticket.status} />
                   {/* Nudge whoever owns it - the queue notified nobody, so an assigned ticket
@@ -521,6 +535,13 @@ export default function AdminTicketDetailPage() {
                           color: "var(--font-secondary)",
                           py: 0,
                         },
+                        // PHONE: the assignee picker was a 20px line of 12px text.
+                        [PHONE]: {
+                          flex: 1,
+                          minWidth: 0,
+                          "& .MuiInputBase-root": { minHeight: 44 },
+                          "& .MuiInputBase-input": { fontSize: "0.875rem" },
+                        },
                       }}
                     >
                       <MenuItem value="">
@@ -534,7 +555,7 @@ export default function AdminTicketDetailPage() {
                     </TextField>
                     {ticket.assigned_to_user && ticket.assigned_by_user === null && (
                       /* No assigner means the system routed it rather than a human triaging. */
-                      <Typography variant="caption" sx={{ fontSize: "0.7rem", color: "var(--font-tertiary)" }}>
+                      <Typography variant="caption" sx={{ fontSize: "0.7rem", color: "var(--font-tertiary)", [PHONE]: { fontSize: "0.75rem" } }}>
                         auto-routed
                       </Typography>
                     )}
@@ -744,7 +765,7 @@ export default function AdminTicketDetailPage() {
                           onClick={() => removeFileAt(i)}
                           disabled={uploading || resolving}
                           aria-label="Remove attachment"
-                          sx={{ color: "var(--font-secondary)" }}
+                          sx={{ color: "var(--font-secondary)", [PHONE]: { width: 44, height: 44, flexShrink: 0 } }}
                         >
                           <IconWrapper icon="mdi:close" size={16} />
                         </IconButton>
@@ -756,7 +777,7 @@ export default function AdminTicketDetailPage() {
                 <Stack
                   direction="row"
                   spacing={1.5}
-                  sx={{ mt: 3, justifyContent: "flex-end" }}
+                  sx={{ mt: 3, justifyContent: "flex-end", [PHONE]: { "& > .MuiButton-root": { minHeight: 44 } } }}
                 >
                   <Button
                     onClick={() => router.push("/admin/tickets")}

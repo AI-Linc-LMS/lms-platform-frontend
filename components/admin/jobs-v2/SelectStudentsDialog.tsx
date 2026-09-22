@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Box, Checkbox, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
 import { adminStudentService, type Student } from "@/lib/services/admin/admin-student.service";
 import { useSeq } from "@/lib/jobs-v2/useSeq";
 import {
@@ -328,7 +329,7 @@ export function SelectStudentsDialog({
                     </Typography>
                     {/* The email is a second LINE, not a `title` attribute: two students with
                         the same display name were indistinguishable without hovering. */}
-                    <Typography sx={{ ...TYPE.mono, fontSize: "0.6875rem" }}>
+                    <Typography sx={{ ...TYPE.mono, fontSize: "0.6875rem", [PHONE]: { fontSize: "0.75rem" } }}>
                       {student.email}
                     </Typography>
                   </Box>
@@ -337,7 +338,7 @@ export function SelectStudentsDialog({
                       component="span"
                       sx={{
                         ...TYPE.eyebrow,
-                        fontSize: "0.625rem",
+                        fontSize: "0.625rem", [PHONE]: { fontSize: "0.75rem" },
                         px: 0.75,
                         py: 0.25,
                         borderRadius: R.pill,
@@ -365,7 +366,7 @@ export function SelectStudentsDialog({
                       display: "inline-grid",
                       placeItems: "center",
                       width: 24,
-                      height: 24,
+                      height: 24, [PHONE]: { width: 44, height: 44, flexShrink: 0 },
                       border: "none",
                       p: 0,
                       cursor: "pointer",

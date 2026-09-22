@@ -22,6 +22,7 @@ import {
 } from "@/lib/services/admin/admin-live-activities.service";
 import { formatDurationSeconds } from "@/lib/utils/date-utils";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { phoneSheetSx } from "./livePhone";
 
 interface Props {
   liveClassId: number;
@@ -76,7 +77,7 @@ export function AssignParticipantDialog({ liveClassId, participant, students, oc
   };
 
   return (
-    <Dialog
+    <Dialog sx={phoneSheetSx}
       open
       onClose={saving ? undefined : onClose}
       maxWidth="xs"

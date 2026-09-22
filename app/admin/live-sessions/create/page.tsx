@@ -20,6 +20,7 @@ import {
 } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
 import { useToast } from "@/components/common/Toast";
 import { useAuth } from "@/lib/auth/auth-context";
 import { canAccessAdminArea } from "@/lib/auth/role-utils";
@@ -437,7 +438,7 @@ export default function CreateLiveSessionPage() {
                 <IconWrapper icon="mdi:video-plus" size={26} color="#fff" />
               </Box>
               <Box sx={{ minWidth: 0 }}>
-                <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--font-tertiary)" }}>
+                <Typography sx={{ fontSize: "0.72rem", fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "var(--font-tertiary)", [PHONE]: { fontSize: "0.75rem" } }}>
                   {t("adminLiveSessions.createChapter", "Create · Live Session")}
                 </Typography>
                 <Typography sx={{ fontSize: { xs: "1.5rem", md: "1.9rem" }, fontWeight: 800, lineHeight: 1.15, letterSpacing: "-0.02em", color: "var(--font-primary)" }}>
@@ -450,7 +451,7 @@ export default function CreateLiveSessionPage() {
             </Box>
             <ButtonBase
               onClick={() => router.push("/admin/live-sessions")}
-              sx={{ px: 2.25, py: 1, borderRadius: 999, fontWeight: 700, color: "var(--font-secondary)", border: "1px solid var(--border-default)", fontSize: "0.82rem", "&:hover": { bgcolor: "var(--surface)" } }}
+              sx={{ px: 2.25, py: 1, borderRadius: 999, fontWeight: 700, color: "var(--font-secondary)", border: "1px solid var(--border-default)", fontSize: "0.82rem", "&:hover": { bgcolor: "var(--surface)" }, [PHONE]: { minHeight: 44 } }}
             >
               {t("adminLiveSessions.cancel", "Cancel")}
             </ButtonBase>
