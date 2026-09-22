@@ -42,6 +42,14 @@
     "projectLibrary": "مكتبة المشاريع",
     "adaptiveCourses": "الدورات"
   },
+  "navDock": {
+    "students": "الطلاب",
+    "attempts": "المحاولات",
+    "interviews": "المقابلات",
+    "projects": "المشاريع",
+    "tickets": "التذاكر",
+    "content": "المحتوى"
+  },
   "certificatesUpload": {
     "heroBadge": "إدارة · التخزين",
     "loadingWorkspace": "جارٍ تهيئة مساحة العمل…",

@@ -45,6 +45,14 @@
     "adminInterviewSetup": "Interview Setup",
     "projectLibrary": "Project Library"
   },
+  "navDock": {
+    "students": "Students",
+    "attempts": "Attempts",
+    "interviews": "Interviews",
+    "projects": "Projects",
+    "tickets": "Tickets",
+    "content": "Content"
+  },
   "navSection": {
     "learn": "Learn",
     "career": "Career",

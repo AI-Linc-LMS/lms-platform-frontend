@@ -217,3 +217,50 @@ describe("the dock's widths", () => {
   });
 });
 
+describe("the dock's active label", () => {
+  /** Every font-size emotion wrote for one element, in any media block. */
+  function fontSizes(el: Element): string[] {
+    const css = Array.from(document.querySelectorAll("style")).map((s) => s.textContent ?? "").join("\n");
+    return Array.from(el.classList)
+      .filter((c) => c.startsWith("css-"))
+      .flatMap((c) => Array.from(css.matchAll(new RegExp(`\\.${c}\\{([^}]*)\\}`, "g"))).map((m) => m[1]))
+      .flatMap((decls) => Array.from(decls.matchAll(/font-size:([\d.]+)rem/g)).map((m) => m[1]));
+  }
+
+  it("is never drawn under 12px, at any phone width", () => {
+    // It was 0.74rem (11.84px) below 380px, i.e. on every 360px Android.
+    render(<MobileNav />);
+    const sizes = fontSizes(screen.getByTestId("mobile-nav-label"));
+    expect(sizes).toContain("0.75");
+    for (const rem of sizes) expect(Number(rem) * 16, `${rem}rem`).toBeGreaterThanOrEqual(12);
+  });
+
+  it("uses a short name for a long admin destination, and keeps the full one for a screen reader", () => {
+    // "Assessment Management" is 147px at 12px; the active tab has about 86px at 360.
+    state.role = "admin";
+    state.adminMode = true;
+    state.features = ["admin_dashboard", "admin_manage_students", "admin_assessment", "admin_live_sessions"];
+    state.pathname = "/admin/assessment";
+    render(<MobileNav />);
+    const active = within(screen.getByTestId("mobile-nav")).getByRole("link", { current: "page" });
+    expect(active.getAttribute("aria-label")).toBe("Assessment Management");
+    expect(screen.getByTestId("mobile-nav-label").textContent).toBe("Assessments");
+  });
+
+  it("gives every destination the dock can show a name short enough for a 360px screen", async () => {
+    // A character budget stands in for the measured one: "Live Sessions" (13 characters) is
+    // 76px at 12px, the widest that fits the ~86px an active tab has at 360.
+    const { ADMIN_NAV_ITEMS, STUDENT_NAV_ITEMS, INSTRUCTOR_NAV_ITEMS } = await import("@/lib/navigation/navModel");
+    const i18n = (await import("@/lib/i18n")).default;
+    for (const lng of ["en", "ar"]) {
+      const t = i18n.getFixedT(lng, "common");
+      for (const item of [...STUDENT_NAV_ITEMS, ...ADMIN_NAV_ITEMS, ...INSTRUCTOR_NAV_ITEMS]) {
+        const name = item.dockLabelKey
+          ? (t(item.dockLabelKey, item.dockLabel ?? item.label) as string)
+          : (t(item.labelKey, item.label) as string);
+        expect(name.length, `${lng} ${item.path}: "${name}"`).toBeLessThanOrEqual(lng === "ar" ? 20 : 13);
+      }
+    }
+  });
+});
+

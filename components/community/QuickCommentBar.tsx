@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Box, IconButton, InputBase } from "@mui/material";
 
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface QuickCommentBarProps {
   threadId: number;
@@ -37,6 +38,8 @@ export function QuickCommentBar({ threadId, onComment }: QuickCommentBarProps) {
         py: { xs: 0.75, sm: 1 },
         // The row is the reply affordance on a card, so it has to be thumb-sized on a phone.
         minHeight: { xs: 48, sm: "auto" },
+        // The field below grows to 44px on a phone; the row gives back the same room so it stays 49px.
+        [PHONE]: { py: 0.25 },
         borderTop: "1px solid var(--border-default)",
         backgroundColor: commentBar.isFocused
           ? "color-mix(in srgb, var(--accent-indigo) 4%, var(--card-bg))"
@@ -62,9 +65,12 @@ export function QuickCommentBar({ threadId, onComment }: QuickCommentBarProps) {
             handleSubmit();
           }
         }}
+        data-testid="quick-comment-field"
         sx={{
           flex: 1,
           minWidth: 0,
+          // The input drew 36px; the whole field focuses it, so the field is the 44px target.
+          [PHONE]: { minHeight: 44 },
           fontSize: { xs: "0.875rem", sm: "0.84rem" },
           color: "var(--font-primary)",
           "& input": {

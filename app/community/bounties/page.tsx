@@ -304,6 +304,7 @@ export default function BountiesPage() {
                       <Typography
                         sx={{
                           fontSize: "0.6rem",
+                          [PHONE]: { fontSize: "0.75rem" },
                           fontWeight: 800,
                           color: statusColor,
                           letterSpacing: "0.08em",
@@ -325,6 +326,8 @@ export default function BountiesPage() {
                             sx={{
                               height: 20,
                               fontSize: "0.65rem",
+                              // 20px stays; only the label reaches 12px on a phone.
+                              [PHONE]: { fontSize: "0.75rem" },
                               fontWeight: 700,
                               backgroundColor: "rgba(22,163,74,0.12)",
                               color: GREEN,
@@ -339,6 +342,8 @@ export default function BountiesPage() {
                             sx={{
                               height: 20,
                               fontSize: "0.65rem",
+                              // 20px stays; only the label reaches 12px on a phone.
+                              [PHONE]: { fontSize: "0.75rem" },
                               fontWeight: 700,
                               backgroundColor: "rgba(239,68,68,0.12)",
                               color: RED,
@@ -353,6 +358,8 @@ export default function BountiesPage() {
                             sx={{
                               height: 20,
                               fontSize: "0.65rem",
+                              // 20px stays; only the label reaches 12px on a phone.
+                              [PHONE]: { fontSize: "0.75rem" },
                               fontWeight: 700,
                               backgroundColor: "rgba(167,139,250,0.12)",
                               color: PURPLE,

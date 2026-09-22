@@ -6,6 +6,7 @@ import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { useProfileGate } from "@/lib/contexts/ProfileGateContext";
+import { PHONE } from "./mobile/phone";
 
 /**
  * Component-level profile locks.
@@ -55,7 +56,10 @@ function CompleteProfileButton({ fullWidth = true, size = "md" }: { fullWidth?: 
         background: "linear-gradient(135deg, var(--module-cta-from, #a855f7) 0%, var(--module-cta-to, #ec4899) 100%)",
         boxShadow: "0 14px 30px -12px var(--module-cta-shadow, rgba(192,38,211,0.7))",
         "&:hover": { filter: "brightness(1.06)", background: "linear-gradient(135deg, var(--module-cta-from, #a855f7) 0%, var(--module-cta-to, #ec4899) 100%)" },
+        // The banner's small size was 33px tall: under a thumb's reach on a phone.
+        [PHONE]: { minHeight: 44 },
       }}
+      data-testid="complete-profile-button"
     >
       {t("lock.completeProfile", { defaultValue: "Complete profile" })}
     </Button>
@@ -163,7 +167,7 @@ export function ProfileLockCard({
                 },
               }}
             />
-            <Typography sx={{ mt: 0.75, fontSize: "0.72rem", fontWeight: 700, color: "#94a3b8" }}>
+            <Typography data-testid="profile-percent" sx={{ mt: 0.75, fontSize: "0.72rem", fontWeight: 700, color: "#94a3b8", [PHONE]: { fontSize: "0.75rem" } }}>
               {t("lock.profilePercentComplete", { defaultValue: "Profile {{pct}}% complete", pct: percentage })}
             </Typography>
           </Box>
@@ -188,7 +192,9 @@ export function ProfileLockCard({
                     fontSize: "0.74rem",
                     fontWeight: 700,
                     color: "#475569",
+                    [PHONE]: { fontSize: "0.75rem" },
                   }}
+                  data-testid="missing-field-chip"
                 >
                   {f.label}
                 </Box>

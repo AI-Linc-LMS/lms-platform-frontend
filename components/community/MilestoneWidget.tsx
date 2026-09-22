@@ -3,6 +3,7 @@
 import { Box, Typography, LinearProgress, Tooltip } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { UserXP } from "@/lib/services/community.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 const TIER_COLORS = {
   bronze:   "#cd7f32",
@@ -72,7 +73,7 @@ export function MilestoneWidget({ xp }: MilestoneWidgetProps) {
         {/* Header */}
         <Typography
           sx={{
-            fontSize: "0.62rem",
+            fontSize: "0.62rem", [PHONE]: { fontSize: "0.75rem" },
             fontWeight: 800,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
@@ -114,7 +115,7 @@ export function MilestoneWidget({ xp }: MilestoneWidgetProps) {
             {tierRole && (
               <Typography
                 sx={{
-                  fontSize: "0.72rem",
+                  fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                   fontWeight: 600,
                   color: "var(--font-secondary)",
                   mt: 0.1,
@@ -136,7 +137,7 @@ export function MilestoneWidget({ xp }: MilestoneWidgetProps) {
                 {xp.balance.toLocaleString()}
               </Typography>
               <Typography
-                sx={{ fontSize: "0.7rem", fontWeight: 600, color: "var(--font-secondary)" }}
+                sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 600, color: "var(--font-secondary)" }}
               >
                 IP
               </Typography>
@@ -158,13 +159,13 @@ export function MilestoneWidget({ xp }: MilestoneWidgetProps) {
               <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
                 <IconWrapper icon={TIER_ICON[nextTier]} size={12} color={TIER_COLORS[nextTier]} />
                 <Typography
-                  sx={{ fontSize: "0.72rem", fontWeight: 700, color: TIER_COLORS[nextTier] }}
+                  sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 700, color: TIER_COLORS[nextTier] }}
                 >
                   Next: {TIER_LABEL[nextTier]}
                 </Typography>
               </Box>
               <Typography
-                sx={{ fontSize: "0.72rem", fontWeight: 700, color: "var(--font-secondary)" }}
+                sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 700, color: "var(--font-secondary)" }}
               >
                 {pct}%
               </Typography>
@@ -185,7 +186,7 @@ export function MilestoneWidget({ xp }: MilestoneWidgetProps) {
             {pointsToNext != null && pointsToNext > 0 && (
               <Typography
                 sx={{
-                  fontSize: "0.7rem",
+                  fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                   color: "var(--font-tertiary)",
                   mt: 0.7,
                 }}
@@ -255,7 +256,7 @@ export function MilestoneWidget({ xp }: MilestoneWidgetProps) {
                   />
                   <Typography
                     sx={{
-                      fontSize: "0.62rem",
+                      fontSize: "0.62rem", [PHONE]: { fontSize: "0.75rem" },
                       fontWeight: isCurrent ? 800 : 600,
                       color: reached ? tColor : "var(--font-tertiary)",
                       letterSpacing: "0.02em",
