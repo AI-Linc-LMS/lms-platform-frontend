@@ -16,6 +16,7 @@ import {
   statusOf,
   submitWarning,
 } from "@/components/assessment/calibration/QuestionPalette";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface CalibMcq {
   id: number | string;
@@ -448,23 +449,25 @@ function CalibrationTakeInner() {
   return (
     <Box sx={{ minHeight: "100vh", bgcolor: "#0b1220", color: "white" }}>
       {/* Header */}
-      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 3, py: 1.75, borderBottom: "1px solid rgba(255,255,255,0.08)" }}>
-        <Stack direction="row" spacing={1.5} alignItems="center">
+      {/* Phone: title on its own line (clamped), then the chips and the clock on a second line.
+          In one row the long title pushed the clock off the right edge. */}
+      <Stack direction="row" alignItems="center" justifyContent="space-between" sx={{ px: 3, py: 1.75, borderBottom: "1px solid rgba(255,255,255,0.08)", [PHONE]: { px: 2, py: 1.25, flexWrap: "wrap", rowGap: 1 } }}>
+        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ [PHONE]: { flex: "1 1 100%", minWidth: 0 } }}>
           <Box sx={{ width: 34, height: 34, borderRadius: 1.5, display: "grid", placeItems: "center", bgcolor: "rgba(255,255,255,0.08)" }}>
             <Icon icon="mdi:shield-half-full" width={18} />
           </Box>
-          <Box>
-            <Typography sx={{ fontWeight: 800, fontSize: "0.95rem" }}>Calibration Assessment{fieldName ? ` · ${fieldName}` : ""}</Typography>
-            <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.5)" }}>Standardized · Non-adaptive · Same set for all learners</Typography>
+          <Box sx={{ [PHONE]: { minWidth: 0 } }}>
+            <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", [PHONE]: { display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden", overflowWrap: "anywhere" } }}>Calibration Assessment{fieldName ? ` · ${fieldName}` : ""}</Typography>
+            <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.5)", [PHONE]: { fontSize: "0.75rem" } }}>Standardized · Non-adaptive · Same set for all learners</Typography>
           </Box>
         </Stack>
-        <Stack direction="row" spacing={1.25} alignItems="center">
+        <Stack direction="row" spacing={1.25} alignItems="center" sx={{ [PHONE]: { flex: "1 1 100%", minWidth: 0 } }}>
           <Chip size="small" icon={<Icon icon="mdi:shield-account" width={14} />} label="Self-proctored"
-            sx={{ color: "#93c5fd", bgcolor: "rgba(59,130,246,0.12)", fontWeight: 700, fontSize: "0.7rem" }} />
+            sx={{ color: "#93c5fd", bgcolor: "rgba(59,130,246,0.12)", fontWeight: 700, fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem", minWidth: 0 } }} />
           <Chip size="small" icon={<Icon icon="mdi:fullscreen" width={14} />} label={fullscreen ? "Full screen" : "Go full screen"}
             onClick={fullscreen ? undefined : enterLockdown}
-            sx={{ color: fullscreen ? "#cbd5e1" : "#fcd34d", bgcolor: "rgba(255,255,255,0.06)", fontWeight: 700, fontSize: "0.7rem", cursor: fullscreen ? "default" : "pointer" }} />
-          <Typography sx={{ fontWeight: 800, fontVariantNumeric: "tabular-nums", letterSpacing: 1 }}>{fmtClock(remaining)}</Typography>
+            sx={{ color: fullscreen ? "#cbd5e1" : "#fcd34d", bgcolor: "rgba(255,255,255,0.06)", fontWeight: 700, fontSize: "0.7rem", cursor: fullscreen ? "default" : "pointer", [PHONE]: { fontSize: "0.75rem", height: 44, borderRadius: 22, minWidth: 0 } }} />
+          <Typography data-testid="calib-timer" sx={{ fontWeight: 800, fontVariantNumeric: "tabular-nums", letterSpacing: 1, [PHONE]: { marginInlineStart: "auto !important", flexShrink: 0 } }}>{fmtClock(remaining)}</Typography>
         </Stack>
       </Stack>
 

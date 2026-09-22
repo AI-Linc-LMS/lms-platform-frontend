@@ -6,6 +6,7 @@ import { memo, useMemo } from "react";
 import { useTranslation } from "react-i18next";
 import { formatMmSs } from "@/lib/utils/formatMmSs";
 import { getSectionTimeCapTotalSeconds } from "@/utils/assessment.utils";
+import { PHONE } from "@/components/common/mobile/phone";
 
 export interface AssessmentNavigationProps {
   currentSectionIndex: number;
@@ -35,6 +36,12 @@ export interface AssessmentNavigationProps {
   isTimedSectionClosed?: (sectionIndex: number) => boolean;
   /** Block Previous at first question when the previous timed section is closed. */
   blockCrossSectionPrevious?: boolean;
+  /**
+   * Rendered only on a phone, after Next: the Submit button for the bottom action bar. The
+   * header's Submit does not fit a 360px screen, so on a phone this bar carries it (the caller
+   * passes the same submit handler the header uses). Hidden at sm and up.
+   */
+  phoneSubmitSlot?: React.ReactNode;
 }
 
 export const AssessmentNavigation = memo(function AssessmentNavigation({
@@ -53,6 +60,7 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
   timedSectionLockRevision = 0,
   isTimedSectionClosed,
   blockCrossSectionPrevious = false,
+  phoneSubmitSlot,
 }: AssessmentNavigationProps) {
   const { t } = useTranslation("common");
   void timedSectionLockRevision;
@@ -126,7 +134,22 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
         alignItems: "center",
         justifyContent: "space-between",
         gap: { xs: 1.5, md: 3 },
+        // Phone: this bar becomes the sticky BOTTOM action bar (Previous / Next / Submit), clear
+        // of the home indicator. At the top it sat hidden under a header that is taller on a phone.
+        [PHONE]: {
+          top: "auto",
+          bottom: 0,
+          flexWrap: "wrap",
+          rowGap: 1,
+          px: 1.5,
+          pt: 1,
+          pb: "calc(8px + env(safe-area-inset-bottom, 0px))",
+          borderBottom: "none",
+          borderTop: "1px solid var(--border-default)",
+          boxShadow: "0 -4px 16px color-mix(in srgb, var(--font-primary-dark) 8%, transparent)",
+        },
       }}
+      data-testid="assessment-action-bar"
     >
       {/* Left: Question Counter & Section Tabs */}
       <Box
@@ -136,6 +159,7 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
           gap: 2,
           flex: 1,
           minWidth: 0,
+          [PHONE]: { flex: "1 1 100%", gap: 1.25 },
         }}
       >
         <Typography
@@ -160,6 +184,7 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
             overflowX: sections.length > 6 ? "auto" : "visible",
             overflowY: "hidden",
             maxHeight: sections.length > 6 ? "48px" : "none",
+            [PHONE]: { flexWrap: "nowrap", overflowX: "auto", minWidth: 0, maxHeight: "none" },
             "&::-webkit-scrollbar": {
               height: "4px",
             },
@@ -449,6 +474,12 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
           flexShrink: 0,
           flexWrap: "wrap",
           justifyContent: "flex-end",
+          [PHONE]: {
+            flex: "1 1 100%",
+            flexWrap: "nowrap",
+            "& > span, & > div": { flex: "1 1 0", minWidth: 0 },
+            "& .MuiButton-root": { width: "100%", minHeight: 44, px: 1 },
+          },
         }}
       >
         <Tooltip title={previousHoverTitle} arrow>
@@ -549,6 +580,14 @@ export const AssessmentNavigation = memo(function AssessmentNavigation({
             </Button>
           </span>
         </Tooltip>
+        {phoneSubmitSlot ? (
+          <Box
+            data-testid="assessment-phone-submit"
+            sx={{ display: "none", [PHONE]: { display: "flex" } }}
+          >
+            {phoneSubmitSlot}
+          </Box>
+        ) : null}
       </Box>
     </Paper>
   );

@@ -59,6 +59,14 @@ function findNextUnansweredQuestionId(
   return null;
 }
 
+/** Scroll `list` (and nothing else) so that `row` is fully visible, like block "nearest". */
+export function scrollRowIntoList(list: HTMLElement, row: HTMLElement, pad = 12): void {
+  const lr = list.getBoundingClientRect();
+  const rr = row.getBoundingClientRect();
+  if (rr.top < lr.top + pad) list.scrollTop -= lr.top + pad - rr.top;
+  else if (rr.bottom > lr.bottom - pad) list.scrollTop += rr.bottom - (lr.bottom - pad);
+}
+
 interface QuizQuestion {
   id: string | number;
   question: string;
@@ -132,9 +140,19 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
     else itemElRefs.current.delete(key);
   }, []);
 
+  const listRef = useRef<HTMLUListElement | null>(null);
+
+  // Keep the current question's row visible INSIDE the list, and only inside it.
+  //
+  // This was `el.scrollIntoView({ block: "nearest" })`, which scrolls every scrollable ancestor,
+  // not just the list. On a phone the list is stacked BELOW the question card, inside the paper's
+  // page-height scroll container, so on load and on every question change the whole paper was
+  // scrolled down to the answered-questions list and the question the learner was on went off
+  // the top of the screen. Scrolling the list's own box cannot move the page.
   useLayoutEffect(() => {
     const el = itemElRefs.current.get(String(currentQuestionId));
-    el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    const list = listRef.current;
+    if (el && list) scrollRowIntoList(list, el);
   }, [currentQuestionId, questions.length]);
 
   const handleJumpNextUnanswered = useCallback(
@@ -322,6 +340,7 @@ const QuizQuestionListComponent = memo(function QuizQuestionList({
         }}
       >
         <List
+          ref={listRef}
           dense
           sx={{
             py: 0.75,

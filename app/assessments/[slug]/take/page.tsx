@@ -33,6 +33,8 @@ import { useTranslation } from "react-i18next";
 import { AssessmentFloatingTools } from "@/components/assessment/tools/AssessmentFloatingTools";
 import { AssessmentToolbarTools } from "@/components/assessment/tools/AssessmentToolbarTools";
 import { useToast } from "@/components/common/Toast";
+import { LoadingButton } from "@/components/common/LoadingButton";
+import { PHONE } from "@/components/common/mobile/phone";
 import { useAssessmentProctoring } from "@/lib/hooks/useAssessmentProctoring";
 import { useLiveProctoringPublisher } from "@/lib/hooks/useLiveProctoringPublisher";
 import { useAssessmentData } from "@/lib/hooks/useAssessmentData";
@@ -1792,6 +1794,49 @@ export default function TakeAssessmentPage({
     setShowSubmitDialog(false);
   }, []);
 
+  // Phone: the bottom action bar's Submit. It opens the SAME confirm dialog as the header's
+  // Submit (which does not fit a 360px header); nothing about submitting changes.
+  const phoneSubmitSlot = useMemo(
+    () => (
+      <LoadingButton
+        variant="contained"
+        onClick={handleShowSubmitDialog}
+        loading={submitting}
+        loadingText={t("common.submitting")}
+        sx={{
+          width: "100%",
+          minHeight: 44,
+          px: 1,
+          fontWeight: 600,
+          textTransform: "none",
+          borderRadius: 1.5,
+          whiteSpace: "nowrap",
+          backgroundColor: "var(--course-cta)",
+          color: "var(--font-light)",
+        }}
+      >
+        {t("assessments.take.phoneSubmit")}
+      </LoadingButton>
+    ),
+    [handleShowSubmitDialog, submitting, t],
+  );
+
+  // Phone: moving to another question brings that question into view. On a phone the question
+  // card is first and the question list is stacked below it, so the question is at the top of
+  // the paper's scroll box. Desktop keeps its side-by-side layout and is not scrolled.
+  const paperScrollRef = useRef<HTMLDivElement | null>(null);
+  const lastQuestionKeyRef = useRef<string | null>(null);
+  useEffect(() => {
+    const key = `${currentSectionIndex}:${currentQuestionIndex}`;
+    const previous = lastQuestionKeyRef.current;
+    lastQuestionKeyRef.current = key;
+    if (previous === null || previous === key) return;
+    const box = paperScrollRef.current;
+    if (!box || typeof window.matchMedia !== "function") return;
+    if (!window.matchMedia(PHONE.replace(/^@media\s*/, "")).matches) return;
+    box.scrollTop = 0;
+  }, [currentSectionIndex, currentQuestionIndex]);
+
   const handleSectionChange = useCallback(
     (sectionIndex: number) => {
       if (getTimedSectionClosed(sectionIndex)) {
@@ -2495,6 +2540,7 @@ export default function TakeAssessmentPage({
             timedSectionLockRevision={timedSectionLockRevision}
             isTimedSectionClosed={getTimedSectionClosed}
             blockCrossSectionPrevious={crossSectionPreviousBlocked}
+            phoneSubmitSlot={phoneSubmitSlot}
           />
 
           <Dialog
@@ -2524,6 +2570,8 @@ export default function TakeAssessmentPage({
           </Dialog>
 
           <Box
+            ref={paperScrollRef}
+            data-testid="assessment-paper-scroll"
             sx={{
               pt: 18.5,
               pb: { xs: 4, md: 6 },
@@ -2532,6 +2580,13 @@ export default function TakeAssessmentPage({
               height: "100vh",
               overflow: "auto",
               boxSizing: "border-box",
+              // Phone: clear the two-line header on top and the action bar at the bottom.
+              [PHONE]: {
+                pt: "124px",
+                pb: "calc(128px + env(safe-area-inset-bottom, 0px))",
+                px: 1.5,
+                height: "100dvh",
+              },
             }}
           >
             {currentSection ? (

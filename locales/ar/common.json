@@ -800,7 +800,8 @@
       "codingAutosaveHint": "تُحفظ إجابتك تلقائياً مع محاولتك. يُحفظ الكود أيضاً في هذا المتصفح أثناء الكتابة.",
       "codingAutosaveSaving": "جاري حفظ التقدم…",
       "codingAutosaveSaved": "تم الحفظ التلقائي للتقدم",
-      "codingAutosaveError": "تعذّر المزامنة - سيتم إعادة المحاولة تلقائياً"
+      "codingAutosaveError": "تعذّر المزامنة - سيتم إعادة المحاولة تلقائياً",
+      "phoneSubmit": "إرسال"
     },
     "submitChecklist": {
       "title": "مراجعة قبل الإرسال",
