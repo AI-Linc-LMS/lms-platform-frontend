@@ -33,6 +33,8 @@ import { isProctoredAssessmentInLiveWindow } from "@/lib/utils/assessment-live-w
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { useToast } from "@/components/common/Toast";
 import { RetakeGrantsDialog } from "./RetakeGrantsDialog";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_FLOOR } from "@/components/admin/phoneFloor";
 
 export interface AssessmentEmailJobInfo {
   task_id: string;
@@ -472,7 +474,7 @@ export function AssessmentTable({
   if (isMobile) {
     return (
       <>
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 2, p: { xs: 1, sm: 0 } }}>
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 2, p: { xs: 1, sm: 0 }, ...PHONE_FLOOR }}>
         {assessments.length === 0 ? (
           <AssessmentEmptyState
             icon="mdi:clipboard-text-outline"
@@ -520,7 +522,7 @@ export function AssessmentTable({
                           bgcolor:
                             "color-mix(in srgb, var(--font-secondary) 18%, var(--surface) 82%)",
                           color: "var(--font-secondary)",
-                          fontSize: "0.7rem",
+                          fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                           height: 22,
                           fontWeight: 600,
                         }}
@@ -535,7 +537,7 @@ export function AssessmentTable({
                           bgcolor:
                             "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
                           color: "var(--warning-500)",
-                          fontSize: "0.7rem",
+                          fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                           height: 22,
                           fontWeight: 600,
                         }}
@@ -550,7 +552,7 @@ export function AssessmentTable({
                           bgcolor:
                             "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
                           color: "var(--accent-indigo)",
-                          fontSize: "0.7rem",
+                          fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                           height: 22,
                           fontWeight: 600,
                         }}
@@ -569,7 +571,7 @@ export function AssessmentTable({
                           bgcolor:
                             "color-mix(in srgb, var(--accent-purple) 14%, var(--surface) 86%)",
                           color: "var(--accent-purple)",
-                          fontSize: "0.7rem",
+                          fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                           height: 22,
                           fontWeight: 600,
                           textDecoration: "none",
@@ -590,7 +592,7 @@ export function AssessmentTable({
                           ? "color-mix(in srgb, var(--success-500) 14%, var(--surface) 86%)"
                           : "color-mix(in srgb, var(--error-500) 14%, var(--surface) 86%)",
                         color: assessment.is_active ? "var(--success-500)" : "var(--error-500)",
-                        fontSize: "0.7rem",
+                        fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                         height: 22,
                         fontWeight: 600,
                       }}
@@ -605,7 +607,7 @@ export function AssessmentTable({
                     sx={{
                       bgcolor: "var(--surface)",
                       color: "var(--font-secondary)",
-                      fontSize: "0.7rem",
+                      fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                       height: 24,
                       fontWeight: 600,
                     }}
@@ -625,7 +627,7 @@ export function AssessmentTable({
                 }}
               >
                 <Box>
-                  <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.7rem" }}>
+                  <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" } }}>
                     Duration
                   </Typography>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.25 }}>
@@ -636,7 +638,7 @@ export function AssessmentTable({
                   </Box>
                 </Box>
                 <Box>
-                  <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.7rem" }}>
+                  <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" } }}>
                     Questions
                   </Typography>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, mt: 0.25 }}>
@@ -648,7 +650,7 @@ export function AssessmentTable({
                 </Box>
                 {formatAudience(assessment).display !== "Everyone" && (
                   <Box sx={{ gridColumn: "span 2" }}>
-                    <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.7rem" }}>
+                    <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" } }}>
                       Given to
                     </Typography>
                     <Tooltip title={formatAudience(assessment).full || ""} arrow>
@@ -667,7 +669,7 @@ export function AssessmentTable({
                   </Box>
                 )}
                 <Box sx={{ gridColumn: "span 2" }}>
-                  <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.7rem" }}>
+                  <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" } }}>
                     Created
                   </Typography>
                   <Typography variant="body2" sx={{ color: "var(--font-secondary)", fontSize: "0.8125rem", mt: 0.25 }}>
@@ -699,7 +701,7 @@ export function AssessmentTable({
                           <IconWrapper icon="mdi:play-circle" size={12} />
                         </Box>
                         <Box>
-                          <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.7rem" }}>
+                          <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" } }}>
                             Start
                           </Typography>
                           <Typography
@@ -733,7 +735,7 @@ export function AssessmentTable({
                           <IconWrapper icon="mdi:stop-circle" size={12} />
                         </Box>
                         <Box>
-                          <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.7rem" }}>
+                          <Typography variant="caption" sx={{ color: "var(--font-tertiary)", fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" } }}>
                             End
                           </Typography>
                           <Typography
@@ -772,6 +774,7 @@ export function AssessmentTable({
                 <IconButton
                   size="small"
                   onClick={(e) => handleMenuOpen(e, assessment.id)}
+                  aria-label="More actions"
                   sx={{
                     color: "var(--font-secondary)",
                     "&:hover": { bgcolor: "var(--surface)", color: "var(--font-primary)" },
@@ -976,7 +979,7 @@ export function AssessmentTable({
                             bgcolor:
                               "color-mix(in srgb, var(--surface) 85%, var(--card-bg) 15%)",
                             color: "var(--font-secondary)",
-                            fontSize: "0.7rem",
+                            fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                             height: 24,
                             fontWeight: 600,
                             border: "1px solid var(--border-default)",
@@ -995,7 +998,7 @@ export function AssessmentTable({
                             bgcolor:
                               "color-mix(in srgb, var(--font-secondary) 16%, var(--surface) 84%)",
                             color: "var(--font-secondary)",
-                            fontSize: "0.7rem",
+                            fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                             height: 24,
                             fontWeight: 600,
                             border: "1px solid var(--border-default)",
@@ -1011,7 +1014,7 @@ export function AssessmentTable({
                             bgcolor:
                               "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
                             color: "var(--warning-500)",
-                            fontSize: "0.7rem",
+                            fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                             height: 24,
                             fontWeight: 600,
                             border:
@@ -1028,7 +1031,7 @@ export function AssessmentTable({
                             bgcolor:
                               "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)",
                             color: "var(--accent-indigo)",
-                            fontSize: "0.7rem",
+                            fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                             height: 24,
                             fontWeight: 600,
                             border:
@@ -1049,7 +1052,7 @@ export function AssessmentTable({
                             bgcolor:
                               "color-mix(in srgb, var(--accent-purple) 14%, var(--surface) 86%)",
                             color: "var(--accent-purple)",
-                            fontSize: "0.7rem",
+                            fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                             height: 24,
                             fontWeight: 600,
                             border:

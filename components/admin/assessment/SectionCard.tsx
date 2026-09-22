@@ -3,6 +3,7 @@
 import { Box, Typography, Paper, Chip, Divider } from "@mui/material";
 import { Section } from "./MultipleSectionsSection";
 import { MCQ, CodingProblemListItem } from "@/lib/services/admin/admin-assessment.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 export type WrittenPromptPreview = {
   question_text: string;
@@ -209,7 +210,7 @@ export function SectionCard({
                           : level === "Medium"
                           ? "var(--warning-500)"
                           : "var(--error-500)",
-                      fontSize: "0.7rem",
+                      fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                     }}
                   />
                 ))}
@@ -225,7 +226,7 @@ export function SectionCard({
                   sx={{
                     bgcolor: "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
                     color: "var(--warning-500)",
-                    fontSize: "0.7rem",
+                    fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                   }}
                 />
               ))}

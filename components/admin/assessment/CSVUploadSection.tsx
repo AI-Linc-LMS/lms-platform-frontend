@@ -21,6 +21,7 @@ import { useToast } from "@/components/common/Toast";
 import { MCQ } from "@/lib/services/admin/admin-assessment.service";
 import { parseCSVRows } from "@/lib/utils/csv-parse";
 import { normalizeEncoding } from "@/lib/utils/text-utils";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface CSVUploadSectionProps {
   mcqs: MCQ[];
@@ -31,7 +32,7 @@ const DEFAULT_PAGE_SIZE = 10;
 
 /** Section kicker label (redesign language). */
 const KICKER_SX = {
-  fontSize: "0.72rem",
+  fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
   fontWeight: 800,
   letterSpacing: "0.08em",
   textTransform: "uppercase",

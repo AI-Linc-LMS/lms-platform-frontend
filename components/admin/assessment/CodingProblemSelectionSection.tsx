@@ -13,7 +13,6 @@ import {
   MenuItem,
   IconButton,
   Button,
-  Dialog,
   DialogTitle,
   DialogContent,
 } from "@mui/material";
@@ -33,6 +32,8 @@ import {
   UsageChip,
   TagChips,
 } from "./questionBankFacets";
+import { PHONE } from "@/components/common/mobile/phone";
+import { SheetDialog } from "@/components/admin/SheetDialog";
 
 /** Redesign card recipe (create-wizard style contract). */
 const CARD_SX = {
@@ -44,7 +45,7 @@ const CARD_SX = {
 
 /** Uppercase section kicker label. */
 const KICKER_SX = {
-  fontSize: "0.72rem",
+  fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
   fontWeight: 800,
   letterSpacing: "0.08em",
   textTransform: "uppercase",
@@ -91,7 +92,7 @@ const TOOLBAR_SELECT_SX = {
 /** Active-facet chip - wraps below the toolbar only when a filter is active. */
 const ACTIVE_CHIP_SX = {
   height: 24,
-  fontSize: "0.72rem",
+  fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
   fontWeight: 600,
   bgcolor: "color-mix(in srgb, var(--accent-indigo) 12%, var(--card-bg) 88%)",
   color: "var(--accent-indigo)",
@@ -287,7 +288,7 @@ function ActiveFacetChips({
         startIcon={<IconWrapper icon="mdi:filter-remove-outline" size={15} />}
         onClick={() => onChange(EMPTY_FACETS)}
         sx={{
-          fontSize: "0.72rem",
+          fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
           fontWeight: 600,
           textTransform: "none",
           color: "var(--font-secondary)",
@@ -773,7 +774,7 @@ export function CodingProblemSelectionSection({
         )}
       </Box>
 
-      <Dialog
+      <SheetDialog
         open={!!previewProblem}
         onClose={() => setPreviewProblem(null)}
         maxWidth="md"
@@ -808,7 +809,7 @@ export function CodingProblemSelectionSection({
             </Box>
           )}
         </DialogContent>
-      </Dialog>
+      </SheetDialog>
     </Box>
   );
 }

@@ -13,7 +13,6 @@ import {
   TableRow,
   Chip,
   IconButton,
-  Dialog,
   DialogTitle,
   DialogContent,
 } from "@mui/material";
@@ -21,6 +20,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { CodingProblemListItem } from "@/lib/services/admin/admin-assessment.service";
 import { PaginationControls } from "./PaginationControls";
 import { ProblemDescription } from "@/components/coding/ProblemDescription";
+import { SheetDialog } from "@/components/admin/SheetDialog";
 
 interface CodingProblemWithSection extends CodingProblemListItem {
   sectionId: string;
@@ -228,7 +228,7 @@ export function CodingProblemsTable({
         />
       )}
 
-      <Dialog
+      <SheetDialog
         open={!!previewProblem}
         onClose={() => setPreviewProblem(null)}
         maxWidth="md"
@@ -276,7 +276,7 @@ export function CodingProblemsTable({
             </Box>
           )}
         </DialogContent>
-      </Dialog>
+      </SheetDialog>
     </Paper>
   );
 }

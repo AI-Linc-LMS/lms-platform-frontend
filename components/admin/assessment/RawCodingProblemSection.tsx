@@ -20,7 +20,6 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  Dialog,
   DialogTitle,
   DialogContent,
 } from "@mui/material";
@@ -33,6 +32,8 @@ import {
 } from "@/lib/services/admin/admin-assessment.service";
 import { config } from "@/lib/config";
 import { ProblemDescription } from "@/components/coding/ProblemDescription";
+import { PHONE } from "@/components/common/mobile/phone";
+import { SheetDialog } from "@/components/admin/SheetDialog";
 
 const DIFFICULTY_LEVELS: Array<"Easy" | "Medium" | "Hard"> = ["Easy", "Medium", "Hard"];
 const LANGUAGES = ["Python", "Java", "JavaScript", "C++", "C", "Go", "Ruby", "SQL", "Other"];
@@ -40,7 +41,7 @@ const ROWS_PER_PAGE_OPTIONS = [5, 10, 25];
 
 /** Section kicker label (redesign recipe): tiny, bold, uppercase, tertiary. */
 const kickerSx = {
-  fontSize: "0.72rem",
+  fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
   fontWeight: 800,
   letterSpacing: "0.08em",
   textTransform: "uppercase",
@@ -403,7 +404,7 @@ Constraints:
         </Box>
       )}
 
-      <Dialog
+      <SheetDialog
         open={!!previewProblem}
         onClose={() => setPreviewProblem(null)}
         maxWidth="md"
@@ -456,7 +457,7 @@ Constraints:
             </Box>
           )}
         </DialogContent>
-      </Dialog>
+      </SheetDialog>
     </Box>
   );
 }

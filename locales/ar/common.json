@@ -2605,5 +2605,26 @@
   "mobileChrome": {
     "more": "المزيد",
     "platformGuide": "دليل المنصة"
+  },
+  "adminAssessMobile": {
+    "colAnswerMode": "طريقة الإجابة",
+    "colBrief": "الموجز",
+    "colCorrect": "الإجابة الصحيحة",
+    "colDifficulty": "الصعوبة",
+    "colEvaluated": "تم التقييم",
+    "colEvaluation": "التقييم",
+    "colId": "المعرف",
+    "colIntegrity": "النزاهة",
+    "colMarking": "التصحيح",
+    "colMaxMarks": "الدرجة القصوى",
+    "colOrder": "الترتيب",
+    "colPrompt": "المطلب",
+    "colQuestion": "السؤال",
+    "colReview": "المراجعة",
+    "colRuntime": "بيئة التشغيل",
+    "colScore": "الدرجة",
+    "colSection": "القسم",
+    "colTags": "الوسوم",
+    "colTitle": "العنوان"
   }
 }

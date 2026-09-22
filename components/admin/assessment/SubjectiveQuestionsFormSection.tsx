@@ -14,6 +14,7 @@ import {
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { AssessmentSubjectiveQuestionWrite } from "@/lib/services/admin/admin-assessment.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 export type SubjectiveQuestionDraft = AssessmentSubjectiveQuestionWrite & {
   max_marks: number;
@@ -29,7 +30,7 @@ const emptyQuestion = (): SubjectiveQuestionDraft => ({
 
 /** Section kicker label (design contract): tiny, heavy, tracked-out uppercase. */
 const kickerSx = {
-  fontSize: "0.72rem",
+  fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
   fontWeight: 800,
   letterSpacing: "0.08em",
   textTransform: "uppercase" as const,

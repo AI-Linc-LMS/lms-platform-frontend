@@ -13,7 +13,6 @@ import {
   Stack,
   Typography,
   Tooltip,
-  Dialog,
   DialogTitle,
   DialogContent,
   IconButton,
@@ -22,6 +21,8 @@ import {
   Button,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { PHONE } from "@/components/common/mobile/phone";
+import { SheetDialog } from "@/components/admin/SheetDialog";
 
 export const SOURCE_LABELS: Record<string, string> = {
   manual: "Manual",
@@ -141,7 +142,7 @@ export function SourceChip({ source }: { source?: string }) {
       size="small"
       sx={{
         height: 22,
-        fontSize: "0.7rem",
+        fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
         bgcolor: "var(--surface)",
         color: "var(--font-secondary)",
         "& .MuiChip-icon": { ml: 0.5 },
@@ -160,7 +161,7 @@ export function UsageChip({ count }: { count?: number }) {
         size="small"
         sx={{
           height: 22,
-          fontSize: "0.7rem",
+          fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
           fontWeight: n > 0 ? 600 : 400,
           bgcolor: n > 0
             ? "color-mix(in srgb, var(--accent-indigo) 14%, var(--surface) 86%)"
@@ -187,7 +188,7 @@ export function TagChips({ tags }: { tags?: string }) {
           key={`${t}-${i}`}
           label={t}
           size="small"
-          sx={{ height: 20, fontSize: "0.65rem", bgcolor: "var(--surface)", color: "var(--font-secondary)" }}
+          sx={{ height: 20, fontSize: "0.65rem", [PHONE]: { fontSize: "0.75rem" }, bgcolor: "var(--surface)", color: "var(--font-secondary)" }}
         />
       ))}
     </Box>
@@ -225,7 +226,7 @@ export function PreviewDialog({
   children: ReactNode;
 }) {
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <SheetDialog open={open} onClose={onClose} maxWidth="md" fullWidth>
       <DialogTitle
         sx={{ display: "flex", alignItems: "center", justifyContent: "space-between", pr: 1 }}
       >
@@ -235,7 +236,7 @@ export function PreviewDialog({
         </IconButton>
       </DialogTitle>
       <DialogContent dividers>{children}</DialogContent>
-    </Dialog>
+    </SheetDialog>
   );
 }
 
@@ -283,7 +284,7 @@ function FacetMultiSelect({
             size="small"
             {...getTagProps({ index: i })}
             key={v}
-            sx={{ height: 22, fontSize: "0.7rem" }}
+            sx={{ height: 22, fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" } }}
           />
         ))
       }
@@ -340,7 +341,7 @@ export function FacetBar({
             onClick={() => toggle("difficulty", d)}
             sx={{
               height: 24,
-              fontSize: "0.72rem",
+              fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
               cursor: "pointer",
               bgcolor: facets.difficulty === d ? "var(--accent-indigo)" : "transparent",
               color: facets.difficulty === d ? "var(--font-light)" : "var(--font-secondary)",
@@ -356,7 +357,7 @@ export function FacetBar({
           onClick={() => set({ reusedOnly: !facets.reusedOnly })}
           sx={{
             height: 24,
-            fontSize: "0.72rem",
+            fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
             cursor: "pointer",
             ml: 0.5,
             bgcolor: facets.reusedOnly ? "var(--accent-indigo)" : "transparent",
@@ -372,7 +373,7 @@ export function FacetBar({
             variant="text"
             startIcon={<IconWrapper icon="mdi:filter-remove-outline" size={16} />}
             onClick={() => onChange(EMPTY_FACETS)}
-            sx={{ fontSize: "0.72rem", textTransform: "none", color: "var(--font-secondary)" }}
+            sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, textTransform: "none", color: "var(--font-secondary)" }}
           >
             Clear filters
           </Button>
@@ -394,7 +395,7 @@ export function FacetBar({
               onClick={() => toggle("source", s)}
               sx={{
                 height: 24,
-                fontSize: "0.72rem",
+                fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                 cursor: "pointer",
                 bgcolor: facets.source === s ? "var(--accent-indigo)" : "transparent",
                 color: facets.source === s ? "var(--font-light)" : "var(--font-secondary)",

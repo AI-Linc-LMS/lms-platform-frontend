@@ -3001,5 +3001,26 @@
   "mobileChrome": {
     "more": "More",
     "platformGuide": "Platform guide"
+  },
+  "adminAssessMobile": {
+    "colAnswerMode": "Answer mode",
+    "colBrief": "Brief",
+    "colCorrect": "Correct",
+    "colDifficulty": "Difficulty",
+    "colEvaluated": "Evaluated",
+    "colEvaluation": "Evaluation",
+    "colId": "ID",
+    "colIntegrity": "Integrity",
+    "colMarking": "Marking",
+    "colMaxMarks": "Max marks",
+    "colOrder": "Order",
+    "colPrompt": "Prompt",
+    "colQuestion": "Question",
+    "colReview": "Review",
+    "colRuntime": "Runtime",
+    "colScore": "Score",
+    "colSection": "Section",
+    "colTags": "Tags",
+    "colTitle": "Title"
   }
 }

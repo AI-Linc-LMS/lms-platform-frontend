@@ -44,6 +44,7 @@ import {
   EmailNotificationEditor,
   type EmailNotificationEditorHandle,
 } from "@/components/admin/assessment/EmailNotificationEditor";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * A pass-band percent as a number, or null when the field is blank or halfway
@@ -185,7 +186,7 @@ const listSubheaderSx = {
   py: 0.9,
   px: { xs: 1.5, sm: 1.75 },
   lineHeight: 1.4,
-  fontSize: "0.72rem",
+  fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
   fontWeight: 800,
   letterSpacing: "0.08em",
   textTransform: "uppercase",
@@ -207,7 +208,7 @@ const helperFormProps = {
 };
 
 const groupTitleSx = {
-  fontSize: "0.72rem",
+  fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
   fontWeight: 800,
   letterSpacing: "0.08em",
   textTransform: "uppercase" as const,
@@ -844,7 +845,7 @@ export function AssessmentSettingsSection({
       <Typography
         id="assessment-settings-heading"
         sx={{
-          fontSize: "0.72rem",
+          fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
           fontWeight: 800,
           letterSpacing: "0.08em",
           textTransform: "uppercase",

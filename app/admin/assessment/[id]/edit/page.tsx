@@ -25,7 +25,6 @@ import {
   MenuItem,
   ListItemIcon,
   ListItemText,
-  Dialog,
   DialogTitle,
   DialogContent,
   Chip,
@@ -101,6 +100,8 @@ import {
   safeReportCsvFileName,
 } from "@/lib/utils/admin-submission-export-to-assessment-result.utils";
 import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_FLOOR_RULES, PHONE_TABLE_CARDS } from "@/components/admin/phoneFloor";
+import { SheetDialog } from "@/components/admin/SheetDialog";
 
 type TabValue = "overview" | "details" | "questions" | "submissions" | "analytics";
 type QuestionsSubTab = "mcq" | "coding" | "written" | "project";
@@ -1703,7 +1704,7 @@ export default function AssessmentEditPage() {
 
   return (
     <MainLayout fullWidthContent>
-      <Box sx={{ p: { xs: 2, sm: 3 }, [PHONE]: { px: 0, pt: 0 } }}>
+      <Box sx={{ p: { xs: 2, sm: 3 }, [PHONE]: { px: 0, pt: 0, ...PHONE_FLOOR_RULES } }}>
         <AssessmentBreadcrumb segments={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Assessments", href: "/admin/assessment" }, { label: displayTitle || `Assessment #${assessmentId}` }]} />
         <Button
           startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
@@ -2199,7 +2200,7 @@ export default function AssessmentEditPage() {
                           </Box>
                         ) : (
                           <>
-                            <TableContainer sx={{ maxHeight: 440 }}>
+                            <TableContainer sx={{ maxHeight: 440, ...PHONE_TABLE_CARDS }}>
                               <Table size="small" stickyHeader>
                                 <TableHead>
                                   <TableRow sx={{ bgcolor: "var(--surface)" }}>
@@ -2215,10 +2216,10 @@ export default function AssessmentEditPage() {
                                 <TableBody>
                                   {paginatedQuizQuestions.map(({ section: sec, question: q }) => (
                                     <TableRow key={`mcq-${q.id}`} hover sx={{ "&:hover": { bgcolor: "var(--surface)" } }}>
-                                      <TableCell sx={{ py: 1.5 }}>{sec.section_title}</TableCell>
-                                      <TableCell sx={{ py: 1.5 }}>{sec.order}</TableCell>
-                                      <TableCell sx={{ py: 1.5, fontFamily: "monospace" }}>{q.id}</TableCell>
-                                      <TableCell sx={{ py: 1.5, maxWidth: 280 }}>
+                                      <TableCell data-label={t("adminAssessMobile.colSection", "Section")} sx={{ py: 1.5 }}>{sec.section_title}</TableCell>
+                                      <TableCell data-label={t("adminAssessMobile.colOrder", "Order")} sx={{ py: 1.5 }}>{sec.order}</TableCell>
+                                      <TableCell data-label={t("adminAssessMobile.colId", "ID")} sx={{ py: 1.5, fontFamily: "monospace" }}>{q.id}</TableCell>
+                                      <TableCell data-label={t("adminAssessMobile.colQuestion", "Question")} sx={{ py: 1.5, maxWidth: 280 }}>
                                         <Typography
                                           variant="body2"
                                           sx={{
@@ -2233,8 +2234,8 @@ export default function AssessmentEditPage() {
                                           {q.question_text}
                                         </Typography>
                                       </TableCell>
-                                      <TableCell sx={{ py: 1.5, fontWeight: 600 }}>{q.correct_option}</TableCell>
-                                      <TableCell sx={{ py: 1.5 }}>{q.difficulty_level ?? "-"}</TableCell>
+                                      <TableCell data-label={t("adminAssessMobile.colCorrect", "Correct")} sx={{ py: 1.5, fontWeight: 600 }}>{q.correct_option}</TableCell>
+                                      <TableCell data-label={t("adminAssessMobile.colDifficulty", "Difficulty")} sx={{ py: 1.5 }}>{q.difficulty_level ?? "-"}</TableCell>
                                       <TableCell sx={{ py: 1.5, textAlign: "center" }}>
                                         <IconButton
                                           size="small"
@@ -2309,7 +2310,7 @@ export default function AssessmentEditPage() {
                           </Box>
                         ) : (
                           <>
-                            <TableContainer sx={{ maxHeight: 440 }}>
+                            <TableContainer sx={{ maxHeight: 440, ...PHONE_TABLE_CARDS }}>
                               <Table size="small" stickyHeader>
                                 <TableHead>
                                   <TableRow sx={{ bgcolor: "var(--surface)" }}>
@@ -2325,10 +2326,10 @@ export default function AssessmentEditPage() {
                                 <TableBody>
                                   {paginatedCodingQuestions.map(({ section: sec, question: q }) => (
                                     <TableRow key={`coding-${q.id}`} hover sx={{ "&:hover": { bgcolor: "var(--surface)" } }}>
-                                      <TableCell sx={{ py: 1.5 }}>{sec.section_title}</TableCell>
-                                      <TableCell sx={{ py: 1.5 }}>{sec.order}</TableCell>
-                                      <TableCell sx={{ py: 1.5, fontFamily: "monospace" }}>{q.id}</TableCell>
-                                      <TableCell sx={{ py: 1.5, maxWidth: 300 }}>
+                                      <TableCell data-label={t("adminAssessMobile.colSection", "Section")} sx={{ py: 1.5 }}>{sec.section_title}</TableCell>
+                                      <TableCell data-label={t("adminAssessMobile.colOrder", "Order")} sx={{ py: 1.5 }}>{sec.order}</TableCell>
+                                      <TableCell data-label={t("adminAssessMobile.colId", "ID")} sx={{ py: 1.5, fontFamily: "monospace" }}>{q.id}</TableCell>
+                                      <TableCell data-label={t("adminAssessMobile.colTitle", "Title")} sx={{ py: 1.5, maxWidth: 300 }}>
                                         <Typography variant="body2" fontWeight={500}>
                                           {q.title}
                                         </Typography>
@@ -2344,7 +2345,7 @@ export default function AssessmentEditPage() {
                                           </Typography>
                                         )}
                                       </TableCell>
-                                      <TableCell sx={{ py: 1.5 }}>
+                                      <TableCell data-label={t("adminAssessMobile.colDifficulty", "Difficulty")} sx={{ py: 1.5 }}>
                                         {q.difficulty_level ? (
                                           <Chip
                                             label={q.difficulty_level}
@@ -2363,14 +2364,14 @@ export default function AssessmentEditPage() {
                                                   ? "var(--warning-500)"
                                                   : "var(--warning-500)",
                                               fontWeight: 600,
-                                              fontSize: "0.7rem",
+                                              fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                                             }}
                                           />
                                         ) : (
                                           "-"
                                         )}
                                       </TableCell>
-                                      <TableCell sx={{ py: 1.5 }}>{q.tags ?? "-"}</TableCell>
+                                      <TableCell data-label={t("adminAssessMobile.colTags", "Tags")} sx={{ py: 1.5 }}>{q.tags ?? "-"}</TableCell>
                                       <TableCell sx={{ py: 1.5, textAlign: "center" }}>
                                         <IconButton
                                           size="small"
@@ -2448,7 +2449,7 @@ export default function AssessmentEditPage() {
                           </Box>
                         ) : (
                           <>
-                            <TableContainer sx={{ maxHeight: 440 }}>
+                            <TableContainer sx={{ maxHeight: 440, ...PHONE_TABLE_CARDS }}>
                               <Table size="small" stickyHeader>
                                 <TableHead>
                                   <TableRow sx={{ bgcolor: "var(--surface)" }}>
@@ -2488,10 +2489,10 @@ export default function AssessmentEditPage() {
                                       hover
                                       sx={{ "&:hover": { bgcolor: "var(--surface)" } }}
                                     >
-                                      <TableCell sx={{ py: 1.5 }}>{sec.section_title}</TableCell>
-                                      <TableCell sx={{ py: 1.5 }}>{sec.order}</TableCell>
-                                      <TableCell sx={{ py: 1.5, fontFamily: "monospace" }}>{q.id}</TableCell>
-                                      <TableCell sx={{ py: 1.5, maxWidth: 300 }}>
+                                      <TableCell data-label={t("adminAssessMobile.colSection", "Section")} sx={{ py: 1.5 }}>{sec.section_title}</TableCell>
+                                      <TableCell data-label={t("adminAssessMobile.colOrder", "Order")} sx={{ py: 1.5 }}>{sec.order}</TableCell>
+                                      <TableCell data-label={t("adminAssessMobile.colId", "ID")} sx={{ py: 1.5, fontFamily: "monospace" }}>{q.id}</TableCell>
+                                      <TableCell data-label={t("adminAssessMobile.colPrompt", "Prompt")} sx={{ py: 1.5, maxWidth: 300 }}>
                                         <Typography
                                           variant="body2"
                                           sx={{
@@ -2506,8 +2507,8 @@ export default function AssessmentEditPage() {
                                           {q.question_text}
                                         </Typography>
                                       </TableCell>
-                                      <TableCell sx={{ py: 1.5, fontWeight: 600 }}>{q.max_marks}</TableCell>
-                                      <TableCell sx={{ py: 1.5 }}>
+                                      <TableCell data-label={t("adminAssessMobile.colMaxMarks", "Max marks")} sx={{ py: 1.5, fontWeight: 600 }}>{q.max_marks}</TableCell>
+                                      <TableCell data-label={t("adminAssessMobile.colAnswerMode", "Answer mode")} sx={{ py: 1.5 }}>
                                         <Chip
                                           label={q.answer_mode || "text"}
                                           size="small"
@@ -2516,7 +2517,7 @@ export default function AssessmentEditPage() {
                                               "color-mix(in srgb, var(--warning-500) 16%, var(--surface) 84%)",
                                             color: "var(--warning-500)",
                                             fontWeight: 600,
-                                            fontSize: "0.7rem",
+                                            fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
                                           }}
                                         />
                                       </TableCell>
@@ -2565,7 +2566,7 @@ export default function AssessmentEditPage() {
                             <Typography color="text.secondary">No project briefs.</Typography>
                           </Box>
                         ) : (
-                          <TableContainer sx={{ maxHeight: 440 }}>
+                          <TableContainer sx={{ maxHeight: 440, ...PHONE_TABLE_CARDS }}>
                             <Table size="small" stickyHeader>
                               <TableHead>
                                 <TableRow sx={{ bgcolor: "var(--surface)" }}>
@@ -2586,21 +2587,21 @@ export default function AssessmentEditPage() {
                                     };
                                     return (
                                       <TableRow key={`${sec.section_id}-${brief.id}`} hover>
-                                        <TableCell sx={{ fontSize: "0.8rem" }}>{sec.section_title}</TableCell>
-                                        <TableCell sx={{ fontSize: "0.8rem", fontFamily: "var(--font-mono)" }}>{brief.id}</TableCell>
-                                        <TableCell sx={{ fontSize: "0.8rem" }}>
+                                        <TableCell data-label={t("adminAssessMobile.colSection", "Section")} sx={{ fontSize: "0.8rem" }}>{sec.section_title}</TableCell>
+                                        <TableCell data-label={t("adminAssessMobile.colId", "ID")} sx={{ fontSize: "0.8rem", fontFamily: "var(--font-mono)" }}>{brief.id}</TableCell>
+                                        <TableCell data-label={t("adminAssessMobile.colBrief", "Brief")} sx={{ fontSize: "0.8rem" }}>
                                           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                                             {brief.title || `Brief ${brief.id}`}
                                             {brief.is_verified ? (
-                                              <Chip size="small" label="Verified" sx={{ height: 18, fontSize: "0.68rem" }} />
+                                              <Chip size="small" label="Verified" sx={{ height: 18, fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" } }} />
                                             ) : null}
                                           </Box>
                                         </TableCell>
-                                        <TableCell sx={{ fontSize: "0.8rem" }}>{(brief.runtime || "-").replace(/_/g, " ")}</TableCell>
-                                        <TableCell sx={{ fontSize: "0.8rem" }}>
+                                        <TableCell data-label={t("adminAssessMobile.colRuntime", "Runtime")} sx={{ fontSize: "0.8rem" }}>{(brief.runtime || "-").replace(/_/g, " ")}</TableCell>
+                                        <TableCell data-label={t("adminAssessMobile.colMarking", "Marking")} sx={{ fontSize: "0.8rem" }}>
                                           {brief.tier === "rubric" ? "Rubric (assessor)" : brief.tier === "auto" ? "Automated checks" : (brief.tier || "-")}
                                         </TableCell>
-                                        <TableCell sx={{ fontSize: "0.8rem" }}>{brief.max_marks ?? "-"}</TableCell>
+                                        <TableCell data-label={t("adminAssessMobile.colMaxMarks", "Max marks")} sx={{ fontSize: "0.8rem" }}>{brief.max_marks ?? "-"}</TableCell>
                                       </TableRow>
                                     );
                                   }),
@@ -2615,7 +2616,7 @@ export default function AssessmentEditPage() {
                 )}
 
                 {/* MCQ Preview Dialog */}
-                <Dialog
+                <SheetDialog
                   open={!!previewMCQ}
                   onClose={() => setPreviewMCQ(null)}
                   maxWidth="sm"
@@ -2648,10 +2649,10 @@ export default function AssessmentEditPage() {
                       </Box>
                     )}
                   </DialogContent>
-                </Dialog>
+                </SheetDialog>
 
                 {/* Coding Preview Dialog */}
-                <Dialog
+                <SheetDialog
                   open={!!previewCoding}
                   onClose={() => setPreviewCoding(null)}
                   maxWidth="md"
@@ -2671,10 +2672,10 @@ export default function AssessmentEditPage() {
                       </Box>
                     )}
                   </DialogContent>
-                </Dialog>
+                </SheetDialog>
 
                 {/* Written / subjective preview dialog */}
-                <Dialog
+                <SheetDialog
                   open={!!previewWritten}
                   onClose={() => setPreviewWritten(null)}
                   maxWidth="sm"
@@ -2722,7 +2723,7 @@ export default function AssessmentEditPage() {
                       </Box>
                     )}
                   </DialogContent>
-                </Dialog>
+                </SheetDialog>
               </>
             )}
 
@@ -2864,26 +2865,29 @@ export default function AssessmentEditPage() {
                 ) : (
                   <>
                     <TableContainer
+                      data-testid="submissions-table"
                       sx={{
                         maxHeight: 560,
                         overflow: "auto",
                         border: "1px solid var(--border-default)",
                         borderRadius: "var(--radius-card)",
                         bgcolor: "var(--card-bg)",
+                        // Phone: one card per attempt, the row actions in a bar at its foot.
+                        ...PHONE_TABLE_CARDS,
                       }}
                     >
                       <Table size="small" stickyHeader>
                         <TableHead>
                           <TableRow sx={{ bgcolor: "var(--surface)" }}>
                             {(["STUDENT", "SCORE", "INTEGRITY", "EVALUATION"] as const).map((h) => (
-                              <TableCell key={h} sx={{ fontWeight: 800, py: 1.5, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--font-tertiary)", ...(h === "STUDENT" ? { minWidth: 260 } : { minWidth: 120 }) }}>
+                              <TableCell key={h} sx={{ fontWeight: 800, py: 1.5, fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, letterSpacing: "0.08em", color: "var(--font-tertiary)", ...(h === "STUDENT" ? { minWidth: 260 } : { minWidth: 120 }) }}>
                                 {h}
                               </TableCell>
                             ))}
                             {evaluationMode === "manual" && (
                               <>
-                                <TableCell sx={{ fontWeight: 800, py: 1.5, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--font-tertiary)" }}>REVIEW</TableCell>
-                                <TableCell sx={{ fontWeight: 800, py: 1.5, fontSize: "0.7rem", letterSpacing: "0.08em", color: "var(--font-tertiary)" }}>EVALUATED</TableCell>
+                                <TableCell sx={{ fontWeight: 800, py: 1.5, fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, letterSpacing: "0.08em", color: "var(--font-tertiary)" }}>REVIEW</TableCell>
+                                <TableCell sx={{ fontWeight: 800, py: 1.5, fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, letterSpacing: "0.08em", color: "var(--font-tertiary)" }}>EVALUATED</TableCell>
                               </>
                             )}
                             <TableCell sx={{ py: 1.5 }} align="right" />
@@ -2935,7 +2939,7 @@ export default function AssessmentEditPage() {
                                 </Box>
                               </TableCell>
                               {/* SCORE: mono value /max + colored band bar (mockup) */}
-                              <TableCell sx={{ py: 1.5, minWidth: 140 }}>
+                              <TableCell data-label={t("adminAssessMobile.colScore", "Score")} sx={{ py: 1.5, minWidth: 140 }}>
                                 {s.status === "in_progress" || s.overall_score == null ? (
                                   (() => {
                                     const d = getScoreChipDisplay(s, evaluationMode);
@@ -2974,7 +2978,7 @@ export default function AssessmentEditPage() {
                                 * `integrity` separates conduct from attention and has a distinct
                                 * verdict for "no evidence" and for "sat without monitoring". Its
                                 * absence means an older cached payload: say so, never assume fine. */}
-                              <TableCell sx={{ py: 1.5 }}>
+                              <TableCell data-label={t("adminAssessMobile.colIntegrity", "Integrity")} sx={{ py: 1.5 }}>
                                 {(() => {
                                   if (!proctoringEnabled) {
                                     return <Typography variant="caption" sx={{ color: "var(--font-tertiary)" }}>-</Typography>;
@@ -2982,7 +2986,7 @@ export default function AssessmentEditPage() {
                                   const integrity = s.integrity;
                                   if (!integrity) {
                                     return (
-                                      <Tooltip title="This attempt predates integrity reporting, or its export is cached from an older build. No conclusion should be drawn from it.">
+                                      <Tooltip enterTouchDelay={0} leaveTouchDelay={8000} title="This attempt predates integrity reporting, or its export is cached from an older build. No conclusion should be drawn from it.">
                                         <span>
                                           <StatusChip label="Not assessed" tone="neutral" icon="mdi:help-circle-outline" />
                                         </span>
@@ -3003,6 +3007,10 @@ export default function AssessmentEditPage() {
                                     .join("\n");
                                   return (
                                     <Tooltip
+                                      // A tap, not a long-press, opens the verdict's reasoning on a
+                                      // touch screen; a mouse is unaffected.
+                                      enterTouchDelay={0}
+                                      leaveTouchDelay={8000}
                                       title={
                                         <span style={{ whiteSpace: "pre-line" }}>
                                           {[
@@ -3025,7 +3033,7 @@ export default function AssessmentEditPage() {
                                 })()}
                               </TableCell>
                               {/* EVALUATION: Auto (AI) vs Manual (mockup) */}
-                              <TableCell sx={{ py: 1.5 }}>
+                              <TableCell data-label={t("adminAssessMobile.colEvaluation", "Evaluation")} sx={{ py: 1.5 }}>
                                 {evaluationMode === "manual" ? (
                                   <StatusChip label="Manual" tone="warning" icon="mdi:pencil-outline" />
                                 ) : (
@@ -3034,7 +3042,7 @@ export default function AssessmentEditPage() {
                               </TableCell>
                               {evaluationMode === "manual" && (
                                 <>
-                                  <TableCell sx={{ py: 1.5 }}>
+                                  <TableCell data-label={t("adminAssessMobile.colReview", "Review")} sx={{ py: 1.5 }}>
                                     <Chip
                                       size="small"
                                       label={humanizeReviewStatus((s as any).review_status)}
@@ -3042,7 +3050,7 @@ export default function AssessmentEditPage() {
                                       variant={(s as any).review_status === "published" ? "filled" : "outlined"}
                                     />
                                   </TableCell>
-                                  <TableCell sx={{ py: 1.25 }}>
+                                  <TableCell data-label={t("adminAssessMobile.colEvaluated", "Evaluated")} sx={{ py: 1.25 }}>
                                     <Chip
                                       size="small"
                                       label={

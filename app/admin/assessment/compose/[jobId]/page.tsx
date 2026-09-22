@@ -21,6 +21,7 @@ import {
   type ComposerJobResponse,
 } from "@/lib/services/admin/admin-assessment-composer.service";
 import { PHONE } from "@/components/common/mobile/phone";
+import { PhoneFloor } from "@/components/admin/PhoneSheetParts";
 
 const STAGE_LABEL: Record<string, string> = {
   pending: "Starting…",
@@ -154,6 +155,7 @@ export default function ComposerJobPage() {
 
   return (
     <MainLayout fullWidthContent>
+      <PhoneFloor>
       <Box sx={{ p: { xs: 2, sm: 3, md: 4 }, bgcolor: "var(--canvas)", minHeight: "100%", [PHONE]: { px: 0, pt: 0 } }}>
         <AssessmentBreadcrumb segments={[{ label: "Admin", href: "/admin/dashboard" }, { label: "Assessments", href: "/admin/assessment" }, { label: "Review draft" }]} />
         <Button
@@ -181,7 +183,7 @@ export default function ComposerJobPage() {
             <IconWrapper icon="mdi:auto-fix" size={26} />
           </Box>
           <Box>
-            <Typography sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.1em", color: "var(--ai-violet)" }}>
+            <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.1em", color: "var(--ai-violet)" }}>
               AI ASSESSMENT COMPOSER
             </Typography>
             <Typography sx={{ fontFamily: "var(--font-jakarta)", fontWeight: 800, fontSize: "1.6rem", color: "var(--font-primary)" }}>
@@ -288,7 +290,7 @@ export default function ComposerJobPage() {
               {/* AI Blueprint sidebar */}
               <Box sx={{ borderRadius: "var(--radius-card)", bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)", overflow: "hidden" }}>
                 <Box sx={{ p: 2, background: "var(--gradient-ai-soft)", borderBottom: "1px solid var(--border-default)" }}>
-                  <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: "0.1em", color: "var(--ai-violet)" }}>
+                  <Typography sx={{ fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.1em", color: "var(--ai-violet)" }}>
                     AI BLUEPRINT
                   </Typography>
                   <Typography sx={{ fontWeight: 700, color: "var(--font-primary)", mt: 0.25 }}>
@@ -306,12 +308,12 @@ export default function ComposerJobPage() {
 
                   {blueprint?.sections?.length ? (
                     <>
-                      <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.08em", color: "var(--font-tertiary)", mb: 1 }}>
+                      <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.08em", color: "var(--font-tertiary)", mb: 1 }}>
                         DIFFICULTY BALANCE
                       </Typography>
                       <DifficultyBalanceMeter balance={overallBalance} />
 
-                      <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.08em", color: "var(--font-tertiary)", mt: 2.5, mb: 1 }}>
+                      <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.08em", color: "var(--font-tertiary)", mt: 2.5, mb: 1 }}>
                         SECTIONS
                       </Typography>
                       {blueprint.sections.map((s) => (
@@ -330,7 +332,7 @@ export default function ComposerJobPage() {
 
                       {coverageTopics.length > 0 ? (
                         <>
-                          <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, letterSpacing: "0.08em", color: "var(--font-tertiary)", mt: 2.5, mb: 1 }}>
+                          <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.08em", color: "var(--font-tertiary)", mt: 2.5, mb: 1 }}>
                             TOPIC COVERAGE
                           </Typography>
                           <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
@@ -458,6 +460,7 @@ export default function ComposerJobPage() {
           </>
         )}
       </Box>
+      </PhoneFloor>
     </MainLayout>
   );
 }

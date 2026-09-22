@@ -46,6 +46,7 @@ import {
   sectionRowAccent,
   SECTION_STATUS_MUI,
 } from "@/lib/utils/assessment-section-performance.utils";
+import { PHONE } from "@/components/common/mobile/phone";
 
 const C = {
   sky: "var(--accent-indigo)",
@@ -113,7 +114,7 @@ function studentCountTooltip(value: number | string | undefined) {
 
 const tableHeadCellSx = {
   fontWeight: 700,
-  fontSize: "0.68rem",
+  fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" },
   letterSpacing: "0.07em",
   textTransform: "uppercase" as const,
   color: "text.secondary",
@@ -193,7 +194,7 @@ function SectionTableTitle({
             sx={{
               height: 24,
               fontWeight: 700,
-              fontSize: "0.7rem",
+              fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" },
               bgcolor: "primary.main",
               color: "primary.contrastText",
               "& .MuiChip-label": { px: 1.25 },
@@ -840,7 +841,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
               <IconWrapper icon="mdi:chart-box-outline" size={20} color="#fff" />
             </Box>
             <Typography
-              sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.12em", color: "var(--accent-indigo)" }}
+              sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.12em", color: "var(--accent-indigo)" }}
             >
               ANALYTICS REPORT
             </Typography>
@@ -930,7 +931,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
           }}
         >
           <Typography
-            sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.08em", color: "var(--font-tertiary)", mb: 2 }}
+            sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.08em", color: "var(--font-tertiary)", mb: 2 }}
           >
             WHERE STUDENTS ARE
           </Typography>
@@ -984,7 +985,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
         >
           <Typography
             component="h3"
-            sx={{ fontSize: "0.72rem", fontWeight: 800, letterSpacing: "0.08em", color: "var(--font-tertiary)", mb: 1 }}
+            sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.08em", color: "var(--font-tertiary)", mb: 1 }}
           >
             NUMBERS AT A GLANCE
           </Typography>
@@ -1305,7 +1306,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
                           sx={{
                             height: 26,
                             fontWeight: 700,
-                            fontSize: "0.72rem",
+                            fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                             bgcolor: statusSx.bgcolor,
                             color: statusSx.color,
                             borderRadius: 999,
@@ -1579,7 +1580,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
                           bgcolor: (theme: Theme) => alpha(theme.palette.common.black, theme.palette.mode === "dark" ? 0.15 : 0.03),
                           whiteSpace: "pre-wrap",
                           fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                          fontSize: "0.72rem",
+                          fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                           lineHeight: 1.55,
                           color: "text.secondary",
                           maxHeight: 320,
@@ -1644,7 +1645,7 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
                           bgcolor: (theme: Theme) => alpha(theme.palette.common.black, theme.palette.mode === "dark" ? 0.15 : 0.03),
                           whiteSpace: "pre-wrap",
                           fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
-                          fontSize: "0.72rem",
+                          fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                           lineHeight: 1.55,
                           color: "text.secondary",
                           maxHeight: 320,

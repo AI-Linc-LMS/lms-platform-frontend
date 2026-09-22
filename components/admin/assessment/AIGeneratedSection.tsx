@@ -26,6 +26,7 @@ import {
   questionGenerationErrorMessage,
 } from "@/lib/services/admin/admin-assessment.service";
 import { config } from "@/lib/config";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface AIGeneratedSectionProps {
   mcqs: MCQ[];
@@ -420,7 +421,7 @@ export function AIGeneratedSection({
                               flexShrink: 0,
                               display: "grid",
                               placeItems: "center",
-                              fontSize: "0.72rem",
+                              fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
                               fontWeight: 800,
                               fontFamily: "var(--font-mono)",
                               bgcolor: correct ? "var(--success-500)" : "color-mix(in srgb, var(--ai-violet) 10%, var(--card-bg) 90%)",

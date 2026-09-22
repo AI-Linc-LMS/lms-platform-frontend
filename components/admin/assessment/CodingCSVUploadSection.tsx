@@ -20,7 +20,6 @@ import {
   TableHead,
   TableRow,
   TablePagination,
-  Dialog,
   DialogTitle,
   DialogContent,
 } from "@mui/material";
@@ -35,6 +34,8 @@ import { config } from "@/lib/config";
 import { ProblemDescription } from "@/components/coding/ProblemDescription";
 import { parseCSVRows } from "@/lib/utils/csv-parse";
 import { normalizeEncoding } from "@/lib/utils/text-utils";
+import { PHONE } from "@/components/common/mobile/phone";
+import { SheetDialog } from "@/components/admin/SheetDialog";
 
 const DIFFICULTY_LEVELS: Array<"Easy" | "Medium" | "Hard"> = ["Easy", "Medium", "Hard"];
 const LANGUAGES = ["Python", "Java", "JavaScript", "C++", "C", "Go", "Ruby", "SQL", "Other"];
@@ -43,7 +44,7 @@ const RAW_BATCH_CHUNK = 20;
 
 /** Section kicker label (redesign language). */
 const KICKER_SX = {
-  fontSize: "0.72rem",
+  fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" },
   fontWeight: 800,
   letterSpacing: "0.08em",
   textTransform: "uppercase",
@@ -763,7 +764,7 @@ export function CodingCSVUploadSection({
         </Box>
       )}
 
-      <Dialog
+      <SheetDialog
         open={!!previewProblem}
         onClose={() => setPreviewProblem(null)}
         maxWidth="md"
@@ -816,7 +817,7 @@ export function CodingCSVUploadSection({
             </Box>
           )}
         </DialogContent>
-      </Dialog>
+      </SheetDialog>
     </Box>
   );
 }
