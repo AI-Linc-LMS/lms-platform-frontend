@@ -22,6 +22,8 @@ import {
   TextField,
   Tooltip,
   Typography,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -65,6 +67,13 @@ import type { CourseImageTarget } from "@/lib/services/admin/admin-adaptive-cour
 import { asStringList } from "@/lib/utils/as-list";
 import { attachmentLook, formatFileSize } from "@/lib/utils/attachment-display";
 import { PHONE } from "@/components/common/mobile/phone";
+import {
+  PHONE_TEXT,
+  TAP,
+  phoneSheetDialogSx,
+  phoneTapSx,
+  phoneTextFloor,
+} from "@/components/admin/adaptive-course/coursePhone";
 
 type DialogState =
   | { kind: "module" }
@@ -145,6 +154,10 @@ export default function AdminAdaptiveCourseDetailPage() {
   // Reviewing an instructor's course is an admin act — the same predicate the server uses.
   // An instructor approving their own course is not a review.
   const isReviewer = isClientOrgAdminRole(user?.role);
+  const theme = useTheme();
+  // Only the phone sheets hold themselves open mid-request; the desktop dialogs keep their
+  // original close behaviour.
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
 
   function handleQuizSaved(configId: number, mcqCount: number) {
     setCourse((prev) =>
@@ -631,7 +644,7 @@ export default function AdminAdaptiveCourseDetailPage() {
       <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 }, [PHONE]: { px: 0, pt: 0 } }}>
         <ButtonBase
           onClick={() => push("/admin/adaptive-courses")}
-          sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem" }}
+          sx={{ mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem", ...phoneTapSx }}
         >
           <Icon icon="mdi:arrow-left" width={18} />
           Back to Adaptive Course Builder
@@ -693,7 +706,16 @@ export default function AdminAdaptiveCourseDetailPage() {
                 </ButtonBase>
               </Box>
 
-              <Box sx={{ display: "flex", gap: 1, mb: 2.5, flexWrap: "wrap" }}>
+              <Box
+                data-testid="course-tabs"
+                sx={{
+                  display: "flex", gap: 1, mb: 2.5, flexWrap: "wrap",
+                  [PHONE]: {
+                    flexWrap: "nowrap", overflowX: "auto", scrollSnapType: "x proximity",
+                    scrollbarWidth: "none", "&::-webkit-scrollbar": { display: "none" },
+                  },
+                }}
+              >
                 {([
                   ["content", "Content", "mdi:book-cog-outline"],
                   ["calibration", "Calibration", "mdi:shield-half-full"],
@@ -715,6 +737,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                           ? "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)"
                           : "color-mix(in srgb, var(--card-bg) 60%, transparent)",
                         border: active ? "1px solid transparent" : "1px solid color-mix(in srgb, var(--border-default) 75%, transparent)",
+                        [PHONE]: { minHeight: TAP, flexShrink: 0, whiteSpace: "nowrap", scrollSnapAlign: "start" },
                       }}
                     >
                       <Icon icon={icon} width={16} />
@@ -800,7 +823,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                     <Typography sx={{ fontWeight: 800, fontSize: "0.82rem", letterSpacing: "0.06em", textTransform: "uppercase", color: "#a855f7" }}>
                       Skills this course builds
                     </Typography>
-                    <Typography sx={{ fontSize: "0.74rem", color: "text.secondary", fontWeight: 700 }}>
+                    <Typography sx={{ fontSize: "0.74rem", color: "text.secondary", fontWeight: 700, ...phoneTextFloor }}>
                       · {course.skills.length} skill{course.skills.length === 1 ? "" : "s"} · measured by quizzes, built by articles
                     </Typography>
                   </Box>
@@ -813,12 +836,12 @@ export default function AdminAdaptiveCourseDetailPage() {
                       }}>
                         {prettySkill(s.skill)}
                         {s.question_count > 0 && (
-                          <Box component="span" title={`${s.question_count} quiz questions`} sx={{ display: "inline-flex", alignItems: "center", gap: 0.2, px: 0.6, py: 0.1, borderRadius: 999, fontSize: "0.68rem", fontWeight: 900, bgcolor: "rgba(255,255,255,0.25)" }}>
+                          <Box component="span" title={`${s.question_count} quiz questions`} sx={{ display: "inline-flex", alignItems: "center", gap: 0.2, px: 0.6, py: 0.1, borderRadius: 999, fontSize: "0.68rem", fontWeight: 900, bgcolor: "rgba(255,255,255,0.25)", ...phoneTextFloor }}>
                             <Icon icon="mdi:help-circle-outline" width={11} />{s.question_count}
                           </Box>
                         )}
                         {s.article_count > 0 && (
-                          <Box component="span" title={`${s.article_count} articles`} sx={{ display: "inline-flex", alignItems: "center", gap: 0.2, px: 0.6, py: 0.1, borderRadius: 999, fontSize: "0.68rem", fontWeight: 900, bgcolor: "rgba(255,255,255,0.25)" }}>
+                          <Box component="span" title={`${s.article_count} articles`} sx={{ display: "inline-flex", alignItems: "center", gap: 0.2, px: 0.6, py: 0.1, borderRadius: 999, fontSize: "0.68rem", fontWeight: 900, bgcolor: "rgba(255,255,255,0.25)", ...phoneTextFloor }}>
                             <Icon icon="mdi:book-open-variant" width={11} />{s.article_count}
                           </Box>
                         )}
@@ -874,6 +897,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                           justifyContent: "space-between",
                           gap: 1.5,
                           mb: 1.75,
+                          [PHONE]: { flexWrap: "wrap", rowGap: 1 },
                         }}
                       >
                         {/* flex:1 so the title column claims the row. Without it the group
@@ -901,7 +925,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                               to the width of the "WEEK n" eyebrow above it and a four-letter
                               week title wraps mid-word. */}
                           <Box sx={{ minWidth: 0, flex: 1 }}>
-                            <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#a855f7" }}>
+                            <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "#a855f7", ...phoneTextFloor }}>
                               {unitLabel(course, mod.weekno)}
                             </Typography>
                             <InlineEditableTitle
@@ -914,7 +938,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                             <ModuleSummary mod={mod} />
                           </Box>
                         </Box>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexShrink: 0 }}>
+                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.5, flexShrink: 0, [PHONE]: { width: "100%", justifyContent: "space-between" } }}>
                           <ButtonBase
                             onClick={() =>
                               openDialog({ kind: "submodule", moduleId: mod.id, moduleTitle: mod.title })
@@ -943,8 +967,8 @@ export default function AdminAdaptiveCourseDetailPage() {
                               border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
                             }}
                           >
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                              <Box sx={{ flex: 1, minWidth: 0, display: "flex" }}>
+                            <Box sx={{ display: "flex", alignItems: "center", gap: 1, [PHONE]: { flexWrap: "wrap", rowGap: 0.5 } }}>
+                              <Box sx={{ flex: 1, minWidth: 0, display: "flex", [PHONE]: { flexBasis: "100%" } }}>
                                 <InlineEditableTitle
                                   value={sub.title}
                                   label="Rename this topic"
@@ -982,10 +1006,10 @@ export default function AdminAdaptiveCourseDetailPage() {
                                     <Box sx={{ display: "flex", alignItems: "center", pr: 0.75 }}>
                                       <ButtonBase
                                         onClick={() => setExpandedArticle(open ? null : a.article_id)}
-                                        sx={{ flex: 1, minWidth: 0, textAlign: "left", display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", p: 1.25 }}
+                                        sx={{ flex: 1, minWidth: 0, textAlign: "left", display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", p: 1.25, [PHONE]: { justifyContent: "flex-start" } }}
                                       >
                                         <Icon icon="mdi:book-open-variant" width={15} style={{ color: "#a855f7" }} />
-                                        <Typography sx={{ fontWeight: 700, fontSize: "0.85rem" }}>{a.title}</Typography>
+                                        <Typography sx={{ fontWeight: 700, fontSize: "0.85rem", [PHONE]: { flex: "1 1 0", minWidth: 0 } }}>{a.title}</Typography>
                                         <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
                                           adaptive article · {a.default_tier} · ~{a.reading_time_minutes} min · {a.available_tiers.length} tier
                                           {a.available_tiers.length === 1 ? "" : "s"} ready
@@ -1053,10 +1077,11 @@ export default function AdminAdaptiveCourseDetailPage() {
                                           gap: 1,
                                           flexWrap: "wrap",
                                           p: 1.25,
+                                          [PHONE]: { justifyContent: "flex-start" },
                                         }}
                                       >
                                         <Icon icon="mdi:tune-vertical" width={15} style={{ color: "#6366f1" }} />
-                                        <Typography sx={{ fontWeight: 700, fontSize: "0.85rem" }}>{q.title}</Typography>
+                                        <Typography sx={{ fontWeight: 700, fontSize: "0.85rem", [PHONE]: { flex: "1 1 0", minWidth: 0 } }}>{q.title}</Typography>
                                         <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
                                           {q.mcq_count}-item bank · serves {q.min_questions}–{q.max_questions}
                                           {q.is_active ? "" : " · inactive"}
@@ -1101,7 +1126,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                                       that call topic by topic — it is one decision about a cohort —
                                       so it now lives once in Settings and applies course-wide. */}
                                   <Box sx={{ display: "flex", alignItems: "center", gap: 1, px: 0.5 }}>
-                                    <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, color: "text.secondary", textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                                    <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, color: "text.secondary", textTransform: "uppercase", letterSpacing: "0.05em", ...phoneTextFloor }}>
                                       Coding practice set
                                     </Typography>
                                     <Box sx={{ flex: 1 }} />
@@ -1134,10 +1159,10 @@ export default function AdminAdaptiveCourseDetailPage() {
                                       >
                                         <ButtonBase
                                           onClick={() => setExpandedCoding(open ? null : p.problem_id)}
-                                          sx={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", p: 1.25 }}
+                                          sx={{ width: "100%", textAlign: "left", display: "flex", alignItems: "center", gap: 1, flexWrap: "wrap", p: 1.25, [PHONE]: { justifyContent: "flex-start" } }}
                                         >
                                           <Icon icon="mdi:robot-happy-outline" width={15} style={{ color: "#ec4899" }} />
-                                          <Typography sx={{ fontWeight: 700, fontSize: "0.85rem" }}>{p.title}</Typography>
+                                          <Typography sx={{ fontWeight: 700, fontSize: "0.85rem", [PHONE]: { flex: "1 1 0", minWidth: 0 } }}>{p.title}</Typography>
                                           <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
                                             AI coding mentor · {p.difficulty_level}
                                             {asStringList(p.target_skills).length
@@ -1222,7 +1247,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                                         target="_blank"
                                         rel="noopener noreferrer"
                                         title="Open this handout"
-                                        sx={{ p: 0.5, borderRadius: 1.5, color: "text.secondary", flexShrink: 0 }}
+                                        sx={{ p: 0.5, borderRadius: 1.5, color: "text.secondary", flexShrink: 0, [PHONE]: { minWidth: TAP, minHeight: TAP } }}
                                       >
                                         <Icon icon="mdi:open-in-new" width={15} />
                                       </ButtonBase>
@@ -1303,7 +1328,16 @@ export default function AdminAdaptiveCourseDetailPage() {
         />
       )}
 
-      <Dialog open={editOpen} onClose={() => setEditOpen(false)} fullWidth maxWidth="sm">
+      <Dialog
+        open={editOpen}
+        onClose={() => {
+          if (isPhone && savingDetails) return;
+          setEditOpen(false);
+        }}
+        fullWidth
+        maxWidth="sm"
+        sx={phoneSheetDialogSx}
+      >
         <DialogTitle sx={{ fontWeight: 800 }}>Edit course details</DialogTitle>
         <DialogContent>
           <Stack spacing={2.5} sx={{ mt: 0.5 }}>
@@ -1314,7 +1348,7 @@ export default function AdminAdaptiveCourseDetailPage() {
               fullWidth
             />
             <Box>
-              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.75 }}>
+              <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 0.75, [PHONE]: { flexWrap: "wrap", gap: 0.5 } }}>
                 <Typography sx={{ fontSize: "0.85rem", fontWeight: 700, color: "text.secondary" }}>
                   Description <span style={{ fontWeight: 500 }}>· shown in the course header</span>
                 </Typography>
@@ -1323,7 +1357,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                   disabled={genDesc}
                   size="small"
                   startIcon={genDesc ? <CircularProgress size={14} /> : <Icon icon="mdi:auto-fix" width={16} />}
-                  sx={{ textTransform: "none", fontWeight: 700, color: "#6366f1" }}
+                  sx={{ textTransform: "none", fontWeight: 700, color: "#6366f1", ...phoneTapSx }}
                 >
                   {genDesc ? "Generating…" : "Generate with AI"}
                 </Button>
@@ -1340,7 +1374,7 @@ export default function AdminAdaptiveCourseDetailPage() {
           </Stack>
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={() => setEditOpen(false)} color="inherit">
+          <Button onClick={() => setEditOpen(false)} color="inherit" disabled={isPhone && savingDetails}>
             Cancel
           </Button>
           <Button
@@ -1359,6 +1393,7 @@ export default function AdminAdaptiveCourseDetailPage() {
         onClose={() => !regenerating && setRegenConfirmOpen(false)}
         fullWidth
         maxWidth="xs"
+        sx={phoneSheetDialogSx}
       >
         <DialogTitle sx={{ fontWeight: 800 }}>Regenerate missing content?</DialogTitle>
         <DialogContent>
@@ -1384,7 +1419,16 @@ export default function AdminAdaptiveCourseDetailPage() {
         </DialogActions>
       </Dialog>
 
-      <Dialog open={dialog !== null} onClose={() => setDialog(null)} fullWidth maxWidth="sm">
+      <Dialog
+        open={dialog !== null}
+        onClose={() => {
+          if (isPhone && submitting) return;
+          setDialog(null);
+        }}
+        fullWidth
+        maxWidth="sm"
+        sx={phoneSheetDialogSx}
+      >
         <DialogTitle sx={{ fontWeight: 800 }}>
           {dialog?.kind === "module"
             ? "Add a module with AI"
@@ -1416,6 +1460,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                 fontWeight: 800, fontSize: "0.8rem", color: "white",
                 background: "linear-gradient(135deg, #6366f1 0%, #a855f7 70%, #ec4899 100%)",
                 "&:disabled": { opacity: 0.6, cursor: "not-allowed" },
+                ...phoneTapSx,
               }}
             >
               <Icon icon={suggesting ? "mdi:loading" : "mdi:lightbulb-on-outline"} width={15} className={suggesting ? "acb-spin" : ""} />
@@ -1434,14 +1479,14 @@ export default function AdminAdaptiveCourseDetailPage() {
               label="Topics to generate"
               value={subCount}
               onChange={(e) => setSubCount(clamp(Number(e.target.value), 1, 8))}
-              sx={{ mt: 2, width: 220 }}
+              sx={{ mt: 2, width: 220, [PHONE]: { width: "100%" } }}
               helperText="AI may adjust slightly to fit the topic"
             />
           )}
 
           <Box sx={{ mt: 2.5 }}>
             <Typography sx={{ fontWeight: 800, fontSize: "0.8rem", mb: 1 }}>Content types</Typography>
-            <Box sx={{ display: "flex", gap: 1 }}>
+            <Box sx={{ display: "flex", gap: 1, [PHONE]: { flexWrap: "wrap" } }}>
               {([
                 ["article", "Article", "mdi:book-open-variant"],
                 ["quiz", "Quiz", "mdi:tune-vertical"],
@@ -1458,6 +1503,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                       color: active ? "white" : "text.primary",
                       background: active ? "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)" : "color-mix(in srgb, var(--card-bg) 60%, transparent)",
                       border: active ? "1px solid transparent" : "1px solid color-mix(in srgb, var(--border-default) 75%, transparent)",
+                      ...phoneTapSx,
                     }}
                   >
                     <Icon icon={icon} width={14} />
@@ -1473,11 +1519,12 @@ export default function AdminAdaptiveCourseDetailPage() {
                 sx={{
                   all: "unset", cursor: "pointer", mt: 1.25, display: "inline-flex", alignItems: "center", gap: 0.75,
                   fontSize: "0.8rem", fontWeight: 700, color: "text.secondary",
+                  [PHONE]: { minHeight: TAP, flexWrap: "wrap" },
                 }}
               >
                 <Icon icon={codingClipboard ? "mdi:checkbox-marked" : "mdi:checkbox-blank-outline"} width={18} style={{ color: codingClipboard ? "#6366f1" : undefined }} />
                 Allow copy-paste in the coding editor
-                <Typography component="span" sx={{ fontSize: "0.72rem", color: "text.disabled" }}>
+                <Typography component="span" sx={{ fontSize: "0.72rem", color: "text.disabled", ...phoneTextFloor }}>
                   (off = anti-paste hardening; you can change this per set later)
                 </Typography>
               </Box>
@@ -1499,6 +1546,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                       color: active ? "white" : "text.primary",
                       background: active ? "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)" : "color-mix(in srgb, var(--card-bg) 60%, transparent)",
                       border: active ? "1px solid transparent" : "1px solid color-mix(in srgb, var(--border-default) 75%, transparent)",
+                      ...phoneTapSx,
                     }}
                   >
                     {d}
@@ -1516,7 +1564,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                 label="Questions per skill cell"
                 value={perCell}
                 onChange={(e) => setPerCell(clamp(Number(e.target.value), 1, 10))}
-                sx={{ width: 220 }}
+                sx={{ width: 220, [PHONE]: { width: "100%" } }}
               />
             )}
             {contentTypes.includes("article") && (
@@ -1526,7 +1574,7 @@ export default function AdminAdaptiveCourseDetailPage() {
                 value={articlesPerSub}
                 onChange={(e) => setArticlesPerSub(clamp(Number(e.target.value), 1, 5))}
                 helperText="Default 1 · up to 5"
-                sx={{ width: 220 }}
+                sx={{ width: 220, [PHONE]: { width: "100%" } }}
               />
             )}
           </Box>
@@ -1611,6 +1659,7 @@ export default function AdminAdaptiveCourseDetailPage() {
         title={pendingDelete?.heading ?? ""}
         message={pendingDelete?.message ?? ""}
         confirmText={deleting ? "Deleting…" : "Delete"}
+        busy={deleting}
         cancelText="Keep it"
         confirmColor="error"
         onConfirm={() => void handleConfirmDelete()}
@@ -1707,7 +1756,7 @@ function ModuleSummary({ mod }: { mod: AdminAdaptiveCourseModule }) {
   return (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1.25, mt: 0.6, flexWrap: "wrap" }}>
       {items.map((x) => (
-        <Box key={x.label} component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, fontSize: "0.74rem", fontWeight: 700, color: "text.secondary" }}>
+        <Box key={x.label} component="span" sx={{ display: "inline-flex", alignItems: "center", gap: 0.4, fontSize: "0.74rem", fontWeight: 700, color: "text.secondary", ...phoneTextFloor }}>
           <Icon icon={x.icon} width={13} style={{ color: x.accent }} />
           {x.n} {x.label}
         </Box>
@@ -1795,6 +1844,7 @@ function ContentHealthPill({
           background: tone.bg,
           border: `1px solid ${tone.border}`,
           cursor: canRegen && !regenerating ? "pointer" : "default",
+          ...phoneTapSx,
         }}
       >
         {regenerating ? (
@@ -1828,6 +1878,7 @@ function pillBtnSx(variant: "solid" | "outline") {
       variant === "solid"
         ? "1px solid transparent"
         : "1px solid color-mix(in srgb, #6366f1 40%, transparent)",
+    [PHONE]: { minHeight: TAP, fontSize: PHONE_TEXT },
   } as const;
 }
 
@@ -1922,6 +1973,7 @@ function ReviewBanner({
             px: 2.4, py: 1, borderRadius: 999, fontWeight: 800, fontSize: "0.84rem", gap: 0.6,
             color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)",
             "&:disabled": { opacity: 0.6 },
+            ...phoneTapSx,
           }}
         >
           <Icon icon="mdi:send-outline" width={16} />
@@ -1939,6 +1991,7 @@ function ReviewBanner({
               px: 2, py: 1, borderRadius: 999, fontWeight: 800, fontSize: "0.84rem",
               color: "text.secondary", bgcolor: "var(--card-bg)",
               border: "1px solid var(--border-default)", "&:disabled": { opacity: 0.6 },
+              ...phoneTapSx,
             }}
           >
             Send back
@@ -1950,6 +2003,7 @@ function ReviewBanner({
               px: 2.4, py: 1, borderRadius: 999, fontWeight: 800, fontSize: "0.84rem", gap: 0.6,
               color: "white", background: "linear-gradient(135deg, #10b981 0%, #059669 100%)",
               "&:disabled": { opacity: 0.6 },
+              ...phoneTapSx,
             }}
           >
             <Icon icon="mdi:check" width={16} />

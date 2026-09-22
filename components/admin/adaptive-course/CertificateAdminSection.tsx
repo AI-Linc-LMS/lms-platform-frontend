@@ -28,6 +28,8 @@ import type { CertificateRuleCriterion } from "@/lib/certificates/types";
 import type { AdminCertificateConfig } from "@/lib/types/adaptive-journey";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { CERT_BADGE_GRADIENT } from "@/lib/certificates/ui-tokens";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_TEXT } from "./coursePhone";
 
 /**
  * This page's own gradient, used for both its section tiles and its primary
@@ -74,7 +76,7 @@ function PanelHeader({
         </Box>
         <Box sx={{ minWidth: 0 }}>
           <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", lineHeight: 1.2, color: "var(--font-primary)" }}>{title}</Typography>
-          <Typography sx={{ fontSize: "0.72rem", color: "var(--font-secondary)", mt: "1px" }}>{sub}</Typography>
+          <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: PHONE_TEXT }, color: "var(--font-secondary)", mt: "1px" }}>{sub}</Typography>
         </Box>
       </Stack>
       {right}
@@ -97,7 +99,7 @@ function StatusPill({ on, label }: { on: boolean; label: string }) {
         py: 0.35,
         borderRadius: 999,
         fontWeight: 800,
-        fontSize: "0.66rem",
+        fontSize: "0.66rem", [PHONE]: { fontSize: PHONE_TEXT },
         color: on ? "#15803d" : "#64748b",
         bgcolor: on ? "#dcfce7" : "#f1f5f9",
       }}

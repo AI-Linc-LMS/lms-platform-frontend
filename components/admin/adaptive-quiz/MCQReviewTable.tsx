@@ -17,6 +17,8 @@ import {
   type AdminMcq,
 } from "@/lib/services/admin/admin-adaptive-quiz.service";
 import { CellTypewriter } from "@/components/admin/adaptive-quiz/CellTypewriter";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_TEXT } from "@/components/admin/adaptive-course/coursePhone";
 
 interface MCQReviewTableProps {
   mcqs: AdminMcq[];
@@ -136,7 +138,7 @@ export function MCQReviewTable({
             border: "1px solid color-mix(in srgb, var(--border-default, #e5e7eb) 75%, transparent)",
           }}
         >
-          <Typography sx={{ fontSize: "0.66rem", fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "text.secondary", alignSelf: "center", mr: 1 }}>
+          <Typography sx={{ fontSize: "0.66rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "text.secondary", alignSelf: "center", mr: 1 }}>
             {mcqs.length} questions
           </Typography>
           {Object.entries(pivot).map(([skill, counts]) => (
@@ -148,7 +150,7 @@ export function MCQReviewTable({
                 borderRadius: 999,
                 bgcolor: "color-mix(in srgb, currentColor 6%, transparent)",
                 border: "1px solid color-mix(in srgb, currentColor 18%, transparent)",
-                fontSize: "0.74rem",
+                fontSize: "0.74rem", [PHONE]: { fontSize: PHONE_TEXT },
                 display: "inline-flex",
                 gap: 0.5,
               }}
@@ -217,7 +219,7 @@ export function MCQReviewTable({
                 }}
               >
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1, flex: 1, minWidth: 0 }}>
-                  <Typography sx={{ fontSize: "0.7rem", fontWeight: 800, color: "text.secondary", minWidth: 24 }}>
+                  <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 800, color: "text.secondary", minWidth: 24 }}>
                     Q{absoluteIdx + 1}
                   </Typography>
                   <Box
@@ -227,7 +229,7 @@ export function MCQReviewTable({
                       borderRadius: 999,
                       bgcolor: `color-mix(in srgb, ${color} 14%, transparent)`,
                       color,
-                      fontSize: "0.62rem",
+                      fontSize: "0.62rem", [PHONE]: { fontSize: PHONE_TEXT },
                       fontWeight: 800,
                       letterSpacing: "0.1em",
                       textTransform: "uppercase",
@@ -236,7 +238,7 @@ export function MCQReviewTable({
                     {mcq.difficulty_level}
                   </Box>
                   {mcq.skills && (
-                    <Typography sx={{ fontSize: "0.66rem", fontWeight: 700, color: "text.secondary", letterSpacing: "0.08em" }}>
+                    <Typography sx={{ fontSize: "0.66rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 700, color: "text.secondary", letterSpacing: "0.08em" }}>
                       · {prettySkill(mcq.skills)}
                     </Typography>
                   )}

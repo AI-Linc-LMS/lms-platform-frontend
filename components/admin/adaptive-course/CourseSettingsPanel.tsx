@@ -4,6 +4,7 @@ import type { ReactNode } from "react";
 import { Box, Chip, Stack, Switch, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type { AdminAdaptiveCourseDetail, EnrollmentSource } from "@/lib/services/admin/admin-adaptive-course.service";
+import { phoneTapSx, phoneTextFloor } from "./coursePhone";
 
 /**
  * Everything about a course that is not its content.
@@ -58,7 +59,7 @@ function SettingsCard({
             {title}
           </Typography>
           {subtitle && (
-            <Typography sx={{ fontSize: "0.72rem", color: "#64748b", mt: "1px" }}>{subtitle}</Typography>
+            <Typography sx={{ fontSize: "0.72rem", color: "#64748b", mt: "1px", ...phoneTextFloor }}>{subtitle}</Typography>
           )}
         </Box>
       </Stack>
@@ -88,7 +89,7 @@ function SettingRow({
         <Typography sx={{ fontWeight: 700, fontSize: "0.875rem", color: "#0f172a" }}>{label}</Typography>
         <Typography sx={{ fontSize: "0.76rem", color: "#64748b", mt: 0.25, lineHeight: 1.5 }}>{help}</Typography>
         {disabledReason && (
-          <Typography sx={{ fontSize: "0.72rem", color: "#b45309", mt: 0.5, fontWeight: 600 }}>
+          <Typography sx={{ fontSize: "0.72rem", color: "#b45309", mt: 0.5, fontWeight: 600, ...phoneTextFloor }}>
             {disabledReason}
           </Typography>
         )}
@@ -111,7 +112,7 @@ function ResolvedState({ lines }: { lines: string[] }) {
   return (
     <Box sx={{ mt: 1.5, p: 1.5, borderRadius: 2.5, bgcolor: "#f8fafc", border: "1px solid #eef2f7" }}>
       <Typography
-        sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "#94a3b8", mb: 0.75 }}
+        sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: 0.5, textTransform: "uppercase", color: "#94a3b8", mb: 0.75, ...phoneTextFloor }}
       >
         Right now
       </Typography>
@@ -231,6 +232,7 @@ export function CourseSettingsPanel({
                 px: 2, py: 0.85, borderRadius: 999, cursor: "pointer", fontFamily: "inherit",
                 fontWeight: 800, fontSize: "0.78rem", color: "#7c3aed",
                 bgcolor: "#f5f3ff", border: "1px solid #ede9fe",
+                ...phoneTapSx,
               }}
             >
               Edit title &amp; description
@@ -246,6 +248,7 @@ export function CourseSettingsPanel({
                 bgcolor: course.is_published ? "#f8fafc" : "#7c3aed",
                 border: course.is_published ? "1px solid #e4e7f0" : "1px solid transparent",
                 opacity: publishing ? 0.6 : 1,
+                ...phoneTapSx,
               }}
             >
               {course.is_published ? "Unpublish" : "Publish course"}
@@ -288,7 +291,7 @@ export function CourseSettingsPanel({
                   key={source}
                   size="small"
                   label={`${n} ${SOURCE_LABEL[source as EnrollmentSource | "unknown"] ?? source}`}
-                  sx={{ fontWeight: 700, fontSize: "0.72rem", bgcolor: "#f5f3ff", color: "#6d28d9", border: "1px solid #ede9fe" }}
+                  sx={{ fontWeight: 700, fontSize: "0.72rem", bgcolor: "#f5f3ff", color: "#6d28d9", border: "1px solid #ede9fe", ...phoneTextFloor }}
                 />
               ))}
           </Stack>
@@ -335,7 +338,7 @@ export function CourseSettingsPanel({
           <Typography sx={{ fontSize: "0.78rem", fontWeight: 700, color: "#475569" }}>Cohorts:</Typography>
           {cohorts.length ? (
             cohorts.map((c) => (
-              <Chip key={c.id} size="small" label={c.name} sx={{ fontWeight: 700, fontSize: "0.72rem" }} />
+              <Chip key={c.id} size="small" label={c.name} sx={{ fontWeight: 700, fontSize: "0.72rem", ...phoneTextFloor }} />
             ))
           ) : (
             <Typography sx={{ fontSize: "0.78rem", color: "#94a3b8" }}>none</Typography>
@@ -346,6 +349,7 @@ export function CourseSettingsPanel({
             sx={{
               border: 0, p: 0, background: "none", cursor: "pointer", fontFamily: "inherit",
               fontSize: "0.78rem", fontWeight: 800, color: "#7c3aed",
+              ...phoneTapSx,
             }}
           >
             Assign to a cohort
@@ -416,13 +420,14 @@ export function CourseSettingsPanel({
                 px: 2, py: 0.85, borderRadius: 999, cursor: "pointer", fontFamily: "inherit",
                 fontWeight: 800, fontSize: "0.78rem", color: "#7c3aed",
                 bgcolor: "#f5f3ff", border: "1px solid #ede9fe",
+                ...phoneTapSx,
               }}
             >
               {course.is_paid ? "Change price" : "Charge for this course"}
             </Box>
           </Stack>
           {course.auto_enroll && (
-            <Typography sx={{ fontSize: "0.72rem", color: "#b45309", mt: 1, fontWeight: 600 }}>
+            <Typography sx={{ fontSize: "0.72rem", color: "#b45309", mt: 1, fontWeight: 600, ...phoneTextFloor }}>
               Auto-enroll is on, so this course can&apos;t carry a price until you turn that off.
             </Typography>
           )}

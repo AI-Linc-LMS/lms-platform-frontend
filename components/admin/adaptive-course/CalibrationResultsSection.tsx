@@ -16,6 +16,7 @@ import {
   Typography,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { phoneSheetDialogSx } from "./coursePhone";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
 import { useToast } from "@/components/common/Toast";
 import type {
@@ -116,7 +117,7 @@ export function CalibrationResultsSection({ courseId }: { courseId: number }) {
       )}
 
       {/* Destructive-action confirm: granting a re-attempt discards the prior result. */}
-      <Dialog open={!!confirm} onClose={() => (busyStudentId ? null : setConfirm(null))} maxWidth="xs" fullWidth>
+      <Dialog open={!!confirm} onClose={() => (busyStudentId ? null : setConfirm(null))} maxWidth="xs" fullWidth sx={phoneSheetDialogSx}>
         <DialogTitle sx={{ fontWeight: 800 }}>Allow a calibration re-attempt?</DialogTitle>
         <DialogContent>
           <DialogContentText sx={{ fontSize: "0.9rem" }}>

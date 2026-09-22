@@ -2983,6 +2983,16 @@
     "downloadLocked": "Download is locked",
     "sidebarTooltip": "Complete your profile to unlock"
   },
+  "roadmapsMobile": {
+    "mapHint": "Tap a step to open it. Press and hold to mark it done, in progress or skipped."
+  },
+  "mobileChrome": {
+    "more": "More",
+    "platformGuide": "Platform guide"
+  },
+  "adaptiveCoursesAdmin": {
+    "deleteCourse": "Delete {{title}}"
+  },
   "learningPlayerMobile": {
     "workspaceTabs": "Coding workspace",
     "problemTab": "Problem",
@@ -2990,13 +3000,6 @@
     "resultsTab": "Results",
     "noResultsYet": "Run your code to see the test results and the mentor's read here.",
     "resultsReady": "New results are ready"
-  },
-  "roadmapsMobile": {
-    "mapHint": "Tap a step to open it. Press and hold to mark it done, in progress or skipped."
-  },
-  "mobileChrome": {
-    "more": "More",
-    "platformGuide": "Platform guide"
   },
   "adminPeoplePhone": {
     "moreActions": "More actions for {{name}}",

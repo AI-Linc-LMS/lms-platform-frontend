@@ -8,6 +8,8 @@ import type {
   CsvPlanSubmodule,
 } from "@/lib/services/admin/admin-adaptive-course.service";
 import { makeRowUid, type ContentType } from "./types";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_TEXT } from "@/components/admin/adaptive-course/coursePhone";
 
 const CONTENT_ICON: Record<ContentType, { icon: string; label: string }> = {
   article: { icon: "mdi:book-open-variant", label: "Article" },
@@ -141,7 +143,7 @@ export function EditableCsvPlanPreview({
               <Box
                 component="span"
                 sx={{
-                  flexShrink: 0, px: 1, py: 0.4, borderRadius: 2, fontSize: "0.7rem", fontWeight: 900,
+                  flexShrink: 0, px: 1, py: 0.4, borderRadius: 2, fontSize: "0.7rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 900,
                   color: "white", background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
                 }}
               >
@@ -223,7 +225,7 @@ export function EditableCsvPlanPreview({
                           sx={{ display: "inline-flex", alignItems: "center", gap: 0.3, color: "text.disabled" }}
                         >
                           <Icon icon={CONTENT_ICON[c].icon} width={13} />
-                          <Typography component="span" sx={{ fontSize: "0.68rem", fontWeight: 700 }}>
+                          <Typography component="span" sx={{ fontSize: "0.68rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 700 }}>
                             {CONTENT_ICON[c].label}
                           </Typography>
                         </Box>

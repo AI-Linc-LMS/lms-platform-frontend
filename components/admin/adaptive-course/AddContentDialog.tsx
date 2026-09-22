@@ -44,6 +44,8 @@ import {
   formatFileSize,
 } from "@/lib/utils/attachment-display";
 import { embedCaveat } from "@/lib/utils/video-embed";
+import { PHONE } from "@/components/common/mobile/phone";
+import { PHONE_TEXT, TAP, phoneSheetDialogSx } from "./coursePhone";
 
 /* ------------------------------------------------------------------ palette */
 
@@ -97,7 +99,7 @@ function DifficultyChip({ value }: { value: string }) {
         px: 0.9,
         py: 0.15,
         borderRadius: 999,
-        fontSize: "0.65rem",
+        fontSize: "0.65rem", [PHONE]: { fontSize: PHONE_TEXT },
         fontWeight: 800,
         textTransform: "capitalize",
         whiteSpace: "nowrap",
@@ -755,6 +757,7 @@ export function AddContentDialog({
       onClose={saving ? undefined : onClose}
       maxWidth="md"
       fullWidth
+      sx={phoneSheetDialogSx}
       PaperProps={{
         sx: { bgcolor: "var(--card-bg)", color: "var(--font-primary)", borderRadius: 3 },
       }}
@@ -801,7 +804,7 @@ export function AddContentDialog({
                     label={KIND_META[k].label}
                     sx={{
                       height: 24,
-                      fontSize: "0.72rem",
+                      fontSize: "0.72rem", [PHONE]: { fontSize: PHONE_TEXT, height: TAP, px: 0.5 },
                       fontWeight: 700,
                       color: owned ? GREEN : "var(--font-secondary)",
                       border: "1px solid",
@@ -841,7 +844,7 @@ export function AddContentDialog({
                     />
                     <Typography sx={{ fontSize: "0.76rem", fontWeight: 700 }}>{g.title}</Typography>
                     <Typography
-                      sx={{ fontSize: "0.7rem", color: "var(--font-secondary)", flex: 1 }}
+                      sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: PHONE_TEXT }, color: "var(--font-secondary)", flex: 1 }}
                       noWrap
                     >
                       {g.why}
@@ -975,7 +978,7 @@ export function AddContentDialog({
                       display: "flex",
                       justifyContent: "space-between",
                       mb: 0.5,
-                      fontSize: "0.73rem",
+                      fontSize: "0.73rem", [PHONE]: { fontSize: PHONE_TEXT },
                       color: "var(--font-secondary)",
                     }}
                   >
@@ -1007,7 +1010,7 @@ export function AddContentDialog({
                         >
                           <DifficultyChip value={m.difficulty_level} />
                           <Typography
-                            sx={{ fontSize: "0.72rem", color: "var(--font-secondary)" }}
+                            sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: PHONE_TEXT }, color: "var(--font-secondary)" }}
                             noWrap
                           >
                             {m.topic}
@@ -1033,7 +1036,7 @@ export function AddContentDialog({
                     >
                       <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                         <Typography
-                          sx={{ fontSize: "0.72rem", fontWeight: 800, color: "var(--font-secondary)" }}
+                          sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: PHONE_TEXT }, fontWeight: 800, color: "var(--font-secondary)" }}
                         >
                           Q{i + 1}
                         </Typography>
@@ -1204,7 +1207,7 @@ export function AddContentDialog({
                       display: "flex",
                       justifyContent: "space-between",
                       mb: 0.5,
-                      fontSize: "0.73rem",
+                      fontSize: "0.73rem", [PHONE]: { fontSize: PHONE_TEXT },
                       color: "var(--font-secondary)",
                     }}
                   >
@@ -1234,14 +1237,14 @@ export function AddContentDialog({
                         <Box sx={{ display: "flex", alignItems: "center", gap: 0.75, mt: 0.25 }}>
                           <DifficultyChip value={p.difficulty_level} />
                           <Typography
-                            sx={{ fontSize: "0.72rem", color: "var(--font-secondary)", flex: 1 }}
+                            sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: PHONE_TEXT }, color: "var(--font-secondary)", flex: 1 }}
                             noWrap
                           >
                             {p.topic}
                           </Typography>
                           <Typography
                             sx={{
-                              fontSize: "0.72rem",
+                              fontSize: "0.72rem", [PHONE]: { fontSize: PHONE_TEXT },
                               color: "var(--font-secondary)",
                               whiteSpace: "nowrap",
                             }}
@@ -1272,7 +1275,7 @@ export function AddContentDialog({
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                           <Typography
                             sx={{
-                              fontSize: "0.72rem",
+                              fontSize: "0.72rem", [PHONE]: { fontSize: PHONE_TEXT },
                               fontWeight: 800,
                               color: "var(--font-secondary)",
                             }}
@@ -1338,7 +1341,7 @@ export function AddContentDialog({
                           <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.75 }}>
                             <Typography
                               sx={{
-                                fontSize: "0.72rem",
+                                fontSize: "0.72rem", [PHONE]: { fontSize: PHONE_TEXT },
                                 fontWeight: 800,
                                 color: "var(--font-secondary)",
                               }}
@@ -1357,7 +1360,7 @@ export function AddContentDialog({
                               sx={{
                                 textTransform: "none",
                                 fontWeight: 700,
-                                fontSize: "0.74rem",
+                                fontSize: "0.74rem", [PHONE]: { fontSize: PHONE_TEXT },
                                 color: KIND_META.coding.accent,
                               }}
                             >
@@ -1409,7 +1412,7 @@ export function AddContentDialog({
                           <Typography
                             sx={{
                               mt: 0.75,
-                              fontSize: "0.72rem",
+                              fontSize: "0.72rem", [PHONE]: { fontSize: PHONE_TEXT },
                               color: hasCase ? "var(--font-secondary)" : KIND_META.coding.accent,
                             }}
                           >
@@ -1561,7 +1564,7 @@ export function AddContentDialog({
                               sx={{ display: "flex", alignItems: "center", gap: 0.75, mt: 0.25 }}
                             >
                               <Typography
-                                sx={{ fontSize: "0.72rem", color: "var(--font-secondary)" }}
+                                sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: PHONE_TEXT }, color: "var(--font-secondary)" }}
                               >
                                 {fmtDuration(v.duration_seconds)}
                               </Typography>
@@ -1572,7 +1575,7 @@ export function AddContentDialog({
                                     px: 0.9,
                                     py: 0.15,
                                     borderRadius: 999,
-                                    fontSize: "0.65rem",
+                                    fontSize: "0.65rem", [PHONE]: { fontSize: PHONE_TEXT },
                                     fontWeight: 800,
                                     color: GREEN,
                                     bgcolor: `color-mix(in srgb, ${GREEN} 14%, transparent)`,
@@ -1689,7 +1692,7 @@ export function AddContentDialog({
                     <Typography sx={{ fontSize: "0.86rem", fontWeight: 700 }} noWrap>
                       {file.name}
                     </Typography>
-                    <Typography sx={{ fontSize: "0.74rem", color: "var(--font-secondary)" }}>
+                    <Typography sx={{ fontSize: "0.74rem", [PHONE]: { fontSize: PHONE_TEXT }, color: "var(--font-secondary)" }}>
                       {formatFileSize(file.size)}
                     </Typography>
                   </Box>
@@ -1731,7 +1734,7 @@ export function AddContentDialog({
                   <Typography sx={{ fontSize: "0.86rem", fontWeight: 700 }}>
                     Choose a file
                   </Typography>
-                  <Typography sx={{ fontSize: "0.74rem", color: "var(--font-secondary)" }}>
+                  <Typography sx={{ fontSize: "0.74rem", [PHONE]: { fontSize: PHONE_TEXT }, color: "var(--font-secondary)" }}>
                     PDF, PowerPoint, Word, Excel, text or image · up to {ATTACHMENT_MAX_MB}MB
                   </Typography>
                 </Box>
@@ -1765,7 +1768,7 @@ export function AddContentDialog({
       </DialogContent>
 
       <DialogActions sx={{ px: 3, pb: 2, borderTop: "1px solid var(--border-default)", pt: 1.5 }}>
-        <Typography sx={{ flex: 1, fontSize: "0.74rem", color: "var(--font-secondary)" }}>
+        <Typography sx={{ flex: 1, fontSize: "0.74rem", [PHONE]: { fontSize: PHONE_TEXT }, color: "var(--font-secondary)" }}>
           The dialog stays open so you can add several items to this topic.
         </Typography>
         <Button
