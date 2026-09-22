@@ -7,6 +7,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { UserProfile, Experience } from "@/lib/services/profile.service";
 import { PROFILE, TILE_GRADIENT } from "./theme/profileTokens";
+import { phoneSheetDialogSx } from "@/components/profile/phoneSheet";
 
 interface ExperienceSectionProps {
   profile: UserProfile;
@@ -451,7 +452,8 @@ export function ExperienceSection({
         )}
       </Paper>
 
-      <Dialog 
+      <Dialog
+        sx={phoneSheetDialogSx}
         open={dialogOpen} 
         onClose={() => setDialogOpen(false)} 
         maxWidth="sm" 
