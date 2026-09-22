@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { Box, Dialog, Typography } from "@mui/material";
+import { Box, Dialog, Drawer, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type { PooledQuestion, QuizGradeResult } from "@/lib/services/ai-tutor.service";
 import {
@@ -17,6 +17,7 @@ import {
   ROOM_VIOLET_SOLID,
   roomFocusRing,
 } from "./roomTokens";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The mid-lesson check.
@@ -122,6 +123,8 @@ export function QuizOverlay({
   // Exit BEFORE unmount: rendering `open` hardcoded and unmounting the open
   // Dialog leaks MUI's body scroll-lock + aria-hidden (reproduced on the
   // adaptive intro modal — same pattern). Close first, notify on exited.
+  const theme = useTheme();
+  const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
   const [closing, setClosing] = useState(false);
   const close = useCallback(() => setClosing(true), []);
   const handleExited = () => {
@@ -177,6 +180,317 @@ export function QuizOverlay({
 
   if (!question) return null;
 
+  const content = (
+    <Box sx={{ p: { xs: 2.5, md: 3 } }}>
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+        <Icon
+          icon="solar:question-square-bold-duotone"
+          width={18}
+          height={18}
+          style={{ color: ROOM_VIOLET }}
+        />
+        <Typography
+          sx={{
+            fontSize: "0.74rem",
+            [PHONE]: { fontSize: "0.75rem" },
+            fontWeight: 600,
+            letterSpacing: "0.1em",
+            textTransform: "uppercase",
+            color: ROOM_TEXT_DIM,
+            '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" },
+          }}
+        >
+          Quick check
+        </Typography>
+        <Box sx={{ flex: 1 }} />
+        <Typography sx={{ fontSize: "0.78rem", color: ROOM_TEXT_FAINT }}>
+          {multi ? "Pick all that apply" : "Pick one"}
+        </Typography>
+      </Box>
+
+      <Typography
+        sx={{
+          fontSize: { xs: "1.02rem", md: "1.08rem" },
+          fontWeight: 500,
+          lineHeight: 1.45,
+          mb: 2.5,
+        }}
+      >
+        {question.question}
+      </Typography>
+
+      {question.image ? (
+        <Box
+          component="img"
+          src={question.image}
+          alt={question.image_alt}
+          sx={{ width: "100%", borderRadius: "10px", mb: 2, display: "block" }}
+        />
+      ) : null}
+
+      <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+        {question.options
+          .filter((option) => option.label)
+          .map((option) => {
+            const picked = selected.includes(option.id);
+            const isCorrect = result?.correct?.includes(option.id);
+            const isWrongPick = result && picked && !isCorrect;
+            const edge = isCorrect
+              ? ROOM_GREEN
+              : isWrongPick
+                ? ROOM_RED
+                : picked
+                  ? ROOM_VIOLET
+                  : "rgba(255,255,255,0.16)";
+            return (
+              <Box
+                key={option.id}
+                component="button"
+                type="button"
+                onClick={() => toggle(option.id)}
+                disabled={Boolean(result)}
+                sx={{
+                  display: "flex",
+                  alignItems: "flex-start",
+                  gap: 1.25,
+                  textAlign: "left",
+                  p: 1.5,
+                  borderRadius: "10px",
+                  fontFamily: "inherit",
+                  color: ROOM_TEXT,
+                  cursor: result ? "default" : "pointer",
+                  border: `1px solid ${edge}`,
+                  transition: "border-color 160ms ease, background-color 160ms ease",
+                  bgcolor: isCorrect
+                    ? "rgba(74,222,128,0.12)"
+                    : isWrongPick
+                      ? "rgba(251,113,133,0.12)"
+                      : picked
+                        ? "rgba(168,85,247,0.16)"
+                        : "rgba(255,255,255,0.04)",
+                  "&:hover": result ? {} : { borderColor: ROOM_VIOLET },
+                  "&:focus-visible": roomFocusRing,
+                }}
+              >
+                {/* The option letter, so a spoken "the second one, B" lines up with what
+                    is on screen. */}
+                <Box
+                  sx={{
+                    width: 22,
+                    height: 22,
+                    flexShrink: 0,
+                    borderRadius: multi ? "5px" : 9999,
+                    display: "grid",
+                    placeItems: "center",
+                    fontSize: "0.76rem",
+                    fontWeight: 600,
+                    border: `1px solid ${edge}`,
+                    color: picked || isCorrect ? ROOM_TEXT : ROOM_TEXT_DIM,
+                    bgcolor: picked || isCorrect ? "rgba(255,255,255,0.1)" : "transparent",
+                  }}
+                >
+                  {option.id}
+                </Box>
+                <Typography sx={{ fontSize: "0.92rem", lineHeight: 1.5, pt: 0.1 }}>
+                  {option.label}
+                </Typography>
+              </Box>
+            );
+          })}
+      </Box>
+
+      {gradeError ? (
+        <Box
+          sx={{
+            mt: 2.5,
+            p: 2,
+            borderRadius: "10px",
+            bgcolor: ROOM_INK,
+            border: "1px solid rgba(251,191,36,0.34)",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.85, mb: 0.5 }}>
+            <Icon
+              icon="solar:danger-triangle-bold"
+              width={17}
+              style={{ color: "#fbbf24" }}
+            />
+            <Typography sx={{ fontSize: "0.92rem", fontWeight: 600, color: "#fbbf24" }}>
+              Could not check that
+            </Typography>
+          </Box>
+          <Typography sx={{ fontSize: "0.88rem", color: ROOM_TEXT_DIM, lineHeight: 1.55 }}>
+            Your answer did not reach us. Try again, or skip it and carry on with the lesson.
+          </Typography>
+        </Box>
+      ) : null}
+
+      {result ? (
+        <Box
+          sx={{
+            mt: 2.5,
+            p: 2,
+            borderRadius: "10px",
+            bgcolor: ROOM_INK,
+            border: `1px solid ${result.is_correct ? "rgba(74,222,128,0.34)" : "rgba(251,113,133,0.34)"}`,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.85, mb: 0.5 }}>
+            <Icon
+              icon={
+                result.is_correct ? "solar:check-circle-bold" : "solar:close-circle-bold"
+              }
+              width={17}
+              style={{ color: result.is_correct ? ROOM_GREEN : ROOM_RED }}
+            />
+            <Typography
+              sx={{
+                fontSize: "0.92rem",
+                fontWeight: 600,
+                color: result.is_correct ? ROOM_GREEN : ROOM_RED,
+              }}
+            >
+              {result.is_correct ? "That's right." : "Not quite."}
+            </Typography>
+          </Box>
+          {result.explanation ? (
+            <Typography sx={{ fontSize: "0.88rem", color: ROOM_TEXT_DIM, lineHeight: 1.55 }}>
+              {result.explanation}
+            </Typography>
+          ) : null}
+
+          {/* The tutor reacting, live. */}
+          <Box
+            sx={{
+              mt: 1.5,
+              pt: 1.5,
+              borderTop: `1px solid ${ROOM_BORDER}`,
+              display: "flex",
+              gap: 1,
+              alignItems: "flex-start",
+            }}
+          >
+            <Icon
+              icon="solar:soundwave-bold"
+              width={15}
+              style={{ color: ROOM_VIOLET, marginTop: 3, flexShrink: 0 }}
+            />
+            <Typography
+              sx={{
+                fontSize: "0.88rem",
+                lineHeight: 1.55,
+                color: reaction ? ROOM_TEXT : ROOM_TEXT_FAINT,
+                fontStyle: reaction ? "normal" : "italic",
+              }}
+            >
+              {reaction ||
+                (result?.delivered === false
+                  ? "Your tutor did not receive this one, so it will not comment on it."
+                  : tutorSpeaking
+                    ? "Your tutor is picking this up…"
+                    : "Your tutor has your answer and will pick it up.")}
+            </Typography>
+          </Box>
+        </Box>
+      ) : null}
+
+      <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 2.5 }}>
+        {!result ? (
+          <Box
+            component="button"
+            type="button"
+            onClick={close}
+            sx={{
+              px: 2,
+              py: 1.15,
+              borderRadius: "8px",
+              border: `1px solid ${ROOM_BORDER}`,
+              bgcolor: "transparent",
+              fontFamily: "inherit",
+              fontSize: "0.9rem",
+              fontWeight: 500,
+              color: ROOM_TEXT_DIM,
+              cursor: "pointer",
+              transition: "color 160ms ease, border-color 160ms ease",
+              "&:hover": { color: ROOM_TEXT, borderColor: ROOM_TEXT_DIM },
+              "&:focus-visible": roomFocusRing,
+              [PHONE]: { flex: 1, minHeight: 44 },
+            }}
+          >
+            Skip
+          </Box>
+        ) : null}
+        <Box
+          component="button"
+          type="button"
+          onClick={result ? close : submit}
+          disabled={!result && (!selected.length || submitting)}
+          sx={{
+            px: 2.5,
+            py: 1.15,
+            borderRadius: "8px",
+            border: "none",
+            fontFamily: "inherit",
+            fontSize: "0.9rem",
+            fontWeight: 600,
+            color: "#fff",
+            bgcolor: ROOM_VIOLET_SOLID,
+            cursor: !result && (!selected.length || submitting) ? "not-allowed" : "pointer",
+            opacity: !result && (!selected.length || submitting) ? 0.45 : 1,
+            transition: "filter 160ms ease",
+            "&:hover:not(:disabled)": { filter: "brightness(1.12)" },
+            "&:focus-visible": roomFocusRing,
+            [PHONE]: { flex: 1, minHeight: 44 },
+          }}
+        >
+          {result
+            ? "Back to the lesson"
+            : submitting
+              ? "Checking…"
+              : gradeError
+                ? "Try again"
+                : "Check my answer"}
+        </Box>
+      </Box>
+    </Box>
+  );
+
+  // A phone gets a bottom sheet in the room's own dark palette. Same exit path as the dialog
+  // (close first, report on exited), except that it cannot be swiped away mid-check.
+  if (isPhone) {
+    return (
+      <Drawer
+        anchor="bottom"
+        open={!closing}
+        onClose={submitting ? undefined : close}
+        SlideProps={{ onExited: handleExited }}
+        slotProps={{
+          backdrop: { sx: { bgcolor: "rgba(6,3,16,0.72)", backdropFilter: "blur(3px)" } },
+        }}
+        PaperProps={{
+          sx: {
+            borderTopLeftRadius: 20,
+            borderTopRightRadius: 20,
+            borderTop: `1px solid ${ROOM_BORDER}`,
+            bgcolor: ROOM_PANEL,
+            backgroundImage: "none",
+            color: ROOM_TEXT,
+            boxShadow: "none",
+            maxHeight: "88dvh",
+            overflowY: "auto",
+            pb: "env(safe-area-inset-bottom)",
+          },
+        }}
+        data-testid="quiz-sheet"
+      >
+        <Box
+          sx={{ width: 40, height: 4, borderRadius: 999, bgcolor: ROOM_BORDER, mx: "auto", mt: 1.25 }}
+        />
+        {content}
+      </Drawer>
+    );
+  }
+
   return (
     <Dialog
       open={!closing}
@@ -200,275 +514,7 @@ export function QuizOverlay({
         },
       }}
     >
-      <Box sx={{ p: { xs: 2.5, md: 3 } }}>
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
-          <Icon
-            icon="solar:question-square-bold-duotone"
-            width={18}
-            height={18}
-            style={{ color: ROOM_VIOLET }}
-          />
-          <Typography
-            sx={{
-              fontSize: "0.74rem",
-              fontWeight: 600,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              color: ROOM_TEXT_DIM,
-              '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" },
-            }}
-          >
-            Quick check
-          </Typography>
-          <Box sx={{ flex: 1 }} />
-          <Typography sx={{ fontSize: "0.78rem", color: ROOM_TEXT_FAINT }}>
-            {multi ? "Pick all that apply" : "Pick one"}
-          </Typography>
-        </Box>
-
-        <Typography
-          sx={{
-            fontSize: { xs: "1.02rem", md: "1.08rem" },
-            fontWeight: 500,
-            lineHeight: 1.45,
-            mb: 2.5,
-          }}
-        >
-          {question.question}
-        </Typography>
-
-        {question.image ? (
-          <Box
-            component="img"
-            src={question.image}
-            alt={question.image_alt}
-            sx={{ width: "100%", borderRadius: "10px", mb: 2, display: "block" }}
-          />
-        ) : null}
-
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
-          {question.options
-            .filter((option) => option.label)
-            .map((option) => {
-              const picked = selected.includes(option.id);
-              const isCorrect = result?.correct?.includes(option.id);
-              const isWrongPick = result && picked && !isCorrect;
-              const edge = isCorrect
-                ? ROOM_GREEN
-                : isWrongPick
-                  ? ROOM_RED
-                  : picked
-                    ? ROOM_VIOLET
-                    : "rgba(255,255,255,0.16)";
-              return (
-                <Box
-                  key={option.id}
-                  component="button"
-                  type="button"
-                  onClick={() => toggle(option.id)}
-                  disabled={Boolean(result)}
-                  sx={{
-                    display: "flex",
-                    alignItems: "flex-start",
-                    gap: 1.25,
-                    textAlign: "left",
-                    p: 1.5,
-                    borderRadius: "10px",
-                    fontFamily: "inherit",
-                    color: ROOM_TEXT,
-                    cursor: result ? "default" : "pointer",
-                    border: `1px solid ${edge}`,
-                    transition: "border-color 160ms ease, background-color 160ms ease",
-                    bgcolor: isCorrect
-                      ? "rgba(74,222,128,0.12)"
-                      : isWrongPick
-                        ? "rgba(251,113,133,0.12)"
-                        : picked
-                          ? "rgba(168,85,247,0.16)"
-                          : "rgba(255,255,255,0.04)",
-                    "&:hover": result ? {} : { borderColor: ROOM_VIOLET },
-                    "&:focus-visible": roomFocusRing,
-                  }}
-                >
-                  {/* The option letter, so a spoken "the second one, B" lines up with what
-                      is on screen. */}
-                  <Box
-                    sx={{
-                      width: 22,
-                      height: 22,
-                      flexShrink: 0,
-                      borderRadius: multi ? "5px" : 9999,
-                      display: "grid",
-                      placeItems: "center",
-                      fontSize: "0.76rem",
-                      fontWeight: 600,
-                      border: `1px solid ${edge}`,
-                      color: picked || isCorrect ? ROOM_TEXT : ROOM_TEXT_DIM,
-                      bgcolor: picked || isCorrect ? "rgba(255,255,255,0.1)" : "transparent",
-                    }}
-                  >
-                    {option.id}
-                  </Box>
-                  <Typography sx={{ fontSize: "0.92rem", lineHeight: 1.5, pt: 0.1 }}>
-                    {option.label}
-                  </Typography>
-                </Box>
-              );
-            })}
-        </Box>
-
-        {gradeError ? (
-          <Box
-            sx={{
-              mt: 2.5,
-              p: 2,
-              borderRadius: "10px",
-              bgcolor: ROOM_INK,
-              border: "1px solid rgba(251,191,36,0.34)",
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.85, mb: 0.5 }}>
-              <Icon
-                icon="solar:danger-triangle-bold"
-                width={17}
-                style={{ color: "#fbbf24" }}
-              />
-              <Typography sx={{ fontSize: "0.92rem", fontWeight: 600, color: "#fbbf24" }}>
-                Could not check that
-              </Typography>
-            </Box>
-            <Typography sx={{ fontSize: "0.88rem", color: ROOM_TEXT_DIM, lineHeight: 1.55 }}>
-              Your answer did not reach us. Try again, or skip it and carry on with the lesson.
-            </Typography>
-          </Box>
-        ) : null}
-
-        {result ? (
-          <Box
-            sx={{
-              mt: 2.5,
-              p: 2,
-              borderRadius: "10px",
-              bgcolor: ROOM_INK,
-              border: `1px solid ${result.is_correct ? "rgba(74,222,128,0.34)" : "rgba(251,113,133,0.34)"}`,
-            }}
-          >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 0.85, mb: 0.5 }}>
-              <Icon
-                icon={
-                  result.is_correct ? "solar:check-circle-bold" : "solar:close-circle-bold"
-                }
-                width={17}
-                style={{ color: result.is_correct ? ROOM_GREEN : ROOM_RED }}
-              />
-              <Typography
-                sx={{
-                  fontSize: "0.92rem",
-                  fontWeight: 600,
-                  color: result.is_correct ? ROOM_GREEN : ROOM_RED,
-                }}
-              >
-                {result.is_correct ? "That's right." : "Not quite."}
-              </Typography>
-            </Box>
-            {result.explanation ? (
-              <Typography sx={{ fontSize: "0.88rem", color: ROOM_TEXT_DIM, lineHeight: 1.55 }}>
-                {result.explanation}
-              </Typography>
-            ) : null}
-
-            {/* The tutor reacting, live. */}
-            <Box
-              sx={{
-                mt: 1.5,
-                pt: 1.5,
-                borderTop: `1px solid ${ROOM_BORDER}`,
-                display: "flex",
-                gap: 1,
-                alignItems: "flex-start",
-              }}
-            >
-              <Icon
-                icon="solar:soundwave-bold"
-                width={15}
-                style={{ color: ROOM_VIOLET, marginTop: 3, flexShrink: 0 }}
-              />
-              <Typography
-                sx={{
-                  fontSize: "0.88rem",
-                  lineHeight: 1.55,
-                  color: reaction ? ROOM_TEXT : ROOM_TEXT_FAINT,
-                  fontStyle: reaction ? "normal" : "italic",
-                }}
-              >
-                {reaction ||
-                  (result?.delivered === false
-                    ? "Your tutor did not receive this one, so it will not comment on it."
-                    : tutorSpeaking
-                      ? "Your tutor is picking this up…"
-                      : "Your tutor has your answer and will pick it up.")}
-              </Typography>
-            </Box>
-          </Box>
-        ) : null}
-
-        <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 2.5 }}>
-          {!result ? (
-            <Box
-              component="button"
-              type="button"
-              onClick={close}
-              sx={{
-                px: 2,
-                py: 1.15,
-                borderRadius: "8px",
-                border: `1px solid ${ROOM_BORDER}`,
-                bgcolor: "transparent",
-                fontFamily: "inherit",
-                fontSize: "0.9rem",
-                fontWeight: 500,
-                color: ROOM_TEXT_DIM,
-                cursor: "pointer",
-                transition: "color 160ms ease, border-color 160ms ease",
-                "&:hover": { color: ROOM_TEXT, borderColor: ROOM_TEXT_DIM },
-                "&:focus-visible": roomFocusRing,
-              }}
-            >
-              Skip
-            </Box>
-          ) : null}
-          <Box
-            component="button"
-            type="button"
-            onClick={result ? close : submit}
-            disabled={!result && (!selected.length || submitting)}
-            sx={{
-              px: 2.5,
-              py: 1.15,
-              borderRadius: "8px",
-              border: "none",
-              fontFamily: "inherit",
-              fontSize: "0.9rem",
-              fontWeight: 600,
-              color: "#fff",
-              bgcolor: ROOM_VIOLET_SOLID,
-              cursor: !result && (!selected.length || submitting) ? "not-allowed" : "pointer",
-              opacity: !result && (!selected.length || submitting) ? 0.45 : 1,
-              transition: "filter 160ms ease",
-              "&:hover:not(:disabled)": { filter: "brightness(1.12)" },
-              "&:focus-visible": roomFocusRing,
-            }}
-          >
-            {result
-              ? "Back to the lesson"
-              : submitting
-                ? "Checking…"
-                : gradeError
-                  ? "Try again"
-                  : "Check my answer"}
-          </Box>
-        </Box>
-      </Box>
+      {content}
     </Dialog>
   );
 }

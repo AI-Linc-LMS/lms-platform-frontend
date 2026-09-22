@@ -5,6 +5,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { useRouter } from "next/navigation";
 import { memo, useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { PHONE } from "@/components/common/mobile/phone";
 
 const InterviewModeSelectorComponent = () => {
   const { t } = useTranslation("common");
@@ -124,6 +125,7 @@ const InterviewModeSelectorComponent = () => {
               color: "var(--font-light)",
               fontWeight: 700,
               fontSize: "0.65rem",
+              [PHONE]: { fontSize: "0.75rem" },
               letterSpacing: "0.5px",
               px: 1,
               height: 24,
@@ -163,6 +165,7 @@ const InterviewModeSelectorComponent = () => {
                       "&:hover": {
                         backgroundColor: "color-mix(in srgb, var(--success-500) 24%, transparent)",
                       },
+                      [PHONE]: { minWidth: 44, minHeight: 44 },
                     }}
                   >
                     <IconWrapper icon="mdi:information" size={16} />
@@ -252,6 +255,7 @@ const InterviewModeSelectorComponent = () => {
                 color: "var(--font-light)",
                 opacity: 0.8,
               },
+              [PHONE]: { minHeight: 44 },
             }}
           >
             {navigatingTo === "quick-start"
@@ -292,6 +296,7 @@ const InterviewModeSelectorComponent = () => {
               color: "var(--font-light)",
               fontWeight: 700,
               fontSize: "0.65rem",
+              [PHONE]: { fontSize: "0.75rem" },
               letterSpacing: "0.5px",
               px: 1,
               height: 24,
@@ -331,6 +336,7 @@ const InterviewModeSelectorComponent = () => {
                       "&:hover": {
                         backgroundColor: "color-mix(in srgb, var(--accent-indigo) 24%, transparent)",
                       },
+                      [PHONE]: { minWidth: 44, minHeight: 44 },
                     }}
                   >
                     <IconWrapper icon="mdi:information" size={16} />
@@ -425,6 +431,7 @@ const InterviewModeSelectorComponent = () => {
                 color: "var(--accent-indigo)",
                 opacity: 0.8,
               },
+              [PHONE]: { minHeight: 44 },
             }}
           >
             {navigatingTo === "schedule"

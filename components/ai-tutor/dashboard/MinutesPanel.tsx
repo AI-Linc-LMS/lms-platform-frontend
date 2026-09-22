@@ -4,6 +4,7 @@ import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { TutorTintSurface } from "../shared/surfaces";
 import type { TutorQuota } from "@/lib/services/ai-tutor.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The learner's allowance, as the first thing in the right rail.
@@ -37,6 +38,7 @@ export function MinutesPanel({ quota }: { quota?: TutorQuota }) {
         <Typography
           sx={{
             fontSize: "0.7rem",
+            [PHONE]: { fontSize: "0.75rem" },
             fontWeight: 600,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
@@ -110,6 +112,7 @@ export function MinutesPanel({ quota }: { quota?: TutorQuota }) {
       <Typography
         sx={{
           fontSize: "0.7rem",
+          [PHONE]: { fontSize: "0.75rem" },
           fontWeight: 600,
           letterSpacing: "0.1em",
           textTransform: "uppercase",
@@ -163,7 +166,7 @@ export function MinutesPanel({ quota }: { quota?: TutorQuota }) {
                 {remaining}
               </Typography>
               <Typography
-                sx={{ fontSize: "0.68rem", color: "rgba(255,255,255,0.6)", mt: 0.25 }}
+                sx={{ fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" }, color: "rgba(255,255,255,0.6)", mt: 0.25 }}
               >
                 left
               </Typography>

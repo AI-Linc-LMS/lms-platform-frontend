@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Skeleton, Typography } from "@mui/material";
+import { useLogoFallback } from "@/components/common/TenantLogo";
 import type { LoginHeroBrandingUi } from "@/lib/theme/authHeroBranding";
 import {
   AUTH_HERO_BG,
@@ -89,6 +90,10 @@ export function AuthRightPanelDefault({
 }: AuthRightPanelDefaultProps) {
   const heroSrc = loginImgUrl?.trim() || "";
   const displayName = brandName || "AI Linc";
+  // A logo that fails to load (DNS, an expired signed url) falls back to the no-logo layout:
+  // the name takes the masthead, never a broken-image glyph with raw alt text.
+  const logo = useLogoFallback(logoUrl);
+  const showLogo = !logo.failed;
 
   return (
     <Box
@@ -151,11 +156,12 @@ export function AuthRightPanelDefault({
           <Skeleton variant="rounded" width={150} height={38} sx={{ bgcolor: "rgba(255,255,255,0.10)" }} />
         ) : (
           <>
-            {logoUrl ? (
+            {showLogo ? (
               /* eslint-disable-next-line @next/next/no-img-element */
               <img
-                src={logoUrl}
+                src={logo.url}
                 alt={brandName || "Logo"}
+                {...logo.imgProps}
                 style={{ maxHeight: 44, maxWidth: 210, objectFit: "contain", display: "block" }}
               />
             ) : (
@@ -243,7 +249,7 @@ export function AuthRightPanelDefault({
       <Box sx={{ position: "relative", zIndex: 2, minHeight: 28, display: "flex", alignItems: "center" }}>
         {clientInfoLoading ? (
           <Skeleton variant="text" width={150} height={22} sx={{ bgcolor: "rgba(255,255,255,0.08)" }} />
-        ) : logoUrl && displayName ? (
+        ) : showLogo && displayName ? (
           <Typography
             component="p"
             sx={{
@@ -278,6 +284,9 @@ export function AuthMobileBrandBar({
   clientInfoLoading: boolean;
 }) {
   const displayName = brandName || "AI Linc";
+  // A logo that fails to load (DNS, an expired signed url) falls back to the no-logo layout.
+  const logo = useLogoFallback(logoUrl);
+  const showLogo = !logo.failed;
 
   return (
     <Box
@@ -297,11 +306,12 @@ export function AuthMobileBrandBar({
         <Skeleton variant="rounded" width={110} height={26} sx={{ bgcolor: "rgba(255,255,255,0.10)" }} />
       ) : (
         <Box sx={{ minWidth: 0 }}>
-          {logoUrl ? (
+          {showLogo ? (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img
-              src={logoUrl}
+              src={logo.url}
               alt={brandName || "Logo"}
+              {...logo.imgProps}
               style={{ maxHeight: 30, maxWidth: 150, objectFit: "contain", display: "block" }}
             />
           ) : (
@@ -336,7 +346,7 @@ export function AuthMobileBrandBar({
 
       {/* The name trails, and only when the logo already took the lead — otherwise it would
           print twice in a 76px bar. */}
-      {!clientInfoLoading && logoUrl && displayName ? (
+      {!clientInfoLoading && showLogo && displayName ? (
         <Typography
           component="p"
           sx={{

@@ -20,6 +20,7 @@ import type {
   PooledQuestion,
   TutorLevel,
 } from "@/lib/services/ai-tutor.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The live session room. **Dark by design.**
@@ -258,6 +259,12 @@ export default function TutorSessionPage() {
             py: 1.5,
             borderBottom: "1px solid rgba(255,255,255,0.1)",
             flexShrink: 0,
+            [PHONE]: {
+              pt: "calc(12px + env(safe-area-inset-top))",
+              pl: "calc(16px + env(safe-area-inset-left))",
+              pr: "calc(16px + env(safe-area-inset-right))",
+              gap: 1,
+            },
           }}
         >
           <Box
@@ -370,6 +377,7 @@ export default function TutorSessionPage() {
                 fontWeight: 600,
                 cursor: "pointer",
                 whiteSpace: "nowrap",
+                [PHONE]: { minHeight: 44 },
               }}
             >
               I&apos;m still here
@@ -564,6 +572,10 @@ export default function TutorSessionPage() {
               // Keep clear of the fixed support FAB, which otherwise covers "End session".
               pr: { xs: 2, md: `${FAB_CLEARANCE}px` },
               pb: "calc(14px + env(safe-area-inset-bottom))",
+              [PHONE]: {
+                pl: "calc(16px + env(safe-area-inset-left))",
+                pr: "calc(16px + env(safe-area-inset-right))",
+              },
             }}
           >
             <Box
@@ -656,6 +668,7 @@ const ghostBtn = {
   placeItems: "center",
   width: 40,
   height: 40,
+  [PHONE]: { width: 44, height: 44 },
   borderRadius: "10px",
   border: "1px solid rgba(255,255,255,0.16)",
   bgcolor: "rgba(255,255,255,0.05)",
@@ -677,6 +690,7 @@ const dockBtn = {
   alignItems: "center",
   gap: 0.75,
   height: 40,
+  [PHONE]: { height: 44, minWidth: 44, justifyContent: "center" },
   px: 1.75,
   borderRadius: "10px",
   border: "1px solid rgba(255,255,255,0.16)",
@@ -710,6 +724,7 @@ const primaryBtn = {
   fontFamily: "inherit",
   fontSize: "0.92rem",
   fontWeight: 600,
+  [PHONE]: { minHeight: 44 },
   color: "#fff",
   bgcolor: "var(--module-cta-from, #7c3aed)",
   cursor: "pointer",
@@ -722,6 +737,7 @@ const endBtn = {
   gap: 0.75,
   px: 2,
   py: 1,
+  [PHONE]: { minHeight: 44 },
   borderRadius: "10px",
   border: "1px solid rgba(236,72,153,0.45)",
   bgcolor: "rgba(236,72,153,0.14)",

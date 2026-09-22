@@ -12,6 +12,7 @@ import mockInterviewService, {
 import { useToast } from "@/components/common/Toast";
 import { useRouter } from "next/navigation";
 import { useStopCameraOnMount } from "@/lib/hooks/useStopCameraOnMount";
+import { PHONE } from "@/components/common/mobile/phone";
 
 export default function ScheduledInterviewsPage() {
   const { t } = useTranslation("common");
@@ -122,6 +123,14 @@ export default function ScheduledInterviewsPage() {
             backgroundColor: "var(--surface)",
             borderRadius: 3,
             width: "fit-content",
+            [PHONE]: {
+              width: "100%",
+              display: "grid",
+              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
+              gap: 0.5,
+              p: 0.5,
+              mb: 3,
+            },
           }}
         >
           <Box
@@ -133,6 +142,16 @@ export default function ScheduledInterviewsPage() {
               px: 3,
               py: 1.5,
               borderRadius: 2.5,
+              [PHONE]: {
+                flexDirection: "column",
+                justifyContent: "center",
+                gap: 0.5,
+                px: 0.5,
+                py: 1,
+                minHeight: 56,
+                minWidth: 0,
+                "& .MuiTypography-root": { fontSize: "0.75rem", textAlign: "center", lineHeight: 1.2 },
+              },
               cursor: "pointer",
               transition: "all 0.3s ease",
               backgroundColor: "transparent",
@@ -164,6 +183,16 @@ export default function ScheduledInterviewsPage() {
               px: 3,
               py: 1.5,
               borderRadius: 2.5,
+              [PHONE]: {
+                flexDirection: "column",
+                justifyContent: "center",
+                gap: 0.5,
+                px: 0.5,
+                py: 1,
+                minHeight: 56,
+                minWidth: 0,
+                "& .MuiTypography-root": { fontSize: "0.75rem", textAlign: "center", lineHeight: 1.2 },
+              },
               cursor: "pointer",
               transition: "all 0.3s ease",
               backgroundColor: "transparent",
@@ -194,6 +223,16 @@ export default function ScheduledInterviewsPage() {
               px: 3,
               py: 1.5,
               borderRadius: 2.5,
+              [PHONE]: {
+                flexDirection: "column",
+                justifyContent: "center",
+                gap: 0.5,
+                px: 0.5,
+                py: 1,
+                minHeight: 56,
+                minWidth: 0,
+                "& .MuiTypography-root": { fontSize: "0.75rem", textAlign: "center", lineHeight: 1.2 },
+              },
               cursor: "pointer",
               transition: "all 0.3s ease",
               backgroundColor: "var(--card-bg)",

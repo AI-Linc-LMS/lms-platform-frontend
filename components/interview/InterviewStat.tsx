@@ -2,6 +2,7 @@
 
 import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * A stat card in the dashboard's visual language: accent strip, heavy value, uppercase
@@ -64,6 +65,7 @@ export function InterviewStat({
             sx={{
               mt: 0.5,
               fontSize: "0.68rem",
+              [PHONE]: { fontSize: "0.75rem" },
               fontWeight: 700,
               letterSpacing: "0.07em",
               textTransform: "uppercase",

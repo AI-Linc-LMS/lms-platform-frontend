@@ -5,6 +5,7 @@ import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { TutorSurface } from "../shared/surfaces";
 import { TutorDiagram, type DiagramSpec } from "../room/TutorDiagram";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * What went on the canvas, as a filmstrip.
@@ -123,6 +124,7 @@ export function RecapArtifacts({ artifacts }: { artifacts: Artifact[] }) {
                 <Typography
                   sx={{
                     fontSize: "0.7rem",
+                    [PHONE]: { fontSize: "0.75rem" },
                     fontWeight: 600,
                     letterSpacing: "0.08em",
                     textTransform: "uppercase",

@@ -16,6 +16,7 @@ import {
   ROOM_VIOLET_SOLID,
   roomFocusRing,
 } from "./roomTokens";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The coding panel, and the thing that makes it feel like someone is sitting next to you:
@@ -240,6 +241,7 @@ export function IdePanel({
             bgcolor: watching ? "rgba(168,85,247,0.14)" : "transparent",
             transition: "border-color 160ms ease, color 160ms ease",
             "&:focus-visible": roomFocusRing,
+            [PHONE]: { minWidth: 44, minHeight: 44 },
           }}
         >
           <Icon icon={watching ? "solar:eye-bold" : "solar:eye-closed-bold"} width={13} />
@@ -265,6 +267,7 @@ export function IdePanel({
             transition: "filter 160ms ease",
             "&:hover:not(:disabled)": { filter: "brightness(1.12)" },
             "&:focus-visible": roomFocusRing,
+            [PHONE]: { minWidth: 44, minHeight: 44 },
           }}
         >
           {running ? "Running…" : "Run"}
@@ -286,6 +289,7 @@ export function IdePanel({
             transition: "color 160ms ease, background-color 160ms ease",
             "&:hover": { color: ROOM_TEXT, bgcolor: "rgba(255,255,255,0.08)" },
             "&:focus-visible": roomFocusRing,
+            [PHONE]: { minWidth: 44, minHeight: 44 },
           }}
         >
           <Icon icon="mdi:close" width={17} />
@@ -331,6 +335,7 @@ export function IdePanel({
           <Typography
             sx={{
               fontSize: "0.72rem",
+              [PHONE]: { fontSize: "0.75rem" },
               fontWeight: 600,
               letterSpacing: "0.08em",
               textTransform: "uppercase",

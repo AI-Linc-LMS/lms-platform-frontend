@@ -3,6 +3,7 @@
 import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { TutorTintSurface } from "../shared/surfaces";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * What the tutor can actually do, in the rail.
@@ -75,6 +76,7 @@ export function CapabilityPanel({ codingEnabled = true }: { codingEnabled?: bool
         <Typography
           sx={{
             fontSize: "0.74rem",
+            [PHONE]: { fontSize: "0.75rem" },
             fontWeight: 600,
             letterSpacing: "0.08em",
             textTransform: "uppercase",

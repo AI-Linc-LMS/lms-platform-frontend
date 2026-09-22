@@ -16,6 +16,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { useState, useCallback, memo } from "react";
 import { useTranslation } from "react-i18next";
+import { PHONE } from "@/components/common/mobile/phone";
 
 interface ScheduleInterviewFormProps {
   onSubmit: (data: ScheduleInterviewFormData) => void;
@@ -310,6 +311,7 @@ const ScheduleInterviewFormComponent = ({
                   backgroundColor:
                     "color-mix(in srgb, var(--surface) 80%, var(--background) 20%)",
                 },
+                [PHONE]: { minHeight: 44 },
               }}
             >
               Cancel
@@ -330,6 +332,7 @@ const ScheduleInterviewFormComponent = ({
                 "&:hover": {
                   backgroundColor: "var(--accent-indigo-dark)",
                 },
+                [PHONE]: { minHeight: 44 },
               }}
             >
               Schedule Interview

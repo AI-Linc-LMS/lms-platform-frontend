@@ -6,6 +6,7 @@ import type {
   RoadmapCompany,
   RoadmapContentTotals,
 } from "@/lib/services/roadmaps.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The company stat strip.
@@ -51,6 +52,7 @@ function Cell({
         <Typography
           sx={{
             fontSize: "0.7rem",
+            [PHONE]: { fontSize: "0.75rem" },
             fontWeight: 600,
             letterSpacing: "0.06em",
             textTransform: "uppercase",
@@ -143,7 +145,12 @@ export function CompanyQuickStats({
               {/* The date is not decoration: it is what makes these honest to show. */}
               <Box
                 component="span"
-                sx={{ color: "var(--font-tertiary)", display: "block", fontSize: "0.72rem" }}
+                sx={{
+                  color: "var(--font-tertiary)",
+                  display: "block",
+                  fontSize: "0.72rem",
+                  [PHONE]: { fontSize: "0.75rem" },
+                }}
               >
                 Estimates, as of{" "}
                 {new Date(company.estimates.asOf).toLocaleDateString(undefined, {

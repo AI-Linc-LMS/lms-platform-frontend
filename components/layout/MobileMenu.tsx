@@ -12,6 +12,7 @@ import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { isClientOrgAdminRole } from "@/lib/auth/role-utils";
 import { useNavigation } from "@/lib/navigation/useNavigation";
 import { isNavItemActive, type NavigationItem } from "@/lib/navigation/navModel";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /* ==========================================================================
  * The phone's menu: every module this tenant has, as a launcher.
@@ -358,6 +359,8 @@ export function MobileMenuButton() {
         color: "var(--font-primary)",
         border: "1px solid var(--border-default, #e5e7eb)",
         backgroundColor: "var(--card-bg, #fff)",
+        // A 44px thumb target on a phone; the lines move 1px to stay centred in it.
+        [PHONE]: { width: 44, height: 44, "& > span": { marginLeft: "1px", marginTop: "1px" } },
       }}
     >
       <Box component="span" aria-hidden sx={{ ...bar, top: isOpen ? 19.5 : 13, transform: isOpen ? "rotate(45deg)" : "none" }} />

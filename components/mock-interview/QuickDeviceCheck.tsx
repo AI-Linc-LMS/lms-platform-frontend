@@ -6,6 +6,7 @@ import { Icon } from "@iconify/react";
 import { getAudioConstraints } from "@/lib/utils/audio-constraints";
 import { persistSttEngine } from "@/lib/utils/stt-engine";
 import { detectPlatform } from "@/lib/utils/browser-detect";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * Lean inline mic + camera + speech check for the adaptive AI-interview Begin screen - the
@@ -412,7 +413,7 @@ export function QuickDeviceCheck({ onStatus }: Props) {
           color={ok ? "#4ade80" : "#f87171"}
         />
       )}
-      <Typography sx={{ fontSize: "0.74rem", color: "rgba(255,255,255,0.75)" }}>{label}</Typography>
+      <Typography sx={{ fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" }, color: "rgba(255,255,255,0.75)" }}>{label}</Typography>
     </Stack>
   );
 
@@ -471,7 +472,7 @@ export function QuickDeviceCheck({ onStatus }: Props) {
           </Box>
 
           {serviceOk === false && !status.speechOk && (
-            <Typography sx={{ fontSize: "0.7rem", color: "#fcd34d" }}>
+            <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, color: "#fcd34d" }}>
               Server speech service is unavailable - the mic test will rely on your browser&apos;s
               own recognition.
             </Typography>
@@ -503,6 +504,7 @@ export function QuickDeviceCheck({ onStatus }: Props) {
                   textTransform: "none",
                   fontWeight: 700,
                   fontSize: "0.74rem",
+                  [PHONE]: { fontSize: "0.75rem", minHeight: 44 },
                   color: "#c4b5fd",
                   borderColor: "rgba(196,181,253,0.5)",
                   "&:hover": { borderColor: "#c4b5fd" },
@@ -511,7 +513,7 @@ export function QuickDeviceCheck({ onStatus }: Props) {
                 {testing ? "Listening - say anything…" : transcribing ? "Checking…" : testFailed ? "Try the mic test again" : "Test my mic - say anything"}
               </Button>
               {testFailed && (
-                <Typography sx={{ fontSize: "0.72rem", color: "#fca5a5" }}>
+                <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "#fca5a5" }}>
                   {failMessage || "Didn't catch anything - check your input device and try again."}
                 </Typography>
               )}

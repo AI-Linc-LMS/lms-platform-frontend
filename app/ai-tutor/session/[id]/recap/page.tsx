@@ -17,6 +17,7 @@ import { RecapArtifacts } from "@/components/ai-tutor/recap/RecapArtifacts";
 import { RecapTranscript } from "@/components/ai-tutor/recap/RecapTranscript";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { aiTutorKeys, aiTutorService } from "@/lib/services/ai-tutor.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * What the learner keeps.
@@ -267,6 +268,7 @@ export default function TutorRecapPage() {
                       <Typography
                         sx={{
                           fontSize: "0.72rem",
+                          [PHONE]: { fontSize: "0.75rem" },
                           fontWeight: 600,
                           letterSpacing: "0.06em",
                           textTransform: "uppercase",
@@ -404,6 +406,7 @@ export default function TutorRecapPage() {
               <Typography
                 sx={{
                   fontSize: "0.72rem",
+                  [PHONE]: { fontSize: "0.75rem" },
                   fontWeight: 600,
                   letterSpacing: "0.1em",
                   textTransform: "uppercase",
@@ -535,6 +538,7 @@ const heroBtn = {
   alignItems: "center",
   gap: 0.75,
   minHeight: 40,
+  [PHONE]: { minHeight: 44 },
   px: 2,
   borderRadius: "10px",
   border: "1px solid rgba(255,255,255,0.28)",
@@ -581,6 +585,7 @@ const primaryBtn = {
 const secondaryBtn = {
   px: 2.25,
   minHeight: 42,
+  [PHONE]: { minHeight: 44 },
   borderRadius: "8px",
   border: "1px solid var(--border-default)",
   bgcolor: "var(--card-bg)",

@@ -8,6 +8,7 @@ import {
   roadmapsService,
   type RoadmapNode,
 } from "@/lib/services/roadmaps.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * What a step is, before you commit to studying it.
@@ -98,6 +99,9 @@ export function BuildCourseDrawer({
       anchor="right"
       open={Boolean(node)}
       onClose={busy ? undefined : onClose}
+      // On a phone this drawer is the full screen, and the app bar (drawer z-index + 1) sat on
+      // top of its header, hiding the close button. Lift it to the modal layer there only.
+      sx={{ [PHONE]: { zIndex: 1300 } }}
       slotProps={{
         paper: {
           sx: {
@@ -105,6 +109,8 @@ export function BuildCourseDrawer({
             bgcolor: "var(--card-bg)",
             borderLeft: "1px solid var(--border-default)",
             backgroundImage: "none",
+            // Full screen on a phone: keep the header off the notch and the ask off the home bar.
+            [PHONE]: { pt: "env(safe-area-inset-top)", pb: "env(safe-area-inset-bottom)" },
           },
         },
       }}
@@ -112,7 +118,7 @@ export function BuildCourseDrawer({
       {node && (
         <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
           {/* Scrolls; the ask below stays pinned. */}
-          <Box sx={{ flex: 1, overflowY: "auto", p: 3 }}>
+          <Box sx={{ flex: 1, overflowY: "auto", p: 3, [PHONE]: { p: 2 } }}>
             <Stack
               direction="row"
               alignItems="center"
@@ -122,6 +128,7 @@ export function BuildCourseDrawer({
               <Typography
                 sx={{
                   fontSize: "0.72rem",
+                  [PHONE]: { fontSize: "0.75rem" },
                   fontWeight: 600,
                   letterSpacing: "0.08em",
                   textTransform: "uppercase",
@@ -142,6 +149,7 @@ export function BuildCourseDrawer({
                   color: "var(--font-secondary)",
                   p: 0.5,
                   display: "flex",
+                  [PHONE]: { width: 44, height: 44, alignItems: "center", justifyContent: "center", marginInlineEnd: "-8px" },
                 }}
               >
                 <Icon icon="solar:close-circle-linear" width={20} />
@@ -217,6 +225,7 @@ export function BuildCourseDrawer({
                 <Typography
                   sx={{
                     fontSize: "0.72rem",
+                    [PHONE]: { fontSize: "0.75rem" },
                     fontWeight: 600,
                     letterSpacing: "0.06em",
                     textTransform: "uppercase",
@@ -282,6 +291,7 @@ export function BuildCourseDrawer({
                 <Typography
                   sx={{
                     fontSize: "0.72rem",
+                    [PHONE]: { fontSize: "0.75rem" },
                     fontWeight: 600,
                     letterSpacing: "0.06em",
                     textTransform: "uppercase",
@@ -303,6 +313,7 @@ export function BuildCourseDrawer({
                         fontSize: "0.85rem",
                         color: "var(--accent-purple)",
                         textDecoration: "underline",
+                        [PHONE]: { minHeight: 44, display: "flex", alignItems: "center" },
                       }}
                     >
                       {r.title}
@@ -317,6 +328,7 @@ export function BuildCourseDrawer({
           <Box
             sx={{
               p: 3,
+              [PHONE]: { p: 2 },
               borderTopWidth: "1px",
               borderTopStyle: "solid",
               borderTopColor: "var(--border-default)",

@@ -11,6 +11,7 @@ import { cleanInterviewTitle } from "@/lib/utils/mock-interview-title";
 import mockInterviewService, {
   type PendingCourseInterview,
 } from "@/lib/services/mock-interview.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * Course interviews tab: lists every interview that's been assigned to the student via
@@ -77,6 +78,7 @@ export default function MockInterviewCoursesPage() {
               textTransform: "none",
               color: "var(--font-secondary)",
               "&:hover": { backgroundColor: "var(--surface)" },
+              [PHONE]: { minHeight: 44 },
             }}
           >
             Back to Interviews
@@ -161,6 +163,7 @@ export default function MockInterviewCoursesPage() {
                 fontWeight: 600,
                 backgroundColor: "var(--accent-indigo)",
                 "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
+                [PHONE]: { minHeight: 44 },
               }}
             >
               Go to Quick Start
@@ -274,6 +277,7 @@ export default function MockInterviewCoursesPage() {
                       "&:hover": {
                         backgroundColor: "var(--accent-indigo-dark)",
                       },
+                      [PHONE]: { minHeight: 44 },
                     }}
                   >
                     {startingId === tmpl.id

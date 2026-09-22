@@ -17,6 +17,7 @@ import { useStopCameraOnMount } from "@/lib/hooks/useStopCameraOnMount";
 import mockInterviewService, {
   MockInterviewDetail,
 } from "@/lib/services/mock-interview.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 type GatedDetail = {
   result_visible_to_student?: boolean;
@@ -188,6 +189,7 @@ export default function SubmissionSuccessPage() {
                   borderColor: "var(--font-tertiary)",
                   backgroundColor: "var(--surface)",
                 },
+                [PHONE]: { minHeight: 44 },
               }}
             >
               Back to Homepage
@@ -214,6 +216,7 @@ export default function SubmissionSuccessPage() {
                     backgroundColor: "var(--accent-indigo-dark)",
                     boxShadow: "0 6px 8px color-mix(in srgb, var(--accent-indigo) 40%, transparent)",
                   },
+                  [PHONE]: { minHeight: 44 },
                 }}
               >
                 View Result

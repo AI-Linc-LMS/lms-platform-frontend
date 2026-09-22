@@ -12,6 +12,7 @@ import {
   ROOM_VIOLET,
 } from "@/components/ai-tutor/room/roomTokens";
 import type { NextQuestion } from "@/lib/services/interview.service";
+import { PHONE } from "@/components/common/mobile/phone";
 
 /**
  * The question currently being asked, shown as text as well as spoken.
@@ -93,6 +94,7 @@ export function QuestionCard({
         <Typography
           sx={{
             fontSize: "0.74rem",
+            [PHONE]: { fontSize: "0.75rem" },
             fontWeight: 500,
             letterSpacing: "0.08em",
             textTransform: "uppercase",

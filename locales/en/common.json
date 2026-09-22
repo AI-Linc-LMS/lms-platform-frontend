@@ -2994,5 +2994,12 @@
     "cancel": "Cancel",
     "deleteProjectTitle": "Delete this project?",
     "deleteProjectBody": "Assessments that use it will lose the section. This cannot be undone."
+  },
+  "roadmapsMobile": {
+    "mapHint": "Tap a step to open it. Press and hold to mark it done, in progress or skipped."
+  },
+  "mobileChrome": {
+    "more": "More",
+    "platformGuide": "Platform guide"
   }
 }
