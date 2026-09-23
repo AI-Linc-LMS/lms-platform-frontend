@@ -82,28 +82,27 @@ function useSplitTop() {
       frame = 0;
       const el = ref.current;
       if (!el) return;
-      // These used to bail out whenever the page or any ancestor was scrolled:
+      // Staleness is the one thing that can break the fit, and every guard this function has
+      // ever carried caused some. It first bailed whenever the page or any ancestor was
+      // scrolled (`if (window.scrollY > 0) return;`), which blocked exactly the ResizeObserver
+      // tick that applying a filter causes: the chip row and the "N of M" line move this
+      // element down, and a learner who had scrolled one pixel kept the old number.
       //
-      //     if (window.scrollY > 0) return;
-      //     for (let p = el.parentElement; p; p = p.parentElement) if (p.scrollTop > 0) return;
-      //
-      // The intent was to stop the value churning mid-scroll. It does not do that -- nothing
-      // here listens to scroll, so scrolling never schedules a measure in the first place -- and
-      // what it DID block was the ResizeObserver firing when the rail's own height changed.
-      //
-      // Applying a filter is exactly that: it adds the ActiveFilters chip row and the
-      // filterSummary line, moving this element down. A learner who had scrolled even one pixel
-      // kept the old value, so the pane was sized from a position the rail no longer occupied.
-      // Measured on a 1440x900 viewport with four filters applied: --j-split-top stayed 567px
-      // while the element sat at 601px, and the pane's bottom ended up 18px BELOW the fold with
-      // only 16px of document scroll to reach it. The tail of the results list became
-      // unreachable, which reads as "after applying a filter, the page stops scrolling".
-      //
-      // The value is self-correcting as long as it is true: height is
-      // calc(100dvh - var(--j-split-top) - 16px), so bottom = top + height = 100dvh - 16 for ANY
-      // honest top. Staleness is the only thing that can break the fit.
-      const top = Math.round(el.getBoundingClientRect().top);
-      if (top <= 0 || top >= window.innerHeight) return;
+      // Measured as if NOTHING were scrolled. `getBoundingClientRect()` is viewport-relative,
+      // so adding each ancestor's `scrollTop` back gives the split's resting offset, which is
+      // the number the height formula actually wants. The old reading was the raw viewport top
+      // behind two guards (`top <= 0 || top >= window.innerHeight`) that silently kept the
+      // STALE value whenever the page was scrolled or the header was taller than the window.
+      // Both cases are now normal: with a floor under the split's height the document scrolls
+      // on purpose, so a guard that bails on a scrolled page would go stale on every read.
+      let measured = el.getBoundingClientRect().top;
+      for (let parent = el.parentElement; parent; parent = parent.parentElement) {
+        measured += parent.scrollTop;
+      }
+      const top = Math.round(measured);
+      // A sanity range, not a scroll guard: a detached or not-yet-laid-out node reads 0, and
+      // nothing on this page legitimately starts five screens down.
+      if (top <= 0 || top > 4000) return;
       const next = `${top}px`;
       // Throttle against what THIS element already carries, never against a value cached in
       // the closure. The cache outlived the element it described: applying a filter that
