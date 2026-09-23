@@ -124,11 +124,29 @@ export interface CheckInResult {
   rewind_to_seconds: number | null;
 }
 
+/**
+ * A re-explanation, plus which slice of the video it was actually built from.
+ *
+ * `clip_start`/`clip_end` are the window the answer USED, which is not always the 30
+ * seconds the student asked about: when those 30 seconds turn out to be throat-clearing
+ * the server widens to the surrounding chapter rather than letting the model invent
+ * something, and `context_note` is the sentence saying so. `requested_*` keeps the
+ * moment the student actually pressed at. Render `context_note` whenever it is non-empty
+ * - a silently widened answer is the bug this field exists to prevent.
+ */
 export interface ReExplainResult {
   content: string;
   style: ReExplainStyle;
   clip_start: number;
   clip_end: number;
+  requested_start: number;
+  requested_end: number;
+  /** "clip" | "chapter" | "wide" | "video" - which rung of the widening ladder was used. */
+  source: string;
+  /** Learner-facing note about a deliberate widening. "" when the exact clip was enough. */
+  context_note: string;
+  /** Programming language the Code mode was told to answer in ("" for the prose modes). */
+  language: string;
   cached: boolean;
 }
 
