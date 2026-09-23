@@ -12,6 +12,9 @@ import {
   DialogTitle,
   DialogContent,
   IconButton,
+  Menu,
+  MenuItem,
+  TextField,
   useMediaQuery,
   useTheme,
 } from "@mui/material";
@@ -25,12 +28,19 @@ import { SectionArrangePanel } from "./SectionArrangePanel";
 import {
   EMPTY_LAYOUT,
   loadLayout,
+  normalizeLayout,
   resetLayout,
   saveLayout,
   type DocumentSections,
   type ResumeLayout,
   type SectionId,
 } from "./paging/sectionLayout";
+import { SavedResumesPanel } from "./SavedResumesPanel";
+import {
+  ResumeDocumentsUnavailable,
+  resumeDocumentsService,
+  type ResumeDocumentSummary,
+} from "@/lib/services/resumeDocuments.service";
 import { config } from "@/lib/config";
 import { PAGE_HEIGHT_PX } from "./paging/pageStyles";
 import { ATSScoreCard } from "./ATSScoreCard";
@@ -53,7 +63,7 @@ import { LockedAction } from "@/components/common/ProfileLock";
 import { PHONE } from "@/components/common/mobile/phone";
 
 /** Where the builder's current content came from. Drives the toolbar's segmented control. */
-type ResumeSource = "sample" | "profile" | "blank";
+type ResumeSource = "sample" | "profile" | "blank" | "saved";
 
 interface ResumeBuilderProps {
   initialData?: Partial<ResumeData>;
@@ -668,6 +678,218 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
     showToast(t("profile.switchedToTemplate", { template: templateName }), "success");
   };
 
+  /* ======================================================================================
+   * Saved resumes.
+   *
+   * What was here before: "Save" rendered the preview to a PDF and uploaded it. A saved resume
+   * was therefore a picture - listable on the profile page, viewable, attachable to a job
+   * application, and impossible to edit again. The template was never stored at all, and the
+   * section arrangement lived in this browser's localStorage, shared by every resume the learner
+   * made. Reopening a resume to change one bullet meant retyping the whole thing.
+   *
+   * What happens now: Save keeps the DOCUMENT - content, template and section arrangement - so it
+   * can be opened again. The PDF path is untouched and still available, because a PDF is what
+   * gets sent to an employer.
+   * ==================================================================================== */
+
+  const [documents, setDocuments] = useState<ResumeDocumentSummary[]>([]);
+  const [documentsLoading, setDocumentsLoading] = useState(true);
+  /**
+   * The backend ships first. A tenant still on an older API answers 404 for the whole
+   * collection, and then this half of the feature simply is not there: the panel hides and Save
+   * keeps doing exactly what it did before, rather than showing a learner an error about
+   * something they never asked for.
+   */
+  const [documentsUnavailable, setDocumentsUnavailable] = useState(false);
+  const [openDoc, setOpenDoc] = useState<{ id: number; name: string } | null>(null);
+  const [rowBusyId, setRowBusyId] = useState<number | null>(null);
+  const [saveMenuAnchor, setSaveMenuAnchor] = useState<null | HTMLElement>(null);
+  const [nameDialogOpen, setNameDialogOpen] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const [savingDoc, setSavingDoc] = useState(false);
+
+  /**
+   * Whether the builder holds edits the open resume does not. Only tracked once something has
+   * been opened or saved, so a learner who never used Save pays nothing for it.
+   */
+  const [dirty, setDirty] = useState(false);
+  const savedSnapshotRef = useRef<string | null>(null);
+  const snapshotOf = (data: ResumeData, template: TemplateName, l: ResumeLayout) =>
+    JSON.stringify({ data, template, l });
+
+  const reloadDocuments = async () => {
+    try {
+      const list = await resumeDocumentsService.list();
+      setDocuments(list);
+      setDocumentsUnavailable(false);
+    } catch (err) {
+      if (err instanceof ResumeDocumentsUnavailable) setDocumentsUnavailable(true);
+      // Any other failure leaves the list as it was. A transient error must not wipe the panel
+      // and make a learner think their resumes are gone.
+    } finally {
+      setDocumentsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void reloadDocuments();
+  }, []);
+
+  useEffect(() => {
+    if (savedSnapshotRef.current === null) return;
+    setDirty(snapshotOf(resumeData, selectedTemplate, layout) !== savedSnapshotRef.current);
+  }, [resumeData, selectedTemplate, layout]);
+
+  const markSaved = (data: ResumeData, template: TemplateName, l: ResumeLayout) => {
+    savedSnapshotRef.current = snapshotOf(data, template, l);
+    setDirty(false);
+  };
+
+  const isTemplateName = (value: string): value is TemplateName =>
+    Object.prototype.hasOwnProperty.call(TEMPLATE_KEYS, value);
+
+  /** Put a saved resume back into the builder, exactly as it was left. */
+  const handleOpenDocument = async (id: number) => {
+    setRowBusyId(id);
+    try {
+      const doc = await resumeDocumentsService.get(id);
+      const restoredData = buildResumeData(doc.content as Partial<ResumeData>);
+      const restoredTemplate = isTemplateName(doc.template) ? doc.template : "modern";
+      const restoredLayout = normalizeLayout(doc.layout);
+      setResumeData(restoredData);
+      setSelectedTemplate(restoredTemplate);
+      setLayout(restoredLayout);
+      // The arrangement is still remembered per browser, so a refresh mid-edit does not silently
+      // rearrange the resume the learner is looking at.
+      saveLayout(restoredLayout, config.clientId);
+      setSource("saved");
+      awaitingProfileRef.current = false;
+      setOpenDoc({ id: doc.id, name: doc.name });
+      markSaved(restoredData, restoredTemplate, restoredLayout);
+      showToast(t("savedResumes.opened", { name: doc.name, defaultValue: `Opened "${doc.name}"` }), "success");
+    } catch {
+      showToast(t("savedResumes.openFailed", { defaultValue: "Could not open that resume" }), "error");
+    } finally {
+      setRowBusyId(null);
+    }
+  };
+
+  const documentPayload = () => ({
+    template: selectedTemplate,
+    content: resumeData as unknown as Record<string, unknown>,
+    layout: layout as unknown as Record<string, unknown>,
+    ats_score: atsScoreLive,
+  });
+
+  const suggestedName = () => {
+    const full = `${resumeData.basicInfo.firstName} ${resumeData.basicInfo.lastName}`.trim();
+    const role = resumeData.basicInfo.professionalTitle?.trim();
+    if (full && role) return `${full} - ${role}`.slice(0, 120);
+    if (full) return `${full} - ${t(`profile.${TEMPLATE_KEYS[selectedTemplate]}`)}`.slice(0, 120);
+    return t("savedResumes.defaultName", { defaultValue: "My resume" });
+  };
+
+  /** Save. Updates the resume that is open; with none open, asks for a name and creates one. */
+  const handleSaveDocument = async () => {
+    if (!openDoc) {
+      setNameDraft(suggestedName());
+      setNameDialogOpen(true);
+      return;
+    }
+    setSavingDoc(true);
+    try {
+      await resumeDocumentsService.update(openDoc.id, documentPayload());
+      markSaved(resumeData, selectedTemplate, layout);
+      await reloadDocuments();
+      showToast(
+        t("savedResumes.updated", { name: openDoc.name, defaultValue: `Updated "${openDoc.name}"` }),
+        "success",
+      );
+    } catch (err) {
+      showToast(
+        err instanceof Error ? err.message : t("savedResumes.saveFailed", { defaultValue: "Could not save" }),
+        "error",
+      );
+    } finally {
+      setSavingDoc(false);
+    }
+  };
+
+  /** Save as new. Never touches the resume that is open. */
+  const handleSaveAsNew = () => {
+    setSaveMenuAnchor(null);
+    setNameDraft(openDoc ? `${openDoc.name} (copy)`.slice(0, 120) : suggestedName());
+    setNameDialogOpen(true);
+  };
+
+  const handleCreateDocument = async () => {
+    const name = nameDraft.trim();
+    if (!name) return;
+    setSavingDoc(true);
+    try {
+      const created = await resumeDocumentsService.create({ name, ...documentPayload() });
+      setOpenDoc({ id: created.id, name: created.name });
+      setNameDialogOpen(false);
+      markSaved(resumeData, selectedTemplate, layout);
+      await reloadDocuments();
+      showToast(t("savedResumes.saved", { name: created.name, defaultValue: `Saved "${created.name}"` }), "success");
+    } catch (err) {
+      showToast(
+        err instanceof Error ? err.message : t("savedResumes.saveFailed", { defaultValue: "Could not save" }),
+        "error",
+      );
+    } finally {
+      setSavingDoc(false);
+    }
+  };
+
+  const handleRenameDocument = async (id: number, name: string) => {
+    setRowBusyId(id);
+    try {
+      const updated = await resumeDocumentsService.update(id, { name });
+      if (openDoc?.id === id) setOpenDoc({ id, name: updated.name });
+      await reloadDocuments();
+    } catch {
+      showToast(t("savedResumes.renameFailed", { defaultValue: "Could not rename that resume" }), "error");
+    } finally {
+      setRowBusyId(null);
+    }
+  };
+
+  const handleDuplicateDocument = async (id: number) => {
+    setRowBusyId(id);
+    try {
+      const copy = await resumeDocumentsService.duplicate(id);
+      await reloadDocuments();
+      showToast(t("savedResumes.duplicated", { name: copy.name, defaultValue: `Created "${copy.name}"` }), "success");
+    } catch (err) {
+      showToast(
+        err instanceof Error ? err.message : t("savedResumes.duplicateFailed", { defaultValue: "Could not duplicate" }),
+        "error",
+      );
+    } finally {
+      setRowBusyId(null);
+    }
+  };
+
+  const handleDeleteDocument = async (id: number) => {
+    try {
+      await resumeDocumentsService.remove(id);
+      // The builder keeps whatever is on screen: deleting a saved copy must not empty the form
+      // the learner is looking at. It simply stops being attached to a saved resume, so the next
+      // Save asks for a name rather than writing to a row that no longer exists.
+      if (openDoc?.id === id) {
+        setOpenDoc(null);
+        savedSnapshotRef.current = null;
+        setDirty(false);
+      }
+      await reloadDocuments();
+      showToast(t("savedResumes.deleted", { defaultValue: "Resume deleted" }), "success");
+    } catch {
+      showToast(t("savedResumes.deleteFailed", { defaultValue: "Could not delete that resume" }), "error");
+    }
+  };
+
   /** What the download will actually be. Said once, shown on the toolbar and on the phone sheet. */
   const pagesLabel =
     pageInfo.pages > 1
@@ -685,6 +907,34 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
     minWidth: 0,
     "& > *": { flex: { xs: 1, sm: "0 0 auto" }, minWidth: 0 },
     "& .MuiButton-root": { width: { xs: "100%", sm: "auto" } },
+  } as const;
+
+  /**
+   * The save cell, when saving is a split control.
+   *
+   * Deliberately NOT `actionCellSx`: that stretches every button inside it to the full cell
+   * width, which on a phone gave the caret half the cell and left a 90px button holding one
+   * chevron. Here the label takes the room and the caret stays a thumb-sized square.
+   */
+  const splitCellSx = {
+    display: "flex",
+    minWidth: 0,
+    flex: { xs: 1, sm: "0 0 auto" },
+  } as const;
+
+  /** The Save pill, shared by the plain button and the two halves of the split control. */
+  const saveButtonSx = {
+    textTransform: "none",
+    fontWeight: 700,
+    fontSize: { xs: "0.875rem", sm: "0.8125rem" },
+    borderRadius: 999,
+    px: 2,
+    py: 0.85,
+    minHeight: { xs: 44, sm: "auto" },
+    whiteSpace: "nowrap",
+    borderColor: PROFILE.hairline,
+    color: PROFILE.ink,
+    "&:hover": { borderColor: PROFILE.violet, backgroundColor: PROFILE.violetSoft },
   } as const;
 
   const atsReport = (
@@ -738,7 +988,7 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
               component="h3"
               sx={{ fontWeight: 800, fontSize: "0.95rem", color: PROFILE.ink, lineHeight: 1.2, letterSpacing: "-0.2px" }}
             >
-              {t("profile.myResume", { defaultValue: "My resume" })}
+              {openDoc ? openDoc.name : t("profile.myResume", { defaultValue: "My resume" })}
             </Typography>
             {/* 11.5px and 10.9px are desktop densities. On a phone they are the floor of what is
                 readable at arm's length, so both step up above 12px. */}
@@ -749,7 +999,21 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
                 ? t("profile.sourceSample", { defaultValue: "Sample content" })
                 : source === "profile"
                   ? t("profile.sourceProfile", { defaultValue: "Your profile" })
-                  : t("profile.sourceBlank", { defaultValue: "Blank" })}
+                  : source === "saved"
+                    ? t("savedResumes.sourceSaved", { defaultValue: "Saved resume" })
+                    : t("profile.sourceBlank", { defaultValue: "Blank" })}
+              {/* Saving must never be a guess about which resume is being written to. The name
+                  above says which one is open; this says whether it is up to date. */}
+              {openDoc && (
+                <>
+                  {" · "}
+                  <Box component="span" sx={{ fontWeight: 700, color: dirty ? "#b45309" : "#15803d" }}>
+                    {dirty
+                      ? t("savedResumes.unsavedChanges", { defaultValue: "Unsaved changes" })
+                      : t("savedResumes.allSaved", { defaultValue: "All changes saved" })}
+                  </Box>
+                </>
+              )}
             </Typography>
             {/* What the download will actually be. A resume that needs a second page now gets one,
                 and a resume kept on one page by a small shrink says so, rather than leaving the
@@ -830,29 +1094,67 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
             </Button>
           </Box>
 
-          <Box sx={actionCellSx}>
-          <LockedAction locked={lockExports} label={t("lock.savingLocked", { defaultValue: "Saving is locked" })}>
-          <Button
-            variant="outlined"
-            startIcon={<IconWrapper icon="mdi:content-save-outline" size={17} />}
-            onClick={handleSaveResume}
-            disabled={saveResumeLoading}
-            sx={{
-              textTransform: "none",
-              fontWeight: 700,
-              fontSize: { xs: "0.875rem", sm: "0.8125rem" },
-              borderRadius: 999,
-              px: 2,
-              py: 0.85,
-              minHeight: { xs: 44, sm: "auto" },
-              borderColor: PROFILE.hairline,
-              color: PROFILE.ink,
-              "&:hover": { borderColor: PROFILE.violet, backgroundColor: PROFILE.violetSoft },
-            }}
-          >
-            {saveResumeLoading ? "\u2026" : t("profile.saveResume", { defaultValue: "Save" })}
-          </Button>
-          </LockedAction>
+          {/* Save.
+              With saved resumes available this keeps the DOCUMENT, and the label says which
+              resume it writes to, so nothing is ever clobbered by surprise: "Update" names the
+              open one, "Save" creates a new one after asking for a name, and "Save as new" is
+              always one tap away. Where the API does not offer resume documents yet, this falls
+              back to exactly what it did before - uploading a PDF - and stays gated on a complete
+              profile, because that is an export. */}
+          <Box sx={documentsUnavailable ? actionCellSx : splitCellSx}>
+          {documentsUnavailable ? (
+            <LockedAction locked={lockExports} label={t("lock.savingLocked", { defaultValue: "Saving is locked" })}>
+              <Button
+                variant="outlined"
+                startIcon={<IconWrapper icon="mdi:content-save-outline" size={17} />}
+                onClick={handleSaveResume}
+                disabled={saveResumeLoading}
+                sx={saveButtonSx}
+              >
+                {saveResumeLoading ? "\u2026" : t("profile.saveResume", { defaultValue: "Save" })}
+              </Button>
+            </LockedAction>
+          ) : (
+            <Box sx={{ display: "flex", width: { xs: "100%", sm: "auto" }, minWidth: 0 }}>
+              <Button
+                variant="outlined"
+                startIcon={<IconWrapper icon="mdi:content-save-outline" size={17} />}
+                onClick={() => void handleSaveDocument()}
+                disabled={savingDoc}
+                sx={{
+                  ...saveButtonSx,
+                  flex: { xs: 1, sm: "0 0 auto" },
+                  borderTopRightRadius: 0,
+                  borderBottomRightRadius: 0,
+                  borderRightColor: "transparent",
+                }}
+              >
+                {savingDoc
+                  ? "\u2026"
+                  : openDoc
+                    ? t("savedResumes.update", { defaultValue: "Update" })
+                    : t("savedResumes.save", { defaultValue: "Save" })}
+              </Button>
+              <Button
+                variant="outlined"
+                onClick={(e) => setSaveMenuAnchor(e.currentTarget)}
+                aria-label={t("savedResumes.moreSaveOptions", { defaultValue: "More save options" })}
+                aria-haspopup="menu"
+                sx={{
+                  ...saveButtonSx,
+                  minWidth: 40,
+                  width: 40,
+                  px: 0.5,
+                  flex: "0 0 auto",
+                  borderTopLeftRadius: 0,
+                  borderBottomLeftRadius: 0,
+                  [PHONE]: { minWidth: 44, width: 44 },
+                }}
+              >
+                <IconWrapper icon="mdi:chevron-down" size={18} />
+              </Button>
+            </Box>
+          )}
           </Box>
           <Box sx={actionCellSx}>
           <LockedAction locked={lockExports} label={t("lock.downloadLocked", { defaultValue: "Download is locked" })}>
@@ -881,6 +1183,24 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
           </Box>
         </Box>
       </Paper>
+
+      {/* The resumes this learner has saved, in the builder, where they can be opened again.
+          Hidden entirely on a tenant whose API does not offer them yet. */}
+      {!documentsUnavailable && (
+        <SavedResumesPanel
+          documents={documents}
+          loading={documentsLoading}
+          openId={openDoc?.id ?? null}
+          busyId={rowBusyId}
+          onOpen={(id) => void handleOpenDocument(id)}
+          onRename={handleRenameDocument}
+          onDuplicate={(id) => void handleDuplicateDocument(id)}
+          onDelete={handleDeleteDocument}
+          templateLabel={(template) =>
+            TEMPLATE_KEYS[template] ? t(`profile.${TEMPLATE_KEYS[template]}`) : template
+          }
+        />
+      )}
 
       {/* Template chips + where the content comes from. */}
       <Paper
@@ -939,6 +1259,9 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
                   tabIndex={0}
                   onClick={() => handleTemplateSelect(template)}
                   onKeyDown={(e) => (e.key === "Enter" || e.key === " ") && handleTemplateSelect(template)}
+                  // Twelve chips of which one is chosen: colour alone said so, which a screen
+                  // reader cannot hear. It is also how a test can tell which template is live.
+                  aria-pressed={active}
                   sx={{
                     display: "inline-flex",
                     alignItems: "center",
@@ -1269,6 +1592,84 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
           <DialogContent dividers sx={{ p: 2 }}>{atsReport}</DialogContent>
         </Dialog>
       )}
+
+      {/* The rest of saving. "Save as new" is here rather than as a fifth toolbar button because
+          it is the rarer of the two, and a learner must never have to guess which of two
+          same-sized buttons overwrites their resume. */}
+      <Menu
+        anchorEl={saveMenuAnchor}
+        open={Boolean(saveMenuAnchor)}
+        onClose={() => setSaveMenuAnchor(null)}
+        anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+        transformOrigin={{ vertical: "top", horizontal: "right" }}
+      >
+        <MenuItem onClick={handleSaveAsNew} sx={{ fontSize: "0.875rem", [PHONE]: { minHeight: 44 } }}>
+          <IconWrapper icon="mdi:content-duplicate" size={17} />
+          <Box component="span" sx={{ ml: 1 }}>
+            {t("savedResumes.saveAsNew", { defaultValue: "Save as new resume" })}
+          </Box>
+        </MenuItem>
+        <MenuItem
+          disabled={lockExports || saveResumeLoading}
+          onClick={() => {
+            setSaveMenuAnchor(null);
+            void handleSaveResume();
+          }}
+          sx={{ fontSize: "0.875rem", [PHONE]: { minHeight: 44 } }}
+        >
+          <IconWrapper icon="mdi:file-pdf-box" size={17} />
+          <Box component="span" sx={{ ml: 1 }}>
+            {t("savedResumes.savePdfCopy", { defaultValue: "Save a PDF copy to my profile" })}
+          </Box>
+        </MenuItem>
+      </Menu>
+
+      <ResponsiveDialog
+        open={nameDialogOpen}
+        onClose={() => !savingDoc && setNameDialogOpen(false)}
+        title={t("savedResumes.nameTitle", { defaultValue: "Name this resume" })}
+        description={t("savedResumes.nameDescription", {
+          defaultValue: "It is kept with its content, template and section order, so you can open it and carry on.",
+        })}
+        maxWidth="xs"
+        footer={
+          <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>
+            <Button
+              onClick={() => setNameDialogOpen(false)}
+              disabled={savingDoc}
+              sx={{ textTransform: "none", fontWeight: 700, [PHONE]: { minHeight: 44, flex: 1 } }}
+            >
+              {t("savedResumes.cancel", { defaultValue: "Cancel" })}
+            </Button>
+            <Button
+              variant="contained"
+              disableElevation
+              onClick={() => void handleCreateDocument()}
+              disabled={savingDoc || !nameDraft.trim()}
+              sx={{ textTransform: "none", fontWeight: 700, [PHONE]: { minHeight: 44, flex: 1 } }}
+            >
+              {t("savedResumes.saveResume", { defaultValue: "Save resume" })}
+            </Button>
+          </Box>
+        }
+      >
+        <TextField
+          autoFocus
+          fullWidth
+          size="small"
+          value={nameDraft}
+          disabled={savingDoc}
+          onChange={(e) => setNameDraft(e.target.value.slice(0, 120))}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") {
+              e.preventDefault();
+              void handleCreateDocument();
+            }
+          }}
+          label={t("savedResumes.nameLabel", { defaultValue: "Name" })}
+          inputProps={{ maxLength: 120 }}
+        />
+      </ResponsiveDialog>
     </Box>
   );
 }
