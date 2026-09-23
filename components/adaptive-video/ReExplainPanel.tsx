@@ -21,6 +21,39 @@ const STYLES: { key: ReExplainStyle; label: string; icon: string }[] = [
 ];
 
 /**
+ * Render a re-explanation, giving the Code mode's fenced block a real code box.
+ *
+ * The Code mode now owes a runnable snippet in the lesson's language, and a snippet shown
+ * through the prose Typography arrives as literal ``` lines in a proportional font, which
+ * is unreadable. Split on the fences; everything outside one stays prose.
+ */
+function renderParts(content: string) {
+  return (content || "").split(/```/).map((part, i) =>
+    i % 2 === 1 ? (
+      <Box
+        key={i}
+        component="pre"
+        sx={{
+          my: 1, p: 1.25, borderRadius: 2, overflowX: "auto",
+          fontSize: "0.78rem", lineHeight: 1.5, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+          background: "color-mix(in srgb, currentColor 6%, transparent)",
+          border: "1px solid color-mix(in srgb, #a855f7 18%, transparent)",
+        }}
+      >
+        {/* The fence's info string ("java", "python") is the language tag, not code. */}
+        {part.replace(/^[a-zA-Z0-9+#-]*\n/, "").trimEnd()}
+      </Box>
+    ) : (
+      part.trim() && (
+        <Typography key={i} sx={{ fontSize: "0.87rem", whiteSpace: "pre-wrap", lineHeight: 1.55 }}>
+          {part.trim()}
+        </Typography>
+      )
+    ),
+  );
+}
+
+/**
  * "Feeling lost?" - the headline rescue (spec §3.4b). Re-narrates the last 30s in
  * the chosen register without losing the student's place.
  *
@@ -124,7 +157,16 @@ export function ReExplainPanel({ onReExplain }: Props) {
               <Typography sx={{ fontSize: "0.64rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", alignSelf: "center" }}>instant · cached</Typography>
             )}
           </Box>
-          <Typography sx={{ fontSize: "0.87rem", whiteSpace: "pre-wrap", lineHeight: 1.55 }}>{result.content}</Typography>
+          {result.context_note && (
+            <Box sx={{ display: "flex", gap: 0.75, alignItems: "flex-start", mb: 1,
+              p: 1, borderRadius: 2, background: "color-mix(in srgb, #a855f7 8%, transparent)" }}>
+              <Icon icon="mdi:information-outline" width={14} style={{ flexShrink: 0, marginTop: 3, opacity: 0.75 }} />
+              <Typography sx={{ fontSize: "0.72rem", lineHeight: 1.45, color: "text.secondary" }}>
+                {result.context_note}
+              </Typography>
+            </Box>
+          )}
+          {renderParts(result.content)}
         </Box>
       )}
     </CompanionCard>
