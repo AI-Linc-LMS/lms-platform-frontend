@@ -21,8 +21,14 @@ import { config } from "@/lib/config";
 
 const PREFIX = "user_profile_extra";
 
-/** The `user_id` claim from the access token, or null when signed out. */
-function currentUserId(): string | null {
+/**
+ * The `user_id` claim from the access token, or null when signed out.
+ *
+ * Exported because it is the one place in the app that answers "which learner is this?" without
+ * a React context: any per-learner key written to browser storage needs it, and a second copy of
+ * the decode would be a second thing to get wrong.
+ */
+export function currentUserId(): string | null {
   try {
     const token = Cookies.get("access_token");
     if (!token) return null;

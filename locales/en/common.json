@@ -3070,5 +3070,20 @@
   "adminEngagementMobile": {
     "statusFilterLabel": "Session status filter",
     "facetFilterLabel": "Batch and course filter"
+  },
+  "adaptiveTopCards": {
+    "expandAria": "Show {{title}} details",
+    "collapseAria": "Hide {{title}} details",
+    "viewResults": "View results",
+    "startNow": "Start now",
+    "takeAgain": "Take it again",
+    "launch": "Launch",
+    "calibrationDone": "Done · baseline recorded · {{points}} pts",
+    "calibrationPending": "Required before personalization unlocks",
+    "calibrationGenerating": "Being prepared by AI · check back shortly",
+    "calibrationNotConfigured": "Your instructor will enable this soon",
+    "interviewDone": "Done · run another round any time · ~{{minutes}} min",
+    "interviewReady": "Voice practice round · ~{{minutes}} min",
+    "interviewNotConfigured": "Your instructor is still setting this up"
   }
 }

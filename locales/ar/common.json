@@ -2674,5 +2674,20 @@
   "adminEngagementMobile": {
     "statusFilterLabel": "تصفية الجلسات حسب الحالة",
     "facetFilterLabel": "تصفية حسب الدفعة والدورة"
+  },
+  "adaptiveTopCards": {
+    "expandAria": "إظهار تفاصيل {{title}}",
+    "collapseAria": "إخفاء تفاصيل {{title}}",
+    "viewResults": "عرض النتائج",
+    "startNow": "ابدأ الآن",
+    "takeAgain": "أعد المحاولة",
+    "launch": "ابدأ",
+    "calibrationDone": "تم · تم تسجيل مستواك الأساسي · {{points}} نقطة",
+    "calibrationPending": "مطلوب قبل تفعيل التخصيص",
+    "calibrationGenerating": "قيد التحضير بواسطة الذكاء الاصطناعي · تحقق بعد قليل",
+    "calibrationNotConfigured": "سيقوم المدرب بتفعيل هذا قريبًا",
+    "interviewDone": "تم · يمكنك إجراء جولة أخرى في أي وقت · ~{{minutes}} دقيقة",
+    "interviewReady": "جولة تدريب صوتية · ~{{minutes}} دقيقة",
+    "interviewNotConfigured": "لا يزال المدرب يقوم بإعداد هذا"
   }
 }
