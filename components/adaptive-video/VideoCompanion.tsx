@@ -683,7 +683,10 @@ export function VideoCompanion({
               if (sessionId) adaptiveVideoService.sync(sessionId, { watch_mode: m }).catch(() => {});
             }}
           />
-          <ReExplainPanel onReExplain={onReExplain} />
+          {/* No transcript, nothing to re-explain. The server answers 400 for these, and 36
+              production companions have an empty `transcript_segments` - without this gate
+              those learners get a prominent headline button that fails every single time. */}
+          {(companion.transcript_segments?.length ?? 0) > 0 && <ReExplainPanel onReExplain={onReExplain} />}
           <AutoChapters chapters={companion.chapters} currentTime={currentTime} onJump={(s) => seekTo(s)} />
           <LiveTakeaways takeaways={companion.takeaways} currentTime={currentTime} chapters={companion.chapters} />
         </Box>

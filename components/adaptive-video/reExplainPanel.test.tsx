@@ -47,6 +47,26 @@ describe("the re-explain panel", () => {
     expect(screen.queryByText(/re-explains the chapter/i)).not.toBeInTheDocument();
   });
 
+  it("shows the server's reason when the clip cannot be re-explained", async () => {
+    // A companion with no transcript now answers 400 with a specific detail rather than
+    // letting the model invent a paragraph. The panel is gated off for those videos, but a
+    // transcript can also go missing between load and click, so the branch still matters.
+    const rejection = {
+      response: { status: 400, data: { detail: "This video has no transcript yet, so there's nothing to re-explain." } },
+    };
+    render(<ReExplainPanel onReExplain={vi.fn().mockRejectedValue(rejection)} />);
+    await userEvent.click(screen.getByRole("button", { name: /Re-explain this clip/i }));
+    await waitFor(() =>
+      expect(screen.getByText(/no transcript yet, so there's nothing to re-explain/)).toBeInTheDocument(),
+    );
+  });
+
+  it("falls back to its own wording when the server sends no reason", async () => {
+    render(<ReExplainPanel onReExplain={vi.fn().mockRejectedValue(new Error("network"))} />);
+    await userEvent.click(screen.getByRole("button", { name: /Re-explain this clip/i }));
+    await waitFor(() => expect(screen.getByText(/Couldn't re-explain this clip just now/)).toBeInTheDocument());
+  });
+
   it("renders the Code mode's snippet as code, not as prose with backticks", async () => {
     const content = "```java\nfor (int i = 0; i < n; i++) {}\n```\nTakeaway: this loop runs n times.";
     render(
