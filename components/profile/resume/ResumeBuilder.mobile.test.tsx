@@ -26,6 +26,24 @@ vi.mock("@/lib/contexts/ProfileGateContext", () => ({
 vi.mock("./ATSScoreCard", () => ({ ATSScoreCard: () => <div data-testid="ats-card" /> }));
 vi.mock("./ATSQuickFixes", () => ({ ATSQuickFixes: () => null }));
 vi.mock("html-to-image", () => ({ toPng: vi.fn() }));
+// The builder now loads the learner's saved resumes on mount. Stubbed to nothing so these specs
+// stay about layout, and so no real request is left in flight when the environment tears down.
+vi.mock("@/lib/services/resumeDocuments.service", async () => {
+  const actual = await vi.importActual<typeof import("@/lib/services/resumeDocuments.service")>(
+    "@/lib/services/resumeDocuments.service",
+  );
+  return {
+    ...actual,
+    resumeDocumentsService: {
+      list: vi.fn().mockResolvedValue([]),
+      get: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      duplicate: vi.fn(),
+      remove: vi.fn(),
+    },
+  };
+});
 
 import { ResumeBuilder } from "./ResumeBuilder";
 
@@ -98,9 +116,10 @@ describe("ResumeBuilder on a phone", () => {
     const close = within(sheet).getByRole("button", { name: /close preview/i });
     expect(document.activeElement).toBe(close);
 
-    // Focus that lands on the page behind the sheet is pulled back in.
+    // Focus that lands on the page behind the sheet is pulled back in. (Clear, rather than one of
+    // the save or download actions: those now appear both on the toolbar and inside the sheet.)
     act(() => {
-      screen.getByRole("button", { name: /save/i }).focus();
+      screen.getByRole("button", { name: /^clear$/i }).focus();
     });
     expect(sheet.contains(document.activeElement)).toBe(true);
 
