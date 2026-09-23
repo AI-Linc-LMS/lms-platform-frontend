@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Box, Menu, MenuItem, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
@@ -39,7 +39,18 @@ import {
   type StripItem,
 } from "@/components/jobs-v2/ui";
 import { AudiencePanel } from "./AudiencePanel";
-import { EligibilityPanel, type DefinitionRow } from "./EligibilityPanel";
+import { EligibilityPanel, countEligibilityGates, type DefinitionRow } from "./EligibilityPanel";
+import {
+  PUBLISHING_WEIGHT,
+  QUIET_SECTION,
+  audienceWeight,
+  chipsWeight,
+  linksWeight,
+  planColumns,
+  proseWeight,
+  rowsWeight,
+  type JobSectionKey,
+} from "./columnPlan";
 
 /** Case-folded de-duplication. The two skill lists are separate, but they can overlap. */
 function dedupeSkills(job: JobV2): string[] {
@@ -54,6 +65,44 @@ function dedupeSkills(job: JobV2): string[] {
     out.push(value);
   }
   return out;
+}
+
+/** A definition row an admin actually filled in. */
+function filled(value: unknown): boolean {
+  return value != null && String(value).trim() !== "";
+}
+
+/**
+ * A titled section of the page.
+ *
+ * With `quiet`, it is one muted line under the header rather than a card. "Nothing recorded here
+ * yet." inside a bordered box cost 116px, and "No eligibility gates" another 148px — on a scraped
+ * posting that is two thirds of a column spent saying nothing.
+ */
+function Section({
+  icon,
+  title,
+  quiet,
+  children,
+}: {
+  icon: string;
+  title: string;
+  /** The single line to show instead of the card. */
+  quiet?: string;
+  children?: ReactNode;
+}) {
+  return (
+    <>
+      <SectionHeader icon={icon} title={title} level="sub" />
+      {quiet ? (
+        <Typography data-quiet-section="" sx={{ ...TYPE.micro, mb: 2 }}>
+          {quiet}
+        </Typography>
+      ) : (
+        <JCard sx={{ mb: 2 }}>{children}</JCard>
+      )}
+    </>
+  );
 }
 
 export function JobDetailView({ jobId }: { jobId: number }) {
@@ -374,6 +423,267 @@ export function JobDetailView({ jobId }: { jobId: number }) {
     );
   }
 
+  /* ---- the two columns -------------------------------------------------- */
+
+  /**
+   * Which column each section sits in, decided from THIS posting rather than hardcoded — see
+   * `columnPlan.ts`. A fixed left/right split has been corrected twice and came back both
+   * times, because one rule cannot suit both a three-line scraped posting and a full JD.
+   */
+  const plan = planColumns({
+    // "About this role" always renders, even with nothing in it, because it is the page's
+    // subject: an admin needs to see that the description is missing.
+    story: Math.max(
+      proseWeight(job.job_description) +
+        proseWeight(job.role_process) +
+        proseWeight(job.company_info),
+      QUIET_SECTION,
+    ),
+    skills: chipsWeight(skills.length),
+    classification: rowsWeight(classification.filter((row) => filled(row.value)).length),
+    // The gates card carries a hint line above the rows.
+    eligibility: rowsWeight(countEligibilityGates(job), 34),
+    links: linksWeight({
+      jd: Boolean(job.jd_file_url),
+      apply: Boolean(job.apply_link),
+      jdFailed: jdUploadFailed && !job.jd_file_url,
+    }),
+    publishing: PUBLISHING_WEIGHT,
+    audience: audienceWeight({
+      courses: job.adaptive_courses?.length ?? 0,
+      retiredCourses: job.courses?.length ?? 0,
+      batches: job.cohorts?.length ?? 0,
+      students: job.assigned_students?.length ?? 0,
+      colleges: job.college_mappings?.length ?? 0,
+    }),
+  });
+
+  const sections: Record<JobSectionKey, ReactNode> = {
+    /* What the job IS: its prose, in one unit. Splitting these three across columns would put
+       "About the company" above the role it describes. */
+    story: (
+      <>
+        <Section
+          icon="mdi:text-box-outline"
+          title={t("jobsV2.detail.aboutRole", "About this role")}
+          quiet={
+            job.job_description?.trim()
+              ? undefined
+              : (t("jobsV2.detail.noDescription", "No description recorded.") as string)
+          }
+        >
+          <Typography sx={{ ...TYPE.prose, whiteSpace: "pre-wrap" }}>
+            {job.job_description}
+          </Typography>
+        </Section>
+
+        {job.role_process?.trim() && (
+          <Section
+            icon="mdi:format-list-checks"
+            title={t("jobsV2.detail.selectionProcess", "Selection process")}
+          >
+            <Typography sx={{ ...TYPE.prose, whiteSpace: "pre-wrap" }}>
+              {job.role_process}
+            </Typography>
+          </Section>
+        )}
+
+        {job.company_info?.trim() && (
+          <Section
+            icon="mdi:information-outline"
+            title={t("jobsV2.detail.aboutCompany", "About the company")}
+          >
+            <Typography sx={{ ...TYPE.prose, whiteSpace: "pre-wrap" }}>
+              {job.company_info}
+            </Typography>
+          </Section>
+        )}
+      </>
+    ),
+
+    skills: (
+      <Section
+        icon="mdi:tag-multiple-outline"
+        title={t("jobsV2.detail.skills", "Key skills")}
+        quiet={
+          skills.length === 0
+            ? (t("jobsV2.detail.noSkills", "No skills recorded.") as string)
+            : undefined
+        }
+      >
+        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
+          {skills.map((skill) => (
+            <SkillChip key={skill}>{skill}</SkillChip>
+          ))}
+        </Box>
+      </Section>
+    ),
+
+    classification: (
+      <Section
+        icon="mdi:shape-outline"
+        title={t("jobsV2.detail.classification", "Classification")}
+        quiet={
+          classification.some((row) => filled(row.value))
+            ? undefined
+            : (t("jobsV2.detail.nothingRecorded", "Nothing recorded here yet.") as string)
+        }
+      >
+        <DefinitionList
+          layout="columns"
+          items={classification}
+          emptyText={t("jobsV2.detail.nothingRecorded", "Nothing recorded here yet.")}
+        />
+      </Section>
+    ),
+
+    /* The gates the posting sets. `EligibilityPanel` renders its own quiet line when there are
+       none, so an empty one is a sentence rather than a card. */
+    eligibility: (
+      <>
+        <SectionHeader
+          icon="mdi:account-check-outline"
+          title={t("jobsV2.detail.eligibility", "Eligibility")}
+          level="sub"
+        />
+        <EligibilityPanel job={job} />
+      </>
+    ),
+
+    links: (
+      <Section icon="mdi:link-variant" title={t("jobsV2.detail.links", "Attachments and links")}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
+          {jdUploadFailed && !job.jd_file_url && (
+            <Notice
+              tone="warn"
+              icon="mdi:file-alert-outline"
+              title={t(
+                "jobsV2.detail.jdFailedTitle",
+                "The job was created; the JD upload failed",
+              )}
+              body={t(
+                "jobsV2.detail.jdFailedBody",
+                "Everything else saved. Attach the PDF from the edit form whenever you are ready.",
+              )}
+              action={
+                <JButton
+                  variant="quiet"
+                  size="sm"
+                  href={`/admin/jobs-v2/${job.id}/edit`}
+                  startIcon="mdi:upload-outline"
+                >
+                  {t("jobsV2.detail.jdFailedRetry", "Attach the JD")}
+                </JButton>
+              }
+              sx={{ mb: 0, borderRadius: R.inner }}
+            />
+          )}
+          {job.jd_file_url && (
+            <Box>
+              <Typography sx={{ ...TYPE.label, mb: 0.5 }}>
+                {t("jobsV2.detail.attachedJd", "Attached JD")}
+              </Typography>
+              <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
+                {/* J.ink3, never the app's error red: a decorative red PDF glyph
+                    reads as a failed attachment. */}
+                <Box aria-hidden sx={{ color: J.ink3, display: "inline-flex" }}>
+                  <IconWrapper icon="mdi:file-pdf-box" size={20} />
+                </Box>
+                <JButton
+                  variant="quiet"
+                  href={job.jd_file_url}
+                  external
+                  endIcon="mdi:open-in-new"
+                >
+                  {t("jobsV2.detail.openJd", "Open the PDF")}
+                </JButton>
+              </Box>
+            </Box>
+          )}
+          {job.apply_link && (
+            <Box>
+              <Typography sx={{ ...TYPE.label, mb: 0.5 }}>
+                {t("jobsV2.detail.externalApply", "External apply link")}
+              </Typography>
+              <JButton
+                variant="quiet"
+                href={job.apply_link}
+                external
+                endIcon="mdi:open-in-new"
+                sx={{ maxWidth: "100%", "& span": { wordBreak: "break-all" } }}
+              >
+                {job.apply_link}
+              </JButton>
+            </Box>
+          )}
+        </Box>
+      </Section>
+    ),
+
+    publishing: (
+      <Section icon="mdi:publish" title={t("jobsV2.detail.publishing", "Publishing")}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          {/* A real control with a real label, among controls — not a fourth read-only
+              chip in the hero carrying a stray floating InputLabel. */}
+          <StatusSelect
+            id="detail-job-status"
+            kind="job"
+            label={t("jobsV2.form.jobStatus", "Job status")}
+            value={job.status ?? "active"}
+            onChange={handleStatusChange}
+            busy={statusBusy}
+            error={statusError}
+          />
+          <Box>
+            <Typography sx={{ ...TYPE.label, mb: 0.75 }}>
+              {t("jobsV2.form.visibility", "Visibility")}
+            </Typography>
+            <StatusPill kind="visibility" value={job.is_published ? "published" : "draft"} />
+            <Typography sx={{ ...TYPE.micro, mt: 0.75 }}>
+              {t(
+                "jobsV2.detail.visibilityHint",
+                "Change visibility from the edit form, so the audience is confirmed with it.",
+              )}
+            </Typography>
+          </Box>
+          <Box>
+            <Typography sx={{ ...TYPE.label, mb: 0.5 }}>
+              {t("jobsV2.form.closingDate", "Closing date")}
+            </Typography>
+            <Typography
+              sx={{
+                ...TYPE.bodyStrong,
+                color:
+                  deadline?.urgency === "urgent" || deadline?.urgency === "past"
+                    ? J.dangerFg
+                    : deadline?.urgency === "soon"
+                      ? J.warnFg
+                      : J.ink,
+              }}
+            >
+              {deadline?.text ?? t("jobsV2.detail.noDeadline", "No closing date")}
+            </Typography>
+          </Box>
+        </Box>
+      </Section>
+    ),
+
+    audience: (
+      <>
+        <SectionHeader
+          icon="mdi:account-filter-outline"
+          title={t("jobsV2.audience.heading", "Who can see this job")}
+          level="sub"
+        />
+        <AudiencePanel
+          job={job}
+          onCohortsChange={(cohorts) =>
+            setJob((current) => (current ? { ...current, cohorts } : current))
+          }
+        />
+      </>
+    ),
+  };
   return (
     <PageShell>
       <JobsScope surface="admin">
@@ -538,7 +848,10 @@ export function JobDetailView({ jobId }: { jobId: number }) {
         <Box
           sx={{
             display: "grid",
-            gridTemplateColumns: { xs: "1fr", md: "1.2fr 1fr" },
+            // EQUAL tracks, and that is load-bearing rather than cosmetic: a section is packed
+            // into whichever column is currently shorter, so its rendered height must not
+            // depend on which one it lands in. With 1.2fr / 1fr it did.
+            gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
             gap: 3,
             alignItems: "start",
             // A bare `1fr` track is at least as wide as its longest unbreakable string - the
@@ -547,247 +860,15 @@ export function JobDetailView({ jobId }: { jobId: number }) {
             [PHONE]: { gridTemplateColumns: "minmax(0, 1fr)" },
           }}
         >
-          {/* ---- left: the job - its prose, skills, classification and links ---- */}
           <Box data-column="job">
-            <SectionHeader
-              icon="mdi:text-box-outline"
-              title={t("jobsV2.detail.aboutRole", "About this role")}
-              level="sub"
-            />
-            <JCard sx={{ mb: 2 }}>
-              {job.job_description?.trim() ? (
-                <Typography sx={{ ...TYPE.prose, whiteSpace: "pre-wrap" }}>
-                  {job.job_description}
-                </Typography>
-              ) : (
-                <Typography sx={TYPE.micro}>
-                  {t("jobsV2.detail.noDescription", "No description recorded.")}
-                </Typography>
-              )}
-            </JCard>
-
-            {job.role_process?.trim() && (
-              <>
-                <SectionHeader
-                  icon="mdi:format-list-checks"
-                  title={t("jobsV2.detail.selectionProcess", "Selection process")}
-                  level="sub"
-                />
-                <JCard sx={{ mb: 2 }}>
-                  <Typography sx={{ ...TYPE.prose, whiteSpace: "pre-wrap" }}>
-                    {job.role_process}
-                  </Typography>
-                </JCard>
-              </>
-            )}
-
-            {job.company_info?.trim() && (
-              <>
-                <SectionHeader
-                  icon="mdi:information-outline"
-                  title={t("jobsV2.detail.aboutCompany", "About the company")}
-                  level="sub"
-                />
-                <JCard sx={{ mb: 2 }}>
-                  <Typography sx={{ ...TYPE.prose, whiteSpace: "pre-wrap" }}>
-                    {job.company_info}
-                  </Typography>
-                </JCard>
-              </>
-            )}
-
-            {/* What the job asks for sits with what the job IS. It used to be at the bottom of the
-                right column, which made that column several screens long beside a three-line
-                description - scraped postings rarely carry more. The right column now holds only
-                who and when: publishing and audience. */}
-            <SectionHeader
-              icon="mdi:tag-multiple-outline"
-              title={t("jobsV2.detail.skills", "Key skills")}
-              level="sub"
-            />
-            <JCard sx={{ mb: 2 }}>
-              {skills.length === 0 ? (
-                <Typography sx={TYPE.micro}>
-                  {t("jobsV2.detail.noSkills", "No skills recorded.")}
-                </Typography>
-              ) : (
-                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75 }}>
-                  {skills.map((skill) => (
-                    <SkillChip key={skill}>{skill}</SkillChip>
-                  ))}
-                </Box>
-              )}
-            </JCard>
-
-            <SectionHeader
-              icon="mdi:shape-outline"
-              title={t("jobsV2.detail.classification", "Classification")}
-              level="sub"
-            />
-            <JCard sx={{ mb: 2 }}>
-              <DefinitionList
-                layout="columns"
-                items={classification}
-                emptyText={t("jobsV2.detail.nothingRecorded", "Nothing recorded here yet.")}
-              />
-            </JCard>
-
-            {/* Eligibility is the job's own requirements, and on a short posting the right
-                column was 2.6x the left with it there (measured on demo, jobs 18-20). */}
-            <SectionHeader
-              icon="mdi:account-check-outline"
-              title={t("jobsV2.detail.eligibility", "Eligibility")}
-              level="sub"
-            />
-            <EligibilityPanel job={job} />
-
-            {(job.jd_file_url || job.apply_link || jdUploadFailed) && (
-              <>
-                <SectionHeader
-                  icon="mdi:link-variant"
-                  title={t("jobsV2.detail.links", "Attachments and links")}
-                  level="sub"
-                />
-                <JCard sx={{ mb: 2 }}>
-                  <Box sx={{ display: "flex", flexDirection: "column", gap: 1.5 }}>
-                    {jdUploadFailed && !job.jd_file_url && (
-                      <Notice
-                        tone="warn"
-                        icon="mdi:file-alert-outline"
-                        title={t(
-                          "jobsV2.detail.jdFailedTitle",
-                          "The job was created; the JD upload failed",
-                        )}
-                        body={t(
-                          "jobsV2.detail.jdFailedBody",
-                          "Everything else saved. Attach the PDF from the edit form whenever you are ready.",
-                        )}
-                        action={
-                          <JButton
-                            variant="quiet"
-                            size="sm"
-                            href={`/admin/jobs-v2/${job.id}/edit`}
-                            startIcon="mdi:upload-outline"
-                          >
-                            {t("jobsV2.detail.jdFailedRetry", "Attach the JD")}
-                          </JButton>
-                        }
-                        sx={{ mb: 0, borderRadius: R.inner }}
-                      />
-                    )}
-                    {job.jd_file_url && (
-                      <Box>
-                        <Typography sx={{ ...TYPE.label, mb: 0.5 }}>
-                          {t("jobsV2.detail.attachedJd", "Attached JD")}
-                        </Typography>
-                        <Box sx={{ display: "flex", alignItems: "center", gap: 0.75 }}>
-                          {/* J.ink3, never the app's error red: a decorative red PDF glyph
-                              reads as a failed attachment. */}
-                          <Box aria-hidden sx={{ color: J.ink3, display: "inline-flex" }}>
-                            <IconWrapper icon="mdi:file-pdf-box" size={20} />
-                          </Box>
-                          <JButton
-                            variant="quiet"
-                            href={job.jd_file_url}
-                            external
-                            endIcon="mdi:open-in-new"
-                          >
-                            {t("jobsV2.detail.openJd", "Open the PDF")}
-                          </JButton>
-                        </Box>
-                      </Box>
-                    )}
-                    {job.apply_link && (
-                      <Box>
-                        <Typography sx={{ ...TYPE.label, mb: 0.5 }}>
-                          {t("jobsV2.detail.externalApply", "External apply link")}
-                        </Typography>
-                        <JButton
-                          variant="quiet"
-                          href={job.apply_link}
-                          external
-                          endIcon="mdi:open-in-new"
-                          sx={{ maxWidth: "100%", "& span": { wordBreak: "break-all" } }}
-                        >
-                          {job.apply_link}
-                        </JButton>
-                      </Box>
-                    )}
-                  </Box>
-                </JCard>
-              </>
-            )}
+            {plan.job.map((key) => (
+              <Fragment key={key}>{sections[key]}</Fragment>
+            ))}
           </Box>
-
-          {/* ---- right: who and when - publishing, audience ------------------ */}
           <Box data-column="access">
-            <SectionHeader
-              icon="mdi:publish"
-              title={t("jobsV2.detail.publishing", "Publishing")}
-              level="sub"
-            />
-            <JCard sx={{ mb: 2 }}>
-              <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                {/* A real control with a real label, among controls — not a fourth read-only
-                    chip in the hero carrying a stray floating InputLabel. */}
-                <StatusSelect
-                  id="detail-job-status"
-                  kind="job"
-                  label={t("jobsV2.form.jobStatus", "Job status")}
-                  value={job.status ?? "active"}
-                  onChange={handleStatusChange}
-                  busy={statusBusy}
-                  error={statusError}
-                />
-                <Box>
-                  <Typography sx={{ ...TYPE.label, mb: 0.75 }}>
-                    {t("jobsV2.form.visibility", "Visibility")}
-                  </Typography>
-                  <StatusPill
-                    kind="visibility"
-                    value={job.is_published ? "published" : "draft"}
-                  />
-                  <Typography sx={{ ...TYPE.micro, mt: 0.75 }}>
-                    {t(
-                      "jobsV2.detail.visibilityHint",
-                      "Change visibility from the edit form, so the audience is confirmed with it.",
-                    )}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography sx={{ ...TYPE.label, mb: 0.5 }}>
-                    {t("jobsV2.form.closingDate", "Closing date")}
-                  </Typography>
-                  <Typography
-                    sx={{
-                      ...TYPE.bodyStrong,
-                      color:
-                        deadline?.urgency === "urgent" || deadline?.urgency === "past"
-                          ? J.dangerFg
-                          : deadline?.urgency === "soon"
-                            ? J.warnFg
-                            : J.ink,
-                    }}
-                  >
-                    {deadline?.text ?? t("jobsV2.detail.noDeadline", "No closing date")}
-                  </Typography>
-                </Box>
-              </Box>
-            </JCard>
-
-            <SectionHeader
-              icon="mdi:account-filter-outline"
-              title={t("jobsV2.audience.heading", "Who can see this job")}
-              level="sub"
-            />
-            <AudiencePanel
-              job={job}
-              onCohortsChange={(cohorts) =>
-                setJob((current) => (current ? { ...current, cohorts } : current))
-              }
-            />
-
-
+            {plan.access.map((key) => (
+              <Fragment key={key}>{sections[key]}</Fragment>
+            ))}
           </Box>
         </Box>
 
