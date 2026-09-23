@@ -22,6 +22,7 @@ export function CountrySelect({
   value,
   onChange,
   label = "Country",
+  id,
   required,
   error,
   helperText,
@@ -31,6 +32,8 @@ export function CountrySelect({
   value: string;
   onChange: (name: string) => void;
   label?: string;
+  /** Id for the input, so a caption elsewhere can be its `<label htmlFor>`. */
+  id?: string;
   required?: boolean;
   error?: boolean;
   helperText?: string;
@@ -98,6 +101,7 @@ export function CountrySelect({
 
   return (
     <Autocomplete
+      id={id}
       options={options}
       loading={loading}
       value={selected}

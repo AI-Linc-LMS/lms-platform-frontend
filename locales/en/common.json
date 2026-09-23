@@ -1408,6 +1408,7 @@
     "addTheseToStrengthen": "Add these to strengthen your profile:",
     "completeProfile": "Complete profile",
     "personalInformation": "Personal Information",
+    "requiredFieldsLegend": "marks a field you must fill in before your profile counts as complete.",
     "externalProfiles": "External Profiles",
     "username": "Username",
     "emailAddress": "Email address",

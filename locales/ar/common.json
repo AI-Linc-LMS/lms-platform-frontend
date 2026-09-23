@@ -975,6 +975,7 @@
     "addTheseToStrengthen": "أضف هذه لتعزيز ملفك:",
     "completeProfile": "إكمال الملف الشخصي",
     "personalInformation": "المعلومات الشخصية",
+    "requiredFieldsLegend": "يشير إلى حقل يجب عليك تعبئته قبل أن يُعدّ ملفك الشخصي مكتملًا.",
     "externalProfiles": "الملفات الخارجية",
     "username": "اسم المستخدم",
     "emailAddress": "البريد الإلكتروني",

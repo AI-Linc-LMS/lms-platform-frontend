@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { MuiTelInput } from "mui-tel-input";
 import { CountrySelect } from "@/components/profile/CountrySelect";
-import { validateMandatoryProfile } from "@/lib/schemas/profile.schema";
+import { FieldLabel, RequiredFieldsLegend } from "@/components/profile/FieldLabel";
+import { requiredProfileFields, validateMandatoryProfile } from "@/lib/schemas/profile.schema";
 import { useProfileGate } from "@/lib/contexts/ProfileGateContext";
 import { useTranslation } from "react-i18next";
 import { Box, Paper, Typography, TextField, Button, MenuItem, Select, FormControl } from "@mui/material";
+import type { SelectChangeEvent } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { UserProfile } from "@/lib/services/profile.service";
@@ -17,6 +19,28 @@ interface PersonalInformationCardProps {
   profile: UserProfile;
   onSave: (updatedProfile: Partial<UserProfile>) => Promise<void>;
 }
+
+/**
+ * One id per control, so the caption above it can be a real `<label htmlFor>` instead of a
+ * floating `<span>`. Spelled out rather than derived: these ids reach the DOM, and a helper that
+ * quietly renamed one would break every label association without breaking the build.
+ */
+const FIELD_IDS = {
+  first_name: "profile-first-name",
+  last_name: "profile-last-name",
+  phone_number: "profile-phone-number",
+  date_of_birth: "profile-date-of-birth",
+  gender: "profile-gender",
+  country: "profile-country",
+  github: "profile-github",
+  linkedin: "profile-linkedin",
+  college_name: "profile-college-name",
+  degree_type: "profile-degree-type",
+  branch: "profile-branch",
+  graduation_year: "profile-graduation-year",
+  city: "profile-city",
+  state: "profile-state",
+} as const;
 
 const GENDER_LABEL_KEYS: Record<string, string> = {
   male: "profile.genderMale",
@@ -50,9 +74,16 @@ export function PersonalInformationCard({
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const { refresh: refreshProfileGate } = useProfileGate();
+  const { completion, refresh: refreshProfileGate } = useProfileGate();
 
-  const syncFormFromProfile = () => ({
+  // Which fields THIS tenant makes mandatory, from the server's own answer rather than from a
+  // constant that a tenant-level override would silently contradict. The profile payload carries
+  // it; the gate is the fallback for a caller that fetched the profile without it.
+  const required = requiredProfileFields(profile.profile_completion ?? completion);
+
+  // Memoised so the effect below can DECLARE it as a dependency rather than lying about one:
+  // rebuilt every render, listing it would have re-synced the form on every keystroke.
+  const syncFormFromProfile = useCallback(() => ({
     first_name: profile.first_name || "",
     last_name: profile.last_name || "",
     phone_number: profile.phone_number || "",
@@ -67,11 +98,11 @@ export function PersonalInformationCard({
     graduation_year: profile.graduation_year || "",
     city: profile.city || "",
     state: profile.state || "",
-  });
+  }), [profile]);
 
   useEffect(() => {
     if (!editing) setFormData(syncFormFromProfile());
-  }, [profile, editing]);
+  }, [syncFormFromProfile, editing]);
 
   const handleChange =
     (field: keyof typeof formData) =>
@@ -82,7 +113,7 @@ export function PersonalInformationCard({
       });
     };
 
-  const handleSelectChange = (field: keyof typeof formData) => (e: any) => {
+  const handleSelectChange = (field: keyof typeof formData) => (e: SelectChangeEvent) => {
       setFormData({
         ...formData,
         [field]: e.target.value,
@@ -279,7 +310,22 @@ try {
         )}
       </Box>
 
-      <Box sx={{ display: "flex", flexDirection: "column", gap: { xs: 2, sm: 2.5 } }}>
+      {required.size > 0 && <RequiredFieldsLegend />}
+
+      <Box
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          gap: { xs: 2, sm: 2.5 },
+          // A real media query, not an `xs` value: an `xs` key applies at EVERY width until a
+          // later breakpoint overrides it, so it would have grown the desktop controls too.
+          // MUI's small input is 39px tall, and a 39px target on a phone is under the 44px
+          // minimum every field on this form was missing.
+          "@media (max-width: 599.95px)": {
+            "& .MuiInputBase-root": { minHeight: 44 },
+          },
+        }}
+      >
         {/* Row 1: First Name & Last Name */}
         <Box
           sx={{
@@ -302,24 +348,16 @@ try {
               },
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:account" size={16} color="var(--accent-indigo)" />
-            <Typography
-              variant="caption"
-              sx={{
-                  color: "var(--font-secondary)",
-                  fontSize: "0.75rem",
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              {t("profile.firstName")}
-            </Typography>
-            </Box>
+            <FieldLabel
+              icon="mdi:account"
+              label={t("profile.firstName")}
+              htmlFor={FIELD_IDS.first_name}
+              required={required.has("first_name")}
+            />
             {editing ? (
               <TextField
                 value={formData.first_name}
+                id={FIELD_IDS.first_name}
                 onChange={handleChange("first_name")}
                 error={Boolean(fieldErrors.first_name)}
                 helperText={fieldErrors.first_name}
@@ -361,24 +399,16 @@ try {
               },
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
-              <IconWrapper icon="mdi:account" size={18} color="var(--accent-indigo)" />
-            <Typography
-              variant="caption"
-              sx={{
-                  color: "var(--font-secondary)",
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              {t("profile.lastName")}
-            </Typography>
-            </Box>
+            <FieldLabel
+              icon="mdi:account"
+              label={t("profile.lastName")}
+              htmlFor={FIELD_IDS.last_name}
+              required={required.has("last_name")}
+            />
             {editing ? (
               <TextField
                 value={formData.last_name}
+                id={FIELD_IDS.last_name}
                 onChange={handleChange("last_name")}
                 error={Boolean(fieldErrors.last_name)}
                 helperText={fieldErrors.last_name}
@@ -429,23 +459,15 @@ try {
               },
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:phone" size={16} color="var(--accent-indigo)" />
-            <Typography
-              variant="caption"
-              sx={{
-                  color: "var(--font-secondary)",
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              {t("profile.phoneNumber")}
-            </Typography>
-            </Box>
+            <FieldLabel
+              icon="mdi:phone"
+              label={t("profile.phoneNumber")}
+              htmlFor={FIELD_IDS.phone_number}
+              required={required.has("phone_number")}
+            />
             {editing ? (
               <MuiTelInput
+                id={FIELD_IDS.phone_number}
                 value={formData.phone_number || ""}
                 defaultCountry="IN"
                 // MuiTelInput emits a spaced value ("+91 98765 43210"); the server wants E.164,
@@ -494,24 +516,16 @@ try {
               },
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:calendar" size={16} color="var(--accent-indigo)" />
-            <Typography
-              variant="caption"
-              sx={{
-                  color: "var(--font-secondary)",
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              {t("profile.dateOfBirth")}
-            </Typography>
-            </Box>
+            <FieldLabel
+              icon="mdi:calendar"
+              label={t("profile.dateOfBirth")}
+              htmlFor={FIELD_IDS.date_of_birth}
+              required={required.has("date_of_birth")}
+            />
             {editing ? (
               <TextField
                 value={formData.date_of_birth}
+                id={FIELD_IDS.date_of_birth}
                 onChange={handleChange("date_of_birth")}
                 required
                 error={Boolean(fieldErrors.date_of_birth)}
@@ -575,24 +589,17 @@ try {
               },
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:gender-male-female" size={16} color="var(--accent-indigo)" />
-              <Typography
-                variant="caption"
-                sx={{
-                  color: "var(--font-secondary)",
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                }}
-              >
-                {t("profile.gender")}
-              </Typography>
-            </Box>
+            <FieldLabel
+              icon="mdi:gender-male-female"
+              label={t("profile.gender")}
+              htmlFor={FIELD_IDS.gender}
+              required={required.has("gender")}
+            />
             {editing ? (
               <FormControl fullWidth size="small">
                 <Select
+                  id={FIELD_IDS.gender}
+                  labelId={`${FIELD_IDS.gender}-label`}
                   value={formData.gender}
                   onChange={handleSelectChange("gender")}
                   displayEmpty
@@ -641,23 +648,15 @@ try {
               },
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:earth" size={16} color="var(--accent-indigo)" />
-              <Typography
-                variant="caption"
-                sx={{
-                  color: "var(--font-secondary)",
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                }}
-              >
-                {t("profile.country")}
-              </Typography>
-            </Box>
+            <FieldLabel
+              icon="mdi:earth"
+              label={t("profile.country")}
+              htmlFor={FIELD_IDS.country}
+              required={required.has("country")}
+            />
             {editing ? (
               <CountrySelect
+                id={FIELD_IDS.country}
                 value={formData.country || ""}
                 onChange={(name) => setFormData((prev) => ({ ...prev, country: name }))}
                 label=""
@@ -702,24 +701,16 @@ try {
               },
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:github" size={16} color="var(--accent-indigo)" />
-            <Typography
-              variant="caption"
-              sx={{
-                  color: "var(--font-secondary)",
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              {t("profile.githubProfile")}
-            </Typography>
-            </Box>
+            <FieldLabel
+              icon="mdi:github"
+              label={t("profile.githubProfile")}
+              htmlFor={FIELD_IDS.github}
+              required={required.has("github")}
+            />
             {editing ? (
               <TextField
                 value={formData.github}
+                id={FIELD_IDS.github}
                 onChange={handleChange("github")}
                 fullWidth
                 size="small"
@@ -799,24 +790,16 @@ try {
               },
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:linkedin" size={16} color="var(--accent-indigo)" />
-            <Typography
-              variant="caption"
-              sx={{
-                  color: "var(--font-secondary)",
-                fontSize: "0.75rem",
-                fontWeight: 600,
-                textTransform: "uppercase",
-                letterSpacing: "0.5px",
-              }}
-            >
-              {t("profile.linkedinProfile")}
-            </Typography>
-            </Box>
+            <FieldLabel
+              icon="mdi:linkedin"
+              label={t("profile.linkedinProfile")}
+              htmlFor={FIELD_IDS.linkedin}
+              required={required.has("linkedin")}
+            />
             {editing ? (
               <TextField
                 value={formData.linkedin}
+                id={FIELD_IDS.linkedin}
                 onChange={handleChange("linkedin")}
                 fullWidth
                 size="small"
@@ -905,23 +888,15 @@ try {
               },
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:school" size={16} color="var(--accent-indigo)" />
-              <Typography
-                variant="caption"
-                sx={{
-                  color: "var(--font-secondary)",
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                }}
-              >
-                {t("profile.collegeName")}
-              </Typography>
-            </Box>
+            <FieldLabel
+              icon="mdi:school"
+              label={t("profile.collegeName")}
+              htmlFor={FIELD_IDS.college_name}
+              required={required.has("college_name")}
+            />
             {editing ? (
               <CollegeAutocomplete
+                id={FIELD_IDS.college_name}
                 value={formData.college_name || ""}
                 onChange={(name) => setFormData({ ...formData, college_name: name })}
                 placeholder="Search or type your college/university"
@@ -954,24 +929,17 @@ try {
               },
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:certificate" size={16} color="var(--accent-indigo)" />
-              <Typography
-                variant="caption"
-                sx={{
-                  color: "var(--font-secondary)",
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                }}
-              >
-                {t("profile.degreeType")}
-              </Typography>
-            </Box>
+            <FieldLabel
+              icon="mdi:certificate"
+              label={t("profile.degreeType")}
+              htmlFor={FIELD_IDS.degree_type}
+              required={required.has("degree_type")}
+            />
             {editing ? (
               <FormControl fullWidth size="small">
                 <Select
+                  id={FIELD_IDS.degree_type}
+                  labelId={`${FIELD_IDS.degree_type}-label`}
                   value={formData.degree_type}
                   onChange={handleSelectChange("degree_type")}
                   displayEmpty
@@ -1026,24 +994,16 @@ try {
               },
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:book-open-page-variant" size={16} color="var(--accent-indigo)" />
-              <Typography
-                variant="caption"
-                sx={{
-                  color: "var(--font-secondary)",
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                }}
-              >
-                {t("profile.branch")}
-              </Typography>
-            </Box>
+            <FieldLabel
+              icon="mdi:book-open-page-variant"
+              label={t("profile.branch")}
+              htmlFor={FIELD_IDS.branch}
+              required={required.has("branch")}
+            />
             {editing ? (
               <TextField
                 value={formData.branch}
+                id={FIELD_IDS.branch}
                 onChange={handleChange("branch")}
                 fullWidth
                 size="small"
@@ -1083,24 +1043,16 @@ try {
               },
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:calendar-check" size={16} color="var(--accent-indigo)" />
-          <Typography
-            variant="caption"
-                sx={{
-                  color: "var(--font-secondary)",
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                }}
-              >
-                {t("profile.graduationYear")}
-              </Typography>
-            </Box>
+            <FieldLabel
+              icon="mdi:calendar-check"
+              label={t("profile.graduationYear")}
+              htmlFor={FIELD_IDS.graduation_year}
+              required={required.has("graduation_year")}
+            />
             {editing ? (
               <TextField
                 value={formData.graduation_year}
+                id={FIELD_IDS.graduation_year}
                 onChange={handleChange("graduation_year")}
                 fullWidth
                 size="small"
@@ -1151,24 +1103,16 @@ try {
               },
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:map-marker" size={16} color="var(--accent-indigo)" />
-              <Typography
-                variant="caption"
-                sx={{
-                  color: "var(--font-secondary)",
-              fontSize: "0.75rem",
-              fontWeight: 600,
-              textTransform: "uppercase",
-              letterSpacing: "0.5px",
-                }}
-              >
-                {t("profile.city")}
-              </Typography>
-            </Box>
+            <FieldLabel
+              icon="mdi:map-marker"
+              label={t("profile.city")}
+              htmlFor={FIELD_IDS.city}
+              required={required.has("city")}
+            />
             {editing ? (
               <TextField
                 value={formData.city}
+                id={FIELD_IDS.city}
                 onChange={handleChange("city")}
                 fullWidth
                 size="small"
@@ -1208,24 +1152,16 @@ try {
               },
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.75, sm: 1 }, mb: { xs: 0.75, sm: 1 } }}>
-              <IconWrapper icon="mdi:map-marker-outline" size={16} color="var(--accent-indigo)" />
-              <Typography
-                variant="caption"
-                sx={{
-                  color: "var(--font-secondary)",
-                  fontSize: "0.75rem",
-                  fontWeight: 600,
-                  textTransform: "uppercase",
-                  letterSpacing: "0.5px",
-                }}
-              >
-                {t("profile.state")}
-          </Typography>
-            </Box>
+            <FieldLabel
+              icon="mdi:map-marker-outline"
+              label={t("profile.state")}
+              htmlFor={FIELD_IDS.state}
+              required={required.has("state")}
+            />
           {editing ? (
             <TextField
                 value={formData.state}
+                id={FIELD_IDS.state}
                 onChange={handleChange("state")}
               fullWidth
               size="small"
