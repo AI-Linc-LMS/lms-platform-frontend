@@ -14,7 +14,7 @@ import {
 import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
 import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import { useVimeoController } from "./useVimeoController";
-import { resumePoint, watchedPercent } from "./progressAcrossVisits";
+import { finishedBefore, restoredAnswers, resumePoint, watchedPercent } from "./progressAcrossVisits";
 import { AutoPauseCheckIn } from "./AutoPauseCheckIn";
 import { CheckpointOverlay } from "./CheckpointOverlay";
 import { ReExplainPanel } from "./ReExplainPanel";
@@ -129,10 +129,16 @@ export function VideoCompanion({
         if (!alive) return;
         setCompanion(res.companion);
         setSessionId(res.session_id);
+        // The check-ins this learner has already passed, whichever visit they passed them on.
+        // Seeding BOTH the reactive set (green markers + counter) and the shown-ref (the
+        // auto-pause gate) is what stops a finished concept being re-examined on the way back.
+        const passed = restoredAnswers(res.companion.my_passed_check_in_ids);
+        setAnswered(passed);
+        passed.forEach((id) => shownRef.current.add(id));
         setSaved({
           bestPct: Math.max(res.companion.my_best_completeness_pct ?? 0, res.session?.completeness_pct ?? 0),
           session: res.session ?? null,
-          completedBefore: Boolean(res.companion.rewatch_available),
+          completedBefore: finishedBefore(res.companion),
         });
         // Reflect what the server actually opened, so the rail shows the mode in force rather than
         // the one this component happened to initialise with.
@@ -390,6 +396,35 @@ export function VideoCompanion({
   const displayTitle = (companion.video?.title || companion.title || "").replace(/_/g, " ").trim();
   // Finished before, or finished just now: every concept has been covered, so none is locked.
   const finished = saved.completedBefore || endedTick > 0;
+  // An externally-hosted video reports nothing back, so "I've finished watching" is the only way
+  // it is ever marked done - and the button has to remember it was pressed. It used to reset on
+  // every visit, so a learner who had already finished such a video was asked to declare it again,
+  // which is the report in its plainest form.
+  //
+  // It keys on the COVERAGE, not on `finished`. `finished` is the completion record, which
+  // `end_session` writes after three seconds on the page, and on an external video this button is
+  // the only thing that ever writes coverage at all (it sets it to exactly 100 below). Keying on
+  // `finished` would have disabled the button for a learner who merely opened such a video once -
+  // leaving them looking at "Marked as watched" they never pressed, unable to press it, and their
+  // award pegged at zero coverage forever. Two learner-videos on prod are in that state today.
+  const declaredWatched = markedWatched || saved.bestPct >= 100;
+  // The checks counter. Rewatch mode ships no check-ins at all, so a learner returning with four
+  // passed ones would have read "4/0"; and a video that has no check-ins has nothing to count.
+  const checksChip =
+    companion.check_ins.length > 0
+      ? `${Math.min(answered.size, companion.check_ins.length)}/${companion.check_ins.length} checks`
+      : answered.size > 0
+        ? `${answered.size} check${answered.size === 1 ? "" : "s"} passed`
+        : "";
+  // Completed, but this visit is still being asked the video's checks.
+  //
+  // The badge keys on the completion record and the check-in gate keys on the watch mode, and
+  // those two rules have just been pulled apart on purpose: a learner who ended a watch without
+  // getting through the video is completed (they keep their tick) AND is no longer exempt from the
+  // questions. A flat "Completed" over a video that then stops to ask eight questions reads as a
+  // bug, so this one state says what is actually true. The rule is unchanged - only the wording.
+  const checksPending =
+    finished && companion.check_ins.length > 0 && answered.size < companion.check_ins.length;
   const conceptTime = finished ? Number.MAX_SAFE_INTEGER : currentTime;
   const watchedConcepts = companion.concept_map?.nodes?.filter((n) => conceptTime >= (n.timestamp_seconds ?? 0)).length ?? 0;
   const watchedPct = finished ? 100 : watchedPercent(saved.bestPct, thisVisitPct);
@@ -513,22 +548,23 @@ export function VideoCompanion({
               </Typography>
               <ButtonBase
                 onClick={() => {
-                  if (markedWatched) return;
+                  if (declaredWatched) return;
                   coverageRef.current = 100;
                   setMarkedWatched(true);
                   endRef.current();
                 }}
-                disabled={markedWatched}
+                disabled={declaredWatched}
+                data-testid="mark-watched"
                 sx={{
                   px: 2, py: 0.9, borderRadius: 999, fontWeight: 800, fontSize: "0.8rem", gap: 0.6,
                   [PHONE]: { minHeight: 44 },
-                  color: "#fff", background: markedWatched
+                  color: "#fff", background: declaredWatched
                     ? "linear-gradient(135deg, #10b981, #059669)"
                     : "linear-gradient(135deg, #6366f1, #a855f7)",
                 }}
               >
-                <Icon icon={markedWatched ? "mdi:check-circle" : "mdi:check"} width={16} />
-                {markedWatched ? "Marked as watched" : "I've finished watching"}
+                <Icon icon={declaredWatched ? "mdi:check-circle" : "mdi:check"} width={16} />
+                {declaredWatched ? "Marked as watched" : "I've finished watching"}
               </ButtonBase>
             </Box>
           )}
@@ -568,11 +604,16 @@ export function VideoCompanion({
               {fmt(currentTime)} / {fmt(duration)}
             </Typography>
             <Chip icon="mdi:sitemap-outline" label={`${watchedConcepts} concepts`} />
-            <Chip icon="mdi:lightning-bolt" label={`${answered.size}/${companion.check_ins.length} checks`} />
+            {checksChip && <Chip icon="mdi:lightning-bolt" label={checksChip} />}
             {finished ? (
               <Box data-testid="video-completed" sx={{ display: "inline-flex", alignItems: "center", gap: 0.5, px: 1, py: 0.25, borderRadius: 999,
-                fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, color: "#15803d", bgcolor: "color-mix(in srgb, #16a34a 12%, transparent)" }}>
-                <Icon icon="mdi:check-circle" width={14} /> Completed
+                fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800,
+                color: checksPending ? "#a16207" : "#15803d",
+                bgcolor: checksPending
+                  ? "color-mix(in srgb, #eab308 16%, transparent)"
+                  : "color-mix(in srgb, #16a34a 12%, transparent)" }}>
+                <Icon icon={checksPending ? "mdi:check-circle-outline" : "mdi:check-circle"} width={14} />
+                {checksPending ? "Completed · checks pending" : "Completed"}
               </Box>
             ) : watchedPct >= 1 ? (
               <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 700, color: "text.secondary" }}>{Math.round(watchedPct)}% watched</Typography>
