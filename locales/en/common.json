@@ -2997,7 +2997,20 @@
   },
   "savedResumes": {
     "allSaved": "All changes saved",
+    "atsAtSave": "ATS {{score}} at save",
+    "atsAtSaveHint": "The ATS score when this resume was last saved. Opening it scores the current content again.",
     "cancel": "Cancel",
+    "discardConfirm": "Discard and open",
+    "discardMessage": "You have unsaved changes to \"{{open}}\". Opening \"{{next}}\" will discard them.",
+    "discardTitle": "Open without saving?",
+    "loadFailed": "Your saved resumes could not be loaded just now. They are still there.",
+    "noPdfHint": "This does not create a PDF. For something to attach to a job application, use “Save a PDF copy to my profile”.",
+    "photo": {
+      "notAnImage": "That file is not an image. Choose a JPEG or PNG photo.",
+      "tooLarge": "That photo is too large to store in a resume, even after shrinking it. Choose one under {{max}}KB.",
+      "unreadable": "That photo could not be read. Try another one."
+    },
+    "retry": "Try again",
     "save": "Save",
     "count": "{{count}} of {{max}}",
     "defaultName": "My resume",
