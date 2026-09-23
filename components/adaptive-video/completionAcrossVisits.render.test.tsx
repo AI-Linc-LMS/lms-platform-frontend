@@ -150,15 +150,69 @@ describe("an externally-hosted video", () => {
   const external = (over: Record<string, unknown> = {}) =>
     companion({ video: null, source: "external", check_ins: [], play_url: "https://www.youtube.com/watch?v=x", ...over });
 
-  it("remembers that the learner already marked it watched", async () => {
-    start.mockResolvedValue({ session_id: "s1", companion: external({ my_completed: true }), session: session() });
+  it("remembers that the learner already pressed the button", async () => {
+    // The press is what drove coverage to exactly 100; nothing else on an external video can.
+    start.mockResolvedValue({
+      session_id: "s1",
+      companion: external({ my_completed: true, my_best_completeness_pct: 100 }),
+      session: session(),
+    });
     render(<VideoCompanion configId={800} />);
     expect(await screen.findByTestId("mark-watched")).toHaveTextContent("Marked as watched");
+  });
+
+  it("stays live for a learner who only ever opened it", async () => {
+    // `end_session` fires on unmount, so merely opening an external video records a completed
+    // session at 0% coverage. Disabling the button on that would leave the learner looking at a
+    // declaration they never made, unable to make it, and their award pegged at zero coverage.
+    start.mockResolvedValue({
+      session_id: "s1",
+      companion: external({ my_completed: true, my_best_completeness_pct: 0 }),
+      session: session(),
+    });
+    render(<VideoCompanion configId={800} />);
+    const button = await screen.findByTestId("mark-watched");
+    expect(button).toHaveTextContent("I've finished watching");
+    expect(button).not.toBeDisabled();
   });
 
   it("still asks on a first visit", async () => {
     start.mockResolvedValue({ session_id: "s1", companion: external({ my_completed: false }), session: session() });
     render(<VideoCompanion configId={800} />);
     expect(await screen.findByTestId("mark-watched")).toHaveTextContent("I've finished watching");
+  });
+});
+
+describe("completed, but this visit is still being asked the checks", () => {
+  it("says so, instead of a flat Completed over a video about to stop and ask", async () => {
+    // The 132 learner-videos the backend stops exempting: completed (they keep the tick), no
+    // longer eligible for a question-free rewatch, so the check-ins are served again.
+    start.mockResolvedValue({
+      session_id: "s1",
+      companion: companion({ my_completed: true, rewatch_available: false, my_passed_check_in_ids: [] }),
+      session: session(),
+    });
+    render(<VideoCompanion configId={800} />);
+    expect(await screen.findByTestId("video-completed")).toHaveTextContent("Completed · checks pending");
+  });
+
+  it("goes back to a plain Completed once every check is passed", async () => {
+    start.mockResolvedValue({
+      session_id: "s1",
+      companion: companion({ my_completed: true, rewatch_available: false, my_passed_check_in_ids: [10] }),
+      session: session(),
+    });
+    render(<VideoCompanion configId={800} />);
+    expect(await screen.findByTestId("video-completed")).toHaveTextContent(/^Completed$/);
+  });
+
+  it("is plain Completed in rewatch mode, where nothing is asked at all", async () => {
+    start.mockResolvedValue({
+      session_id: "s1",
+      companion: companion({ my_completed: true, rewatch_available: true, check_ins: [], my_passed_check_in_ids: [10] }),
+      session: session({ watch_mode: "rewatch" }),
+    });
+    render(<VideoCompanion configId={800} />);
+    expect(await screen.findByTestId("video-completed")).toHaveTextContent(/^Completed$/);
   });
 });
