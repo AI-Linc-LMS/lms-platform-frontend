@@ -1437,7 +1437,18 @@ export default function AssessmentEditPage() {
     [assessmentId, showToast],
   );
 
+  // Submitted attempts only. The backend no longer puts an unfinished attempt in `submissions`,
+  // so this is the same number the list below renders - the two used to disagree, and "Total 2"
+  // over a single result is a worse bug than the row that caused it.
   const totalSubmissions = submissionsData?.submissions?.length ?? 0;
+
+  // Attempts still open, kept deliberately apart from the count above. An admin still needs to
+  // find a stuck attempt, a failed device check or someone who never finished - just never
+  // anywhere it reads as a submission.
+  const inProgressAttempts = useMemo(
+    () => submissionsData?.in_progress ?? [],
+    [submissionsData],
+  );
 
   const manualReviewStats = useMemo(() => {
     const rows = submissionsData?.submissions || [];
@@ -2753,7 +2764,7 @@ export default function AssessmentEditPage() {
                         Submissions workspace
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        {totalSubmissions} attempt{totalSubmissions === 1 ? "" : "s"} ·{" "}
+                        {totalSubmissions} submitted attempt{totalSubmissions === 1 ? "" : "s"} ·{" "}
                         {evaluationMode === "manual" ? "manual evaluation" : "AI auto-evaluation"}
                         {proctoringEnabled ? " · integrity flags surfaced" : ""}
                       </Typography>
@@ -2826,7 +2837,7 @@ export default function AssessmentEditPage() {
                   </Box>
 
                   <Box sx={{ mt: 1.5, display: "flex", gap: 1, flexWrap: "wrap" }}>
-                    <Chip size="small" label={`Total ${totalSubmissions}`} sx={{ fontWeight: 700 }} />
+                    <Chip size="small" label={`Submitted ${totalSubmissions}`} sx={{ fontWeight: 700 }} />
                     {evaluationMode === "manual" ? (
                       <>
                         <Chip size="small" color="warning" variant="outlined" label={`Pending ${manualReviewStats.pending}`} />
@@ -2838,6 +2849,108 @@ export default function AssessmentEditPage() {
                     )}
                   </Box>
                 </Paper>
+                {/*
+                  In progress, in its own panel. These are not submissions: they have no score and
+                  nothing to grade, and listing them among the results is what made a learner who
+                  had submitted nothing appear as an attempt. They stay visible because an admin
+                  does need to spot a stuck attempt, a failed device check or someone who walked
+                  away - which is a different question from "how did people do".
+                */}
+                {inProgressAttempts.length > 0 && (
+                  <Paper
+                    elevation={0}
+                    data-testid="in-progress-attempts"
+                    sx={{
+                      mb: 2,
+                      p: { xs: 1.5, sm: 2 },
+                      borderRadius: "var(--radius-card)",
+                      border: "1px dashed var(--border-default)",
+                      bgcolor: "var(--card-bg)",
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 1 }}>
+                      <IconWrapper icon="mdi:progress-clock" size={18} />
+                      <Typography
+                        variant="subtitle2"
+                        sx={{ fontWeight: 800, color: "var(--font-primary)" }}
+                      >
+                        Still attempting ({inProgressAttempts.length})
+                      </Typography>
+                    </Box>
+                    <Typography
+                      variant="caption"
+                      sx={{ color: "var(--font-tertiary)", display: "block", mb: 1.5 }}
+                    >
+                      Not submitted, so not counted above and nothing to grade yet.
+                    </Typography>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 1,
+                      }}
+                    >
+                      {inProgressAttempts.map((a, idx) => (
+                        <Box
+                          key={a.submission_id ?? `${a.email}-${idx}`}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1.25,
+                            // Wraps rather than scrolls the page sideways: at 360px an email plus
+                            // two timestamps is far wider than the card, and `minWidth: 0` is what
+                            // lets a flex child actually shrink instead of forcing overflow.
+                            flexWrap: "wrap",
+                            minWidth: 0,
+                          }}
+                        >
+                          <Avatar
+                            sx={{
+                              width: 28,
+                              height: 28,
+                              fontSize: 12,
+                              fontWeight: 700,
+                              bgcolor:
+                                "color-mix(in srgb, var(--warning-500) 16%, transparent)",
+                              color: "var(--warning-500)",
+                            }}
+                          >
+                            {buildInitials(a.name)}
+                          </Avatar>
+                          <Typography
+                            variant="body2"
+                            sx={{ fontWeight: 700, color: "var(--font-primary)" }}
+                          >
+                            {a.name || "Unknown learner"}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            sx={{
+                              color: "var(--font-tertiary)",
+                              minWidth: 0,
+                              wordBreak: "break-word",
+                              // MUI caption is 0.75rem; hold it at 12px on a phone rather than
+                              // letting it land below the readable floor.
+                              [PHONE]: { fontSize: "0.75rem" },
+                            }}
+                          >
+                            {[
+                              a.email || null,
+                              a.started_at
+                                ? `started ${formatSubmissionDate(a.started_at)}`
+                                : null,
+                              a.last_activity_at
+                                ? `last activity ${formatSubmissionDate(a.last_activity_at)}`
+                                : null,
+                            ]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </Typography>
+                        </Box>
+                      ))}
+                    </Box>
+                  </Paper>
+                )}
                 {!submissionsData?.submissions?.length ? (
                   submissionsLoading ||
                   (submissionsMeta && !submissionsMeta.ready) ? (
@@ -2859,7 +2972,9 @@ export default function AssessmentEditPage() {
                     </Box>
                   ) : (
                     <Typography color="text.secondary">
-                      No submissions yet.
+                      {inProgressAttempts.length > 0
+                        ? "No submitted attempts yet - the attempts above are still open."
+                        : "No submissions yet."}
                     </Typography>
                   )
                 ) : (
