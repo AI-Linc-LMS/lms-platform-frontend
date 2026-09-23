@@ -19,6 +19,10 @@ vi.mock("@/lib/services/admin/admin-student.service", () => ({
     })),
   },
 }));
+// No batches on this tenant: the optional batch picker stays hidden and the payload is unchanged.
+vi.mock("@/lib/services/admin/admin-cohorts.service", () => ({
+  adminCohortsService: { listCohorts: vi.fn(async () => []) },
+}));
 vi.mock("@/lib/services/admin/admin-adaptive-course.service", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/lib/services/admin/admin-adaptive-course.service")>()),
   adminAdaptiveCourseService: { enrollStudents: mocks.enroll },
