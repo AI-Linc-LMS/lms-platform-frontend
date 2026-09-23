@@ -132,7 +132,24 @@ function TopCardShell({
   const muted = dark ? "rgba(255,255,255,0.62)" : "#64748b";
 
   return (
-    <Box sx={{ ...surfaceSx, p: expanded ? 2.5 : 1.25, [PHONE]: { minWidth: 0, p: expanded ? 2 : 1.25 } }}>
+    <Box
+      sx={{
+        ...surfaceSx,
+        p: expanded ? 2.5 : 1.25,
+        // The flex column is load-bearing: the pills and chips at the bottom of an expanded card
+        // sit on `mt: "auto"`, which needs a column with height to spare to push against. Two
+        // expanded cards therefore stretch to a common height and their CTAs line up, exactly as
+        // they did before this card could collapse.
+        display: "flex",
+        flexDirection: "column",
+        // Refusing to stretch belongs to the COLLAPSED card, not to the row: putting it on the
+        // row's `alignItems` also stopped two expanded cards matching heights (measured: the
+        // calibration CTA sat 24px above the interview's). Only at md+, where the row is a row -
+        // in the xs column `flex-start` is the CROSS axis and would shrink the card's width.
+        alignSelf: { xs: "stretch", md: expanded ? "stretch" : "flex-start" },
+        [PHONE]: { minWidth: 0, p: expanded ? 2 : 1.25 },
+      }}
+    >
       <Stack
         direction="row"
         spacing={1.25}
@@ -141,6 +158,13 @@ function TopCardShell({
           // On a phone the row becomes three: identity, then the one-line summary, then a
           // full-width action. `order` puts the action last even though the chevron follows it
           // in the DOM, so the chevron stays on the identity line where it belongs.
+          //
+          // DOM order stays identity -> summary -> action -> expander, which is the reading
+          // order a screen reader and the tab sequence both follow, and it is the painted order
+          // at md and up. On a phone `order` paints the expander (line 1) before the action
+          // (line 3) while tab still reaches the action first: one reordered pair, and the
+          // alternative - reordering the DOM - only moves the same mismatch to the desktop,
+          // where far more people use a keyboard.
           [PHONE]: {
             flexWrap: "wrap",
             rowGap: 1,
@@ -223,9 +247,20 @@ function TopCardShell({
       {/* The panel wrapper is always in the DOM so the expander's `aria-controls` always names
           something real; the body inside it is unmounted while closed, which is what makes a
           collapsed card a row rather than a card with its contents hidden. */}
-      <Box id={panelId}>
-        <Collapse in={expanded} timeout={reduceMotion ? 0 : 260} unmountOnExit>
-          <Box sx={{ display: "flex", flexDirection: "column" }}>{children}</Box>
+      <Box id={panelId} sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+        <Collapse
+          in={expanded}
+          timeout={reduceMotion ? 0 : 260}
+          unmountOnExit
+          // Collapse animates its own height and its two internal wrappers are plain blocks, so
+          // without this the column stops here and `mt: "auto"` inside has nothing to push
+          // against. `flex: 1` only once the card is open, so it never fights the animation.
+          sx={{
+            flex: expanded ? 1 : "0 0 auto",
+            "& .MuiCollapse-wrapper, & .MuiCollapse-wrapperInner": { height: "100%", display: "flex", flexDirection: "column" },
+          }}
+        >
+          <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>{children}</Box>
         </Collapse>
       </Box>
     </Box>
@@ -291,9 +326,9 @@ function CalibrationCard({ calibration, courseId }: { calibration: JourneyBoard[
           <Icon icon="mdi:shield-half-full" width={20} color="#fb923c" />
         </Box>
       }
-      title="Calibration Assessment"
+      title={t("adaptiveTopCards.calibrationTitle")}
       titleChips={statusChip}
-      subtitle="Required before personalization unlocks"
+      subtitle={t("adaptiveTopCards.calibrationPending")}
       summary={summary}
       rowAction={
         clickable
@@ -394,13 +429,22 @@ function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["int
     }
   };
 
-  let ctaLabel = "Launch interviewer";
-  if (!configured) ctaLabel = "Interview is being set up";
-  else if (status === "done") ctaLabel = "Take it again";
-
+  // An admin can deactivate a template AFTER a learner has sat the interview - the board then
+  // sends `configured: false` with `status: "done"` - so `done` is tested FIRST. Asking
+  // `configured` first made a finished interview read "your instructor is still setting this up"
+  // directly beside its own DONE chip.
+  let ctaLabel = t("adaptiveTopCards.launchCta");
   let summary = t("adaptiveTopCards.interviewNotConfigured");
-  if (configured && status === "done") summary = t("adaptiveTopCards.interviewDone", { minutes: card.durationMinutes ?? 10 });
-  else if (configured) summary = t("adaptiveTopCards.interviewReady", { minutes: card.durationMinutes ?? 10 });
+  if (status === "done") {
+    ctaLabel = configured ? t("adaptiveTopCards.takeAgain") : t("adaptiveTopCards.interviewClosedCta");
+    summary = configured
+      ? t("adaptiveTopCards.interviewDone", { minutes: card.durationMinutes ?? 10 })
+      : t("adaptiveTopCards.interviewDoneClosed");
+  } else if (!configured) {
+    ctaLabel = t("adaptiveTopCards.interviewSetupCta");
+  } else {
+    summary = t("adaptiveTopCards.interviewReady", { minutes: card.durationMinutes ?? 10 });
+  }
 
   return (
     <TopCardShell
@@ -418,7 +462,7 @@ function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["int
           </Box>
         </Box>
       }
-      title="AI Mock Interviewer"
+      title={t("adaptiveTopCards.interviewTitle")}
       titleChips={
         <>
           <Chip
@@ -430,12 +474,12 @@ function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["int
           {status === "done" && <Chip label="DONE" size="small" sx={{ height: 20, fontSize: "0.6rem", fontWeight: 800, color: "#14532d", bgcolor: "#bbf7d0", [PHONE]: { height: 22, fontSize: "0.75rem" } }} />}
         </>
       }
-      subtitle="Practice rounds, on demand"
+      subtitle={t("adaptiveTopCards.interviewReadySubtitle")}
       summary={summary}
       rowAction={configured ? { label: status === "done" ? t("adaptiveTopCards.takeAgain") : t("adaptiveTopCards.launch"), onClick: launch, busy } : undefined}
       expandedHeaderRight={
         <ButtonBase
-          aria-label="Launch interviewer"
+          aria-label={t("adaptiveTopCards.launchCta")}
           disabled={!configured}
           onClick={launch}
           sx={{ flexShrink: 0, p: 0.5, borderRadius: "50%", color: "#a855f7", "&.Mui-disabled": { color: "#cbd5e1" }, [PHONE]: { display: "none" } }}
@@ -499,12 +543,14 @@ export function JourneyTopCards({
   // which would leave a band of dead space between the hero and the course overview.
   if (!calibration.card && !interview.card) return null;
 
-  // `flex-start`: a collapsed row beside an expanded card must stay one row tall, not stretch
-  // to its neighbour's height - which is the whole point of collapsing it.
+  // The row stretches, as it always did, so two expanded cards match heights. A card that is
+  // COLLAPSED opts out for itself with `alignSelf` - see TopCardShell.
+  // `key={courseId}`: the open/closed override is per course, so a course change resets it
+  // rather than carrying one course's choice into the next.
   return (
-    <Stack direction={{ xs: "column", md: "row" }} spacing={2} alignItems={{ xs: "stretch", md: "flex-start" }} sx={{ mb: 2.5 }}>
-      {calibration.card && <CalibrationCard calibration={calibration} courseId={courseId} />}
-      {interview.card && <InterviewerCard interview={interview} courseId={courseId} />}
+    <Stack direction={{ xs: "column", md: "row" }} spacing={2} sx={{ mb: 2.5 }}>
+      {calibration.card && <CalibrationCard key={`calibration-${courseId}`} calibration={calibration} courseId={courseId} />}
+      {interview.card && <InterviewerCard key={`interview-${courseId}`} interview={interview} courseId={courseId} />}
     </Stack>
   );
 }

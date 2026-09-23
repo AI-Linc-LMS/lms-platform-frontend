@@ -3084,6 +3084,13 @@
     "calibrationNotConfigured": "Your instructor will enable this soon",
     "interviewDone": "Done · run another round any time · ~{{minutes}} min",
     "interviewReady": "Voice practice round · ~{{minutes}} min",
-    "interviewNotConfigured": "Your instructor is still setting this up"
+    "interviewNotConfigured": "Your instructor is still setting this up",
+    "calibrationTitle": "Calibration Assessment",
+    "interviewTitle": "AI Mock Interviewer",
+    "interviewReadySubtitle": "Practice rounds, on demand",
+    "launchCta": "Launch interviewer",
+    "interviewSetupCta": "Interview is being set up",
+    "interviewClosedCta": "This interview is no longer open",
+    "interviewDoneClosed": "Done · this interview is no longer open"
   }
 }
