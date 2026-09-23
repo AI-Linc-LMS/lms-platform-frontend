@@ -20,6 +20,7 @@ export function CollegeAutocomplete({
   onChange,
   label,
   placeholder = "Search or type your college",
+  id,
   required = false,
   error = false,
   helperText,
@@ -30,6 +31,8 @@ export function CollegeAutocomplete({
   onChange: (name: string) => void;
   label?: string;
   placeholder?: string;
+  /** Id for the input, so a caption elsewhere can be its `<label htmlFor>`. */
+  id?: string;
   required?: boolean;
   error?: boolean;
   helperText?: string;
@@ -67,6 +70,7 @@ export function CollegeAutocomplete({
 
   return (
     <Autocomplete<CollegeOption, false, false, true>
+      id={id}
       freeSolo
       fullWidth={fullWidth}
       options={options}
