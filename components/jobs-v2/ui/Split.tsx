@@ -43,6 +43,20 @@ import { J } from "./jobsTokens";
  *    the viewport.
  */
 
+/**
+ * The shortest the split is ever allowed to be at `lg+`.
+ *
+ * Three rail cards and a readable slice of the posting. Below this the pane stops being an
+ * instrument and becomes a letterbox, and — because the wrapper clips and the document is sized
+ * to the viewport — a letterbox the page cannot scroll past. Whenever this floor wins, the split
+ * runs below the fold on purpose and the DOCUMENT scrolls, which is the behaviour a reader
+ * expects from a page whose header has eaten most of the screen.
+ */
+export const SPLIT_MIN_H = 360;
+
+/** The split's height at `lg+`, as one CSS value. Emitted by the wrapper and read by its test. */
+export const SPLIT_HEIGHT_LG = `max(${SPLIT_MIN_H}px, calc(100dvh - var(--j-split-top) - 16px))`;
+
 /* ==========================================================================
  * Context — the two scrollers, for the hooks below
  * ======================================================================== */
@@ -127,7 +141,21 @@ export function JobsSplitLayout({
             // makes two panes read as one instrument.
             gap: 0,
             // `--j-split-top` is the app bar + header + filter rail, set once in `.jobs-scope`.
-            height: { xs: "auto", lg: "calc(100dvh - var(--j-split-top) - 16px)" },
+            //
+            // The FLOOR is why "applying a filter stops the page scrolling". Without it the
+            // split takes whatever is left of the viewport under a ~570px page header, and a
+            // filter
+            // adds the active-chip row and the "N of M" summary — about 50px, straight out of
+            // the results rail. Measured at 1366x640: the rail went from 56px to **6px**, and
+            // since the wrapper is `overflow: hidden` at exactly the remaining viewport height
+            // the document could only ever scroll 16px. Nothing on the page moved. Clearing the
+            // filter put the rail back to 56px, which is why it never felt restored.
+            //
+            // With a floor the split can be TALLER than the space under the header, and that is
+            // the point: the document then grows, the page scrolls the header away, and the
+            // whole rail is reachable. On a screen with room to spare the natural height still
+            // wins and nothing about the instrument changes.
+            height: { xs: "auto", lg: SPLIT_HEIGHT_LG },
             // The wrapper's own overflow, NEVER `body`'s.
             overflow: { xs: "visible", lg: "hidden" },
             minWidth: 0,

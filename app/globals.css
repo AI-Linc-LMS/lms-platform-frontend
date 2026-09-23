@@ -1643,8 +1643,10 @@ body:has(.jobs-scope) {
   /* --- the split (lg+ only; below lg nothing here is read) ---
    * --j-split-top is everything the split must clear at the top of the page: the app bar, the
    * ModulePageHeader that has scrolled away, and the sticky search + filter rail. The split's
-   * height is calc(100dvh - var(--j-split-top) - 16px) — `dvh`, never `vh`, because mobile
-   * browser chrome makes 100vh taller than the visible viewport.
+   * height is max(360px, calc(100dvh - var(--j-split-top) - 16px)) — `dvh`, never `vh`, because
+   * mobile browser chrome makes 100vh taller than the visible viewport, and the floor because
+   * without it a 570px page header on a 640px-tall window left the results rail 6px high with
+   * nowhere for the document to scroll. The floor lives in Split.tsx (SPLIT_MIN_H).
    * A route that carries a taller filter rail overrides this on its own wrapper; it is a
    * variable precisely so no component hardcodes the number. */
   --j-split-top: 216px;

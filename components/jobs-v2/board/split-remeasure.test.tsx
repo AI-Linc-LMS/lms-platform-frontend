@@ -158,3 +158,41 @@ describe("the split pane's measured height survives an empty-state round trip", 
     expect(second).not.toBe(first); // it really is a new node -- otherwise this proves nothing
   });
 });
+
+/**
+ * The measurement is the split's RESTING offset, not wherever it happens to be on screen.
+ *
+ * `--j-split-top` feeds `max(360px, calc(100dvh - var(--j-split-top) - 16px))`. Now that the
+ * floor lets the split run below the fold, the page scrolls on purpose -- so a reading taken
+ * from the raw viewport top is wrong by exactly the scroll distance, and the old code
+ * additionally bailed outright (`top <= 0`) once the split had scrolled off the top. Either way
+ * the split ends up sized from a position it does not occupy.
+ */
+describe("the measurement ignores how far the page is scrolled", () => {
+  const SCROLLED = 120;
+
+  it("reads the same top whether the page is at the origin or scrolled", async () => {
+    render(<JobBoard />);
+    await waitFor(() => expect(getJobs).toHaveBeenCalled());
+    await settle();
+    expect(measured()!.style.getPropertyValue("--j-split-top")).toBe(EXPECTED);
+
+    // Scroll an ancestor: every rect moves up by SCROLLED, the layout itself is unchanged.
+    const scroller = measured()!.parentElement as HTMLElement;
+    Object.defineProperty(scroller, "scrollTop", { value: SCROLLED, configurable: true });
+    Element.prototype.getBoundingClientRect = function () {
+      return {
+        top: TOP - SCROLLED, bottom: TOP - SCROLLED, left: 0, right: 0, width: 800,
+        height: 0, x: 0, y: TOP - SCROLLED, toJSON: () => ({}),
+      } as DOMRect;
+    };
+    // Applying a filter fires the ResizeObserver; a resize is the same schedule() in a test.
+    window.dispatchEvent(new Event("resize"));
+    await settle();
+
+    expect(
+      measured()!.style.getPropertyValue("--j-split-top"),
+      "the split was sized from its scrolled position, so it is 120px too tall",
+    ).toBe(EXPECTED);
+  });
+});
