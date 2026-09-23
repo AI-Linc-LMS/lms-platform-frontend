@@ -74,8 +74,15 @@ export interface VideoCompanion {
   takeaways: string[];
   target_skills: string[];
   check_ins: CheckInMarker[];
-  /** Has this learner finished this video before? Decides whether rewatch mode is offered. */
+  /** Has this learner been through this video? Decides whether rewatch mode is offered — NOT
+   *  whether the video counts as done; use `my_completed` for that. */
   rewatch_available?: boolean;
+  /** Has this learner completed this video, on any visit? The same record the topic page's tick
+   *  reads, so the badge here and the tick there cannot disagree. */
+  my_completed?: boolean;
+  /** The check-ins this learner has already answered correctly, in any visit. They come back
+   *  marked, and are not asked again. */
+  my_passed_check_in_ids?: number[];
   /** The most of this video the learner has covered in any visit, 0-100. */
   my_best_completeness_pct?: number;
   transcript_segments: TranscriptSegment[];

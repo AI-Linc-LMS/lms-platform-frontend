@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { resumePoint, watchedPercent } from "./progressAcrossVisits";
+import { finishedBefore, restoredAnswers, resumePoint, watchedPercent } from "./progressAcrossVisits";
 
 describe("resuming a video", () => {
   it("picks up an unfinished visit where it stopped", () => {
@@ -30,5 +30,37 @@ describe("the watched part of the bar", () => {
   it("stays within 0-100", () => {
     expect(watchedPercent(undefined, 0)).toBe(0);
     expect(watchedPercent(140, 0)).toBe(100);
+  });
+});
+
+describe("whether the video is already done", () => {
+  it("reads the completion record", () => {
+    expect(finishedBefore({ my_completed: true })).toBe(true);
+    expect(finishedBefore({ my_completed: false })).toBe(false);
+  });
+
+  it("does not let the rewatch rule override it", () => {
+    // Completed but not eligible for a question-free rewatch: the badge still says done.
+    expect(finishedBefore({ my_completed: true, rewatch_available: false })).toBe(true);
+    // ...and eligibility alone never invents a completion.
+    expect(finishedBefore({ my_completed: false, rewatch_available: true })).toBe(false);
+  });
+
+  it("falls back to the rewatch flag only when the field is absent", () => {
+    expect(finishedBefore({ rewatch_available: true })).toBe(true);
+    expect(finishedBefore({})).toBe(false);
+    expect(finishedBefore(null)).toBe(false);
+  });
+});
+
+describe("the check-ins already passed", () => {
+  it("comes back as a set the player can mark off", () => {
+    expect(restoredAnswers([4, 9])).toEqual(new Set([4, 9]));
+  });
+
+  it("is empty for a first visit, or a server that sent nothing", () => {
+    expect(restoredAnswers([])).toEqual(new Set());
+    expect(restoredAnswers(undefined)).toEqual(new Set());
+    expect(restoredAnswers(null)).toEqual(new Set());
   });
 });

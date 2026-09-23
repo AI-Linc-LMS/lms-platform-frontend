@@ -32,3 +32,33 @@ export function watchedPercent(savedPct: number | null | undefined, thisVisitPct
   const best = Math.max(Number(savedPct) || 0, Number(thisVisitPct) || 0);
   return Math.min(Math.max(best, 0), 100);
 }
+
+/**
+ * Has this learner finished this video on an earlier visit?
+ *
+ * `my_completed` is the completion record — the same one the topic page's tick reads — so the two
+ * screens cannot disagree about whether a video is done. `rewatch_available` answers a different
+ * question (may this learner watch it with no check-ins?), and reading completion off it tied the
+ * badge to a watch-MODE rule: tightening who gets a question-free rewatch would then have quietly
+ * un-completed videos. It stays here only as the fallback for a backend that predates the field,
+ * so the page behaves during the deploy gap rather than calling every finished video unwatched.
+ */
+export function finishedBefore(
+  companion: { my_completed?: boolean; rewatch_available?: boolean } | null | undefined,
+): boolean {
+  if (!companion) return false;
+  return companion.my_completed ?? Boolean(companion.rewatch_available);
+}
+
+/**
+ * The check-ins to show as already answered, from the ids the server says this learner has passed.
+ *
+ * A response belongs to a session and a revisit opens a new one, so without this the player
+ * re-armed every probe: the green markers went back to purple, the counter reset to 0, and the
+ * learner was asked questions they had already got right (on prod, one learner passed the same
+ * eight check-ins in three separate sessions). Passing a check-in is a fact about the learner and
+ * the concept, not about the visit it happened in.
+ */
+export function restoredAnswers(passedIds: number[] | null | undefined): Set<number> {
+  return new Set((passedIds ?? []).filter((id) => Number.isFinite(id)));
+}
