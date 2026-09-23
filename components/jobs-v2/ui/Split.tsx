@@ -143,18 +143,19 @@ export function JobsSplitLayout({
             // `--j-split-top` is the app bar + header + filter rail, set once in `.jobs-scope`.
             //
             // The FLOOR is why "applying a filter stops the page scrolling". Without it the
-            // split takes whatever is left of the viewport under a ~570px page header, and a
-            // filter
-            // adds the active-chip row and the "N of M" summary — about 50px, straight out of
-            // the results rail. Measured at 1366x640: the rail went from 56px to **6px**, and
-            // since the wrapper is `overflow: hidden` at exactly the remaining viewport height
-            // the document could only ever scroll 16px. Nothing on the page moved. Clearing the
-            // filter put the rail back to 56px, which is why it never felt restored.
+            // split takes whatever is left of the viewport under a ~570px page header, and
+            // applying a filter adds the active-chip row and the "N of M" summary — about 50px,
+            // straight out of the results rail. Measured at 1366x640 the rail went from 56px to
+            // 6px, and since the wrapper is `overflow: hidden` at exactly the remaining viewport
+            // height the document could only ever scroll 16px: nothing on the page moved.
+            // Clearing the filter put the rail back to 56px, which is why it never felt
+            // restored.
             //
             // With a floor the split can be TALLER than the space under the header, and that is
             // the point: the document then grows, the page scrolls the header away, and the
-            // whole rail is reachable. On a screen with room to spare the natural height still
-            // wins and nothing about the instrument changes.
+            // whole rail is reachable. With a 567px top the floor wins below a 943px viewport,
+            // so most laptops now carry a small page scroll they did not have; above that the
+            // natural height still wins and nothing about the instrument changes.
             height: { xs: "auto", lg: SPLIT_HEIGHT_LG },
             // The wrapper's own overflow, NEVER `body`'s.
             overflow: { xs: "visible", lg: "hidden" },

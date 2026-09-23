@@ -112,7 +112,7 @@ export function EligibilityPanel({ job }: { job: JobV2 }) {
       <Typography data-quiet-section="" sx={{ ...TYPE.micro, mb: 2 }}>
         {t(
           "jobsV2.detail.noGates",
-          "No eligibility gates. Everyone in the audience above can apply.",
+          "No eligibility gates. Everyone in the audience can apply.",
         )}
       </Typography>
     );

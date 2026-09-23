@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { Box, Menu, MenuItem, Typography } from "@mui/material";
 import { useTranslation } from "react-i18next";
@@ -41,8 +41,10 @@ import {
 import { AudiencePanel } from "./AudiencePanel";
 import { EligibilityPanel, countEligibilityGates, type DefinitionRow } from "./EligibilityPanel";
 import {
+  EMPTY_PLAN,
   PUBLISHING_WEIGHT,
   QUIET_SECTION,
+  SECTION_ORDER,
   audienceWeight,
   chipsWeight,
   linksWeight,
@@ -50,6 +52,7 @@ import {
   proseWeight,
   rowsWeight,
   type JobSectionKey,
+  type SectionWeights,
 } from "./columnPlan";
 
 /** Case-folded de-duplication. The two skill lists are separate, but they can overlap. */
@@ -70,6 +73,70 @@ function dedupeSkills(job: JobV2): string[] {
 /** A definition row an admin actually filled in. */
 function filled(value: unknown): boolean {
   return value != null && String(value).trim() !== "";
+}
+
+/**
+ * The classification rows, as ONE list that both the card and the column planner read — the
+ * same reason `EligibilityPanel` exports `countEligibilityGates`. A second copy of these five
+ * fields would drift, and a drifted estimate is how this page ended up unbalanced.
+ */
+const CLASSIFICATION: Array<{
+  key: string;
+  field: "industry_type" | "department" | "role_category" | "education" | "employment_type";
+  labelKey: string;
+  fallback: string;
+}> = [
+  { key: "industry", field: "industry_type", labelKey: "jobsV2.form.industry", fallback: "Industry" },
+  { key: "department", field: "department", labelKey: "jobsV2.form.department", fallback: "Department" },
+  {
+    key: "role_category",
+    field: "role_category",
+    labelKey: "jobsV2.form.roleCategory",
+    fallback: "Role category",
+  },
+  { key: "education", field: "education", labelKey: "jobsV2.form.educationLevel", fallback: "Education" },
+  {
+    key: "employment",
+    field: "employment_type",
+    labelKey: "jobsV2.form.employmentType",
+    fallback: "Employment type",
+  },
+];
+
+/**
+ * Every section's weight for one posting.
+ *
+ * A pure function of the POSTING, and it must stay that way: `JobDetailView` computes the plan
+ * from this exactly once, when a posting loads, and then freezes it.
+ */
+function weightsFor(job: JobV2, jdUploadFailed: boolean): SectionWeights {
+  return {
+    // "About this role" always renders, even with nothing in it, because it is the page's
+    // subject: an admin needs to see that the description is missing.
+    story: Math.max(
+      proseWeight(job.job_description) +
+        proseWeight(job.role_process) +
+        proseWeight(job.company_info),
+      QUIET_SECTION,
+    ),
+    skills: chipsWeight(dedupeSkills(job).length),
+    classification: rowsWeight(CLASSIFICATION.filter((row) => filled(job[row.field])).length),
+    // The gates card carries a hint line above the rows.
+    eligibility: rowsWeight(countEligibilityGates(job), 34),
+    links: linksWeight({
+      jd: Boolean(job.jd_file_url),
+      apply: Boolean(job.apply_link),
+      jdFailed: jdUploadFailed && !job.jd_file_url,
+    }),
+    publishing: PUBLISHING_WEIGHT,
+    audience: audienceWeight({
+      courses: job.adaptive_courses?.length ?? 0,
+      retiredCourses: job.courses?.length ?? 0,
+      batches: job.cohorts?.length ?? 0,
+      students: job.assigned_students?.length ?? 0,
+      colleges: job.college_mappings?.length ?? 0,
+    }),
+  };
 }
 
 /**
@@ -112,6 +179,11 @@ export function JobDetailView({ jobId }: { jobId: number }) {
   const seq = useSeq();
 
   const [job, setJob] = useState<JobV2 | null>(null);
+  /**
+   * The posting the column plan is built from — set ONLY when a posting loads, never by an edit
+   * made on the page. See the plan memo below for why that matters.
+   */
+  const [plannedJob, setPlannedJob] = useState<JobV2 | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [notFound, setNotFound] = useState(false);
@@ -146,6 +218,8 @@ export function JobDetailView({ jobId }: { jobId: number }) {
       const data = await adminJobsV2Service.getJob(jobId, config.clientId);
       if (!seq.isCurrent(token)) return;
       setJob(data);
+      // The plan's input, captured before anything on the page can edit it.
+      setPlannedJob(data);
     } catch (err) {
       if (!seq.isCurrent(token)) return;
       const message = (err as Error)?.message ?? (t("jobsV2.error.body") as string);
@@ -326,22 +400,32 @@ export function JobDetailView({ jobId }: { jobId: number }) {
 
   const classification = useMemo<DefinitionRow[]>(() => {
     if (!job) return [];
-    return [
-      { key: "industry", label: t("jobsV2.form.industry", "Industry"), value: job.industry_type ?? null },
-      { key: "department", label: t("jobsV2.form.department", "Department"), value: job.department ?? null },
-      {
-        key: "role_category",
-        label: t("jobsV2.form.roleCategory", "Role category"),
-        value: job.role_category ?? null,
-      },
-      { key: "education", label: t("jobsV2.form.educationLevel", "Education"), value: job.education ?? null },
-      {
-        key: "employment",
-        label: t("jobsV2.form.employmentType", "Employment type"),
-        value: job.employment_type ?? null,
-      },
-    ];
+    return CLASSIFICATION.map((row) => ({
+      key: row.key,
+      label: t(row.labelKey, row.fallback),
+      value: job[row.field] ?? null,
+    }));
   }, [job, t]);
+
+  /**
+   * Which column each section sits in — computed ONCE per loaded posting, then frozen.
+   *
+   * Frozen because `job` is edited in place while the admin works: posting to a batch, or
+   * taking the job off one, calls `onCohortsChange` and rewrites `job.cohorts`. Re-planning on
+   * that would move a whole section between the two column elements, and a section that moves
+   * between parents UNMOUNTS — the batch picker would close mid-flow, "Show all 17 students"
+   * would collapse, and the in-flight request's `finally` would set state on a dead tree. The
+   * audience card must not be able to move itself. `plannedJob` is therefore the posting as it
+   * was FETCHED; every later `setJob` builds a new object and leaves this one alone.
+   *
+   * `jdUploadFailed` is read from the URL on mount, so it is settled long before a posting
+   * arrives; it is a dependency only so that a late flip could never leave the attachments
+   * section unplanned and therefore unrendered.
+   */
+  const plan = useMemo(
+    () => (plannedJob ? planColumns(weightsFor(plannedJob, jdUploadFailed)) : EMPTY_PLAN),
+    [plannedJob, jdUploadFailed],
+  );
 
   const isIncomplete =
     Boolean(job) &&
@@ -424,39 +508,6 @@ export function JobDetailView({ jobId }: { jobId: number }) {
   }
 
   /* ---- the two columns -------------------------------------------------- */
-
-  /**
-   * Which column each section sits in, decided from THIS posting rather than hardcoded — see
-   * `columnPlan.ts`. A fixed left/right split has been corrected twice and came back both
-   * times, because one rule cannot suit both a three-line scraped posting and a full JD.
-   */
-  const plan = planColumns({
-    // "About this role" always renders, even with nothing in it, because it is the page's
-    // subject: an admin needs to see that the description is missing.
-    story: Math.max(
-      proseWeight(job.job_description) +
-        proseWeight(job.role_process) +
-        proseWeight(job.company_info),
-      QUIET_SECTION,
-    ),
-    skills: chipsWeight(skills.length),
-    classification: rowsWeight(classification.filter((row) => filled(row.value)).length),
-    // The gates card carries a hint line above the rows.
-    eligibility: rowsWeight(countEligibilityGates(job), 34),
-    links: linksWeight({
-      jd: Boolean(job.jd_file_url),
-      apply: Boolean(job.apply_link),
-      jdFailed: jdUploadFailed && !job.jd_file_url,
-    }),
-    publishing: PUBLISHING_WEIGHT,
-    audience: audienceWeight({
-      courses: job.adaptive_courses?.length ?? 0,
-      retiredCourses: job.courses?.length ?? 0,
-      batches: job.cohorts?.length ?? 0,
-      students: job.assigned_students?.length ?? 0,
-      colleges: job.college_mappings?.length ?? 0,
-    }),
-  });
 
   const sections: Record<JobSectionKey, ReactNode> = {
     /* What the job IS: its prose, in one unit. Splitting these three across columns would put
@@ -852,7 +903,10 @@ export function JobDetailView({ jobId }: { jobId: number }) {
             // into whichever column is currently shorter, so its rendered height must not
             // depend on which one it lands in. With 1.2fr / 1fr it did.
             gridTemplateColumns: { xs: "1fr", md: "repeat(2, minmax(0, 1fr))" },
-            gap: 3,
+            columnGap: 3,
+            // The sections carry their own `mb`; below md they become grid items in their own
+            // right (see the columns) and a row gap would double every space between them.
+            rowGap: 0,
             alignItems: "start",
             // A bare `1fr` track is at least as wide as its longest unbreakable string - the
             // external apply URL and a "Distributed systems" chip pushed every card 32px past
@@ -860,14 +914,29 @@ export function JobDetailView({ jobId }: { jobId: number }) {
             [PHONE]: { gridTemplateColumns: "minmax(0, 1fr)" },
           }}
         >
-          <Box data-column="job">
+          {/* `display: contents` below md, and that is the whole single-column story.
+
+              Below md the grid has ONE track, so the plan would dictate READING order — and the
+              plan varies per posting, so "Publishing" would land between two descriptive
+              sections at a position that depends on how long the description is. Two similar
+              postings would read, tab and be announced in different orders.
+
+              Dissolving the column boxes makes every section a grid item of the single track,
+              where its own `order` puts it back into `SECTION_ORDER`. From md up the boxes are
+              real block containers again, each column stacks independently, and `order` on a
+              block child is inert. No `useMediaQuery`, one render tree, nothing duplicated. */}
+          <Box data-column="job" sx={{ display: { xs: "contents", md: "block" } }}>
             {plan.job.map((key) => (
-              <Fragment key={key}>{sections[key]}</Fragment>
+              <Box key={key} data-section={key} sx={{ order: SECTION_ORDER.indexOf(key) }}>
+                {sections[key]}
+              </Box>
             ))}
           </Box>
-          <Box data-column="access">
+          <Box data-column="access" sx={{ display: { xs: "contents", md: "block" } }}>
             {plan.access.map((key) => (
-              <Fragment key={key}>{sections[key]}</Fragment>
+              <Box key={key} data-section={key} sx={{ order: SECTION_ORDER.indexOf(key) }}>
+                {sections[key]}
+              </Box>
             ))}
           </Box>
         </Box>
