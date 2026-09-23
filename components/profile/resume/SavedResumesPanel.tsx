@@ -25,6 +25,9 @@ const COLLAPSED_ROWS = 3;
 export interface SavedResumesPanelProps {
   documents: ResumeDocumentSummary[];
   loading: boolean;
+  /** The list could not be fetched. Distinct from "there are none" - see the empty state below. */
+  loadError?: boolean;
+  onRetry?: () => void;
   /** The document currently loaded in the builder, so a row can say "you are editing this". */
   openId: number | null;
   /** True while one row is mid-request; that row shows it and its actions are unavailable. */
@@ -75,6 +78,8 @@ const ICON_ACTION = {
 export function SavedResumesPanel({
   documents,
   loading,
+  loadError = false,
+  onRetry,
   openId,
   busyId,
   onOpen,
@@ -173,6 +178,37 @@ export function SavedResumesPanel({
         <Typography sx={{ fontSize: "0.8rem", color: PROFILE.inkFaint }}>
           {t("savedResumes.loading", { defaultValue: "Loading your saved resumes…" })}
         </Typography>
+      ) : loadError && documents.length === 0 ? (
+        /* NOT the empty state. Telling a learner with eight saved resumes "Nothing saved yet"
+           because a gateway blipped reads as "they are gone". */
+        <Box data-testid="saved-resumes-error" sx={{ display: "flex", alignItems: "center", gap: 1.25, flexWrap: "wrap" }}>
+          <Typography sx={{ fontSize: "0.8rem", color: PROFILE.inkMuted, lineHeight: 1.6, [PHONE]: { fontSize: "0.8125rem" } }}>
+            {t("savedResumes.loadFailed", {
+              defaultValue: "Your saved resumes could not be loaded just now. They are still there.",
+            })}
+          </Typography>
+          {onRetry && (
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={onRetry}
+              startIcon={<IconWrapper icon="mdi:refresh" size={15} />}
+              sx={{
+                textTransform: "none",
+                fontWeight: 700,
+                fontSize: "0.78rem",
+                borderRadius: 999,
+                px: 1.75,
+                borderColor: PROFILE.hairline,
+                color: PROFILE.ink,
+                "&:hover": { borderColor: PROFILE.violet, backgroundColor: PROFILE.violetSoft },
+                [PHONE]: { minHeight: 44, fontSize: "0.8125rem" },
+              }}
+            >
+              {t("savedResumes.retry", { defaultValue: "Try again" })}
+            </Button>
+          )}
+        </Box>
       ) : documents.length === 0 ? (
         /* A first-time learner has never pressed Save and has no idea what it would do. This says
            it in one line, in the place the result would appear. */
@@ -225,10 +261,24 @@ export function SavedResumesPanel({
                     <Typography sx={META_CHIP}>{templateLabel(doc.template)}</Typography>
                     <Typography sx={META_CHIP}>{formatEdited(doc.updated_at, t)}</Typography>
                     {doc.ats_score != null && (
-                      <Typography sx={META_CHIP}>
-                        <IconWrapper icon="mdi:speedometer" size={13} />
-                        ATS {doc.ats_score}
-                      </Typography>
+                      /* "at save", not bare "ATS 72". The score is the one stored when this
+                         resume was last saved, while the toolbar recomputes live, so the two can
+                         legitimately disagree the moment a resume is reopened. Without the
+                         qualifier that looks like one of them is lying. */
+                      <Tooltip
+                        title={t("savedResumes.atsAtSaveHint", {
+                          defaultValue:
+                            "The ATS score when this resume was last saved. Opening it scores the current content again.",
+                        })}
+                      >
+                        <Typography sx={META_CHIP}>
+                          <IconWrapper icon="mdi:speedometer" size={13} />
+                          {t("savedResumes.atsAtSave", {
+                            score: doc.ats_score,
+                            defaultValue: `ATS ${doc.ats_score} at save`,
+                          })}
+                        </Typography>
+                      </Tooltip>
                     )}
                     {isOpen && (
                       <Typography sx={{ ...META_CHIP, color: PROFILE.violet, fontWeight: 800 }}>

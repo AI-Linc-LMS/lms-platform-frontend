@@ -36,6 +36,7 @@ import {
   type SectionId,
 } from "./paging/sectionLayout";
 import { SavedResumesPanel } from "./SavedResumesPanel";
+import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import {
   ResumeDocumentsUnavailable,
   resumeDocumentsService,
@@ -336,6 +337,9 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
     setResumeData(buildResumeData());
     setSource("blank");
     awaitingProfileRef.current = false;
+    // Emptying the form is not an edit to the open resume, it is abandoning it. Staying attached
+    // would leave the toolbar naming a real saved resume that the next Update would blank.
+    detachFromSavedResume();
     showToast(t("profile.resumeDataCleared"), "success");
   };
 
@@ -344,10 +348,19 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
     setResumeData(SAMPLE_RESUME_DATA);
     setSource("sample");
     awaitingProfileRef.current = false;
+    // Same reasoning as Clear: the sample is a mock, not the learner's resume.
+    detachFromSavedResume();
     showToast(t("profile.sampleDataLoaded"), "success");
   };
 
-  /** Import the student's profile into the builder. Explicit, never automatic. */
+  /**
+   * Import the student's profile into the builder. Explicit, never automatic.
+   *
+   * Deliberately does NOT detach from the open resume, unlike Clear and Sample. This is the
+   * learner's own content going into the resume they are editing, which is a plausible thing to
+   * want; the toolbar flips to "Unsaved changes" and the button still names what it would write
+   * to, so nothing happens behind their back.
+   */
   const handleUseProfile = () => {
     if (source === "profile") return;
     const hasProfile = Boolean(initialData && Object.keys(initialData).length > 0);
@@ -701,6 +714,14 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
    * something they never asked for.
    */
   const [documentsUnavailable, setDocumentsUnavailable] = useState(false);
+  /**
+   * The list could not be fetched, and it is NOT the 404 above.
+   *
+   * A third state on purpose. A 502 mid-deploy used to leave `documents` at `[]`, which rendered
+   * the empty state - a learner with eight saved resumes being told "Nothing saved yet", which
+   * reads as "they are gone".
+   */
+  const [documentsError, setDocumentsError] = useState(false);
   const [openDoc, setOpenDoc] = useState<{ id: number; name: string } | null>(null);
   const [rowBusyId, setRowBusyId] = useState<number | null>(null);
   const [saveMenuAnchor, setSaveMenuAnchor] = useState<null | HTMLElement>(null);
@@ -722,13 +743,23 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
       const list = await resumeDocumentsService.list();
       setDocuments(list);
       setDocumentsUnavailable(false);
+      setDocumentsError(false);
     } catch (err) {
-      if (err instanceof ResumeDocumentsUnavailable) setDocumentsUnavailable(true);
-      // Any other failure leaves the list as it was. A transient error must not wipe the panel
-      // and make a learner think their resumes are gone.
+      if (err instanceof ResumeDocumentsUnavailable) {
+        setDocumentsUnavailable(true);
+      } else {
+        // The list stays as it was and the panel says it could not load them. A transient error
+        // must never be reported as "you have no saved resumes".
+        setDocumentsError(true);
+      }
     } finally {
       setDocumentsLoading(false);
     }
+  };
+
+  const retryDocuments = async () => {
+    setDocumentsLoading(true);
+    await reloadDocuments();
   };
 
   useEffect(() => {
@@ -747,6 +778,35 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
 
   const isTemplateName = (value: string): value is TemplateName =>
     Object.prototype.hasOwnProperty.call(TEMPLATE_KEYS, value);
+
+  /**
+   * Stop pointing at a saved resume, without touching what is on screen.
+   *
+   * Called when the content is replaced wholesale by something that is not that resume. Clearing
+   * the form while "Backend CV" was open used to leave the toolbar reading "Backend CV · Unsaved
+   * changes", and the next Update would then overwrite a real saved resume with an empty form.
+   * Detaching makes the next Save ask for a name instead, which can destroy nothing.
+   */
+  const detachFromSavedResume = () => {
+    setOpenDoc(null);
+    savedSnapshotRef.current = null;
+    setDirty(false);
+  };
+
+  /**
+   * Opening another resume replaces everything on screen, so unsaved work has to be asked about
+   * first. The toolbar already says "Unsaved changes"; this is the same fact, at the moment it
+   * would cost something.
+   */
+  const [pendingOpen, setPendingOpen] = useState<{ id: number; name: string } | null>(null);
+  const requestOpenDocument = (id: number) => {
+    if (openDoc && dirty && id !== openDoc.id) {
+      const target = documents.find((d) => d.id === id);
+      setPendingOpen({ id, name: target?.name ?? "" });
+      return;
+    }
+    void handleOpenDocument(id);
+  };
 
   /** Put a saved resume back into the builder, exactly as it was left. */
   const handleOpenDocument = async (id: number) => {
@@ -771,6 +831,7 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
       showToast(t("savedResumes.openFailed", { defaultValue: "Could not open that resume" }), "error");
     } finally {
       setRowBusyId(null);
+      setPendingOpen(null);
     }
   };
 
@@ -1100,7 +1161,14 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
               open one, "Save" creates a new one after asking for a name, and "Save as new" is
               always one tap away. Where the API does not offer resume documents yet, this falls
               back to exactly what it did before - uploading a PDF - and stays gated on a complete
-              profile, because that is an export. */}
+              profile, because that is an export.
+
+              Until the first list call lands, the split control is rendered but INERT. Whether
+              this tenant has resume documents is not yet known, and both alternatives are worse:
+              showing the fallback button would silently upload a PDF instead of saving a
+              document for anyone who clicks quickly, and leaving the split live would produce a
+              flat "Could not save this resume" against an older API. One round trip of a
+              greyed-out button says the true thing, which is "not yet". */}
           <Box sx={documentsUnavailable ? actionCellSx : splitCellSx}>
           {documentsUnavailable ? (
             <LockedAction locked={lockExports} label={t("lock.savingLocked", { defaultValue: "Saving is locked" })}>
@@ -1120,7 +1188,7 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
                 variant="outlined"
                 startIcon={<IconWrapper icon="mdi:content-save-outline" size={17} />}
                 onClick={() => void handleSaveDocument()}
-                disabled={savingDoc}
+                disabled={savingDoc || documentsLoading}
                 sx={{
                   ...saveButtonSx,
                   flex: { xs: 1, sm: "0 0 auto" },
@@ -1138,6 +1206,7 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
               <Button
                 variant="outlined"
                 onClick={(e) => setSaveMenuAnchor(e.currentTarget)}
+                disabled={documentsLoading}
                 aria-label={t("savedResumes.moreSaveOptions", { defaultValue: "More save options" })}
                 aria-haspopup="menu"
                 sx={{
@@ -1190,9 +1259,11 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
         <SavedResumesPanel
           documents={documents}
           loading={documentsLoading}
+          loadError={documentsError}
+          onRetry={() => void retryDocuments()}
           openId={openDoc?.id ?? null}
           busyId={rowBusyId}
-          onOpen={(id) => void handleOpenDocument(id)}
+          onOpen={requestOpenDocument}
           onRename={handleRenameDocument}
           onDuplicate={(id) => void handleDuplicateDocument(id)}
           onDelete={handleDeleteDocument}
@@ -1624,13 +1695,43 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
         </MenuItem>
       </Menu>
 
+      {/* Opening another resume replaces everything on screen. */}
+      <ConfirmDialog
+        open={Boolean(pendingOpen)}
+        busy={rowBusyId !== null}
+        title={t("savedResumes.discardTitle", { defaultValue: "Open without saving?" })}
+        message={t("savedResumes.discardMessage", {
+          open: openDoc?.name ?? "",
+          next: pendingOpen?.name ?? "",
+          defaultValue: `You have unsaved changes to "${openDoc?.name ?? ""}". Opening "${pendingOpen?.name ?? ""}" will discard them.`,
+        })}
+        confirmText={t("savedResumes.discardConfirm", { defaultValue: "Discard and open" })}
+        cancelText={t("savedResumes.cancel", { defaultValue: "Cancel" })}
+        confirmColor="warning"
+        onConfirm={() => pendingOpen && void handleOpenDocument(pendingOpen.id)}
+        onCancel={() => setPendingOpen(null)}
+      />
+
       <ResponsiveDialog
         open={nameDialogOpen}
         onClose={() => !savingDoc && setNameDialogOpen(false)}
         title={t("savedResumes.nameTitle", { defaultValue: "Name this resume" })}
-        description={t("savedResumes.nameDescription", {
-          defaultValue: "It is kept with its content, template and section order, so you can open it and carry on.",
-        })}
+        description={
+          <>
+            {t("savedResumes.nameDescription", {
+              defaultValue: "It is kept with its content, template and section order, so you can open it and carry on.",
+            })}
+            {/* The highest-value sentence on this dialog. Saving keeps something to EDIT; it does
+                not produce the file an application asks for, and a learner who saves and then
+                goes to apply would otherwise find nothing to attach. */}
+            <Box component="span" sx={{ display: "block", mt: 0.75, fontWeight: 600 }}>
+              {t("savedResumes.noPdfHint", {
+                defaultValue:
+                  "This does not create a PDF. For something to attach to a job application, use “Save a PDF copy to my profile”.",
+              })}
+            </Box>
+          </>
+        }
         maxWidth="xs"
         footer={
           <Box sx={{ display: "flex", gap: 1, justifyContent: "flex-end" }}>

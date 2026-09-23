@@ -228,6 +228,14 @@ describe("Saved resumes in the resume builder", () => {
     expect(update).not.toHaveBeenCalled();
   });
 
+  it("says that saving does not produce the PDF an application asks for", async () => {
+    await renderBuilder();
+    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(/does not create a PDF/i)).toBeInTheDocument();
+    expect(within(dialog).getByText(/Save a PDF copy/i)).toBeInTheDocument();
+  });
+
   // --- delete --------------------------------------------------------------------
 
   it("asks before deleting, and only deletes once confirmed", async () => {
@@ -269,6 +277,112 @@ describe("Saved resumes in the resume builder", () => {
       release();
     });
     expect(remove).toHaveBeenCalledTimes(1);
+  });
+
+  // --- unsaved work is never discarded silently ----------------------------------
+
+  /** Open a resume and then type into the form, so the builder holds unsaved edits. */
+  async function openAndEdit() {
+    fireEvent.click(within(rows()[0]).getByRole("button", { name: /^open$/i }));
+    await waitFor(() => expect(get).toHaveBeenCalled());
+    await act(async () => {});
+    fireEvent.change(screen.getByDisplayValue("Ada"), { target: { value: "Adelaide" } });
+    await waitFor(() => expect(screen.getByText(/unsaved changes/i)).toBeInTheDocument());
+  }
+
+  it("asks before opening another resume over unsaved edits", async () => {
+    await renderBuilder();
+    await openAndEdit();
+    get.mockClear();
+
+    fireEvent.click(within(rows()[1]).getByRole("button", { name: /^open$/i }));
+    const dialog = await screen.findByRole("dialog");
+    expect(within(dialog).getByText(/open without saving\?/i)).toBeInTheDocument();
+    expect(within(dialog).getByText(/Backend CV/)).toBeInTheDocument();
+    expect(within(dialog).getByText(/Startup CV/)).toBeInTheDocument();
+    // Nothing fetched: the edits are still on screen.
+    expect(get).not.toHaveBeenCalled();
+
+    fireEvent.click(within(dialog).getByRole("button", { name: /^cancel$/i }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+    expect(get).not.toHaveBeenCalled();
+    expect(screen.getByDisplayValue("Adelaide")).toBeInTheDocument();
+  });
+
+  it("opens the other resume once the learner accepts losing the edits", async () => {
+    await renderBuilder();
+    await openAndEdit();
+    get.mockClear();
+    get.mockResolvedValue({ ...FULL_BACKEND_CV, id: 9, name: "Startup CV", template: "creative" });
+
+    fireEvent.click(within(rows()[1]).getByRole("button", { name: /^open$/i }));
+    const dialog = await screen.findByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: /discard and open/i }));
+    await waitFor(() => expect(get).toHaveBeenCalledWith(9));
+  });
+
+  it("does not ask when there is nothing unsaved to lose", async () => {
+    await renderBuilder();
+    fireEvent.click(within(rows()[0]).getByRole("button", { name: /^open$/i }));
+    await waitFor(() => expect(get).toHaveBeenCalled());
+    await act(async () => {});
+
+    get.mockClear();
+    fireEvent.click(within(rows()[1]).getByRole("button", { name: /^open$/i }));
+    await waitFor(() => expect(get).toHaveBeenCalledWith(9));
+  });
+
+  it("Clear stops pointing at the saved resume, so the next save cannot blank it", async () => {
+    await renderBuilder();
+    fireEvent.click(within(rows()[0]).getByRole("button", { name: /^open$/i }));
+    await waitFor(() => expect(get).toHaveBeenCalled());
+    await act(async () => {});
+    expect(screen.getByRole("button", { name: /^update$/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /^clear$/i }));
+
+    // Back to "Save", which asks for a name. An Update here would have overwritten a real
+    // saved resume with an empty form.
+    await waitFor(() => expect(screen.getByRole("button", { name: /^save$/i })).toBeInTheDocument());
+    expect(screen.queryByRole("button", { name: /^update$/i })).toBeNull();
+    expect(within(panel()).queryByText(/editing now/i)).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /^save$/i }));
+    expect(await screen.findByText(/name this resume/i)).toBeInTheDocument();
+    expect(update).not.toHaveBeenCalled();
+  });
+
+  // --- the deploy gap ------------------------------------------------------------
+
+  it("cannot be saved to before the first list call has landed", async () => {
+    let release: (v: unknown) => void = () => {};
+    list.mockImplementation(() => new Promise((resolve) => (release = resolve)));
+    render(<ResumeBuilder />);
+
+    // Whether this tenant has resume documents is not known yet. A live button here would
+    // either 404 against an older API or silently upload a PDF instead.
+    await waitFor(() => expect(screen.getByRole("button", { name: /^save$/i })).toBeDisabled());
+    expect(screen.getByRole("button", { name: /more save options/i })).toBeDisabled();
+
+    await act(async () => {
+      release([BACKEND_CV]);
+    });
+    await waitFor(() => expect(screen.getByRole("button", { name: /^save$/i })).toBeEnabled());
+  });
+
+  it("says a failed load is a failed load, not 'nothing saved yet'", async () => {
+    list.mockRejectedValue(new Error("Bad Gateway"));
+    await renderBuilder();
+
+    // The panel stays. A 502 mid-deploy told a learner with eight resumes they had none.
+    expect(screen.getByTestId("saved-resumes-panel")).toBeInTheDocument();
+    expect(screen.getByTestId("saved-resumes-error")).toBeInTheDocument();
+    expect(screen.queryByText(/nothing saved yet/i)).toBeNull();
+
+    list.mockResolvedValue([BACKEND_CV]);
+    fireEvent.click(screen.getByRole("button", { name: /try again/i }));
+    await waitFor(() => expect(rows()).toHaveLength(1));
+    expect(screen.queryByTestId("saved-resumes-error")).toBeNull();
   });
 
   // --- rename and duplicate ------------------------------------------------------
