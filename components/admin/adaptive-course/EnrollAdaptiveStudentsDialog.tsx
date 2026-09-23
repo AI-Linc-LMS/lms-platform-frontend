@@ -72,6 +72,11 @@ export function EnrollAdaptiveStudentsDialog({
   // caller cannot list them (the cohort screens are feature-gated).
   const [batches, setBatches] = useState<CohortListItem[]>([]);
   const [batchId, setBatchId] = useState<number | "">("");
+  // The server's own reason for refusing THIS batch, shown under the picker. A toast is the wrong
+  // place for it: it disappears, and the admin has to change the batch to get past it. The one
+  // refusal that lands here is `paid_grant_admin_only` - the batch carries a paid course an admin
+  // granted, so only an admin may add learners to it.
+  const [batchError, setBatchError] = useState("");
   const theme = useTheme();
   // On a phone the sheet holds itself open while the enrolment request runs.
   const holdOpen = useMediaQuery(theme.breakpoints.down("sm")) && submitting;
@@ -119,6 +124,7 @@ export function EnrollAdaptiveStudentsDialog({
     setSelected(new Set());
     setPage(1);
     setBatchId("");
+    setBatchError("");
     void load("", 1);
   }, [open, load]);
 
@@ -247,6 +253,12 @@ export function EnrollAdaptiveStudentsDialog({
       if (openRef.current && opening === openingRef.current) onClose();
     } catch (e) {
       const detail = getAxiosErrorDetail(e, comp ? "Couldn't give free access." : "Enrollment failed.");
+      // A refusal about the BATCH belongs under the batch picker, which is the control the admin
+      // has to change. Nothing was enrolled, so the dialog keeps the selection and stays open.
+      if (batchId && (e as { response?: { status?: number; data?: { code?: string } } })?.response?.data?.code === "paid_grant_admin_only") {
+        setBatchError(detail);
+        return;
+      }
       // After a first pass, what it already did is still true: report it with the failure.
       showToast(comp ? `${summarise(first, NO_PASS, false)} · ${comp.ids.length} not given free: ${detail}` : detail, "error");
     } finally {
@@ -360,11 +372,17 @@ export function EnrollAdaptiveStudentsDialog({
             size="small"
             label="Also add to a batch (optional)"
             value={batchId}
-            onChange={(e) => setBatchId(e.target.value === "" ? "" : Number(e.target.value))}
+            onChange={(e) => {
+              setBatchError("");
+              setBatchId(e.target.value === "" ? "" : Number(e.target.value));
+            }}
+            error={Boolean(batchError)}
             helperText={
-              batchId
-                ? "They'll join this batch too, and get its sessions and anything else posted to it."
-                : "Course only. Enrolling never creates a batch."
+              batchError
+                ? batchError
+                : batchId
+                  ? "They'll join this batch too, and get its sessions and anything else posted to it."
+                  : "Course only. Enrolling never creates a batch."
             }
             sx={{ mt: 2 }}
           >

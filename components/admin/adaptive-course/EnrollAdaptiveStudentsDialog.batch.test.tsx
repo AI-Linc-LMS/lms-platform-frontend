@@ -94,4 +94,43 @@ describe("EnrollAdaptiveStudentsDialog batch choice", () => {
     fireEvent.click(screen.getByRole("button", { name: /enroll selected/i }));
     await waitFor(() => expect(mocks.enroll).toHaveBeenCalledWith(40, [7], { compPaid: false }));
   });
+
+  it("says WHY the server refused the batch, under the picker, and keeps the dialog open", async () => {
+    // The batch holds a paid course an admin granted, so only an admin may add learners to it.
+    // A toast would vanish, and the control the admin has to change is the picker itself.
+    mocks.listCohorts.mockResolvedValue([batch(3, "8026-M")]);
+    mocks.enroll.mockRejectedValue({
+      response: {
+        status: 403,
+        data: {
+          detail: "An admin gave this batch a paid course, so only an admin can add learners to it.",
+          code: "paid_grant_admin_only",
+        },
+      },
+    });
+    const { onClose } = renderDialog();
+    fireEvent.click(await screen.findByRole("checkbox"));
+    fireEvent.mouseDown(screen.getByRole("combobox", { name: /also add to a batch/i }));
+    fireEvent.click(await within(await screen.findByRole("listbox")).findByText("8026-M"));
+    fireEvent.click(screen.getByRole("button", { name: /enroll selected/i }));
+
+    expect(
+      await screen.findByText(
+        "An admin gave this batch a paid course, so only an admin can add learners to it.",
+      ),
+    ).toBeInTheDocument();
+    expect(onClose).not.toHaveBeenCalled();
+    expect(mocks.showToast).not.toHaveBeenCalled();
+
+    // Picking another batch clears the refusal, so the admin can try again.
+    fireEvent.mouseDown(screen.getByRole("combobox", { name: /also add to a batch/i }));
+    fireEvent.click(await within(await screen.findByRole("listbox")).findByText("No batch - course only"));
+    await waitFor(() =>
+      expect(
+        screen.queryByText(
+          "An admin gave this batch a paid course, so only an admin can add learners to it.",
+        ),
+      ).toBeNull(),
+    );
+  });
 });
