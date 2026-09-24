@@ -185,6 +185,37 @@ export interface RoadmapProgress {
   nodes: Record<number, RoadmapNodeProgress>;
 }
 
+/**
+ * What a step's mark says, before the learner clicks it.
+ *
+ * Mutually exclusive, most-blocking first. `locked` is not a progress state: it is a priced
+ * course the learner has not paid for, so there is no progress to report.
+ */
+export type OwnedState = "locked" | "ready" | "inProgress" | "done";
+
+export interface RoadmapOwnedNode {
+  /** The course they already have. The mark carries it so a click need not ask the server. */
+  courseId: number;
+  state: OwnedState;
+  unitsComplete: number;
+  unitsTotal: number;
+}
+
+/**
+ * Which steps on this map the learner ALREADY has a course for.
+ *
+ * SPARSE on purpose: absent means "not built". The biggest shipped map is 210 nodes and the
+ * biggest real holding is 10, so a row per node would be 200 rows of "no".
+ *
+ * A THIRD call beside the graph and the progress overlay, and deliberately not folded into
+ * either: the graph is identical for every learner and cached hard, and the progress overlay
+ * measures the library submodules a node binds, which is a different question from how far
+ * through the course you BUILT you are. One request for the whole map, never one per node.
+ */
+export interface RoadmapOwned {
+  nodes: Record<number, RoadmapOwnedNode>;
+}
+
 export interface RoadmapTargetContent {
   article?: boolean;
   articleTitle?: string;
@@ -266,6 +297,12 @@ export const roadmapsService = {
     return data;
   },
 
+  /** One request for the whole map. See RoadmapOwned. */
+  owned: async (slug: string): Promise<RoadmapOwned> => {
+    const { data } = await apiClient.get(`${BASE}/${slug}/owned/`);
+    return data;
+  },
+
   node: async (slug: string, nodeId: number): Promise<RoadmapNodeDetail> => {
     const { data } = await apiClient.get(`${BASE}/${slug}/nodes/${nodeId}/`);
     return data;
@@ -287,6 +324,7 @@ export const roadmapKeys = {
   catalog: ["roadmaps", "catalog"] as const,
   graph: (slug: string) => ["roadmaps", "graph", slug] as const,
   progress: (slug: string) => ["roadmaps", "progress", slug] as const,
+  owned: (slug: string) => ["roadmaps", "owned", slug] as const,
   node: (slug: string, nodeId: number) => ["roadmaps", "node", slug, nodeId] as const,
 };
 

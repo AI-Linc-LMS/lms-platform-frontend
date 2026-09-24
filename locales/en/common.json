@@ -3116,6 +3116,13 @@
   "roadmapsMobile": {
     "mapHint": "Tap a step to open it. Press and hold to mark it done, in progress or skipped."
   },
+  "roadmapOwned": {
+    "ready": "Yours",
+    "inProgress": "In progress",
+    "done": "Completed",
+    "locked": "Locked",
+    "legend": "A marked step is one you already have a course for."
+  },
   "mobileChrome": {
     "more": "More",
     "platformGuide": "Platform guide"

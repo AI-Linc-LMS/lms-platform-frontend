@@ -7,8 +7,10 @@ import { Icon } from "@iconify/react";
 import { useTranslation } from "react-i18next";
 import { PHONE } from "@/components/common/mobile/phone";
 import type {
+  OwnedState,
   RoadmapGraph,
   RoadmapNode,
+  RoadmapOwned,
   RoadmapProgress,
   SelfState,
 } from "@/lib/services/roadmaps.service";
@@ -37,9 +39,91 @@ type NodeState = "done" | "learning" | "skipped" | "pending";
 const INK = RM.ink;
 const VIOLET = RM.rail;
 
+/**
+ * The mark: "you already have a course for this step", said ON the step.
+ *
+ * The bug this fixes: nothing on the map distinguished a step whose course the learner already
+ * held. They clicked it, read a drawer asking "Create a course on this?", pressed "Yes, build
+ * it", and only THEN got a dialog saying "You already have this course." The answer was
+ * knowable before the click; nothing was asking for it.
+ *
+ * Deliberately NOT a colour. Four pastel section accents already tint the node fill, so a fifth
+ * hue would be invisible against them and useless to a colour-blind reader anyway. This is a
+ * white pill with an ICON and a WORD, so it reads as a mark in any palette, in greyscale, and
+ * through the section accents. The icon differs per state as well as the text, so neither one
+ * carries the meaning alone.
+ */
+const OWNED_ICON: Record<OwnedState, string> = {
+  done: "solar:check-circle-bold",
+  inProgress: "solar:play-circle-bold",
+  ready: "solar:bookmark-circle-bold",
+  locked: "solar:lock-keyhole-bold",
+};
+
+/** Spelled out for a screen reader: the pill's word is abbreviated, this is not. */
+const OWNED_A11Y: Record<OwnedState, string> = {
+  done: "you have this course and have completed it",
+  inProgress: "you have this course and are part way through it",
+  ready: "you already have this course",
+  locked: "you have this course but it is locked until you buy it",
+};
+
+function OwnedBadge({ owned }: { owned: NonNullable<RoadmapOwned["nodes"][number]> }) {
+  const { t } = useTranslation();
+  const label =
+    owned.state === "done"
+      ? t("roadmapOwned.done", "Completed")
+      : owned.state === "inProgress"
+        ? `${t("roadmapOwned.inProgress", "In progress")} ${owned.unitsComplete}/${owned.unitsTotal}`
+        : owned.state === "locked"
+          ? t("roadmapOwned.locked", "Locked")
+          : t("roadmapOwned.ready", "Yours");
+  return (
+    <Stack
+      component="span"
+      direction="row"
+      alignItems="center"
+      spacing={0.35}
+      data-owned={owned.state}
+      data-testid="owned-badge"
+      sx={{
+        mt: 0.55,
+        px: 0.7,
+        py: 0.1,
+        borderRadius: 999,
+        bgcolor: "#ffffff",
+        border: `1.5px solid ${INK}`,
+        color: INK,
+        maxWidth: "100%",
+        // The pill is chrome ON a node, so it must never widen the node it sits on.
+        minWidth: 0,
+        [PHONE]: { py: 0.25 },
+      }}
+    >
+      <Icon icon={OWNED_ICON[owned.state]} width={11} />
+      <Typography
+        component="span"
+        sx={{
+          fontSize: 9.5,
+          fontWeight: 800,
+          letterSpacing: "0.02em",
+          lineHeight: 1.5,
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          [PHONE]: { fontSize: 11 },
+        }}
+      >
+        {label}
+      </Typography>
+    </Stack>
+  );
+}
+
 function NodeBox({
   node,
   progress,
+  owned,
   variant,
   accent,
   onOpen,
@@ -47,6 +131,8 @@ function NodeBox({
 }: {
   node: RoadmapNode;
   progress?: RoadmapProgress["nodes"][number];
+  /** The course the learner already has for this step, if any. Absent means "not built". */
+  owned?: RoadmapOwned["nodes"][number];
   variant: "spine" | "branch";
   /** Section colour. Applied ONLY to the untouched state: done/learning/skipped stay global so
    *  progress means the same thing in every section. */
@@ -68,6 +154,10 @@ function NodeBox({
     <Box
       component="button"
       onClick={onOpen}
+      // The badge below is visual; a screen reader gets the same fact here, on the control that
+      // acts on it, rather than as a stray word after the title.
+      aria-label={owned ? `${node.title} - ${OWNED_A11Y[owned.state]}` : undefined}
+      data-owned={owned?.state}
       // Right-click sets status without leaving the map; long-press is the touch equivalent.
       onContextMenu={
         onStatus
@@ -149,6 +239,11 @@ function NodeBox({
           <Icon icon="solar:verified-check-bold" width={15} color="#059669" aria-label="Verified" />
         )}
       </Stack>
+      {owned && (
+        <Stack direction="row" justifyContent={variant === "spine" ? "center" : "flex-start"}>
+          <OwnedBadge owned={owned} />
+        </Stack>
+      )}
       {!node.isRequired && variant === "spine" && (
         <Chip
           label="Optional"
@@ -168,6 +263,7 @@ function StepCell({
   node,
   branches,
   progress,
+  owned,
   dependsOn,
   onOpenNode,
   onStatus,
@@ -179,6 +275,7 @@ function StepCell({
   node: RoadmapNode;
   branches: RoadmapNode[];
   progress?: RoadmapProgress;
+  owned?: RoadmapOwned["nodes"];
   /** Steps in OTHER sections this one needs. Shown as chips under the box rather than as a
    *  drawn edge: in a serpentine layout a dependency can be several rows away, and a line
    *  across that distance is unreadable and unroutable. */
@@ -201,6 +298,7 @@ function StepCell({
           variant="spine"
           accent={accent}
           progress={progress?.nodes?.[node.id]}
+          owned={owned?.[node.id]}
           onOpen={() => onOpenNode(node)}
           onStatus={onStatus}
         />
@@ -280,6 +378,7 @@ function StepCell({
                     variant="branch"
                     accent={accent}
                     progress={progress?.nodes?.[b.id]}
+                    owned={owned?.[b.id]}
                     onOpen={() => onOpenNode(b)}
                     onStatus={onStatus}
                   />
@@ -380,12 +479,15 @@ function RelatedTracks({
 export function RoadmapSpine({
   graph,
   progress,
+  owned,
   onOpenNode,
   onOpenRoadmap,
   onSetNodeState,
 }: {
   graph: RoadmapGraph;
   progress?: RoadmapProgress;
+  /** Steps the learner already has a course for, keyed by node id. Sparse: absent = not built. */
+  owned?: RoadmapOwned["nodes"];
   onOpenNode: (node: RoadmapNode) => void;
   onOpenRoadmap?: (slug: string) => void;
   /** Set a node's self-state from the map. Omit to render a read-only map. */
@@ -398,6 +500,7 @@ export function RoadmapSpine({
   const wide = useMediaQuery("(min-width:1200px)");
   const mid = useMediaQuery("(min-width:900px)");
   const cols = wide ? 3 : mid ? 2 : 1;
+  const ownedCount = owned ? Object.keys(owned).length : 0;
 
   // Status menu target: the node right-clicked, plus where to open the menu.
   const [statusFor, setStatusFor] = useState<{
@@ -428,7 +531,7 @@ export function RoadmapSpine({
       {/* Hint and legend share ONE row. As two stacked centre-aligned blocks they produced a
           column of near-empty bands above the canvas, which is most of what made this page
           read as spacious-but-empty. */}
-      {(onSetNodeState || graph.legends.length > 0) && (
+      {(onSetNodeState || ownedCount > 0 || graph.legends.length > 0) && (
         <Stack
           direction={{ xs: "column", sm: "row" }}
           alignItems="center"
@@ -459,6 +562,26 @@ export function RoadmapSpine({
               </Typography>
             </Stack>
           )}
+          {/* What the mark means, said once, where the eye lands before the map. Only when the
+              learner actually has something: a key to a symbol that appears nowhere is noise. */}
+          {ownedCount > 0 && (
+            <Stack
+              direction="row"
+              alignItems="center"
+              spacing={0.75}
+              sx={{
+                px: 1.5, py: 0.6, borderRadius: 999,
+                border: "1px solid var(--border-default)",
+                bgcolor: "var(--card-bg)", color: "var(--font-tertiary)",
+              }}
+              data-testid="owned-legend"
+            >
+              <Icon icon="solar:bookmark-circle-bold" width={14} />
+              <Typography sx={{ fontSize: "0.78rem", [PHONE]: { fontSize: "0.8rem" } }}>
+                {t("roadmapOwned.legend", "A marked step is one you already have a course for.")}
+              </Typography>
+            </Stack>
+          )}
           {graph.legends.map((lg) => (
             <Stack key={lg.id} direction="row" alignItems="center" spacing={0.75}>
               <Box
@@ -483,6 +606,7 @@ export function RoadmapSpine({
           childrenOf={childrenOf}
           dependsOn={dependsOn}
           progress={progress}
+          owned={owned}
           cols={cols}
           onOpenNode={onOpenNode}
           onStatus={openStatus}
@@ -519,6 +643,7 @@ function RoadmapSection({
   childrenOf,
   dependsOn,
   progress,
+  owned,
   cols,
   onOpenNode,
   onStatus,
@@ -529,6 +654,7 @@ function RoadmapSection({
   childrenOf: (id: number) => RoadmapNode[];
   dependsOn: (id: number) => RoadmapNode[];
   progress?: RoadmapProgress;
+  owned?: RoadmapOwned["nodes"];
   cols: number;
   onOpenNode: (n: RoadmapNode) => void;
   onStatus?: (node: RoadmapNode, at: { x: number; y: number }) => void;
@@ -610,6 +736,7 @@ function RoadmapSection({
                           node={node}
                           branches={childrenOf(node.id)}
                           progress={progress}
+                          owned={owned}
                           dependsOn={dependsOn(node.id)}
                           onOpenNode={onOpenNode}
                           onStatus={onStatus}
