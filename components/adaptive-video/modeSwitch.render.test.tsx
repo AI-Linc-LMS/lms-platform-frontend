@@ -19,7 +19,9 @@ import "@/lib/i18n";
 const player = vi.hoisted(() => ({
   currentTime: 0, duration: 200, endedTick: 0, seekTo: vi.fn(), play: vi.fn(), pause: vi.fn(), setRate: vi.fn(),
 }));
-const api = vi.hoisted(() => ({ startSession: vi.fn(), getCompanion: vi.fn(), sync: vi.fn(), answerCheckIn: vi.fn() }));
+const api = vi.hoisted(() => ({
+  startSession: vi.fn(), getCompanion: vi.fn(), sync: vi.fn(), answerCheckIn: vi.fn(), endSession: vi.fn(),
+}));
 
 vi.mock("./useVimeoController", () => ({
   useVimeoController: () => ({
@@ -77,11 +79,12 @@ function serverAcceptsModes() {
     Promise.resolve(session(signals.watch_mode || "normal")));
 }
 
-/** A request that answers only when the test says so. */
+/** A request that answers, or fails, only when the test says so. */
 function deferred<T>() {
   let resolve!: (v: T) => void;
-  const promise = new Promise<T>((r) => { resolve = r; });
-  return { promise, resolve };
+  let reject!: (e: unknown) => void;
+  const promise = new Promise<T>((res, rej) => { resolve = res; reject = rej; });
+  return { promise, resolve, reject };
 }
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
@@ -108,6 +111,7 @@ beforeEach(() => {
   for (const f of Object.values(api)) f.mockReset();
   serverAcceptsModes();
   api.answerCheckIn.mockResolvedValue({ is_correct: true, correct_option: "a", explanation: "", rewind_to_seconds: null });
+  api.endSession.mockResolvedValue(session("normal"));
 });
 
 describe("switching from Rewatch to Normal pace", () => {
@@ -302,6 +306,123 @@ describe("switching to Rewatch", () => {
     pick("Rewatch");
     await waitFor(() => expect(api.sync).toHaveBeenCalledWith("s1", { watch_mode: "rewatch" }));
     await waitFor(() => expect(modeOption(/Normal pace/)).toHaveAttribute("aria-checked", "true"));
+  });
+});
+
+describe("a switch the server has not confirmed yet", () => {
+  beforeEach(() => {
+    api.startSession.mockResolvedValue({ session_id: "s1", companion: companion({ check_ins: [] }), session: session("rewatch") });
+    api.getCompanion.mockResolvedValue(companion());
+  });
+
+  it("asks nothing until the server says yes; a refused one leaves the check-in to be asked later", async () => {
+    const held = deferred<ReturnType<typeof session>>();
+    api.sync.mockImplementation((_id: string, signals: { watch_mode?: string }) =>
+      signals.watch_mode === "normal" ? held.promise : Promise.resolve(session("rewatch")));
+    const { rerender } = render(<VideoCompanion configId={800} />);
+    await screen.findByText(/^0:00 \//);
+    await moveTo(7, rerender);
+    pick("Normal pace");
+    await waitFor(() => expect(api.sync).toHaveBeenCalledWith("s1", { watch_mode: "normal" }));
+
+    // The request is still out: 12 (at 0:09) is played through, and nothing stops the learner.
+    await moveTo(10, rerender);
+    expect(screen.queryByText("Question 12?")).toBeNull();
+    expect(player.pause).not.toHaveBeenCalled();
+    expect(screen.getByText("1 check passed")).toBeInTheDocument();
+
+    // Refused: back on Rewatch, and 12 was never asked - so it has not been spent.
+    await act(async () => held.reject(new Error("500")));
+    expect(await screen.findByText(/Couldn't switch the watch mode/)).toBeInTheDocument();
+    expect(modeOption(/Rewatch/)).toHaveAttribute("aria-checked", "true");
+
+    serverAcceptsModes();
+    pick("Normal pace");
+    expect(await screen.findByText("1/3 checks")).toBeInTheDocument(); // confirmed, and armed
+    await moveTo(8, rerender, { seek: true });
+    await moveTo(10, rerender);
+    expect(await screen.findByText("Question 12?")).toBeInTheDocument();
+  });
+});
+
+describe("leaving the page in the middle of a switch", () => {
+  beforeEach(() => {
+    api.startSession.mockResolvedValue({ session_id: "s1", companion: companion({ check_ins: [] }), session: session("rewatch") });
+  });
+
+  it("sends nothing for a switch still fetching its questions - the watch has already been ended", async () => {
+    const questions = deferred<ReturnType<typeof companion>>();
+    api.getCompanion.mockReturnValue(questions.promise);
+    const { unmount } = render(<VideoCompanion configId={800} />);
+    await screen.findByText(/^0:00 \//);
+    pick("Normal pace");
+    await waitFor(() => expect(api.getCompanion).toHaveBeenCalled());
+
+    unmount();
+    await waitFor(() => expect(api.endSession).toHaveBeenCalledWith("s1"));
+    await act(async () => questions.resolve(companion()));
+    await act(async () => {});
+    expect(api.sync).not.toHaveBeenCalledWith("s1", { watch_mode: "normal" });
+  });
+
+  it("sends nothing for a switch queued behind one already on its way", async () => {
+    const first = deferred<ReturnType<typeof session>>();
+    api.getCompanion.mockResolvedValue(companion());
+    api.sync.mockImplementation((_id: string, signals: { watch_mode?: string }) =>
+      signals.watch_mode === "normal" ? first.promise : Promise.resolve(session(signals.watch_mode || "rewatch")));
+    const { unmount } = render(<VideoCompanion configId={800} />);
+    await screen.findByText(/^0:00 \//);
+    pick("Normal pace");
+    await waitFor(() => expect(api.sync).toHaveBeenCalledWith("s1", { watch_mode: "normal" }));
+    pick("Pause & ask every 60s");
+    await act(async () => {}); // queued behind the first
+
+    unmount();
+    await waitFor(() => expect(api.endSession).toHaveBeenCalledWith("s1"));
+    await act(async () => first.resolve(session("normal")));
+    await act(async () => {});
+    expect(api.sync).not.toHaveBeenCalledWith("s1", { watch_mode: "pause_60s" });
+  });
+});
+
+describe("the 10-second save", () => {
+  it("repeats only a mode the server confirmed, and none while a switch is on its way", async () => {
+    // Capture the 10s tick rather than wait for it; every other timer runs for real.
+    const ticks: Array<() => void> = [];
+    const realSetInterval = globalThis.setInterval;
+    const spy = vi.spyOn(globalThis, "setInterval").mockImplementation(((fn: () => void, ms?: number) => {
+      if (ms === 10000) {
+        ticks.push(fn);
+        return 0;
+      }
+      return realSetInterval(fn, ms);
+    }) as unknown as typeof setInterval);
+    try {
+      api.startSession.mockResolvedValue({ session_id: "s1", companion: companion({ check_ins: [] }), session: session("rewatch") });
+      api.getCompanion.mockResolvedValue(companion());
+      const held = deferred<ReturnType<typeof session>>();
+      api.sync.mockImplementation((_id: string, signals: { watch_mode?: string; current_timestamp?: number }) =>
+        signals.watch_mode === "normal" && signals.current_timestamp === undefined ? held.promise : Promise.resolve(session("rewatch")));
+      render(<VideoCompanion configId={800} />);
+      await screen.findByText(/^0:00 \//);
+      const tick = () => {
+        ticks[ticks.length - 1]();
+        return api.sync.mock.calls[api.sync.mock.calls.length - 1][1] as Record<string, unknown>;
+      };
+
+      expect(tick()).toMatchObject({ watch_mode: "rewatch" });
+
+      pick("Normal pace");
+      await waitFor(() => expect(api.sync).toHaveBeenCalledWith("s1", { watch_mode: "normal" }));
+      // On screen it says Normal, but the server has not agreed: the save does not claim either.
+      expect(tick()).not.toHaveProperty("watch_mode");
+
+      await act(async () => held.resolve(session("normal")));
+      await screen.findByText("1/3 checks");
+      expect(tick()).toMatchObject({ watch_mode: "normal" });
+    } finally {
+      spy.mockRestore();
+    }
   });
 });
 

@@ -97,6 +97,15 @@ export function VideoCompanion({
   // The mode the SERVER last confirmed - what a failed switch goes back to. Not the mode on screen:
   // two quick switches put the second one's "previous" on a mode the server never agreed to.
   const confirmedModeRef = useRef<WatchMode>("normal");
+  // The same, as state: a mode's check-ins and 60s stops wait for it (see `armed`).
+  const [confirmedMode, setConfirmedMode] = useState<WatchMode>("normal");
+  const confirmMode = useCallback((m: WatchMode) => {
+    confirmedModeRef.current = m;
+    setConfirmedMode(m);
+  }, []);
+  // The last switch to finish, confirmed or refused. While a newer one is still out, the 10s save
+  // does not repeat the mode: the one it holds is about to change.
+  const settledSeqRef = useRef(0);
   // Mode changes reach the server one after another, so they land in the order they were made.
   const modeSyncRef = useRef<Promise<unknown>>(Promise.resolve());
   // Auto-generated description (lazily fetched the first time the Description tab is opened).
@@ -165,7 +174,7 @@ export function VideoCompanion({
         // A rewatch session is sent an empty list on purpose; anything else was sent the lot.
         const loaded = res.session?.watch_mode !== "rewatch";
         setQuestions({ list: res.companion.check_ins ?? [], loaded });
-        if (loaded) questionsRequestRef.current = Promise.resolve();
+        questionsRequestRef.current = loaded ? Promise.resolve() : null;
         // The check-ins this learner has already passed, whichever visit they passed them on.
         // Seeding BOTH the reactive set (green markers + counter) and the shown-ref (the
         // auto-pause gate) is what stops a finished concept being re-examined on the way back.
@@ -180,7 +189,7 @@ export function VideoCompanion({
         // Reflect what the server actually opened, so the rail shows the mode in force rather than
         // the one this component happened to initialise with.
         if (res.session?.watch_mode) {
-          confirmedModeRef.current = res.session.watch_mode;
+          confirmMode(res.session.watch_mode);
           setWatchMode(res.session.watch_mode);
         }
       })
@@ -188,12 +197,17 @@ export function VideoCompanion({
     return () => {
       alive = false;
     };
-  }, [configId]);
+  }, [configId, confirmMode]);
 
-  // The check-ins are armed in a questioning mode once the questions are in hand. Arming them -
-  // on load, or by switching out of Rewatch - starts the count of armed seconds afresh, so what was
-  // played while they were off can never fire them. Declared before the effects that read it.
-  const armed = watchMode !== "rewatch" && questions.loaded;
+  // The check-ins are armed in a questioning mode once the questions are in hand - and once the
+  // SERVER has confirmed that mode. Turning them off is immediate (the mode on screen); turning them
+  // on waits for the server, so no check-in is asked, and so spent, under a switch the server then
+  // refuses. Arming them - on load, or by switching out of Rewatch - starts the count of armed
+  // seconds afresh, so what was played while they were off can never fire them. Declared before
+  // the effects that read it.
+  const armed = watchMode !== "rewatch" && confirmedMode !== "rewatch" && questions.loaded;
+  // The 60s stop follows the same rule: on once the server holds the mode too, off at once.
+  const pausing = watchMode === "pause_60s" && confirmedMode === "pause_60s";
   useEffect(() => {
     if (armed && !armedRef.current) armedPlayedRef.current = new Set();
     armedRef.current = armed;
@@ -283,14 +297,14 @@ export function VideoCompanion({
     // (and on resuming, or jumping ahead, in it) for a minute the learner had already watched. A
     // boundary already stopped at is not stopped at again after a rewind, as before.
     const minute = Math.floor(currentTime / 60);
-    if (crossedMinute && watchMode === "pause_60s" && checkpoint === null && minute > lastCheckpointRef.current) {
+    if (crossedMinute && pausing && checkpoint === null && minute > lastCheckpointRef.current) {
       lastCheckpointRef.current = minute;
       pause();
       // Player-time-driven, like the check-in above; the crossing flag is consumed on every run, so
       // it fires at most once per boundary and cannot cascade.
       setCheckpoint(currentTime);
     }
-  }, [currentTime, companion, activeCheckIn, pause, answered, watchMode, armed, questions, checkpoint]);
+  }, [currentTime, companion, activeCheckIn, pause, answered, watchMode, armed, pausing, questions, checkpoint]);
 
   // --- Periodic sync of watch signals ---------------------------------------
   const completeness = useMemo(
@@ -305,18 +319,20 @@ export function VideoCompanion({
   // Periodic save of watch signals. Reads everything from refs at fire time, so the interval isn't
   // torn down on every timeupdate (it would never reach 10s otherwise) and the BE gets true coverage.
   //
-  // It no longer carries the watch mode. The mode reaches the server once, from the switch itself,
-  // which also handles that request failing; repeating it here every 10s let a tick already in
-  // flight with the OLD mode land after the switch and quietly put the session back, and it
-  // restarted this interval on every switch.
+  // The mode it repeats is only ever one the server has confirmed, and none while a switch is on
+  // its way. It used to repeat the mode on screen, so a tick could carry a mode the server had
+  // refused, or one about to be replaced, and land after the switch; repeating the confirmed one
+  // instead restores, within one tick, anything a racing request put back.
   useEffect(() => {
     if (!sessionId) return;
     const timer = setInterval(() => {
+      const settled = settledSeqRef.current === modeSeqRef.current;
       adaptiveVideoService
         .sync(sessionId, {
           current_timestamp: prevTimeRef.current,
           completeness_pct: coverageRef.current,
           max_speed: maxSpeedRef.current,
+          ...(settled ? { watch_mode: confirmedModeRef.current } : {}),
           rewinds: rewindsRef.current.length ? rewindsRef.current : undefined,
         })
         .catch(() => {});
@@ -367,9 +383,14 @@ export function VideoCompanion({
     return () => window.removeEventListener("pagehide", flush);
   }, []);
 
-  // Unmount fallback (SPA navigation away before the video ends).
+  // Unmount fallback (SPA navigation away before the video ends). Every switch still on its way is
+  // superseded first, so none reaches the server after the watch it belongs to has been ended.
   useEffect(() => {
-    return () => endRef.current();
+    return () => {
+      // The live counter, deliberately - not a copy taken when the effect ran.
+      modeSeqRef.current += 1;
+      endRef.current();
+    };
   }, []);
 
   // --- Handlers --------------------------------------------------------------
@@ -424,9 +445,10 @@ export function VideoCompanion({
   }, []);
 
   // Takes effect at once, and never touches the player - no reload, no seek, no speed change.
-  // The rail moves first. A switch out of Rewatch fetches the questions BEFORE the server is told,
-  // so a failure at either step leaves the page and the session on the mode they were both on,
-  // and the learner is told rather than left looking at a mode that is not in force.
+  // The rail moves first, and a mode's questions and stops go off with it; they come ON when the
+  // server confirms the mode (see `armed`). A switch out of Rewatch fetches the questions BEFORE
+  // the server is told, so a failure at either step leaves the page and the session on the mode
+  // they were both on, and the learner is told rather than left looking at a mode not in force.
   const changeMode = useCallback(
     async (next: WatchMode) => {
       if (!sessionId || next === watchMode) return;
@@ -443,33 +465,40 @@ export function VideoCompanion({
         // A newer switch was made while the questions were on their way; only that one may reach
         // the server.
         if (superseded()) return;
-        // Queued behind any switch still on its way, so the server ends on the mode made last.
+        // Queued behind any switch still on its way, so the server ends on the mode made last - and
+        // checked again when its turn comes: one replaced while it waited, or one whose page has
+        // been left (which supersedes them all), is never sent.
         const request = modeSyncRef.current
           .catch(() => {})
-          .then(() => adaptiveVideoService.sync(sessionId, { watch_mode: next }));
+          .then(() => (superseded() ? null : adaptiveVideoService.sync(sessionId, { watch_mode: next })));
         modeSyncRef.current = request;
         const session = await request;
+        if (session === null) return;
         // The server has the last word: it quietly downgrades a rewatch it will not grant, and the
         // rail shows the mode in force, not the one asked for. Recorded even for a switch since
         // superseded: it is what the server holds until the newer one lands.
         const inForce = session?.watch_mode || next;
-        confirmedModeRef.current = inForce;
+        confirmMode(inForce);
         if (superseded()) return;
         if (inForce !== next) {
           setWatchMode(inForce);
           clearOverlaysFor(inForce);
           if (inForce !== "rewatch") await loadQuestions();
         }
-        if (!superseded()) setModeSwitch({ pending: false, error: null });
+        if (!superseded()) {
+          settledSeqRef.current = seq;
+          setModeSwitch({ pending: false, error: null });
+        }
       } catch {
         if (superseded()) return;
+        settledSeqRef.current = seq;
         const back = confirmedModeRef.current;
         setWatchMode(back);
         clearOverlaysFor(back);
         setModeSwitch({ pending: false, error: t("adaptiveVideoMode.switchFailed") });
       }
     },
-    [sessionId, watchMode, activeCheckIn, answered, loadQuestions, clearOverlaysFor, t],
+    [sessionId, watchMode, activeCheckIn, answered, loadQuestions, clearOverlaysFor, confirmMode, t],
   );
 
   // Switch tabs; lazily generate the description the first time its tab is opened (event-driven, so
