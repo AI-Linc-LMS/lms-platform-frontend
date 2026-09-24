@@ -40,28 +40,41 @@ function yearsSince(iso: string): number | null {
  * Names are checked with `.trim()` because a single space is truthy, which is exactly how the
  * old form let a blank name through: its only check was `!formData.first_name`.
  */
-export function validateMandatoryProfile(values: {
-  first_name?: string | null;
-  last_name?: string | null;
-  phone_number?: string | null;
-  date_of_birth?: string | null;
-  country?: string | null;
-}): Partial<Record<MandatoryProfileField, string>> {
+export function validateMandatoryProfile(
+  values: {
+    first_name?: string | null;
+    last_name?: string | null;
+    phone_number?: string | null;
+    date_of_birth?: string | null;
+    country?: string | null;
+  },
+  /**
+   * Which fields are mandatory HERE. Defaults to the platform five.
+   *
+   * Emptiness is only an error for a field in this set; a bad VALUE is an error either way,
+   * because the server rejects "+10000000000" whether or not it demands a phone number. Without
+   * the split, a tenant that had narrowed its required set got asterisks on two fields and a
+   * blocked save on five — the form marking one rule and enforcing another.
+   */
+  required: ReadonlySet<string> = new Set<string>(MANDATORY_PROFILE_FIELDS),
+): Partial<Record<MandatoryProfileField, string>> {
   const errors: Partial<Record<MandatoryProfileField, string>> = {};
 
-  if (!(values.first_name || "").trim()) errors.first_name = "First name is required.";
-  if (!(values.last_name || "").trim()) errors.last_name = "Last name is required.";
+  if (required.has("first_name") && !(values.first_name || "").trim())
+    errors.first_name = "First name is required.";
+  if (required.has("last_name") && !(values.last_name || "").trim())
+    errors.last_name = "Last name is required.";
 
   const phone = (values.phone_number || "").replace(/\s+/g, "");
   if (!phone) {
-    errors.phone_number = "Phone number is required.";
+    if (required.has("phone_number")) errors.phone_number = "Phone number is required.";
   } else if (!E164.test(phone)) {
     errors.phone_number = "Enter a valid number including the country code, e.g. +91 98765 43210.";
   }
 
   const dob = (values.date_of_birth || "").trim();
   if (!dob) {
-    errors.date_of_birth = "Date of birth is required.";
+    if (required.has("date_of_birth")) errors.date_of_birth = "Date of birth is required.";
   } else {
     const age = yearsSince(dob);
     if (age === null) errors.date_of_birth = "Enter a valid date.";
@@ -70,9 +83,34 @@ export function validateMandatoryProfile(values: {
     else if (age > MAX_AGE_YEARS) errors.date_of_birth = "Enter a valid date of birth.";
   }
 
-  if (!(values.country || "").trim()) errors.country = "Country is required.";
+  if (required.has("country") && !(values.country || "").trim())
+    errors.country = "Country is required.";
 
   return errors;
+}
+
+/** The shape of `profile_completion` these helpers read. Every key is optional: an old payload
+ *  (or none yet) must not change what the form marks. */
+export interface ProfileCompletionLike {
+  required_fields?: { field: string }[];
+  gated_modules?: string[];
+}
+
+/**
+ * Do these fields buy the learner anything on THIS tenant?
+ *
+ * `gated_modules` is the server's list of the profile-gated modules the institution actually
+ * runs. Empty means Resume, Jobs and Interview are all switched off here, so nothing asks for a
+ * date of birth in exchange for them: no first-run prompt, no dashboard card, no asterisks.
+ *
+ * A MISSING key is not an empty list. A backend that predates this — or a payload fetched by a
+ * caller that does not carry completion — must behave exactly as it does today, so `undefined`
+ * means "assume it applies". Only an explicit `[]` turns the asking off.
+ */
+export function profileGateApplies(completion?: ProfileCompletionLike | null): boolean {
+  const modules = completion?.gated_modules;
+  if (!Array.isArray(modules)) return true;
+  return modules.length > 0;
 }
 
 /**
@@ -86,10 +124,15 @@ export function validateMandatoryProfile(values: {
  *
  * Falls back to the platform default only when the payload has not arrived, so a slow profile
  * fetch under-marks nothing: the five defaults are what every unconfigured tenant requires.
+ *
+ * Returns NOTHING when the tenant runs none of the gated modules. "Required" has to mean
+ * required for something: marking five fields mandatory, and refusing to save a bio edit without
+ * them, in service of a lock the learner can never reach is a demand with no payoff.
  */
 export function requiredProfileFields(
-  completion?: { required_fields?: { field: string }[] } | null,
+  completion?: ProfileCompletionLike | null,
 ): ReadonlySet<string> {
+  if (!profileGateApplies(completion)) return new Set<string>();
   const known = new Set<string>(MANDATORY_PROFILE_FIELDS);
   const fromServer = (completion?.required_fields ?? [])
     .map((f) => f.field)
