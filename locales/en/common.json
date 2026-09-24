@@ -1234,17 +1234,6 @@
       "strictOrderNotice": "This assessment used a fixed section order. Earlier sections cannot be revisited after you moved ahead."
     }
   },
-  "assessmentTopicBreakdown": {
-    "title": "Topic-wise Performance",
-    "subtitle": "Detailed breakdown by topic",
-    "correct": "{{n}} Correct",
-    "incorrect": "{{n}} Incorrect",
-    "notAnswered": "{{n}} Not answered",
-    "questionsAsked": "{{n}} asked",
-    "accuracyOfAttempted": "Accuracy on {{attempted}} answered",
-    "nothingAttempted": "Nothing answered here",
-    "topicScore": "{{rating}}/5.0 across all {{total}} questions"
-  },
   "assessmentPublish": {
     "publishing": "Publishing…",
     "saving": "Saving…",
@@ -3315,6 +3304,21 @@
     "groupRefusedFallback": "Refused",
     "andMore": "and {{n}} more",
     "done": "Done"
+  },
+  "articleNarration": {
+    "resumeFollow": "Jump to what's being read",
+    "resumeFollowAria": "Resume following the narration"
+  },
+  "assessmentTopicBreakdown": {
+    "title": "Topic-wise Performance",
+    "subtitle": "Detailed breakdown by topic",
+    "correct": "{{n}} Correct",
+    "incorrect": "{{n}} Incorrect",
+    "notAnswered": "{{n}} Not answered",
+    "questionsAsked": "{{n}} asked",
+    "accuracyOfAttempted": "Accuracy on {{attempted}} answered",
+    "nothingAttempted": "Nothing answered here",
+    "topicScore": "{{rating}}/5.0 across all {{total}} questions"
   },
   "interviewLifecycle": {
     "notScoredYet": "No interview scored yet"

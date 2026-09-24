@@ -1,17 +1,25 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  chunkSegments,
+  chunkText,
+  chunkBlockAt,
+  htmlToText,
+  type NarrationSegment,
+  type SpeechChunk,
+} from "@/lib/utils/article-speech";
 
 /**
  * Narrates an adaptive article in the professional OpenAI "onyx" voice (the same
  * voice the mock interview uses, via /api/tts) instead of the robotic browser
- * speechSynthesis. The article is chunked (the route caps input at 4000 chars)
- * and played gaplessly by prefetching the next chunk while the current one plays.
- * Falls back to speechSynthesis if cloud TTS is unavailable (503), so narration
- * never hard-fails.
+ * speechSynthesis. The article is chunked and played gaplessly by prefetching the
+ * chunks ahead of the one playing. Falls back to speechSynthesis if cloud TTS is
+ * unavailable (503), so narration never hard-fails.
  *
- * TWO reported defects lived here, and both came from the same shape of mistake -
- * a single mutable slot standing in for something there can be more than one of.
+ * THREE reported defects have lived here. The first two came from the same shape of
+ * mistake - a single mutable slot standing in for something there can be more than one
+ * of - and the third from there being no relation at all between the audio and the page.
  *
  * 1. MULTIPLE VOICES THAT NOTHING COULD STOP. Cancellation was one shared boolean
  *    that `start()` reset at its own entry, so a later start UN-cancelled every
@@ -20,108 +28,34 @@ import { useCallback, useEffect, useRef, useState } from "react";
  *    it - the orphan played to the end of its chunk (up to 3500 characters, minutes
  *    of speech) with no way out but a page refresh. Cancellation is now a monotonic
  *    run id that only `stop()` advances, every live audio element is tracked in a
- *    Set, and the in-flight fetch is abortable.
+ *    Set, and the in-flight fetches are abortable.
  *
  * 2. CODE WAS DELETED RATHER THAN READ. `htmlToText` removed every `<code>` node,
  *    which matches inline code in prose as well as block code. "the `for` loop uses
  *    `range()`" narrated as "the loop uses", so the learner heard a broken sentence
  *    rather than a gap. Block and inline code need opposite treatment, and the
  *    source HTML already distinguishes them: block code is always `<pre data-lang>`.
+ *
+ * 3. THE PAGE DID NOT FOLLOW THE VOICE. The article was flattened into one string and
+ *    cut into 3500-character chunks, so one chunk was minutes of speech with nothing to
+ *    point at - the learner scrolled by hand to keep up. The mp3 the route returns has
+ *    no timing marks, so the fix is NOT to guess where the voice is inside a long file:
+ *    it is to make the file short enough that its boundaries are the answer. Chunks are
+ *    cut at block boundaries (lib/utils/article-speech.ts) and a chunk holding one block
+ *    is exact by construction. `activeId` names the block being spoken; useNarrationFollow
+ *    turns that into a highlight and a scroll the learner can take back at any time.
  */
 
 type TtsError = Error & { status?: number };
 
-/** Symbols a learner needs to HEAR, applied before the generic punctuation pass below
- *  (which would otherwise consume the "." in `self.` and make that rule unreachable). */
-const CODE_SPEECH: Array<[RegExp, string]> = [
-  [/->/g, " arrow "],
-  [/<=/g, " less than or equal to "],
-  [/>=/g, " greater than or equal to "],
-  [/!==?/g, " not equals "],
-  [/===?/g, " equals "],
-];
+export { htmlToText, chunkText };
+export type { NarrationSegment };
 
-/** Turn one inline code node into something speakable: `range()` -> "range",
- *  `snake_case` -> "snake case", `arr.length` -> "arr dot length". */
-function speakInlineCode(raw: string): string {
-  const t = raw.trim();
-  if (!t) return " ";
-  // A long or multi-line "inline" node is really a block in disguise - announce it.
-  if (t.length > 60 || t.includes("\n")) return " a code snippet shown on screen ";
-  let s = t.replace(/\(\s*\)$/, "");
-  for (const [re, word] of CODE_SPEECH) s = s.replace(re, word);
-  s = s.replace(/_/g, " ");
-  s = s.replace(/([a-z0-9])([A-Z])/g, "$1 $2");
-  s = s.replace(/([A-Za-z_)\]])\.([A-Za-z_])/g, "$1 dot $2");
-  s = s.replace(/\//g, " slash ");
-  return ` ${s} `;
-}
-
-/** Exported for tests: what the learner actually hears, given the article HTML. */
-export function htmlToText(html: string): string {
-  if (typeof window === "undefined" || !html) return "";
-  const tmp = document.createElement("div");
-  tmp.innerHTML = html;
-
-  // Block code: ANNOUNCE it, never read it. A 30-line <pre> spoken character by
-  // character is unlistenable and desynchronises the narration from the screen.
-  // Must run before the inline pass below, so that pass can only match true inline
-  // nodes. `data-lang` is guaranteed by the generation prompt.
-  tmp.querySelectorAll("pre").forEach((pre) => {
-    const codeEl = pre.querySelector("code");
-    const lang = (pre.getAttribute("data-lang") || codeEl?.getAttribute("data-lang") || "").trim();
-    const lines = (pre.textContent || "").trim().split("\n").filter(Boolean).length;
-    pre.replaceWith(document.createTextNode(
-      ` Here is ${lang ? `a ${lang}` : "a"} code example, ${lines} line${lines === 1 ? "" : "s"}, shown on screen. `,
-    ));
-  });
-
-  // Inline code carries meaning mid-sentence, so it has to be read, not dropped.
-  tmp.querySelectorAll("code").forEach((c) => {
-    c.replaceWith(document.createTextNode(speakInlineCode(c.textContent || "")));
-  });
-
-  // Images carry no text; the caption beside them is prose the learner should hear.
-  tmp.querySelectorAll("figure > img, figure > picture, svg").forEach((el) => el.remove());
-
-  // textContent concatenates without regard for block boundaries, so "<h2>Loops</h2><p>A loop"
-  // came out as "LoopsA loop" and was narrated as one run-on word. Separate the blocks.
-  tmp.querySelectorAll("h1, h2, h3, h4, h5, h6, p, li, div, br, tr, blockquote, section")
-    .forEach((el) => el.after(document.createTextNode(" ")));
-
-  return (tmp.textContent || "")
-    .replace(/\s+/g, " ")
-    // The spaces padding a spoken code node must not leave a gap before punctuation:
-    // "O(n) , where" reads with an audible stumble.
-    .replace(/\s+([,.;:!?])/g, "$1")
-    .trim();
-}
-
-/** Split into synthesis chunks. The FIRST chunk is deliberately short: the learner
- *  waits for it in silence, and a 3500-character first chunk is what made Read aloud
- *  feel like it had not responded (which is what got it clicked again). Exported for tests. */
-export function chunkText(text: string, first = 400, rest = 3500): string[] {
-  const sentences = text.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g) || [text];
-  const chunks: string[] = [];
-  let cur = "";
-  const max = () => (chunks.length === 0 ? first : rest);
-  for (const s of sentences) {
-    if ((cur + s).length > max()) {
-      if (cur.trim()) chunks.push(cur.trim());
-      if (s.length > max()) {
-        const size = max();
-        for (let i = 0; i < s.length; i += size) chunks.push(s.slice(i, i + size).trim());
-        cur = "";
-      } else {
-        cur = s;
-      }
-    } else {
-      cur += s;
-    }
-  }
-  if (cur.trim()) chunks.push(cur.trim());
-  return chunks.filter(Boolean);
-}
+/** How many chunks are fetched ahead of the one playing. A chunk is now a paragraph
+ *  rather than a page, so one chunk of lead time is no longer enough to cover a slow
+ *  synthesis - a two-word heading is about a second of audio. Three keeps the queue
+ *  ahead of the voice without putting a burst of requests on the route. */
+const LOOKAHEAD = 3;
 
 async function fetchChunkUrl(text: string, signal: AbortSignal): Promise<string> {
   const res = await fetch("/api/tts", {
@@ -140,16 +74,32 @@ async function fetchChunkUrl(text: string, signal: AbortSignal): Promise<string>
 
 const isAbort = (e: unknown) => (e as Error | undefined)?.name === "AbortError";
 
+type Utterance = { id: string; text: string };
+
 /** The browser fallback in ~200-char utterances rather than one giant one: Chrome
  *  silently truncates a long utterance after about 15 seconds. speechSynthesis
- *  queues them itself, and cancel() still clears the whole queue. */
-function browserUtterances(text: string): string[] {
-  return chunkText(text, 200, 200);
+ *  queues them itself, and cancel() still clears the whole queue. Each utterance
+ *  remembers the block it came from, so the fallback follows along too - and from an
+ *  OBSERVED start (`onstart`) rather than an apportioned one. */
+function browserUtterances(chunks: SpeechChunk[]): Utterance[] {
+  const out: Utterance[] = [];
+  for (const chunk of chunks) {
+    if (!chunk.parts.length) {
+      for (const piece of chunkText(chunk.text, 200, 200)) out.push({ id: "", text: piece });
+      continue;
+    }
+    for (const part of chunk.parts) {
+      for (const piece of chunkText(part.text, 200, 200)) out.push({ id: part.id, text: piece });
+    }
+  }
+  return out;
 }
 
-export function useArticleNarration(html: string) {
+export function useArticleNarration(html: string, segments?: NarrationSegment[]) {
   const [playing, setPlaying] = useState(false);
   const [loading, setLoading] = useState(false);
+  /** The block being spoken right now, or null. The page follows this. */
+  const [activeId, setActiveId] = useState<string | null>(null);
   /** Monotonic cancellation token. ONLY stop() advances it, so an earlier run can
    *  never be resurrected by a later start() the way a shared boolean allowed. */
   const runIdRef = useRef(0);
@@ -163,7 +113,6 @@ export function useArticleNarration(html: string) {
   /** "A run is alive", tracked outside React state so a click landing inside the
    *  async gap is never misread by a stale render. */
   const activeRef = useRef(false);
-
   const audios = () => (liveAudioRef.current ??= new Set());
   const urls = () => (liveUrlsRef.current ??= new Set());
 
@@ -184,30 +133,34 @@ export function useArticleNarration(html: string) {
     if (typeof window !== "undefined") window.speechSynthesis?.cancel();
     setPlaying(false);
     setLoading(false);
+    setActiveId(null);
   }, []);
 
-  const playWithBrowser = useCallback((text: string) => {
-    if (typeof window === "undefined" || !window.speechSynthesis) {
+  const playWithBrowser = useCallback((parts: Utterance[]) => {
+    if (typeof window === "undefined" || !window.speechSynthesis || !parts.length) {
       activeRef.current = false;
       setPlaying(false);
       setLoading(false);
       return;
     }
     window.speechSynthesis.cancel();
-    const parts = browserUtterances(text);
     parts.forEach((part, i) => {
-      const u = new SpeechSynthesisUtterance(part);
+      const u = new SpeechSynthesisUtterance(part.text);
       u.rate = 0.97;
       u.pitch = 1.0;
+      // speechSynthesis DOES report position, so use it rather than an estimate.
+      if (part.id) u.onstart = () => setActiveId(part.id);
       if (i === parts.length - 1) {
         u.onend = () => {
           activeRef.current = false;
           setPlaying(false);
+          setActiveId(null);
         };
       }
       u.onerror = () => {
         activeRef.current = false;
         setPlaying(false);
+        setActiveId(null);
       };
       window.speechSynthesis.speak(u);
     });
@@ -216,9 +169,18 @@ export function useArticleNarration(html: string) {
   }, []);
 
   const start = useCallback(async () => {
-    const text = htmlToText(html);
-    if (!text) return;
-    const chunks = chunkText(text);
+    // `segments` is a dependency rather than a ref: the body reports its blocks from an
+    // effect, so a callback that had baked in an earlier value would narrate the previous
+    // article's layout. Rebuilding this callback when they change is the cheap, correct
+    // way to stay current.
+    const segs = segments;
+    // Blocks are what makes following along possible. Without them (nothing has reported
+    // the rendered body yet) narration still works exactly as it did before - it simply
+    // cannot say where it is, which is better than pointing at the wrong paragraph.
+    const chunks: SpeechChunk[] = segs?.length
+      ? chunkSegments(segs)
+      : chunkText(htmlToText(html)).map((t) => ({ text: t, parts: [] }));
+    if (!chunks.length) return;
 
     stop(); // idempotent hard kill of anything still alive, and it bumps the run id
     const myRun = runIdRef.current; // captured AFTER the bump, so a later start invalidates us
@@ -232,50 +194,73 @@ export function useArticleNarration(html: string) {
     // made learners click again and provoke the race.
     setLoading(true);
 
-    const fetchChunk = (t: string) => {
-      const p = fetchChunkUrl(t, ac.signal);
+    const pending: Array<Promise<string> | null> = new Array(chunks.length).fill(null);
+    const ensure = (i: number) => {
+      if (i >= chunks.length || pending[i]) return;
+      const p = fetchChunkUrl(chunks[i].text, ac.signal);
       // Attach a catch at creation: a prefetch we later abandon must not surface as an
       // unhandled rejection when stop() aborts it.
       p.then((u) => urls().add(u)).catch(() => {});
-      return p;
+      pending[i] = p;
     };
 
     // Resolve the first chunk up front so a 503 (cloud TTS off) trips the
     // browser fallback before we commit to the cloud path.
-    let nextUrl: Promise<string>;
+    for (let k = 0; k <= LOOKAHEAD; k += 1) ensure(k);
     try {
-      nextUrl = fetchChunk(chunks[0]);
-      await nextUrl;
+      await pending[0];
     } catch (e) {
       if (stale() || isAbort(e)) return; // a stop, not a failure - do NOT start the browser voice
-      playWithBrowser(text); // 503 / network - fall back to browser voice
+      ac.abort(); // the lookahead fetches will fail the same way; do not leave them running
+      playWithBrowser(browserUtterances(chunks));
       return;
     }
 
     for (let i = 0; i < chunks.length; i += 1) {
       if (stale()) return;
-      // nextUrl was prefetched during the previous chunk's playback.
-      const url = await nextUrl.catch(() => "");
+      // Keep the queue topped up: the next LOOKAHEAD chunks load while this one plays.
+      for (let k = i; k <= i + LOOKAHEAD; k += 1) ensure(k);
+      const url = await pending[i]!.catch(() => "");
       if (stale()) return;
       if (!url) {
-        playWithBrowser(chunks.slice(i).join(" "));
+        ac.abort();
+        playWithBrowser(browserUtterances(chunks.slice(i)));
         return;
       }
-      // Kick off the next chunk's fetch now, so it loads while this one plays.
-      if (i + 1 < chunks.length) nextUrl = fetchChunk(chunks[i + 1]);
       setLoading(false);
       setPlaying(true);
+      const chunk = chunks[i];
+      if (chunk.parts.length) setActiveId(chunk.parts[0].id);
       await new Promise<void>((resolve) => {
         resolveRef.current = resolve;
         const audio = new Audio(url);
         audios().add(audio);
+        // `currentTime` is the ONLY position information an mp3 gives. A one-block chunk
+        // ignores it entirely - the block IS the file - and only a group of short blocks
+        // apportions the measured duration between them.
+        let shown = chunk.parts.length ? chunk.parts[0].id : "";
+        const onTime = () => {
+          if (chunk.parts.length < 2) return;
+          const d = audio.duration;
+          if (!Number.isFinite(d) || d <= 0) return;
+          const id = chunkBlockAt(chunk, audio.currentTime / d);
+          if (id && id !== shown) {
+            shown = id;
+            setActiveId(id);
+          }
+        };
         const done = () => {
+          audio.ontimeupdate = null;
           URL.revokeObjectURL(url);
           urls().delete(url);
           audios().delete(audio);
           resolveRef.current = null;
           resolve();
         };
+        // Assigned as a property, like onended/onerror beside it: an Audio element in a
+        // test is a stub, and reaching for addEventListener here would make this hook
+        // untestable without one.
+        audio.ontimeupdate = onTime;
         audio.onended = done;
         audio.onerror = done;
         audio.play().catch(done);
@@ -288,8 +273,9 @@ export function useArticleNarration(html: string) {
       activeRef.current = false;
       setPlaying(false);
       setLoading(false);
+      setActiveId(null);
     }
-  }, [html, playWithBrowser, stop]);
+  }, [html, segments, playWithBrowser, stop]);
 
   // Reads the ref rather than render state, so a click during the synthesis wait stops
   // the run instead of starting a second one. Deliberately NOT paired with a disabled
@@ -303,5 +289,5 @@ export function useArticleNarration(html: string) {
   // also reset the shared cancel flag, which resurrected the previous article's run.
   useEffect(() => stop, [html, stop]);
 
-  return { playing, loading, toggle, stop };
+  return { playing, loading, activeId, toggle, stop };
 }
