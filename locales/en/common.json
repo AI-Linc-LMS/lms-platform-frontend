@@ -1971,6 +1971,21 @@
       "errorUrl": "Enter a valid link",
       "errorDate": "Enter a valid date"
     },
+    "questionBank": {
+      "title": "Remove this question?",
+      "body": "“{{question}}” is removed from the shared question bank.",
+      "loading": "Checking where this question is used…",
+      "confirm": "Remove question",
+      "action": "Remove “{{question}}”",
+      "tooltip": "Remove this question",
+      "retiredChip": "Retired — still asked on this job",
+      "thisJob": "This job stops asking it on the application form",
+      "otherJobs": "{{count}} other job(s) keep asking it, unchanged",
+      "answersKept": "{{answers}} answer(s) from {{applications}} application(s) are kept and stay readable",
+      "noAnswers": "Nobody has answered it, so no answer is affected",
+      "bankLine": "It leaves the shared question bank and cannot be added to another job",
+      "duplicateWarning": "The bank already has a question with this exact wording. Saving adds a second copy, and both will appear on every job form. Close this and tick the one that is already there instead."
+    },
     "error": {
       "title": "We could not load this",
       "body": "Something went wrong on our side. Your data is safe — try again in a moment.",

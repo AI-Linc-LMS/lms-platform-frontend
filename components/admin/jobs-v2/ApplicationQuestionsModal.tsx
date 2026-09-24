@@ -43,6 +43,14 @@ const TAKES_OPTIONS = (type: QuestionType) => type === "choice" || type === "mul
 export interface ApplicationQuestionsModalProps {
   open: boolean;
   onClose: () => void;
+  /**
+   * The bank as it stands. "Add question" always CREATES a row - it never reuses or edits one -
+   * so typing text that is already in the bank is how a tenant ends up with the same question
+   * listed twice on every job form. Warning here is the cheapest place to stop that; it is
+   * deliberately not a block, because the same text with a different answer type or a different
+   * required flag is a legitimate thing to want.
+   */
+  existingQuestions?: { id: number; question_text: string }[];
   onSubmit: (data: {
     question_text: string;
     question_type: QuestionType;
@@ -57,6 +65,7 @@ export interface ApplicationQuestionsModalProps {
 export function ApplicationQuestionsModal({
   open,
   onClose,
+  existingQuestions,
   onSubmit,
   nextOrder,
 }: ApplicationQuestionsModalProps) {
@@ -123,6 +132,14 @@ export function ApplicationQuestionsModal({
     }
     return null;
   }, [filledOptions]);
+
+  const alreadyInBank = useMemo(() => {
+    const typed = questionText.trim().toLowerCase();
+    if (!typed) return false;
+    return (existingQuestions ?? []).some(
+      (q) => (q.question_text ?? "").trim().toLowerCase() === typed,
+    );
+  }, [existingQuestions, questionText]);
 
   const canSubmit =
     questionText.trim().length > 0 &&
@@ -418,10 +435,35 @@ export function ApplicationQuestionsModal({
           <Typography sx={{ ...TYPE.small, color: J.warnFg }}>
             {t(
               "jobsV2.questionModal.permanentWarning",
-              "This question joins the shared question bank and will be offered on future jobs. It cannot be edited or deleted yet.",
+              "This question joins the shared question bank and will be offered on future jobs. It cannot be edited, only removed.",
             )}
           </Typography>
         </Box>
+
+        {alreadyInBank && (
+          <Box
+            role="status"
+            sx={{
+              p: 1.5,
+              borderRadius: R.ctl,
+              border: `1px solid ${J.warnBd}`,
+              bgcolor: J.warnBg,
+              display: "flex",
+              gap: 1,
+              alignItems: "flex-start",
+            }}
+          >
+            <Box aria-hidden sx={{ color: J.warnFg, display: "inline-flex", mt: 0.1 }}>
+              <IconWrapper icon="mdi:content-duplicate" size={18} />
+            </Box>
+            <Typography sx={{ ...TYPE.small, color: J.warnFg }}>
+              {t(
+                "jobsV2.questionBank.duplicateWarning",
+                "The bank already has a question with this exact wording. Saving adds a second copy, and both will appear on every job form. Close this and tick the one that is already there instead.",
+              )}
+            </Typography>
+          </Box>
+        )}
 
         {submitError && (
           <Typography role="alert" sx={{ ...TYPE.small, color: J.dangerFg }}>
