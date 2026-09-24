@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Box, Dialog, Drawer, Typography, useMediaQuery, useTheme } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type { PooledQuestion, QuizGradeResult } from "@/lib/services/ai-tutor.service";
@@ -68,9 +69,30 @@ export function QuizOverlay({
   /** Increments per spoken turn. Used to tell "has it spoken SINCE I answered". */
   tutorTurnId?: number;
 }) {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<string[]>([]);
   const [result, setResult] = useState<QuizGradeResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  /**
+   * The question carries a picture and the browser could not fetch it.
+   *
+   * Reported as "the diagram for the question is not visible, leaving the student unable to
+   * understand or answer the diagram-based question". Whatever the cause - a dead URL, a host
+   * that will not serve us, no connection - the question stops being a question at that moment.
+   * So the options freeze and the only way out is to skip, which is reported to the tutor and
+   * scored as nothing at all.
+   *
+   * A learner must never be marked wrong on a question they could not see.
+   */
+  const [imageBroken, setImageBroken] = useState(false);
+  /**
+   * The server declined to score it, because the question names a picture it cannot show.
+   *
+   * Deliberately distinct from `gradeError`. That one means the round trip failed and Try again
+   * is the right offer; this one means the answer arrived and was not marked on purpose, so
+   * retrying would just ask the same impossible question again.
+   */
+  const [unanswerable, setUnanswerable] = useState(false);
   /**
    * Set when grading could not complete.
    *
@@ -99,23 +121,28 @@ export function QuizOverlay({
     setSubmitting(false);
     setTurnAtSubmit(0);
     setGradeError(false);
+    setImageBroken(false);
+    setUnanswerable(false);
   }, [question?.id]);
 
   const toggle = (id: string) => {
-    if (result) return;
+    if (result || imageBroken || unanswerable) return;
     setSelected((prev) =>
       multi ? (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]) : [id]
     );
   };
 
   const submit = async () => {
-    if (!question || !selected.length || submitting) return;
+    if (!question || !selected.length || submitting || imageBroken) return;
     setSubmitting(true);
     setGradeError(false);
     setTurnAtSubmit(tutorTurnId);
     const graded = await onAnswer(question.id, selected);
     // A null grade is a failed round trip, not a wrong answer. Never render it as one.
     if (graded && graded.ok !== false) setResult(graded);
+    // The server refuses to score a question whose picture is missing, and says which it is.
+    // That is not a failed request and must never be offered a Try again.
+    else if (graded?.reason === "unanswerable") setUnanswerable(true);
     else setGradeError(true);
     setSubmitting(false);
   };
@@ -134,9 +161,21 @@ export function QuizOverlay({
     setResult(null);
     setTurnAtSubmit(0);
     setGradeError(false);
+    setImageBroken(false);
+    setUnanswerable(false);
     setClosing(false);
     onClose(answered);
   };
+
+  /**
+   * The question can no longer be answered, whichever end noticed first: the browser could not
+   * fetch the picture, or the server refused to mark a question whose picture is missing.
+   *
+   * Both collapse to the same offer - leave, without an answer - and both close through
+   * `onClose(false)`, which reports a skip to the tutor and records nothing. There is no path
+   * from here to a verdict, which is the point.
+   */
+  const blocked = (imageBroken && Boolean(question?.image)) || unanswerable;
 
   // What the tutor has said in a turn that STARTED after the answer went in.
   const reaction = result && tutorTurnId > turnAtSubmit ? tutorCaption.trim() : "";
@@ -219,13 +258,60 @@ export function QuizOverlay({
         {question.question}
       </Typography>
 
-      {question.image ? (
+      {question.image && !imageBroken ? (
         <Box
           component="img"
           src={question.image}
-          alt={question.image_alt}
-          sx={{ width: "100%", borderRadius: "10px", mb: 2, display: "block" }}
+          /**
+           * The picture carries the question, so it is never decorative and `alt` is never
+           * empty: a blank alt tells a screen reader to skip the only thing being asked about.
+           * The bank requires alt text beside an image, but a copy path or an old row can still
+           * arrive without one, and the fallback at least says a picture is there.
+           */
+          alt={question.image_alt || t("aiTutorQuiz.imageAlt", "Picture for this question")}
+          onError={() => setImageBroken(true)}
+          sx={{
+            width: "100%",
+            height: "auto",
+            borderRadius: "10px",
+            mb: 2,
+            display: "block",
+            /**
+             * A tall diagram pushed every option below the fold: at 360px the picture alone was
+             * taller than the viewport and the learner could not see what they were choosing
+             * between. Capped against the viewport on a phone ONLY - an `xs` value here would
+             * shrink the desktop dialog too, which is the trap every mobile pass in this repo
+             * is written around.
+             */
+            [PHONE]: { maxHeight: "38vh", objectFit: "contain" },
+          }}
         />
+      ) : null}
+
+      {question.image && imageBroken ? (
+        <Box
+          role="status"
+          sx={{
+            mb: 2,
+            p: 2,
+            borderRadius: "10px",
+            bgcolor: ROOM_INK,
+            border: "1px solid rgba(251,191,36,0.34)",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.85, mb: 0.5 }}>
+            <Icon icon="solar:gallery-remove-bold" width={17} style={{ color: "#fbbf24" }} />
+            <Typography sx={{ fontSize: "0.92rem", fontWeight: 600, color: "#fbbf24" }}>
+              {t("aiTutorQuiz.imageFailedTitle", "This picture did not load")}
+            </Typography>
+          </Box>
+          <Typography sx={{ fontSize: "0.88rem", color: ROOM_TEXT_DIM, lineHeight: 1.55 }}>
+            {t(
+              "aiTutorQuiz.imageFailedBody",
+              "This question needs a picture we could not show, so it will not be marked. Skip it and carry on with the lesson."
+            )}
+          </Typography>
+        </Box>
       ) : null}
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
@@ -325,6 +411,32 @@ export function QuizOverlay({
         </Box>
       ) : null}
 
+      {unanswerable ? (
+        <Box
+          role="status"
+          sx={{
+            mt: 2.5,
+            p: 2,
+            borderRadius: "10px",
+            bgcolor: ROOM_INK,
+            border: "1px solid rgba(251,191,36,0.34)",
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.85, mb: 0.5 }}>
+            <Icon icon="solar:gallery-remove-bold" width={17} style={{ color: "#fbbf24" }} />
+            <Typography sx={{ fontSize: "0.92rem", fontWeight: 600, color: "#fbbf24" }}>
+              {t("aiTutorQuiz.notCountedTitle", "Not counted")}
+            </Typography>
+          </Box>
+          <Typography sx={{ fontSize: "0.88rem", color: ROOM_TEXT_DIM, lineHeight: 1.55 }}>
+            {t(
+              "aiTutorQuiz.notCountedBody",
+              "This question needed a picture we could not show, so it has not been marked right or wrong."
+            )}
+          </Typography>
+        </Box>
+      ) : null}
+
       {result ? (
         <Box
           sx={{
@@ -395,7 +507,7 @@ export function QuizOverlay({
       ) : null}
 
       <Box sx={{ display: "flex", justifyContent: "flex-end", gap: 1, mt: 2.5 }}>
-        {!result ? (
+        {!result && !blocked ? (
           <Box
             component="button"
             type="button"
@@ -423,8 +535,8 @@ export function QuizOverlay({
         <Box
           component="button"
           type="button"
-          onClick={result ? close : submit}
-          disabled={!result && (!selected.length || submitting)}
+          onClick={result || blocked ? close : submit}
+          disabled={!result && !blocked && (!selected.length || submitting)}
           sx={{
             px: 2.5,
             py: 1.15,
@@ -435,8 +547,12 @@ export function QuizOverlay({
             fontWeight: 600,
             color: "#fff",
             bgcolor: ROOM_VIOLET_SOLID,
-            cursor: !result && (!selected.length || submitting) ? "not-allowed" : "pointer",
-            opacity: !result && (!selected.length || submitting) ? 0.45 : 1,
+            cursor:
+              !result && !blocked && (!selected.length || submitting)
+                ? "not-allowed"
+                : "pointer",
+            opacity:
+              !result && !blocked && (!selected.length || submitting) ? 0.45 : 1,
             transition: "filter 160ms ease",
             "&:hover:not(:disabled)": { filter: "brightness(1.12)" },
             "&:focus-visible": roomFocusRing,
@@ -445,11 +561,13 @@ export function QuizOverlay({
         >
           {result
             ? "Back to the lesson"
-            : submitting
-              ? "Checking…"
-              : gradeError
-                ? "Try again"
-                : "Check my answer"}
+            : blocked
+              ? t("aiTutorQuiz.skipUnanswerable", "Skip this one")
+              : submitting
+                ? "Checking…"
+                : gradeError
+                  ? "Try again"
+                  : "Check my answer"}
         </Box>
       </Box>
     </Box>

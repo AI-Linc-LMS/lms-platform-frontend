@@ -3367,5 +3367,13 @@
     "completed": "Completed",
     "steps": "{{done}} of {{total}} steps done",
     "barAria": "{{percent}}% of this course complete"
+  },
+  "aiTutorQuiz": {
+    "imageAlt": "Picture for this question",
+    "imageFailedTitle": "This picture did not load",
+    "imageFailedBody": "This question needs a picture we could not show, so it will not be marked. Skip it and carry on with the lesson.",
+    "notCountedTitle": "Not counted",
+    "notCountedBody": "This question needed a picture we could not show, so it has not been marked right or wrong.",
+    "skipUnanswerable": "Skip this one"
   }
 }
