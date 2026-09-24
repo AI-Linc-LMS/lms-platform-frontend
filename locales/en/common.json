@@ -3304,5 +3304,24 @@
     "groupRefusedFallback": "Refused",
     "andMore": "and {{n}} more",
     "done": "Done"
+  },
+  "zeroCourseDashboard": {
+    "promoTitle": "Your learning experience just got an upgrade ✨",
+    "promoBodyMigrating": "We've moved to Adaptive Courses that adjust to your skill level as you go. Heads up: your adaptive progress starts fresh at 0 - your earlier course history doesn't carry over.",
+    "promoBodyOpen": "We've added Adaptive Courses that adjust to your skill level as you learn - pick one and the engine meets you right where you are.",
+    "promoBodyWaiting": "We've added Adaptive Courses that adjust to your skill level as you learn. Your organisation picks yours - the moment it does, the engine meets you right where you are.",
+    "promoCtaCourse": "Explore Adaptive Courses",
+    "promoCtaCatalog": "Browse courses",
+    "promoCtaMyCourses": "Go to my courses",
+    "promoDismiss": "Dismiss",
+    "introCtaCourse": "Open Adaptive Courses",
+    "introCtaCatalog": "Browse courses",
+    "introCtaMyCourses": "Go to my courses",
+    "introCtaNone": "Got it",
+    "courseSlotTitle": "Your course will appear here",
+    "courseSlotBody": "The moment your organisation adds you to one, this is where your next lesson, your progress and your readiness score live.",
+    "welcome": "WELCOME, {{name}}",
+    "welcomeBack": "WELCOME BACK, {{name}}",
+    "momentumNotStarted": "not started yet"
   }
 }
