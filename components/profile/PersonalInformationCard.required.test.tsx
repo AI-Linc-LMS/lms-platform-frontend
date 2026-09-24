@@ -18,7 +18,7 @@
  * `accounts/profile_completion.required_fields_for(client)` over the wire, so a tenant that
  * narrows it must narrow the asterisks too.
  */
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import "@/lib/i18n";
@@ -143,4 +143,87 @@ describe("the Personal Information form marks what the server requires", () => {
     expect(labelFor("profile-date-of-birth")).toHaveTextContent("*");
     expect(labelFor("profile-gender")).not.toHaveTextContent("*");
   });
+});
+
+/**
+ * "Required" has to mean required FOR SOMETHING.
+ *
+ * When the server reports `gated_modules: []` nothing behind these fields exists, so marking
+ * five of them mandatory — and refusing to save a city edit until a date of birth arrives — is a
+ * demand with no payoff.
+ *
+ * No production tenant is in that state today: the resume builder has no per-tenant switch, so
+ * every institution has at least one gated module. These cases exist because the rule is the
+ * thing being asserted, not the current data. The live half of the same fix is the narrowed-set
+ * case below, where the form used to mark two fields and then block the save on five.
+ */
+describe("a tenant that runs none of the gated modules", () => {
+  function noGatedModules(): UserProfile {
+    const profile = makeProfile();
+    profile.profile_completion!.gated_modules = [];
+    profile.profile_completion!.locked_modules = [];
+    return profile;
+  }
+
+  it("marks nothing mandatory", async () => {
+    render(<PersonalInformationCard profile={noGatedModules()} onSave={vi.fn()} />);
+    await openTheForm();
+
+    for (const id of [
+      "profile-first-name",
+      "profile-last-name",
+      "profile-phone-number",
+      "profile-date-of-birth",
+      "profile-country",
+    ]) {
+      expect(labelFor(id)).not.toHaveTextContent("*");
+    }
+  });
+
+  it("lets the learner save without them", async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    render(<PersonalInformationCard profile={noGatedModules()} onSave={onSave} />);
+    await openTheForm();
+
+    // Phone, date of birth and country are all blank on this profile.
+    await userEvent.click(screen.getByRole("button", { name: /^save$/i }));
+
+    expect(onSave).toHaveBeenCalled();
+    expect(screen.queryByText(/date of birth is required/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/country is required/i)).not.toBeInTheDocument();
+  }, 60_000);
+
+  // 60s: this card renders fourteen controls, a country list and a college autocomplete, and
+  // `userEvent` drives a real tel input character by character. The shared 20s budget is for
+  // ordinary components.
+  it("still refuses a value that the server would reject", async () => {
+    // Not required is not the same as not validated: the API 400s on "0000000000" either way,
+    // and finding that out after a round trip is strictly worse.
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    render(<PersonalInformationCard profile={noGatedModules()} onSave={onSave} />);
+    await openTheForm();
+
+    fireEvent.change(screen.getByLabelText(/phone number/i), { target: { value: "+12345" } });
+    await userEvent.click(screen.getByRole("button", { name: /^save$/i }));
+
+    expect(onSave).not.toHaveBeenCalled();
+  }, 60_000);
+});
+
+describe("a tenant that requires fewer fields does not block on the rest", () => {
+  it("accepts a save with the unmarked fields blank", async () => {
+    // Before: the asterisks came from the server's set and the SAVE came from the constant, so a
+    // narrowed tenant marked two fields and then refused the save on five.
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    render(
+      <PersonalInformationCard
+        profile={makeProfile(SERVER_DEFAULT_REQUIRED.slice(0, 2))}
+        onSave={onSave}
+      />,
+    );
+    await openTheForm();
+    await userEvent.click(screen.getByRole("button", { name: /^save$/i }));
+
+    expect(onSave).toHaveBeenCalled();
+  }, 60_000);
 });

@@ -25,13 +25,24 @@ const MODULE_LABELS: Record<string, string> = {
  * Renders nothing once the profile is complete, for an exempt learner, or while the gate is still
  * loading. Which is also why the dashboard skeleton deliberately reserves no space for it: a
  * shimmer would flash a card that then vanishes for most users.
+ *
+ * The subtitle now names only the modules the INSTITUTION runs. Five tenants holding 9,645
+ * active learners run neither Jobs nor Interview, and every learner on them was reading "Unlock
+ * Resume, Jobs, Interview" beside a sidebar with no Jobs and no Interview in it. They read
+ * "Unlock Resume" now.
+ *
+ * `gateApplies` is the stronger version of the same rule: render nothing at all when the server
+ * reports no gated modules. That is a safety valve rather than a live case — Resume has no
+ * tenant switch, so a real institution always has at least one — and it is what keeps this card
+ * honest if one ever gains an opt-out.
  */
 export function ProfileCompletionPanel() {
   const router = useRouter();
-  const { status, completion, percentage } = useProfileGate();
+  const { status, completion, percentage, gateApplies } = useProfileGate();
 
   if (status !== "ready" || !completion) return null;
   if (completion.is_complete || completion.exempt) return null;
+  if (!gateApplies) return null;
 
   const locked = completion.locked_modules
     .map((m) => MODULE_LABELS[m] ?? m)

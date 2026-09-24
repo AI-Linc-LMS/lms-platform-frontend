@@ -1709,6 +1709,17 @@
     "templateEyebrow": "Template",
     "remove": "Remove"
   },
+  "profileSetup": {
+    "title": "Finish setting up your account",
+    "body": "We need a couple of details before {{modules}} will work. It takes under a minute, and you only do it once.",
+    "bodyGeneric": "We need a couple of details to finish setting up your account. It takes under a minute, and you only do it once.",
+    "moduleResume": "Resume",
+    "moduleJobs": "Jobs",
+    "moduleInterview": "Interview",
+    "save": "Save and continue",
+    "notNow": "Not now",
+    "saveFailed": "We could not save that. Please try again."
+  },
   "community": {
     "title": "Community",
     "failedToLoad": "Failed to load community data",

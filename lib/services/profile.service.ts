@@ -101,6 +101,14 @@ export interface ProfileCompletion {
   exempt: boolean;
   required_fields: ProfileCompletionField[];
   missing_fields: string[];
+  /**
+   * Which of resume | jobs | interview this INSTITUTION runs, locked or not.
+   *
+   * Optional because an older backend does not send it, and `profileGateApplies` treats a
+   * missing key as "assume it applies" rather than as an empty list. An explicit `[]` means the
+   * tenant has none of the three, and every surface that asks for these fields goes quiet.
+   */
+  gated_modules?: string[];
   /** Which modules stay locked: resume | jobs | interview. Empty when complete. */
   locked_modules: string[];
 }

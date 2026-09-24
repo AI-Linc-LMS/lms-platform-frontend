@@ -14,6 +14,7 @@ import { useTimeTracking } from "@/hooks/useTimeTracking";
 import { reportContentCompleted } from "@/lib/streak/streakCelebration";
 import { StreakCelebrationOverlay } from "@/components/common/StreakCelebrationOverlay";
 import { ReportIssueFAB } from "@/components/common/ReportIssueFAB";
+import { ProfileSetupPrompt } from "@/components/profile/ProfileSetupPrompt";
 import { useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
 import { invalidateCached } from "@/lib/utils/ttl-cache";
 
@@ -177,6 +178,12 @@ function ChromeShell({ children }: { children: React.ReactNode }) {
         <MobileNav />
         {!hideLeaderboardView && <StreakCelebrationOverlay />}
         <ReportIssueFAB />
+        {/* "Take this information at the start upon entering." Mounted with the chrome rather
+            than on the dashboard, so it meets the learner on whatever page they land on first —
+            and, because the chrome survives navigation, it asks ONCE per session instead of
+            re-appearing on every route change. The chromeless routes (login, the assessment
+            runner, the interview room) are excluded by construction. */}
+        <ProfileSetupPrompt />
       </Box>
       </MobileMenuProvider>
     </ChromeProvider>

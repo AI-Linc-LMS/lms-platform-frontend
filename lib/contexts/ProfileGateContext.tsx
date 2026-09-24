@@ -10,6 +10,7 @@ import {
   useState,
 } from "react";
 import { profileService, type ProfileCompletion, type Skill } from "@/lib/services/profile.service";
+import { profileGateApplies } from "@/lib/schemas/profile.schema";
 import { useAuth } from "@/lib/auth/auth-context";
 
 /**
@@ -40,6 +41,15 @@ interface ProfileGateValue {
   isComplete: boolean;
   percentage: number;
   lockedModules: string[];
+  /**
+   * Whether a complete profile buys the learner anything on this tenant.
+   *
+   * False only when the server explicitly says the institution runs none of Resume, Jobs or
+   * Interview. Everything that ASKS for these fields — the first-run prompt, the dashboard card,
+   * the asterisks on the form — must check this. Nothing that ENFORCES anything should: the API
+   * gate is unchanged, and a display rule must never be the reason a door opens.
+   */
+  gateApplies: boolean;
   missingFields: string[];
   refresh: () => Promise<void>;
   /**
@@ -119,9 +129,13 @@ export function ProfileGateProvider({ children }: { children: React.ReactNode })
       exempt: false,
       required_fields: prev?.required_fields ?? [],
       missing_fields: body.missing_fields ?? prev?.missing_fields ?? [],
+      // Carried forward, not dropped: the server just refused a gated module, so this tenant
+      // plainly runs at least one. Resetting it to undefined would be harmless today (a missing
+      // key means "assume it applies") but would silently widen the prompt back to all three.
+      gated_modules: prev?.gated_modules,
       locked_modules: prev?.locked_modules?.length
         ? prev.locked_modules
-        : ["resume", "jobs", "interview"],
+        : prev?.gated_modules ?? ["resume", "jobs", "interview"],
     }));
     setStatus("ready");
   }, []);
@@ -138,6 +152,9 @@ export function ProfileGateProvider({ children }: { children: React.ReactNode })
       isComplete: known ? completion.is_complete || completion.exempt : true,
       percentage: completion?.percentage ?? 0,
       lockedModules: known && !completion.is_complete ? completion.locked_modules : [],
+      // Optimistic while unknown, matching isComplete above: a prompt that flashes on and then
+      // vanishes reads as a bug, but the surfaces that use this all wait for "ready" anyway.
+      gateApplies: profileGateApplies(completion),
       missingFields: completion?.missing_fields ?? [],
       refresh: load,
       applyServerLock,
@@ -159,6 +176,7 @@ export function useProfileGate(): ProfileGateValue {
     isComplete: true,
     percentage: 0,
     lockedModules: [],
+    gateApplies: true,
     missingFields: [],
     refresh: async () => {},
     applyServerLock: () => {},
