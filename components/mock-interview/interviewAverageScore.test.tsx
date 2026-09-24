@@ -47,6 +47,35 @@ const averageOf = (interviews: MockInterview[]): number | null => {
     : null;
 };
 
+/**
+ * The expression that shipped, kept verbatim so the regression has a shape and not just a
+ * description. `score` was absent from every row, `undefined !== undefined` is false, the
+ * filter matched nothing, and the ternary returned its zero.
+ */
+const averageBeforeTheFix = (
+  interviews: (MockInterview & { score?: number })[],
+): number => {
+  const completedWithScores = interviews.filter(
+    (i) => i.status === "completed" && i.score !== undefined,
+  );
+  return completedWithScores.length > 0
+    ? Math.round(
+        completedWithScores.reduce((sum, i) => sum + (i.score || 0), 0) /
+          completedWithScores.length,
+      )
+    : 0;
+};
+
+describe("the shape of the bug", () => {
+  it("returned 0% for a completed, scored interview once the score was stripped", () => {
+    // What the list endpoint actually sent: nine fields, no score.
+    const asTheApiSentIt = [attempt()] as (MockInterview & { score?: number })[];
+    expect(averageBeforeTheFix(asTheApiSentIt)).toBe(0);
+    // And the same payload, now that the server sends the mark.
+    expect(averageOf([attempt({ score: 72, is_scored: true })])).toBe(72);
+  });
+});
+
 describe("the average score a learner is shown", () => {
   it("is the mark of their one completed interview, not zero", () => {
     // THE REPORTED BUG. Fails before the fix: the row carried no `score` at all, the filter
