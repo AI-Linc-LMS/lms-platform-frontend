@@ -251,14 +251,17 @@ export function useArticleNarration(html: string, segments?: NarrationSegment[])
           }
         };
         const done = () => {
-          audio.removeEventListener("timeupdate", onTime);
+          audio.ontimeupdate = null;
           URL.revokeObjectURL(url);
           urls().delete(url);
           audios().delete(audio);
           resolveRef.current = null;
           resolve();
         };
-        audio.addEventListener("timeupdate", onTime);
+        // Assigned as a property, like onended/onerror beside it: an Audio element in a
+        // test is a stub, and reaching for addEventListener here would make this hook
+        // untestable without one.
+        audio.ontimeupdate = onTime;
         audio.onended = done;
         audio.onerror = done;
         audio.play().catch(done);

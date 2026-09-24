@@ -248,13 +248,17 @@ export function chunkSegments(
     }
 
     const max = chunks.length === 0 ? first : cap;
-    if (cur && (cur as SpeechChunk).text.length + 1 + text.length > max) flush();
+    // A block big enough to matter starts its own chunk as well as ending one. Only
+    // closing the chunk AFTER it was not enough: a 250-character paragraph that happened
+    // to fit under the cap was still glued onto the five short blocks before it, and its
+    // position - the one the learner spends real time on - went back to being estimated.
+    const substantial = text.length >= standalone;
+    if (cur && (substantial || (cur as SpeechChunk).text.length + 1 + text.length > max)) flush();
     if (!cur) cur = { text: "", parts: [] };
     const c = cur as SpeechChunk;
     c.text = c.text ? `${c.text} ${text}` : text;
     c.parts.push({ id: seg.id, text, weight: text.length + PAUSE_PAD });
-    // A block big enough to matter is never grouped with what follows it.
-    if (text.length >= standalone) flush();
+    if (substantial) flush();
   }
   flush();
   return chunks;
