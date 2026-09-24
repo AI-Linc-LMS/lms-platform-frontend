@@ -153,7 +153,9 @@ export function BulkEnrolReport({
             </Typography>
             <Typography
               sx={{
-                fontSize: "0.7rem",
+                // 12px, not 11.2: the module's phone pass forbids body text under 12px, and this
+                // label is the only thing that says what the number above it counts.
+                fontSize: "0.75rem",
                 fontWeight: 700,
                 textTransform: "uppercase",
                 letterSpacing: 0.3,
