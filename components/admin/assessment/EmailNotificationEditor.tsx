@@ -187,8 +187,11 @@ function EmailNotificationEditorInner(
       },
       setContent(nextSubject, nextBody) {
         if (nextSubject != null) {
+          // `lastInitialSubject` keeps tracking the prop. Setting it to nextSubject made the
+          // snap-back above see a changed title on the very next render and overwrite the subject
+          // just restored with the title-derived default, so a saved or re-seeded custom subject
+          // never survived. A later title edit still snaps it back, as the field's hint says.
           setSubject(nextSubject);
-          setLastInitialSubject(nextSubject);
         }
         if (nextBody != null) {
           setBody(nextBody);

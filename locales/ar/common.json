@@ -689,7 +689,13 @@
     "activate": "تفعيل التقييم",
     "deactivate": "إلغاء تفعيل التقييم",
     "activationFailed": "تم حفظ تغييراتك، لكن لم يتم تفعيل التقييم. {{reason}}",
-    "deactivationFailed": "تم حفظ تغييراتك، لكن لم يتم إلغاء تفعيل التقييم. {{reason}}"
+    "deactivationFailed": "تم حفظ تغييراتك، لكن لم يتم إلغاء تفعيل التقييم. {{reason}}",
+    "notSavedNotPublished": "تعذّر حفظ تغييراتك، لذلك لم يُنشر شيء: {{reason}}",
+    "lastSavedTitle": "هل تريد نشر آخر نسخة محفوظة؟",
+    "lastSavedBody": "لن تُضمَّن تغييراتك غير المحفوظة. سيحصل المتعلمون على التقييم ورسالة الإشعار الخاصة به تمامًا كما حُفظا آخر مرة.",
+    "lastSavedReason": "تعذّر حفظ تغييراتك: {{reason}}",
+    "keepEditing": "متابعة التعديل",
+    "publishLastSaved": "نشر آخر نسخة محفوظة"
   },
   "assessments": {
     "title": "التقييمات",

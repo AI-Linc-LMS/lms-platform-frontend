@@ -23,11 +23,23 @@ const h = vi.hoisted(() => ({
   createAssessment: vi.fn(),
   publishAssessment: vi.fn(),
   getAssessmentById: vi.fn(),
+  getQuestionsExportJson: vi.fn(),
+  updateAssessment: vi.fn(),
+  /** The URL's query. A test that lets a redirect "arrive" swaps it from inside `push`. */
+  search: new URLSearchParams(),
 }));
 
+// One router object for the life of the test, as next/navigation gives: the draft loader's effect
+// depends on it, and a fresh object per render would cancel every load it starts.
+const router = {
+  push: (url: string) => h.push(url),
+  replace: vi.fn(),
+  back: vi.fn(),
+  prefetch: vi.fn(),
+};
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: h.push, replace: vi.fn(), back: vi.fn(), prefetch: vi.fn() }),
-  useSearchParams: () => new URLSearchParams(),
+  useRouter: () => router,
+  useSearchParams: () => h.search,
   usePathname: () => "/admin/assessment/create",
 }));
 // Interpolates `defaultValue`, so a toast is asserted as the sentence the author reads.
@@ -118,7 +130,10 @@ vi.mock("@/lib/services/admin/admin-projects.service", () => ({
 vi.mock("@/lib/services/admin/admin-cohorts.service", () => ({
   adminCohortsService: { listCohorts: () => Promise.resolve([{ id: 5, name: "Batch A" }]) },
 }));
-vi.mock("@/lib/services/admin/admin-assessment.service", () => ({
+// The module's own helpers (isMCQQuestion and friends) stay real: loading a draft back maps its
+// questions with them.
+vi.mock("@/lib/services/admin/admin-assessment.service", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   adminAssessmentService: new Proxy(
     {},
     {
@@ -127,6 +142,8 @@ vi.mock("@/lib/services/admin/admin-assessment.service", () => ({
         if (key === "createAssessment") return h.createAssessment;
         if (key === "publishAssessment") return h.publishAssessment;
         if (key === "getAssessmentById") return h.getAssessmentById;
+        if (key === "getQuestionsExportJson") return h.getQuestionsExportJson;
+        if (key === "updateAssessment") return h.updateAssessment;
         return () => Promise.resolve([]);
       },
     },
@@ -178,9 +195,12 @@ beforeEach(() => {
     h.createAssessment,
     h.publishAssessment,
     h.getAssessmentById,
+    h.getQuestionsExportJson,
+    h.updateAssessment,
   ]) {
     fn.mockReset();
   }
+  h.search = new URLSearchParams();
   h.user = { role: "instructor" };
   h.builderConfig.mockResolvedValue({ batch_required: true, course_required: false });
   h.createAssessment.mockResolvedValue({ id: 99 });
@@ -291,5 +311,152 @@ describe("create assessment: publish from the creation page", () => {
     await waitFor(() => expect(h.publishAssessment).toHaveBeenCalledTimes(1));
     expect(h.createAssessment.mock.calls[0][1].is_draft).toBe(true);
     expect(h.publishAssessment.mock.calls[0][1]).toBe(99);
+  });
+});
+
+/**
+ * Review finding 2: a second click after a create could make a SECOND paper. `finally` turned the
+ * buttons back on, and editingAssessmentId was only set later, by the ?fromDraft effect once the
+ * route had changed - so a click in between found no id and POSTed again, and a second publish
+ * emailed the learners again. The created id is kept the moment the server answers, every later
+ * click goes to that paper, and the buttons stay off until the route has arrived.
+ */
+describe("create assessment: one paper per create", () => {
+  /** The draft the server holds for id 99, as the draft editor loads it back. */
+  function serveDraft99() {
+    h.getAssessmentById.mockResolvedValue({
+      id: 99,
+      is_draft: true,
+      is_active: false,
+      title: "Unit 3 check",
+      instructions: "Answer everything",
+      duration_minutes: 60,
+      audience: { cohorts: [{ id: 5, name: "Batch A" }], courses: [] },
+    });
+    h.getQuestionsExportJson.mockResolvedValue({
+      assessment: { id: 99 },
+      sections: [
+        {
+          section_id: 1,
+          section_type: "quiz",
+          section_title: "S",
+          order: 1,
+          number_of_questions: 1,
+          questions: [
+            {
+              id: 501,
+              question_text: "q",
+              option_a: "a",
+              option_b: "b",
+              option_c: "c",
+              option_d: "d",
+              correct_option: "A",
+            },
+          ],
+        },
+      ],
+    });
+  }
+
+  /** Let router.push "arrive": the page reads the new query on its next render. */
+  function routerFollowsPushes() {
+    h.push.mockImplementation((url: string) => {
+      h.search = new URLSearchParams(url.split("?")[1] ?? "");
+    });
+  }
+
+  it("a double-click on Publish creates one paper", async () => {
+    let resolveCreate: (v: unknown) => void = () => {};
+    h.createAssessment.mockImplementation(
+      () =>
+        new Promise((r) => {
+          resolveCreate = r;
+        }),
+    );
+    const user = await reachTheFinalStep();
+    await user.dblClick(publishButton());
+    resolveCreate({ id: 99 });
+    await waitFor(() => expect(h.publishAssessment).toHaveBeenCalledTimes(1));
+    expect(h.createAssessment).toHaveBeenCalledTimes(1);
+  });
+
+  it("a second click after a successful publish makes no second paper", async () => {
+    const user = await reachTheFinalStep();
+    await user.click(publishButton());
+    await waitFor(() => expect(h.push).toHaveBeenCalledWith("/admin/assessment/99/edit"));
+
+    // The route is still on its way: every submit button stays off.
+    await waitFor(() => expect(publishButton()).toBeDisabled());
+    expect(saveButton()).toBeDisabled();
+    fireEvent.click(publishButton());
+    fireEvent.click(saveButton());
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(h.createAssessment).toHaveBeenCalledTimes(1);
+    expect(h.publishAssessment).toHaveBeenCalledTimes(1);
+  });
+
+  it("a second click after Save makes no second paper", async () => {
+    const user = await reachTheFinalStep();
+    await user.click(saveButton());
+    await waitFor(() =>
+      expect(h.push).toHaveBeenCalledWith("/admin/assessment/create?fromDraft=99"),
+    );
+    await waitFor(() => expect(saveButton()).toBeDisabled());
+    fireEvent.click(saveButton());
+    fireEvent.click(publishButton());
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(h.createAssessment).toHaveBeenCalledTimes(1);
+    expect(h.publishAssessment).not.toHaveBeenCalled();
+  });
+
+  it("a retry after a failed publish publishes the paper already made, not a second one", async () => {
+    h.publishAssessment.mockRejectedValueOnce(new Error("Network Error"));
+    serveDraft99();
+    routerFollowsPushes();
+    const user = await reachTheFinalStep();
+    await user.click(publishButton());
+
+    // Told the truth, and sent to the draft editor for paper 99.
+    await waitFor(() =>
+      expect(h.push).toHaveBeenCalledWith("/admin/assessment/create?fromDraft=99"),
+    );
+    // Once the draft has loaded, the page is that paper's editor and Publish is live again.
+    await waitFor(() => expect(h.getQuestionsExportJson).toHaveBeenCalled());
+    await waitFor(() => expect(publishButton()).not.toBeDisabled());
+    await user.click(publishButton());
+
+    await waitFor(() => expect(h.publishAssessment).toHaveBeenCalledTimes(2));
+    expect(h.publishAssessment.mock.calls.map((c) => c[1])).toEqual([99, 99]);
+    expect(h.createAssessment).toHaveBeenCalledTimes(1);
+    // Nothing on screen differed from the saved draft, so nothing was re-saved either.
+    expect(h.updateAssessment).not.toHaveBeenCalled();
+  });
+
+  it("after a failed publish the buttons stay off until the draft editor has arrived", async () => {
+    h.publishAssessment.mockRejectedValueOnce(new Error("Network Error"));
+    h.getAssessmentById.mockResolvedValue({ id: 99, is_draft: true });
+    const user = await reachTheFinalStep();
+    await user.click(publishButton());
+    await waitFor(() =>
+      expect(h.push).toHaveBeenCalledWith("/admin/assessment/create?fromDraft=99"),
+    );
+    // The route never arrives here (push does not move the URL).
+    await waitFor(() => expect(publishButton()).toBeDisabled());
+    fireEvent.click(publishButton());
+    await new Promise((r) => setTimeout(r, 50));
+    expect(h.createAssessment).toHaveBeenCalledTimes(1);
+    expect(h.publishAssessment).toHaveBeenCalledTimes(1);
+  });
+
+  it("makes Publish the filled, primary action and Save the outlined one", async () => {
+    await reachTheFinalStep();
+    expect(publishButton().className).toMatch(/MuiButton-contained/);
+    expect(saveButton().className).toMatch(/MuiButton-outlined/);
+    // Publish sits last, where the primary action goes.
+    expect(
+      saveButton().compareDocumentPosition(publishButton()) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 });

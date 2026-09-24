@@ -6,6 +6,7 @@ import type { MCQBankQuery } from "@/components/admin/assessment/MCQSelectionSec
 import { useTranslation } from "react-i18next";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isCourseManagerRole } from "@/lib/auth/auth-utils";
+import { isScopedAdminRole } from "@/lib/auth/role-utils";
 import { audienceStepError, resolveBatchRequired } from "@/lib/utils/assessment-audience-rules";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import {
@@ -26,6 +27,7 @@ import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import {
   adminAssessmentService,
+  apiErrorStatus,
   CreateAssessmentPayload,
   AssessmentQuizSectionWrite,
   AssessmentCodingProblemSectionWrite,
@@ -54,6 +56,7 @@ import { getPassBandFieldErrors } from "@/lib/utils/assessment-pass-band.utils";
 import { buildAssessmentNotificationEmailHtml } from "@/lib/utils/email-template";
 import { getPublicAppOrigin } from "@/lib/config";
 import { extractSavedEmailAttachment } from "@/lib/utils/assessment-email-attachment";
+import { saveAssessmentWithActivation } from "@/lib/utils/assessment-activation";
 import { adminCohortsService } from "@/lib/services/admin/admin-cohorts.service";
 import {
   listProjects,
@@ -80,6 +83,49 @@ function toAssessmentApiDecimalString(
 }
 
 const steps = ["Assessment Details", "Add Questions", "Review & Create"];
+
+/** The wizard's filled, gradient action (Continue, and Publish on the final step). */
+const PRIMARY_ACTION_SX = {
+  textTransform: "none",
+  fontWeight: 700,
+  px: 3,
+  borderRadius: "12px",
+  color: "#fff",
+  background: "var(--gradient-ai)",
+  boxShadow: "0 10px 22px -12px color-mix(in srgb, var(--ai-violet) 70%, transparent)",
+  "&:hover": { filter: "brightness(1.05)" },
+  "&.Mui-disabled": {
+    color: "var(--font-secondary)",
+    background: "color-mix(in srgb, var(--ai-violet) 18%, var(--surface) 82%)",
+  },
+} as const;
+
+/** The outlined companion to it: Save on the final step, which keeps a draft. */
+const SECONDARY_ACTION_SX = {
+  textTransform: "none",
+  fontWeight: 700,
+  px: 2.5,
+  borderRadius: "12px",
+  color: "var(--font-primary)",
+  borderColor: "color-mix(in srgb, var(--font-secondary) 35%, var(--border-default) 65%)",
+  bgcolor: "var(--card-bg)",
+  "&:hover": {
+    borderColor: "var(--accent-indigo)",
+    bgcolor: "color-mix(in srgb, var(--accent-indigo) 6%, var(--card-bg) 94%)",
+  },
+  "&.Mui-disabled": { borderColor: "var(--border-default)" },
+} as const;
+
+/** The save body's email fields: compared on their own, not as part of the form (formSignature). */
+const EMAIL_PAYLOAD_KEYS = [
+  "email_notification_enabled",
+  "email_subject",
+  "email_body",
+  "email_html",
+  "attachment_url",
+  "email_base_url",
+  "email_reminders_enabled",
+] as const;
 
 interface SubmitOptions {
   skipSectionValidation?: boolean;
@@ -128,6 +174,17 @@ function CreateAssessmentPageContent() {
     }
   }, [authLoading, user?.role, router]);
 
+  /**
+   * Navigate after a write, keeping every submit button off until the route arrives. For a
+   * same-route redirect (the draft editor, ?fromDraft=N) the wait ends when that draft has loaded;
+   * any other destination unmounts this page.
+   */
+  const leaveTo = (url: string, draftId?: number) => {
+    awaitingDraftRef.current = draftId ?? null;
+    setLeaving(true);
+    router.push(url);
+  };
+
   const [activeStep, setActiveStep] = useState(0);
   // Project briefs picked per section. Kept beside the other per-section pickers rather than on
   // the Section itself, matching how MCQ and coding selections are held.
@@ -158,6 +215,47 @@ function CreateAssessmentPageContent() {
   const [submitIntent, setSubmitIntent] = useState<"save" | "publish" | null>(null);
   /** The submit the extra-questions dialog interrupted, finished by its "…as configured" button. */
   const pendingSubmitRef = useRef<SubmitOptions>({});
+  /**
+   * The paper this page created, kept the moment createAssessment answers: in a ref for the click
+   * handlers, which can run before React re-renders, and in state for the render.
+   *
+   * editingAssessmentId is only set later, by the ?fromDraft effect once the route has changed.
+   * In between, a second click (Save, Publish, or a retry after a failed publish) found no id and
+   * POSTed a second paper, and a second publish emailed the same learners again. Every later
+   * click now goes to this paper.
+   */
+  const createdIdRef = useRef<number | null>(null);
+  const [createdAssessmentId, setCreatedAssessmentId] = useState<number | null>(null);
+  /** A write is in flight. A ref beside `creating`: a second click can land before the re-render. */
+  const submittingRef = useRef(false);
+  /**
+   * The page has sent the author on after a write and the route has not arrived yet. The submit
+   * buttons stay off until it does. `creating` alone was cleared in `finally`, which turned them
+   * back on while the router was still on its way.
+   */
+  const [leaving, setLeaving] = useState(false);
+  /** For a same-route redirect (?fromDraft=N): the draft whose load ends the wait. */
+  const awaitingDraftRef = useRef<number | null>(null);
+  /** Bumped when a draft finishes loading, so the saved-state baseline is taken from that render. */
+  const [draftLoadCount, setDraftLoadCount] = useState(0);
+  /** What the loaded paper's Active switch was, for a save that must not fold the switch in. */
+  const loadedIsActiveRef = useRef(true);
+  /**
+   * The form as last saved, email aside (see formSignature). Publish compares with it: the publish
+   * call makes the SAVED paper live, so unsaved edits would silently not go out.
+   */
+  const savedFormSignatureRef = useRef<string | null>(null);
+  /**
+   * The notification email as last saved. The publish call cannot carry one either: the server
+   * sends the email it has saved, so an edited subject or body counts as an unsaved change.
+   */
+  const savedEmailRef = useRef<{ enabled: boolean; subject: string; body: string } | null>(null);
+  /** The draft's saved email, waiting for the editor to mount (it is not mounted while loading). */
+  const pendingEmailRestoreRef = useRef<{ subject: string | null; body: string | null } | null>(
+    null,
+  );
+  /** Publish found unsaved changes this author may not save; offer the last saved version. */
+  const [lastSavedPrompt, setLastSavedPrompt] = useState<{ reason: string } | null>(null);
 
   // Assessment basic info
   const [title, setTitle] = useState("");
@@ -444,17 +542,48 @@ function CreateAssessmentPageContent() {
         setExistingEmailAttachmentName(savedAttachment.name);
         // P3: restore the draft's saved notification email so it isn't lost on reopen.
         // The editor seeds its body from initialBody only at mount, so a late async
-        // load must be applied imperatively.
+        // load must be applied imperatively - but NOT from here. The page shows a spinner
+        // while the draft loads, so the editor is not mounted and a setContent now did
+        // nothing: the editor opened on the defaults, and the next save replaced the saved
+        // email with them. The effect below applies it once the editor exists.
         const draftEmailBody =
           typeof draftAny.email_body === "string" ? draftAny.email_body.trim() : "";
         const draftEmailSubject =
           typeof draftAny.email_subject === "string" ? draftAny.email_subject : "";
-        if (draftEmailBody || draftEmailSubject) {
-          emailEditorRef.current?.setContent(
-            draftEmailSubject || null,
-            draftEmailBody || null,
-          );
-        }
+        pendingEmailRestoreRef.current =
+          draftEmailBody || draftEmailSubject
+            ? { subject: draftEmailSubject || null, body: draftEmailBody || null }
+            : null;
+        savedEmailRef.current = {
+          enabled:
+            ((draftAny.email_notification_enabled as boolean | undefined) ??
+              (draftAny.send_communication as boolean | undefined) ??
+              false) === true,
+          subject: draftEmailSubject.trim(),
+          body: draftEmailBody,
+        };
+        // Loaded like every other setting, so a save (Save, or the save Publish makes first)
+        // sends back what the paper holds instead of clearing it: the timezone override went
+        // out blank and the reminder schedule went out empty.
+        setTimezone(typeof draftAny.timezone === "string" ? draftAny.timezone : "");
+        setEmailRemindersEnabled(draftAny.email_reminders_enabled === true);
+        setEmailReminderOffsets(
+          Array.isArray(draftAny.email_reminder_offsets)
+            ? (draftAny.email_reminder_offsets as number[])
+            : [],
+        );
+        loadedIsActiveRef.current = (detail as { is_active?: boolean }).is_active ?? true;
+        // The paper's batches, as the edit page loads them (`audience.cohorts`). Left empty, an
+        // instructor had to pick them again to get past the first step, and every draft looked
+        // edited to the unsaved-changes check; a save then replaced the set with the re-pick.
+        const draftAudience = (draftAny.audience ?? null) as { cohorts?: unknown } | null;
+        setCohortIds(
+          Array.isArray(draftAudience?.cohorts)
+            ? (draftAudience.cohorts as { id: number }[])
+                .map((c) => c?.id)
+                .filter((id): id is number => typeof id === "number")
+            : [],
+        );
         const mapped = mapQuestionsExportToAuthoringState(exportJson);
         // Seed the cache with the questions already on this assessment. Editing pre-selects
         // their ids, and those rows may sit on page 40 of the bank - or not be reachable by
@@ -477,6 +606,15 @@ function CreateAssessmentPageContent() {
         setAiMCQs({});
         setManualSubjectiveQuestions({});
         setAiCodingProblems({});
+        // The render this batch produces is the paper as saved: the unsaved-changes baseline is
+        // taken from it (see the effect keyed on draftLoadCount).
+        setDraftLoadCount((n) => n + 1);
+        // A redirect here after a create (?fromDraft=N) has arrived: this page is now the draft
+        // editor for that paper, and its buttons act on it.
+        if (awaitingDraftRef.current === editingAssessmentId) {
+          awaitingDraftRef.current = null;
+          setLeaving(false);
+        }
       } catch (e: unknown) {
         if (!cancelled) {
           showToast(e instanceof Error ? e.message : "Failed to load draft assessment", "error");
@@ -490,6 +628,26 @@ function CreateAssessmentPageContent() {
       cancelled = true;
     };
   }, [editingAssessmentId, router, showToast]);
+
+  // Put the draft's saved email into the editor once the editor exists: on step 0, after the
+  // load, and when "Send notification email" mounts it. Declared after the step-0 re-seed from
+  // the snapshot, so the saved email wins over a snapshot taken before the draft was loaded.
+  useEffect(() => {
+    const pending = pendingEmailRestoreRef.current;
+    if (!pending || loadingDraft || activeStep !== 0) return;
+    const editor = emailEditorRef.current;
+    if (!editor) return;
+    editor.setContent(pending.subject, pending.body);
+    pendingEmailRestoreRef.current = null;
+  }, [loadingDraft, activeStep, sendCommunication, draftLoadCount]);
+
+  // The paper as saved, taken from the render the load produced (every loaded value is set in
+  // one batch). Publish compares what is on screen with it.
+  useEffect(() => {
+    if (draftLoadCount === 0) return;
+    savedFormSignatureRef.current = formSignature();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- once per load, from that render's state
+  }, [draftLoadCount]);
 
   /** The audience picker's options. Batches are the targeting now: a legacy course tag keeps a
    *  paper off the rest of the tenant but gives nobody access (BE-A3a), so it is not offered. */
@@ -1093,7 +1251,403 @@ function CreateAssessmentPageContent() {
     return getAllMCQsWithSections().map(({ sectionId, ...mcq }) => mcq);
   };
 
+  /**
+   * The request body a save sends, built from what is on screen. Pure: it reads state and
+   * validates nothing (handleCreate validates first), so the unsaved-changes check can build the
+   * same body and compare it with the last saved one.
+   */
+  const buildSavePayload = (): {
+    payload: CreateAssessmentPayload;
+    emailAttachment: File | null;
+  } => {
+    const quizSections = sections
+      .filter((s) => s.type === "quiz")
+      .sort((a, b) => a.order - b.order);
+    const codingSections = sections
+      .filter((s) => s.type === "coding")
+      .sort((a, b) => a.order - b.order);
+    const subjectiveSections = sections
+      .filter((s) => s.type === "subjective")
+      .sort((a, b) => a.order - b.order);
+
+    // Convert datetime-local strings to IST ISO format (format: "2026-01-22T22:54:00+05:30")
+    // Note: datetime-local input treats the entered time as local time, but we interpret it as IST
+    const convertToIST = (dateTimeString: string): string | undefined => {
+      if (!dateTimeString || !dateTimeString.trim()) {
+        return undefined;
+      }
+      try {
+        // datetime-local format: "YYYY-MM-DDTHH:mm" (no timezone, treated as local)
+        // We interpret the entered time as IST time and format it with IST timezone offset
+        let isoString = dateTimeString.trim();
+        
+        // If format is "YYYY-MM-DDTHH:mm", append ":00" for seconds
+        if (isoString.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)) {
+          isoString = isoString + ":00";
+        }
+        
+        // Parse the datetime string to extract components
+        const match = isoString.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
+        if (!match) {
+          return undefined;
+        }
+        
+        const [, year, month, day, hours, minutes, seconds] = match;
+        
+        // Validate the date components
+        const date = new Date(`${year}-${month}-${day}T${hours}:${minutes}:${seconds}`);
+        if (isNaN(date.getTime())) {
+          return undefined;
+        }
+        
+        // Return ISO format with IST timezone: "2026-01-22T22:54:00+05:30"
+        // The time entered is treated as IST time, so we just append the IST offset
+        return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+05:30`;
+      } catch {
+        return undefined;
+      }
+    };
+
+    // Build payload with all sections
+    const payload: CreateAssessmentPayload = {
+      title: title.trim(),
+      instructions: instructions.trim(),
+      description: description.trim() || undefined,
+      duration_minutes: durationMinutes,
+      start_time: convertToIST(startTime),
+      end_time: convertToIST(endTime),
+      is_paid: isPaid,
+      price: isPaid ? (price ? Number(price) : null) : null,
+      currency: isPaid ? currency : undefined,
+      // Sent even when blank: clearing it back to the institution's zone is a real
+      // edit, and omitting the key would silently keep the old override.
+      timezone,
+      is_active: isActive,
+      proctoring_enabled: proctoringEnabled,
+      live_streaming: canConfigureLiveStreaming ? liveStreaming : false,
+      // Pulled from the email editor below; populated in-place after the
+      // payload is built.
+      email_notification_enabled: false,
+      email_subject: undefined,
+      email_body: undefined,
+      email_html: undefined,
+      attachment_url: undefined,
+      show_result: evaluationMode === "manual" ? false : showResult,
+      evaluation_mode: evaluationMode,
+      certificate_available: certificateAvailable,
+      allow_movement: allowMovementAcrossSections,
+      tab_switch_limit_enabled: tabSwitchLimitEnabled,
+      tab_switch_limit_count: tabSwitchLimitEnabled ? tabSwitchLimitCount : null,
+      allow_desktop: allowDesktop,
+      allow_mobile: allowMobile,
+      allow_tablet: allowTablet,
+    };
+
+    const passLower = toAssessmentApiDecimalString(passBandLowerPercent);
+    const passUpper = toAssessmentApiDecimalString(passBandUpperPercent);
+    if (passLower != null) payload.pass_band_lower_min_percent = passLower;
+    if (passUpper != null) payload.pass_band_upper_min_percent = passUpper;
+
+    // The batches are the targeting: no course_ids, because the server ignores them and logs
+    // that it did, and a paper "targeted" by a retired tag reaches nobody.
+    if (cohortIds.length > 0) {
+      payload.cohort_ids = cohortIds;
+    }
+
+    // Add colleges if any colleges are specified
+    if (colleges.length > 0) {
+      payload.colleges = colleges;
+    }
+
+    // `emailNotificationEnabled` already accounts for toggle state AND the
+    // editor having real content. Snapshot the editor only when we plan to
+    // actually send something.
+    // Prefer the live editor (when mounted, i.e. still on Step 0); otherwise use the
+    // snapshot captured when we left Step 0 - the editor unmounts on later steps and
+    // reading its null ref used to drop the whole composed email.
+    const emailSnapshot = emailNotificationEnabled
+      ? emailEditorRef.current?.getValues() ?? emailSnapshotRef.current
+      : null;
+    payload.email_notification_enabled = emailNotificationEnabled;
+    payload.email_subject = emailSnapshot?.subject;
+    payload.email_body = emailSnapshot?.body;
+    // Render the full transactional email (header + body + footer) so the
+    // backend can forward it verbatim and recipients see exactly what the
+    // admin previewed.
+    payload.email_html = emailSnapshot
+      ? buildAssessmentNotificationEmailHtml({
+          subject: emailSnapshot.subject,
+          bodyHtml: emailSnapshot.body,
+          clientName: clientInfo?.name?.trim() || "Your team",
+          logoUrl: clientInfo?.app_logo_url ?? null,
+          schedule: emailSchedule,
+        })
+      : undefined;
+    payload.email_base_url = getPublicAppOrigin();
+    // Scheduled reminders - additive to the on-publish send, only when notifications on.
+    payload.email_reminders_enabled =
+      emailNotificationEnabled && emailRemindersEnabled;
+    payload.email_reminder_offsets = emailRemindersEnabled
+      ? emailReminderOffsets
+      : [];
+    const emailAttachment = emailSnapshot?.attachment ?? null;
+    // When the admin is keeping the previously-saved attachment (no new
+    // file picked), pass the existing URL so the backend retains it.
+    payload.attachment_url = emailSnapshot?.attachmentUrl ?? undefined;
+
+    // Remove undefined fields to match exact API format
+    Object.keys(payload).forEach((key) => {
+      if (payload[key as keyof typeof payload] === undefined) {
+        delete payload[key as keyof typeof payload];
+      }
+    });
+
+    const quizSectionsForPayload = quizSections.filter(
+      (s) => getTotalMCQCountForSection(s.id) > 0
+    );
+    const codingSectionsForPayload = codingSections.filter(
+      (s) => getTotalCodingProblemCountForSection(s.id) > 0
+    );
+    const subjectiveSectionsForPayload = subjectiveSections.filter(
+      (s) => getTotalSubjectiveCountForSection(s.id) > 0
+    );
+
+    // Prepare quiz sections (API: `quizSection` camelCase array)
+    if (quizSectionsForPayload.length > 0) {
+      payload.quizSection = quizSectionsForPayload.map((section) => {
+        const sectionMCQs = getMCQsForSection(section.id);
+        const sectionMcqIds = getMcqIdsForSection(section.id);
+
+        const manualMCQsForSection = manualMCQs[section.id] || [];
+        const csvMCQsForSection = csvMCQs[section.id] || [];
+        const aiMCQsForSection = aiMCQs[section.id] || [];
+        const mcqsToSend = [
+          ...manualMCQsForSection,
+          ...csvMCQsForSection,
+          ...aiMCQsForSection,
+        ];
+
+        const sectionPayload: AssessmentQuizSectionWrite = {
+          title: section.title.trim(),
+          order: section.order,
+          number_of_questions:
+            section.number_of_questions_to_show !== undefined
+              ? section.number_of_questions_to_show
+              : sectionMCQs.length,
+        };
+
+        if (section.description && section.description.trim()) {
+          sectionPayload.description = section.description.trim();
+        }
+
+        if (section.easyScore !== undefined) {
+          sectionPayload.easy_score = section.easyScore;
+        }
+        if (section.mediumScore !== undefined) {
+          sectionPayload.medium_score = section.mediumScore;
+        }
+        if (section.hardScore !== undefined) {
+          sectionPayload.hard_score = section.hardScore;
+        }
+
+        if (
+          section.timeLimitMinutes != null &&
+          Number.isFinite(section.timeLimitMinutes) &&
+          section.timeLimitMinutes > 0
+        ) {
+          sectionPayload.time_limit_minutes = Math.round(
+            section.timeLimitMinutes
+          );
+        }
+        const cutoff = toAssessmentApiDecimalString(section.sectionCutoffMarks);
+        if (cutoff != null) sectionPayload.section_cutoff_marks = cutoff;
+
+        if (mcqsToSend.length > 0) {
+          sectionPayload.mcqs = mcqsToSend;
+        }
+
+        if (sectionMcqIds.length > 0) {
+          sectionPayload.mcq_ids = sectionMcqIds;
+        }
+
+        if (section.number_of_questions_to_show !== undefined) {
+          sectionPayload.number_of_questions_to_show =
+            section.number_of_questions_to_show;
+        }
+
+        return sectionPayload;
+      });
+    }
+
+    // Prepare project sections (API: `projectSection` camelCase array). Briefs are referenced
+    // by id — the hidden grader lives on the brief and never travels in an assessment payload.
+    const projectSectionsForPayload = sections.filter((sec) => sec.type === "project");
+    if (projectSectionsForPayload.length > 0) {
+      payload.projectSection = projectSectionsForPayload.map((section) => {
+        const ids = sectionProjectIds[section.id] ?? [];
+        const sectionPayload: AssessmentProjectSectionWrite = {
+          title: section.title.trim(),
+          order: section.order,
+          project_ids: ids,
+          number_of_questions:
+            section.number_of_questions_to_show && section.number_of_questions_to_show > 0
+              ? Math.min(section.number_of_questions_to_show, ids.length || 1)
+              : ids.length || 1,
+        };
+        if (section.description && section.description.trim()) {
+          sectionPayload.description = section.description.trim();
+        }
+        if (
+          section.sectionCutoffMarks != null &&
+          String(section.sectionCutoffMarks).trim() !== ""
+        ) {
+          sectionPayload.section_cutoff_marks = String(section.sectionCutoffMarks);
+        }
+        return sectionPayload;
+      });
+    }
+
+    // Prepare coding sections (API: `codingProblemSection` camelCase array)
+    if (codingSectionsForPayload.length > 0) {
+      payload.codingProblemSection = codingSectionsForPayload.map((section) => {
+        const sectionCodingProblemIds = getCodingProblemIdsForSection(
+          section.id
+        );
+        const sectionPayload: AssessmentCodingProblemSectionWrite = {
+          title: section.title.trim(),
+          order: section.order,
+          number_of_questions:
+            section.number_of_questions_to_show !== undefined
+              ? section.number_of_questions_to_show
+              : sectionCodingProblemIds.length,
+          coding_problem_ids: sectionCodingProblemIds,
+        };
+
+        if (section.description && section.description.trim()) {
+          sectionPayload.description = section.description.trim();
+        }
+
+        if (section.easyScore !== undefined) {
+          sectionPayload.easy_score = section.easyScore;
+        }
+        if (section.mediumScore !== undefined) {
+          sectionPayload.medium_score = section.mediumScore;
+        }
+        if (section.hardScore !== undefined) {
+          sectionPayload.hard_score = section.hardScore;
+        }
+
+        if (
+          section.timeLimitMinutes != null &&
+          Number.isFinite(section.timeLimitMinutes) &&
+          section.timeLimitMinutes > 0
+        ) {
+          sectionPayload.time_limit_minutes = Math.round(
+            section.timeLimitMinutes
+          );
+        }
+        const cutoff = toAssessmentApiDecimalString(section.sectionCutoffMarks);
+        if (cutoff != null) sectionPayload.section_cutoff_marks = cutoff;
+
+        if (section.number_of_questions_to_show !== undefined) {
+          sectionPayload.number_of_questions_to_show =
+            section.number_of_questions_to_show;
+        }
+
+        return sectionPayload;
+      });
+    }
+
+    if (subjectiveSectionsForPayload.length > 0) {
+      payload.subjectiveQuestionSection = subjectiveSectionsForPayload.map((section) => {
+        const method = subjectiveInputMethodBySection[section.id] ?? "manual";
+        const totalCount = getTotalSubjectiveCountForSection(section.id);
+
+        const sectionPayload: AssessmentSubjectiveSectionWrite = {
+          title: section.title.trim(),
+          order: section.order,
+          number_of_questions:
+            section.number_of_questions_to_show !== undefined
+              ? section.number_of_questions_to_show
+              : totalCount,
+        };
+
+        if (section.description && section.description.trim()) {
+          sectionPayload.description = section.description.trim();
+        }
+
+        if (section.easyScore !== undefined) {
+          sectionPayload.easy_score = section.easyScore;
+        }
+        if (section.mediumScore !== undefined) {
+          sectionPayload.medium_score = section.mediumScore;
+        }
+        if (section.hardScore !== undefined) {
+          sectionPayload.hard_score = section.hardScore;
+        }
+
+        if (
+          section.timeLimitMinutes != null &&
+          Number.isFinite(section.timeLimitMinutes) &&
+          section.timeLimitMinutes > 0
+        ) {
+          sectionPayload.time_limit_minutes = Math.round(
+            section.timeLimitMinutes
+          );
+        }
+        const subjectiveCutoff = toAssessmentApiDecimalString(
+          section.sectionCutoffMarks
+        );
+        if (subjectiveCutoff != null) {
+          sectionPayload.section_cutoff_marks = subjectiveCutoff;
+        }
+
+        if (method === "existing") {
+          const ids = sectionSubjectiveQuestionIds[section.id] || [];
+          if (ids.length > 0) {
+            sectionPayload.subjective_question_ids = ids;
+          }
+        } else {
+          const drafts = manualSubjectiveQuestions[section.id] || [];
+          const filtered = drafts.filter(
+            (r) =>
+              r.question_text.trim().length > 0 &&
+              r.evaluation_prompt.trim().length > 0
+          );
+          if (filtered.length > 0) {
+            sectionPayload.subjective_questions = filtered.map((row) => ({
+              question_text: row.question_text.trim(),
+              evaluation_prompt: row.evaluation_prompt.trim(),
+              max_marks: row.max_marks,
+              ...(row.question_type?.trim()
+                ? { question_type: row.question_type.trim() }
+                : {}),
+              ...(row.answer_mode ? { answer_mode: row.answer_mode } : {}),
+            }));
+          }
+        }
+
+        if (section.number_of_questions_to_show !== undefined) {
+          sectionPayload.number_of_questions_to_show =
+            section.number_of_questions_to_show;
+        }
+
+        return sectionPayload;
+      });
+    }
+
+    payload.quizSection = payload.quizSection ?? [];
+    payload.codingProblemSection = payload.codingProblemSection ?? [];
+    payload.subjectiveQuestionSection = payload.subjectiveQuestionSection ?? [];
+
+    return { payload, emailAttachment };
+  };
+
   const handleCreate = async (options?: SubmitOptions) => {
+    // One write at a time. `creating` disables the buttons, but only from the next render; a
+    // second click (or a double-click) can land before it.
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     try {
       setCreating(true);
       setSubmitIntent(options?.publish ? "publish" : "save");
@@ -1373,375 +1927,11 @@ function CreateAssessmentPageContent() {
         }
       }
 
-      // Convert datetime-local strings to IST ISO format (format: "2026-01-22T22:54:00+05:30")
-      // Note: datetime-local input treats the entered time as local time, but we interpret it as IST
-      const convertToIST = (dateTimeString: string): string | undefined => {
-        if (!dateTimeString || !dateTimeString.trim()) {
-          return undefined;
-        }
-        try {
-          // datetime-local format: "YYYY-MM-DDTHH:mm" (no timezone, treated as local)
-          // We interpret the entered time as IST time and format it with IST timezone offset
-          let isoString = dateTimeString.trim();
-          
-          // If format is "YYYY-MM-DDTHH:mm", append ":00" for seconds
-          if (isoString.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/)) {
-            isoString = isoString + ":00";
-          }
-          
-          // Parse the datetime string to extract components
-          const match = isoString.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})$/);
-          if (!match) {
-            return undefined;
-          }
-          
-          const [, year, month, day, hours, minutes, seconds] = match;
-          
-          // Validate the date components
-          const date = new Date(`${year}-${month}-${day}T${hours}:${minutes}:${seconds}`);
-          if (isNaN(date.getTime())) {
-            return undefined;
-          }
-          
-          // Return ISO format with IST timezone: "2026-01-22T22:54:00+05:30"
-          // The time entered is treated as IST time, so we just append the IST offset
-          return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+05:30`;
-        } catch {
-          return undefined;
-        }
-      };
+      const { payload, emailAttachment } = buildSavePayload();
 
-      // Build payload with all sections
-      const payload: CreateAssessmentPayload = {
-        title: title.trim(),
-        instructions: instructions.trim(),
-        description: description.trim() || undefined,
-        duration_minutes: durationMinutes,
-        start_time: convertToIST(startTime),
-        end_time: convertToIST(endTime),
-        is_paid: isPaid,
-        price: isPaid ? (price ? Number(price) : null) : null,
-        currency: isPaid ? currency : undefined,
-        // Sent even when blank: clearing it back to the institution's zone is a real
-        // edit, and omitting the key would silently keep the old override.
-        timezone,
-        is_active: isActive,
-        proctoring_enabled: proctoringEnabled,
-        live_streaming: canConfigureLiveStreaming ? liveStreaming : false,
-        // Pulled from the email editor below; populated in-place after the
-        // payload is built.
-        email_notification_enabled: false,
-        email_subject: undefined,
-        email_body: undefined,
-        email_html: undefined,
-        attachment_url: undefined,
-        show_result: evaluationMode === "manual" ? false : showResult,
-        evaluation_mode: evaluationMode,
-        certificate_available: certificateAvailable,
-        allow_movement: allowMovementAcrossSections,
-        tab_switch_limit_enabled: tabSwitchLimitEnabled,
-        tab_switch_limit_count: tabSwitchLimitEnabled ? tabSwitchLimitCount : null,
-        allow_desktop: allowDesktop,
-        allow_mobile: allowMobile,
-        allow_tablet: allowTablet,
-      };
-
-      const passLower = toAssessmentApiDecimalString(passBandLowerPercent);
-      const passUpper = toAssessmentApiDecimalString(passBandUpperPercent);
-      if (passLower != null) payload.pass_band_lower_min_percent = passLower;
-      if (passUpper != null) payload.pass_band_upper_min_percent = passUpper;
-
-      // The batches are the targeting: no course_ids, because the server ignores them and logs
-      // that it did, and a paper "targeted" by a retired tag reaches nobody.
-      if (cohortIds.length > 0) {
-        payload.cohort_ids = cohortIds;
-      }
-
-      // Add colleges if any colleges are specified
-      if (colleges.length > 0) {
-        payload.colleges = colleges;
-      }
-
-      // `emailNotificationEnabled` already accounts for toggle state AND the
-      // editor having real content. Snapshot the editor only when we plan to
-      // actually send something.
-      // Prefer the live editor (when mounted, i.e. still on Step 0); otherwise use the
-      // snapshot captured when we left Step 0 - the editor unmounts on later steps and
-      // reading its null ref used to drop the whole composed email.
-      const emailSnapshot = emailNotificationEnabled
-        ? emailEditorRef.current?.getValues() ?? emailSnapshotRef.current
-        : null;
-      payload.email_notification_enabled = emailNotificationEnabled;
-      payload.email_subject = emailSnapshot?.subject;
-      payload.email_body = emailSnapshot?.body;
-      // Render the full transactional email (header + body + footer) so the
-      // backend can forward it verbatim and recipients see exactly what the
-      // admin previewed.
-      payload.email_html = emailSnapshot
-        ? buildAssessmentNotificationEmailHtml({
-            subject: emailSnapshot.subject,
-            bodyHtml: emailSnapshot.body,
-            clientName: clientInfo?.name?.trim() || "Your team",
-            logoUrl: clientInfo?.app_logo_url ?? null,
-            schedule: emailSchedule,
-          })
-        : undefined;
-      payload.email_base_url = getPublicAppOrigin();
-      // Scheduled reminders - additive to the on-publish send, only when notifications on.
-      payload.email_reminders_enabled =
-        emailNotificationEnabled && emailRemindersEnabled;
-      payload.email_reminder_offsets = emailRemindersEnabled
-        ? emailReminderOffsets
-        : [];
-      const emailAttachment = emailSnapshot?.attachment ?? null;
-      // When the admin is keeping the previously-saved attachment (no new
-      // file picked), pass the existing URL so the backend retains it.
-      payload.attachment_url = emailSnapshot?.attachmentUrl ?? undefined;
-
-      // Remove undefined fields to match exact API format
-      Object.keys(payload).forEach((key) => {
-        if (payload[key as keyof typeof payload] === undefined) {
-          delete payload[key as keyof typeof payload];
-        }
-      });
-
-      const quizSectionsForPayload = quizSections.filter(
-        (s) => getTotalMCQCountForSection(s.id) > 0
-      );
-      const codingSectionsForPayload = codingSections.filter(
-        (s) => getTotalCodingProblemCountForSection(s.id) > 0
-      );
-      const subjectiveSectionsForPayload = subjectiveSections.filter(
-        (s) => getTotalSubjectiveCountForSection(s.id) > 0
-      );
-
-      // Prepare quiz sections (API: `quizSection` camelCase array)
-      if (quizSectionsForPayload.length > 0) {
-        payload.quizSection = quizSectionsForPayload.map((section) => {
-          const sectionMCQs = getMCQsForSection(section.id);
-          const sectionMcqIds = getMcqIdsForSection(section.id);
-
-          const manualMCQsForSection = manualMCQs[section.id] || [];
-          const csvMCQsForSection = csvMCQs[section.id] || [];
-          const aiMCQsForSection = aiMCQs[section.id] || [];
-          const mcqsToSend = [
-            ...manualMCQsForSection,
-            ...csvMCQsForSection,
-            ...aiMCQsForSection,
-          ];
-
-          const sectionPayload: AssessmentQuizSectionWrite = {
-            title: section.title.trim(),
-            order: section.order,
-            number_of_questions:
-              section.number_of_questions_to_show !== undefined
-                ? section.number_of_questions_to_show
-                : sectionMCQs.length,
-          };
-
-          if (section.description && section.description.trim()) {
-            sectionPayload.description = section.description.trim();
-          }
-
-          if (section.easyScore !== undefined) {
-            sectionPayload.easy_score = section.easyScore;
-          }
-          if (section.mediumScore !== undefined) {
-            sectionPayload.medium_score = section.mediumScore;
-          }
-          if (section.hardScore !== undefined) {
-            sectionPayload.hard_score = section.hardScore;
-          }
-
-          if (
-            section.timeLimitMinutes != null &&
-            Number.isFinite(section.timeLimitMinutes) &&
-            section.timeLimitMinutes > 0
-          ) {
-            sectionPayload.time_limit_minutes = Math.round(
-              section.timeLimitMinutes
-            );
-          }
-          const cutoff = toAssessmentApiDecimalString(section.sectionCutoffMarks);
-          if (cutoff != null) sectionPayload.section_cutoff_marks = cutoff;
-
-          if (mcqsToSend.length > 0) {
-            sectionPayload.mcqs = mcqsToSend;
-          }
-
-          if (sectionMcqIds.length > 0) {
-            sectionPayload.mcq_ids = sectionMcqIds;
-          }
-
-          if (section.number_of_questions_to_show !== undefined) {
-            sectionPayload.number_of_questions_to_show =
-              section.number_of_questions_to_show;
-          }
-
-          return sectionPayload;
-        });
-      }
-
-      // Prepare project sections (API: `projectSection` camelCase array). Briefs are referenced
-      // by id — the hidden grader lives on the brief and never travels in an assessment payload.
-      const projectSectionsForPayload = sections.filter((sec) => sec.type === "project");
-      if (projectSectionsForPayload.length > 0) {
-        payload.projectSection = projectSectionsForPayload.map((section) => {
-          const ids = sectionProjectIds[section.id] ?? [];
-          const sectionPayload: AssessmentProjectSectionWrite = {
-            title: section.title.trim(),
-            order: section.order,
-            project_ids: ids,
-            number_of_questions:
-              section.number_of_questions_to_show && section.number_of_questions_to_show > 0
-                ? Math.min(section.number_of_questions_to_show, ids.length || 1)
-                : ids.length || 1,
-          };
-          if (section.description && section.description.trim()) {
-            sectionPayload.description = section.description.trim();
-          }
-          if (
-            section.sectionCutoffMarks != null &&
-            String(section.sectionCutoffMarks).trim() !== ""
-          ) {
-            sectionPayload.section_cutoff_marks = String(section.sectionCutoffMarks);
-          }
-          return sectionPayload;
-        });
-      }
-
-      // Prepare coding sections (API: `codingProblemSection` camelCase array)
-      if (codingSectionsForPayload.length > 0) {
-        payload.codingProblemSection = codingSectionsForPayload.map((section) => {
-          const sectionCodingProblemIds = getCodingProblemIdsForSection(
-            section.id
-          );
-          const sectionPayload: AssessmentCodingProblemSectionWrite = {
-            title: section.title.trim(),
-            order: section.order,
-            number_of_questions:
-              section.number_of_questions_to_show !== undefined
-                ? section.number_of_questions_to_show
-                : sectionCodingProblemIds.length,
-            coding_problem_ids: sectionCodingProblemIds,
-          };
-
-          if (section.description && section.description.trim()) {
-            sectionPayload.description = section.description.trim();
-          }
-
-          if (section.easyScore !== undefined) {
-            sectionPayload.easy_score = section.easyScore;
-          }
-          if (section.mediumScore !== undefined) {
-            sectionPayload.medium_score = section.mediumScore;
-          }
-          if (section.hardScore !== undefined) {
-            sectionPayload.hard_score = section.hardScore;
-          }
-
-          if (
-            section.timeLimitMinutes != null &&
-            Number.isFinite(section.timeLimitMinutes) &&
-            section.timeLimitMinutes > 0
-          ) {
-            sectionPayload.time_limit_minutes = Math.round(
-              section.timeLimitMinutes
-            );
-          }
-          const cutoff = toAssessmentApiDecimalString(section.sectionCutoffMarks);
-          if (cutoff != null) sectionPayload.section_cutoff_marks = cutoff;
-
-          if (section.number_of_questions_to_show !== undefined) {
-            sectionPayload.number_of_questions_to_show =
-              section.number_of_questions_to_show;
-          }
-
-          return sectionPayload;
-        });
-      }
-
-      if (subjectiveSectionsForPayload.length > 0) {
-        payload.subjectiveQuestionSection = subjectiveSectionsForPayload.map((section) => {
-          const method = subjectiveInputMethodBySection[section.id] ?? "manual";
-          const totalCount = getTotalSubjectiveCountForSection(section.id);
-
-          const sectionPayload: AssessmentSubjectiveSectionWrite = {
-            title: section.title.trim(),
-            order: section.order,
-            number_of_questions:
-              section.number_of_questions_to_show !== undefined
-                ? section.number_of_questions_to_show
-                : totalCount,
-          };
-
-          if (section.description && section.description.trim()) {
-            sectionPayload.description = section.description.trim();
-          }
-
-          if (section.easyScore !== undefined) {
-            sectionPayload.easy_score = section.easyScore;
-          }
-          if (section.mediumScore !== undefined) {
-            sectionPayload.medium_score = section.mediumScore;
-          }
-          if (section.hardScore !== undefined) {
-            sectionPayload.hard_score = section.hardScore;
-          }
-
-          if (
-            section.timeLimitMinutes != null &&
-            Number.isFinite(section.timeLimitMinutes) &&
-            section.timeLimitMinutes > 0
-          ) {
-            sectionPayload.time_limit_minutes = Math.round(
-              section.timeLimitMinutes
-            );
-          }
-          const subjectiveCutoff = toAssessmentApiDecimalString(
-            section.sectionCutoffMarks
-          );
-          if (subjectiveCutoff != null) {
-            sectionPayload.section_cutoff_marks = subjectiveCutoff;
-          }
-
-          if (method === "existing") {
-            const ids = sectionSubjectiveQuestionIds[section.id] || [];
-            if (ids.length > 0) {
-              sectionPayload.subjective_question_ids = ids;
-            }
-          } else {
-            const drafts = manualSubjectiveQuestions[section.id] || [];
-            const filtered = drafts.filter(
-              (r) =>
-                r.question_text.trim().length > 0 &&
-                r.evaluation_prompt.trim().length > 0
-            );
-            if (filtered.length > 0) {
-              sectionPayload.subjective_questions = filtered.map((row) => ({
-                question_text: row.question_text.trim(),
-                evaluation_prompt: row.evaluation_prompt.trim(),
-                max_marks: row.max_marks,
-                ...(row.question_type?.trim()
-                  ? { question_type: row.question_type.trim() }
-                  : {}),
-                ...(row.answer_mode ? { answer_mode: row.answer_mode } : {}),
-              }));
-            }
-          }
-
-          if (section.number_of_questions_to_show !== undefined) {
-            sectionPayload.number_of_questions_to_show =
-              section.number_of_questions_to_show;
-          }
-
-          return sectionPayload;
-        });
-      }
-
-      payload.quizSection = payload.quizSection ?? [];
-      payload.codingProblemSection = payload.codingProblemSection ?? [];
-      payload.subjectiveQuestionSection = payload.subjectiveQuestionSection ?? [];
+      // The paper this click is about: the one this page was opened for, or the one it has
+      // already created. Never a second one (see createdIdRef).
+      const paperId = editingAssessmentId ?? createdIdRef.current;
 
       // Publishing a NEW paper saves it as a draft first, for every role, and then makes the same
       // publish call a reopened draft makes (publishCreatedDraft). The create endpoint forces a
@@ -1752,24 +1942,31 @@ function CreateAssessmentPageContent() {
         payload.is_active = false;
       }
 
-      if (editingAssessmentId) {
-        await adminAssessmentService.updateAssessment(
-          config.clientId,
-          editingAssessmentId,
-          payload,
-          emailAttachment
-        );
+      if (paperId) {
+        if (options?.publish) {
+          await saveThenPublish(paperId, payload, emailAttachment);
+          return;
+        }
+        const activationError = await saveExistingPaper(paperId, payload, emailAttachment);
         showToast(
-          options?.forceDraft ? "Draft saved successfully" : "Assessment updated successfully",
-          "success"
+          activationError ??
+            (options?.forceDraft ? "Draft saved successfully" : "Assessment updated successfully"),
+          activationError ? "error" : "success",
         );
-        router.push(`/admin/assessment/${editingAssessmentId}/edit`);
+        if (editingAssessmentId === paperId) {
+          leaveTo(`/admin/assessment/${paperId}/edit`);
+        } else {
+          leaveTo(`/admin/assessment/create?fromDraft=${paperId}`, paperId);
+        }
       } else {
         const created = await adminAssessmentService.createAssessment(
           config.clientId,
           payload,
           emailAttachment
         );
+        // Kept before anything else can happen: from here on, every click is about this paper.
+        createdIdRef.current = created.id;
+        setCreatedAssessmentId(created.id);
         if (options?.publish) {
           // The draft exists now. Whatever happens next, the author is told the truth about it.
           await publishCreatedDraft(created.id);
@@ -1784,9 +1981,9 @@ function CreateAssessmentPageContent() {
           "success"
         );
         if (options?.forceDraft) {
-          router.push(`/admin/assessment/create?fromDraft=${created.id}`);
+          leaveTo(`/admin/assessment/create?fromDraft=${created.id}`, created.id);
         } else {
-          router.push("/admin/assessment");
+          leaveTo("/admin/assessment");
         }
       }
     } catch (error: any) {
@@ -1796,9 +1993,110 @@ function CreateAssessmentPageContent() {
         "error"
       );
     } finally {
+      submittingRef.current = false;
       setCreating(false);
       setSubmitIntent(null);
     }
+  };
+
+  /**
+   * Save the paper this page is working on (not a new one). A live paper's Active switch goes on
+   * its own `{ is_active }` request, which the server authorises like publish; inside the content
+   * save it was refused for an instructor who may publish but not edit. On a draft `is_active`
+   * is not activation - publishing is - so a draft's save carries it as it always has.
+   *
+   * Throws when the content save fails. Returns the message to show when only the switch did
+   * not move, or null.
+   */
+  const saveExistingPaper = async (
+    paperId: number,
+    payload: CreateAssessmentPayload,
+    attachment: File | null,
+  ): Promise<string | null> => {
+    if (editingAssessmentId === paperId && !loadedIsDraft) {
+      const result = await saveAssessmentWithActivation({
+        clientId: config.clientId,
+        assessmentId: paperId,
+        payload,
+        attachment,
+        wasActive: loadedIsActiveRef.current,
+        isActive,
+      });
+      if (!result.ok && result.stage === "content") throw result.error;
+      if (!result.ok) {
+        const reason =
+          result.error instanceof Error && result.error.message ? result.error.message : "";
+        return isActive
+          ? (t("assessmentPublish.activationFailed", {
+              defaultValue: "Your changes were saved, but the assessment was not activated. {{reason}}",
+              reason,
+            }) as string)
+          : (t("assessmentPublish.deactivationFailed", {
+              defaultValue: "Your changes were saved, but the assessment was not deactivated. {{reason}}",
+              reason,
+            }) as string);
+      }
+      return null;
+    }
+    await adminAssessmentService.updateAssessment(config.clientId, paperId, payload, attachment);
+    return null;
+  };
+
+  /**
+   * Publish with unsaved changes: save them, then publish, so what is on screen is what goes live.
+   * The publish call makes the SAVED paper live and the server sends the SAVED email, so skipping
+   * the save published the old version while the author looked at the new one.
+   *
+   * If the save fails, nothing is published. The one exception is a refusal (403) for a scoped
+   * author: they may publish this paper without being allowed to change it, so they are offered
+   * the version the server holds instead of being stopped.
+   */
+  const saveThenPublish = async (
+    paperId: number,
+    payload: CreateAssessmentPayload,
+    attachment: File | null,
+  ) => {
+    try {
+      await adminAssessmentService.updateAssessment(config.clientId, paperId, payload, attachment);
+    } catch (e: unknown) {
+      const reason = e instanceof Error && e.message ? e.message : "Failed to save";
+      if (
+        editingAssessmentId === paperId &&
+        isScopedAdminRole(user?.role) &&
+        apiErrorStatus(e) === 403
+      ) {
+        setLastSavedPrompt({ reason });
+        return;
+      }
+      showToast(
+        t("assessmentPublish.notSavedNotPublished", {
+          defaultValue: "Your changes could not be saved, so nothing was published: {{reason}}",
+          reason,
+        }) as string,
+        "error",
+      );
+      return;
+    }
+    // Saved: the screen is the last saved version now, so a retry after a failed publish does not
+    // save again.
+    rememberSavedState();
+    if (editingAssessmentId === paperId) {
+      try {
+        // No attachment: it went up with the save.
+        await publishDraftById(paperId, false);
+      } catch (e: unknown) {
+        const reason = e instanceof Error && e.message ? e.message : "Failed to publish";
+        showToast(
+          t("assessmentPublish.savedNotPublished", {
+            defaultValue: "Saved as a draft, but not published: {{reason}}",
+            reason,
+          }) as string,
+          "error",
+        );
+      }
+      return;
+    }
+    await publishCreatedDraft(paperId);
   };
 
   const handleSaveDraft = async () => {
@@ -1810,7 +2108,18 @@ function CreateAssessmentPageContent() {
     }
   };
 
-  const saveDraftDisabled = creating || loadingDraft || savingDraft;
+  /**
+   * Every submit button's off switch. `leaving` holds them off between a write and the route it
+   * sends the author to. `awaitingCreatedPaper` is the same guarantee from the created id itself:
+   * once this page has made a paper, it acts again only as that paper's editor, never as a blank
+   * form that would make another.
+   */
+  const awaitingCreatedPaper =
+    createdAssessmentId !== null && editingAssessmentId !== createdAssessmentId;
+  const saveDraftDisabled =
+    creating || loadingDraft || savingDraft || leaving || awaitingCreatedPaper;
+  /** A new paper, or a reopened draft. A paper that is already live has nothing to publish. */
+  const showPublish = !editingAssessmentId || loadedIsDraft;
 
   const renderSaveDraftButton = (opts?: { compact?: boolean }) => {
     const compact = opts?.compact ?? false;
@@ -1900,26 +2209,90 @@ function CreateAssessmentPageContent() {
     return { body, attachment: emailSnapshot?.attachment ?? null };
   };
 
-  const handlePublishAssessment = async () => {
+  /** The draft editor's publish: the saved draft goes live, active. Throws when it fails. */
+  const publishDraftById = async (id: number, withAttachment: boolean) => {
+    const { body, attachment } = buildPublishRequest(true);
+    await adminAssessmentService.publishAssessment(
+      config.clientId,
+      id,
+      body,
+      withAttachment ? attachment : null,
+    );
+    showToast("Assessment published", "success");
+    setLoadedIsDraft(false);
+    leaveTo(`/admin/assessment/${id}/edit`);
+  };
+
+  /** Publish the draft as saved. Used when nothing on screen differs from it, or when asked to. */
+  const handlePublishAssessment = async (options?: { lastSavedVersion?: boolean }) => {
     if (!editingAssessmentId || !config.clientId) return;
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     try {
       setCreating(true);
       setSubmitIntent("publish");
-      const { body, attachment } = buildPublishRequest(true);
-      await adminAssessmentService.publishAssessment(
-        config.clientId,
-        editingAssessmentId,
-        body,
-        attachment
-      );
-      showToast("Assessment published", "success");
-      setLoadedIsDraft(false);
-      router.push(`/admin/assessment/${editingAssessmentId}/edit`);
+      // "The last saved version" means exactly that: a file picked since is not sent either.
+      await publishDraftById(editingAssessmentId, !options?.lastSavedVersion);
     } catch (e: unknown) {
       showToast(e instanceof Error ? e.message : "Failed to publish", "error");
     } finally {
+      submittingRef.current = false;
       setCreating(false);
       setSubmitIntent(null);
+    }
+  };
+
+  /**
+   * Everything a save sends except the notification email, as one comparable string. The email
+   * is compared on its own (emailDiffersFromSaved) because the editor settles a render after the
+   * load: its "has content" flag, and with it `email_notification_enabled` and
+   * `email_reminders_enabled` in the body, arrive late and would read as a change.
+   */
+  const formSignature = (): string => {
+    const form: Record<string, unknown> = { ...buildSavePayload().payload };
+    for (const key of EMAIL_PAYLOAD_KEYS) delete form[key];
+    form.email_reminders_switch = emailRemindersEnabled;
+    return JSON.stringify(form);
+  };
+
+  /** Whether the email a save would send differs from the saved one. A new file always does. */
+  const emailDiffersFromSaved = (): boolean => {
+    const values = emailEditorRef.current?.getValues() ?? emailSnapshotRef.current;
+    if (emailNotificationEnabled && values?.attachment) return true;
+    const saved = savedEmailRef.current;
+    if (!saved) return false;
+    if (emailNotificationEnabled !== saved.enabled) return true;
+    if (!emailNotificationEnabled || !values) return false;
+    return values.subject.trim() !== saved.subject || values.body.trim() !== saved.body;
+  };
+
+  /** Does the screen differ from the paper as last saved? Unknown counts as yes. */
+  const hasUnsavedChanges = (): boolean => {
+    if (savedFormSignatureRef.current === null) return true;
+    if (formSignature() !== savedFormSignatureRef.current) return true;
+    return emailDiffersFromSaved();
+  };
+
+  /** After a save: what is on screen is the last saved version. */
+  const rememberSavedState = () => {
+    savedFormSignatureRef.current = formSignature();
+    const values = emailEditorRef.current?.getValues() ?? emailSnapshotRef.current;
+    savedEmailRef.current = {
+      enabled: emailNotificationEnabled,
+      subject: (values?.subject ?? "").trim(),
+      body: (values?.body ?? "").trim(),
+    };
+  };
+
+  /**
+   * Publish in the draft editor. Nothing changed: publish the saved draft. Something changed: save
+   * it first (handleCreate's full checks, then saveThenPublish), so the edits go live with it.
+   */
+  const handleDraftEditorPublish = () => {
+    if (hasUnsavedChanges()) {
+      void handleCreate({ publish: true });
+    } else {
+      void handlePublishAssessment();
     }
   };
 
@@ -1948,7 +2321,7 @@ function CreateAssessmentPageContent() {
             }) as string),
         "success",
       );
-      router.push(`/admin/assessment/${id}/edit`);
+      leaveTo(`/admin/assessment/${id}/edit`);
       return;
     } catch (e: unknown) {
       const reason = e instanceof Error && e.message ? e.message : "Failed to publish";
@@ -1970,7 +2343,8 @@ function CreateAssessmentPageContent() {
           "error",
         );
         // The draft editor, where "Publish assessment" is one click once the problem is fixed.
-        router.push(`/admin/assessment/create?fromDraft=${id}`);
+        // The buttons stay off until it has loaded; from then on they act on this paper.
+        leaveTo(`/admin/assessment/create?fromDraft=${id}`, id);
       } else if (stillDraft === false) {
         showToast(
           t("assessmentPublish.publishedWithError", {
@@ -1979,7 +2353,7 @@ function CreateAssessmentPageContent() {
           }) as string,
           "warning",
         );
-        router.push(`/admin/assessment/${id}/edit`);
+        leaveTo(`/admin/assessment/${id}/edit`);
       } else {
         showToast(
           t("assessmentPublish.publishUnknown", {
@@ -1990,7 +2364,7 @@ function CreateAssessmentPageContent() {
           "warning",
         );
         // The paper's own page shows whether it is a draft or live.
-        router.push(`/admin/assessment/${id}/edit`);
+        leaveTo(`/admin/assessment/${id}/edit`);
       }
     }
   };
@@ -2645,60 +3019,53 @@ function CreateAssessmentPageContent() {
               <>
                 {/* The same pair on a new paper as on a reopened draft. A new paper used to offer
                     only "Create Assessment", which an instructor's create turns into a draft, so
-                    the only way to publish was to leave, reopen the draft and come back here. */}
-                {(!editingAssessmentId || loadedIsDraft) && (
+                    the only way to publish was to leave, reopen the draft and come back here.
+                    Publish is the filled, primary action and sits last; Save keeps a draft. On a
+                    paper that is already live there is nothing to publish, and Save is the one
+                    filled button. */}
+                <Button
+                  variant={showPublish ? "outlined" : "contained"}
+                  onClick={() =>
+                    // A new paper is saved as a draft; a reopened one keeps what it is.
+                    void (editingAssessmentId ? handleCreate() : handleCreate({ forceDraft: true }))
+                  }
+                  disabled={saveDraftDisabled}
+                  startIcon={
+                    submitIntent === "save" ? (
+                      <CircularProgress size={18} color="inherit" />
+                    ) : (
+                      <IconWrapper icon={showPublish ? "mdi:content-save-outline" : "mdi:check"} size={18} />
+                    )
+                  }
+                  sx={showPublish ? SECONDARY_ACTION_SX : PRIMARY_ACTION_SX}
+                >
+                  {submitIntent === "save"
+                    ? t("assessmentPublish.saving", { defaultValue: "Saving…" })
+                    : "Save assessment"}
+                </Button>
+                {showPublish && (
                   <Button
-                    variant="outlined"
+                    variant="contained"
                     onClick={() =>
-                      void (editingAssessmentId
-                        ? handlePublishAssessment()
-                        : handleCreate({ publish: true }))
+                      editingAssessmentId
+                        ? handleDraftEditorPublish()
+                        : void handleCreate({ publish: true })
                     }
                     disabled={saveDraftDisabled}
                     startIcon={
                       submitIntent === "publish" ? (
                         <CircularProgress size={18} color="inherit" />
-                      ) : undefined
+                      ) : (
+                        <IconWrapper icon="mdi:rocket-launch-outline" size={18} />
+                      )
                     }
+                    sx={PRIMARY_ACTION_SX}
                   >
                     {submitIntent === "publish"
                       ? t("assessmentPublish.publishing", { defaultValue: "Publishing…" })
                       : "Publish assessment"}
                   </Button>
                 )}
-                <Button
-                  variant="contained"
-                  onClick={() =>
-                    // A new paper is saved as a draft; a reopened one keeps what it is.
-                    void (editingAssessmentId ? handleCreate() : handleCreate({ forceDraft: true }))
-                  }
-                  disabled={creating || loadingDraft || savingDraft}
-                  startIcon={
-                    submitIntent === "save" ? (
-                      <CircularProgress size={18} color="inherit" />
-                    ) : (
-                      <IconWrapper icon="mdi:check" size={18} />
-                    )
-                  }
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 700,
-                    px: 3,
-                    borderRadius: "12px",
-                    color: "#fff",
-                    background: "var(--gradient-ai)",
-                    boxShadow: "0 10px 22px -12px color-mix(in srgb, var(--ai-violet) 70%, transparent)",
-                    "&:hover": { filter: "brightness(1.05)" },
-                    "&.Mui-disabled": {
-                      color: "var(--font-secondary)",
-                      background: "color-mix(in srgb, var(--ai-violet) 18%, var(--surface) 82%)",
-                    },
-                  }}
-                >
-                  {submitIntent === "save"
-                    ? t("assessmentPublish.saving", { defaultValue: "Saving…" })
-                    : "Save assessment"}
-                </Button>
               </>
             ) : (
               <Button
@@ -2798,6 +3165,55 @@ function CreateAssessmentPageContent() {
             sx={{ textTransform: "none" }}
           >
             Show them all
+          </Button>
+        </DialogActions>
+      </SheetDialog>
+
+      {/* Publish found edits this author may not save: they can publish the paper, not change
+          it. Say plainly what will go live - the saved paper and the saved email - and let them
+          choose, rather than publishing something other than what is on screen without a word. */}
+      <SheetDialog
+        open={lastSavedPrompt !== null}
+        onClose={() => setLastSavedPrompt(null)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ fontWeight: 800 }}>
+          {t("assessmentPublish.lastSavedTitle", {
+            defaultValue: "Publish the last saved version?",
+          })}
+        </DialogTitle>
+        <DialogContent>
+          <Typography variant="body2" sx={{ color: "var(--font-primary)", mb: 1.5 }}>
+            {t("assessmentPublish.lastSavedBody", {
+              defaultValue:
+                "Your unsaved changes will not be included. Learners get the assessment, and its notification email, exactly as they were last saved.",
+            })}
+          </Typography>
+          {lastSavedPrompt?.reason ? (
+            <Alert severity="warning" sx={{ borderRadius: 2 }}>
+              {t("assessmentPublish.lastSavedReason", {
+                defaultValue: "Your changes could not be saved: {{reason}}",
+                reason: lastSavedPrompt.reason,
+              })}
+            </Alert>
+          ) : null}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2.5, gap: 1, flexWrap: "wrap" }}>
+          <Button onClick={() => setLastSavedPrompt(null)} sx={{ textTransform: "none" }}>
+            {t("assessmentPublish.keepEditing", { defaultValue: "Keep editing" })}
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => {
+              setLastSavedPrompt(null);
+              void handlePublishAssessment({ lastSavedVersion: true });
+            }}
+            sx={{ textTransform: "none" }}
+          >
+            {t("assessmentPublish.publishLastSaved", {
+              defaultValue: "Publish last saved version",
+            })}
           </Button>
         </DialogActions>
       </SheetDialog>

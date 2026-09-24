@@ -1248,7 +1248,13 @@
     "activate": "Activate assessment",
     "deactivate": "Deactivate assessment",
     "activationFailed": "Your changes were saved, but the assessment was not activated. {{reason}}",
-    "deactivationFailed": "Your changes were saved, but the assessment was not deactivated. {{reason}}"
+    "deactivationFailed": "Your changes were saved, but the assessment was not deactivated. {{reason}}",
+    "notSavedNotPublished": "Your changes could not be saved, so nothing was published: {{reason}}",
+    "lastSavedTitle": "Publish the last saved version?",
+    "lastSavedBody": "Your unsaved changes will not be included. Learners get the assessment, and its notification email, exactly as they were last saved.",
+    "lastSavedReason": "Your changes could not be saved: {{reason}}",
+    "keepEditing": "Keep editing",
+    "publishLastSaved": "Publish last saved version"
   },
   "assessmentDevice": {
     "sectionTitle": "Device access",
