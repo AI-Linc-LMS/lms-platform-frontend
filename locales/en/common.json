@@ -3170,5 +3170,12 @@
     "tooMany": "An entry holds up to {{max}} points. Remove {{extra}} to save it.",
     "tooLong": "Keep a point under {{max}} characters ({{count}} now). Press Enter where it should split.",
     "pasteTrimmed": "Added {{added}} of the {{found}} points you pasted: an entry holds up to {{max}}."
+  },
+  "adaptiveQuizMissingContext": {
+    "title": "Check these questions",
+    "body": "These questions seem to refer to a figure, table or code they don't include. Learners can't answer them without it.",
+    "questionLabel": "Question {{n}}",
+    "goBack": "Go back and fix",
+    "saveAnyway": "Save anyway"
   }
 }
