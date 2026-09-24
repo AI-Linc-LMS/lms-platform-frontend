@@ -28,6 +28,24 @@ import { toEmbedUrl } from "@/lib/utils/video-embed";
 import { PHONE } from "@/components/common/mobile/phone";
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+/**
+ * The band at the foot of the frame that the PLAYER's own control bar occupies - its bar plus the
+ * inset it is drawn with. Measured on the real Vimeo player: a 32px bar 8px clear of the bottom.
+ * Our own bar sits directly on top of that band, so the two read as one run of controls rather
+ * than a button floating in the middle of the picture.
+ */
+const PLAYER_BAR_BAND = 40;
+/** Height of our bar - enough for a 44px touch target on a phone, the player's own height above. */
+const COMPANION_BAR_H = 40;
+const COMPANION_BAR_H_PHONE = 52;
+/**
+ * How long our bar stays up after the last thing we can see the learner do, while the video runs.
+ * A cross-origin iframe swallows every pointer move over the picture, so "the learner is still
+ * there" can only be read from what reaches US: entering the frame, a press, a key. This is the
+ * same order as the player's own idle window, so the two go down together.
+ */
+const CONTROLS_IDLE_MS = 2600;
 const TABS: { label: string; icon: string }[] = [
   { label: "AI Companion", icon: "mdi:sparkles" },
   { label: "Transcript", icon: "mdi:text-box-outline" },
@@ -73,6 +91,19 @@ export function VideoCompanion({
     // keeps the overlay visible, so the button simply does nothing rather than trapping them in
     // an iframe fullscreen the check-in cannot be seen in.
     void box.requestFullscreen?.().catch(() => {});
+  }, []);
+  // Our control bar follows the player's: up whenever the video is not running, and while it runs
+  // up for a beat after the last thing we can see the learner do. See CONTROLS_IDLE_MS.
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const [activity, setActivity] = useState(0);
+  const lastActivityRef = useRef(0);
+  const noteActivity = useCallback(() => {
+    // One bump every half second is plenty to hold the bar up, and it keeps a pointer dragged
+    // across the frame from re-rendering the whole companion on every pixel.
+    const now = Date.now();
+    if (now - lastActivityRef.current < 500) return;
+    lastActivityRef.current = now;
+    setActivity((n) => n + 1);
   }, []);
   const [companion, setCompanion] = useState<CompanionData | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -161,8 +192,21 @@ export function VideoCompanion({
   // `setRate` is deliberately not used. Every offered mode plays at the learner's own speed, and
   // re-asserting 1x on each mode change reset whatever speed they had picked in the player every
   // time they switched - a switch is not supposed to touch playback at all.
-  const { setIframe, currentTime, duration, playbackRate, rewinds, endedTick, play, pause, seekTo } =
+  const { setIframe, currentTime, duration, isPlaying, playbackRate, rewinds, endedTick, play, pause, seekTo } =
     useVimeoController();
+  // The player's own bar is up whenever the video is not running - paused, ended, not started yet -
+  // and drops out of sight a beat after the pointer goes quiet while it runs. Ours keeps the same
+  // clock, so the two are never on screen apart. An embed whose events we cannot read never reports
+  // playing, which leaves the bar up: the same thing it does today, not a control that disappears.
+  useEffect(() => {
+    if (!isPlaying) {
+      setControlsVisible(true);
+      return;
+    }
+    setControlsVisible(true);
+    const id = window.setTimeout(() => setControlsVisible(false), CONTROLS_IDLE_MS);
+    return () => window.clearTimeout(id);
+  }, [isPlaying, activity]);
   const rateRef = useRef(playbackRate);
   useEffect(() => {
     rateRef.current = playbackRate;
@@ -730,6 +774,13 @@ export function VideoCompanion({
           {/* Player */}
           <Box
             ref={playerBoxRef}
+            // Everything we can see of "the learner is still here". A cross-origin iframe keeps
+            // every pointer move over the picture to itself, so these - crossing into the frame,
+            // a press, a key landing on a control - are the whole signal.
+            onPointerEnter={noteActivity}
+            onPointerMove={noteActivity}
+            onPointerDown={noteActivity}
+            onFocusCapture={noteActivity}
             sx={{
               position: "relative",
               borderRadius: isFullscreen ? 0 : 3,
@@ -757,24 +808,71 @@ export function VideoCompanion({
               style={{ width: "100%", height: "100%", border: 0 }}
               title={companion.title}
             />
-            {/* Ours, not the provider's: this fullscreens the BOX, so a check-in is painted with
-                it. Sits above the player's own control bar. */}
-            <IconButton
-              onClick={toggleFullscreen}
-              aria-label={isFullscreen ? "Exit full screen" : "Full screen"}
-              size="small"
+            {/* The companion's own control bar.
+                Fullscreen has to be ours and not the provider's: Vimeo's button fullscreens the
+                IFRAME, and a check-in painted over the player is that iframe's sibling, so the
+                browser draws the iframe alone and the question is nowhere (fullscreenCheckIn.test).
+                Ours fullscreens the BOX, which is the overlay's parent.
+
+                But it cannot live among the provider's buttons either - they are inside a
+                cross-origin iframe, and they are right-anchored flush to that bar's edge, with no
+                free slot to sit in (measured: with and without Vimeo's own fullscreen button the
+                cluster still ends at the same x). So it gets a bar of its own, laid directly on
+                top of the player's own band and sharing its clock: full width, right-aligned like
+                every player's fullscreen control, and gone the moment the player's controls go
+                rather than left floating over the picture and over the burned-in captions. */}
+            <Box
+              data-testid="companion-control-bar"
+              // Hidden, this thin band is the one place a pointer heading for the controls can
+              // still reach us through the iframe - touching it brings the bar back (the move
+              // bubbles to the box). Shown, it lets everything but the button through, so the
+              // picture stays the player's.
               sx={{
-                position: "absolute", right: 8, bottom: 52, zIndex: 15,
-                color: "#fff", bgcolor: "rgba(15,12,41,0.55)",
-                "&:hover": { bgcolor: "rgba(15,12,41,0.8)" },
-                [PHONE]: { width: 44, height: 44 },
+                position: "absolute", left: 0, right: 0, zIndex: 15,
+                // Full screen makes the frame the whole screen, and the player letterboxes a 16/9
+                // picture inside it - so its bar lifts off the bottom by the height of that black
+                // margin. Ours lifts with it; measured flush at 1440x900, and the term falls to
+                // zero on a screen wider than 16/9, where there is no margin to clear.
+                bottom: isFullscreen
+                  ? `calc(${PLAYER_BAR_BAND}px + max(0px, (100vh - 100vw * 9 / 16) / 2))`
+                  : PLAYER_BAR_BAND,
+                height: COMPANION_BAR_H,
+                display: "flex", alignItems: "center", justifyContent: "flex-end",
+                px: 1,
+                pointerEvents: controlsVisible ? "none" : "auto",
+                // No scrim across the band. A player's usual bottom gradient would sit exactly
+                // where a burned-in caption is, and dimming the subtitles to frame a button is
+                // the other half of what was reported. The control carries its own fill instead.
+                [PHONE]: { height: COMPANION_BAR_H_PHONE },
               }}
             >
-              <IconWrapper
-                icon={isFullscreen ? "mdi:fullscreen-exit" : "mdi:fullscreen"}
-                size={20}
-              />
-            </IconButton>
+              <IconButton
+                data-testid="companion-fullscreen"
+                onClick={toggleFullscreen}
+                aria-label={isFullscreen ? "Exit full screen" : "Full screen"}
+                size="small"
+                sx={{
+                  // Shaped like the player's own bar - the same dark fill, the same rounded-rect
+                  // rather than a circle - so sitting on it reads as one more control in the run
+                  // and not as a badge dropped on the picture.
+                  color: "#fff", bgcolor: "rgba(15,12,41,0.72)", borderRadius: 1.5, height: 32, width: 32,
+                  "&:hover": { bgcolor: "rgba(15,12,41,0.9)" },
+                  // Down with the player's bar: invisible and untouchable, but still in the tab
+                  // order - a keyboard user who tabs onto it brings the bar back (onFocusCapture
+                  // on the box), which is strictly more than a `visibility: hidden` control offers.
+                  opacity: controlsVisible ? 1 : 0,
+                  pointerEvents: controlsVisible ? "auto" : "none",
+                  transition: "opacity 200ms ease",
+                  "&:focus-visible": { opacity: 1, pointerEvents: "auto", outline: "2px solid #fff" },
+                  [PHONE]: { width: 44, height: 44 },
+                }}
+              >
+                <IconWrapper
+                  icon={isFullscreen ? "mdi:fullscreen-exit" : "mdi:fullscreen"}
+                  size={20}
+                />
+              </IconButton>
+            </Box>
             {activeCheckIn && (
               <AutoPauseCheckIn
                 checkIn={activeCheckIn}
