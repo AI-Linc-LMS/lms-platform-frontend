@@ -2756,6 +2756,11 @@
     "interviewClosedCta": "لم تعد هذه المقابلة متاحة",
     "interviewDoneClosed": "تم · لم تعد هذه المقابلة متاحة"
   },
+  "adaptiveVideoMode": {
+    "groupLabel": "وضع المشاهدة",
+    "switching": "جارٍ التبديل…",
+    "switchFailed": "تعذّر تغيير وضع المشاهدة الآن. حاول مرة أخرى."
+  },
   "experienceBullets": {
     "label": "المسؤوليات والإنجازات",
     "placeholder": "مثال: خفّضت زمن تحميل التقرير من 5 ثوانٍ إلى 1.2 ثانية",
