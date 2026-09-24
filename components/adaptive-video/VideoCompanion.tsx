@@ -108,6 +108,16 @@ export function VideoCompanion({
   const settledSeqRef = useRef(0);
   // Mode changes reach the server one after another, so they land in the order they were made.
   const modeSyncRef = useRef<Promise<unknown>>(Promise.resolve());
+  // The live session: a switch made after the watch ended replaces it with a new one on this page.
+  const sessionIdRef = useRef<string | null>(null);
+  // The watch this page has ENDED (the video reached its end), and that end request. The server keeps
+  // an ended watch in the mode it was scored in, so a switch after it used to come back refused and
+  // the rail flipped silently back. Instead it starts a new watch in the chosen mode, as reopening
+  // the page would.
+  const endingRef = useRef<{ sessionId: string; done: Promise<void> } | null>(null);
+  // Where this watch's rewinds begin in the player's list, which runs for the life of the page: a
+  // watch started on the page sends only its own.
+  const rewindsFromRef = useRef(0);
   // Auto-generated description (lazily fetched the first time the Description tab is opened).
   const [genDesc, setGenDesc] = useState("");
   const [descLoading, setDescLoading] = useState(false);
@@ -144,6 +154,10 @@ export function VideoCompanion({
   // time they switched - a switch is not supposed to touch playback at all.
   const { setIframe, currentTime, duration, playbackRate, rewinds, endedTick, play, pause, seekTo } =
     useVimeoController();
+  const rateRef = useRef(playbackRate);
+  useEffect(() => {
+    rateRef.current = playbackRate;
+  }, [playbackRate]);
 
   // Real watched-coverage tracking: each whole second actually PLAYED (not skipped) is marked, so
   // points scale with genuine watching - skipping to the end earns little. Refs (not state): these
@@ -170,6 +184,7 @@ export function VideoCompanion({
       .then((res) => {
         if (!alive) return;
         setCompanion(res.companion);
+        sessionIdRef.current = res.session_id;
         setSessionId(res.session_id);
         // A rewatch session is sent an empty list on purpose; anything else was sent the lot.
         const loaded = res.session?.watch_mode !== "rewatch";
@@ -315,6 +330,11 @@ export function VideoCompanion({
   // Keep the max-speed + rewinds high-water marks in refs for the (ref-reading) syncs below.
   useEffect(() => { if (playbackRate > maxSpeedRef.current) maxSpeedRef.current = playbackRate; }, [playbackRate]);
   useEffect(() => { rewindsRef.current = rewinds; }, [rewinds]);
+  /** This watch's rewinds, or nothing: the field is left out while there are none. */
+  const ownRewinds = useCallback(() => {
+    const own = rewindsRef.current.slice(rewindsFromRef.current);
+    return own.length ? own : undefined;
+  }, []);
 
   // Periodic save of watch signals. Reads everything from refs at fire time, so the interval isn't
   // torn down on every timeupdate (it would never reach 10s otherwise) and the BE gets true coverage.
@@ -333,12 +353,12 @@ export function VideoCompanion({
           completeness_pct: coverageRef.current,
           max_speed: maxSpeedRef.current,
           ...(settled ? { watch_mode: confirmedModeRef.current } : {}),
-          rewinds: rewindsRef.current.length ? rewindsRef.current : undefined,
+          rewinds: ownRewinds(),
         })
         .catch(() => {});
     }, 10000);
     return () => clearInterval(timer);
-  }, [sessionId]);
+  }, [sessionId, ownRewinds]);
 
   // Flush the FINAL coverage/speed, THEN end + score (so the award reflects everything watched,
   // including the last stretch the periodic sync may not have sent yet). Server-side this is
@@ -346,24 +366,22 @@ export function VideoCompanion({
   // several triggers is safe and never lowers a prior award.
   const endAndScore = useCallback(() => {
     if (!sessionId) return;
-    adaptiveVideoService
+    const done = adaptiveVideoService
       .sync(sessionId, {
         current_timestamp: prevTimeRef.current,
         completeness_pct: coverageRef.current,
         max_speed: maxSpeedRef.current,
-        rewinds: rewindsRef.current.length ? rewindsRef.current : undefined,
+        rewinds: ownRewinds(),
       })
       .catch(() => {})
-      .finally(() => {
-        adaptiveVideoService
-          .endSession(sessionId)
-          .then(() => {
-            notifyContentCompleted();
-            onCompletedRef.current?.();
-          })
-          .catch(() => {});
-      });
-  }, [sessionId]);
+      .then(() => adaptiveVideoService.endSession(sessionId))
+      .then(() => {
+        notifyContentCompleted();
+        onCompletedRef.current?.();
+      })
+      .catch(() => {});
+    endingRef.current = { sessionId, done };
+  }, [sessionId, ownRewinds]);
   const endRef = useRef(endAndScore);
   useEffect(() => {
     endRef.current = endAndScore;
@@ -438,6 +456,32 @@ export function VideoCompanion({
     return questionsRequestRef.current;
   }, [configId]);
 
+  // A new watch started on this page, taken on as a fresh page load would take it on - its session,
+  // questions and passed check-ins - while the player carries on untouched. What the new watch
+  // counts as watched (coverage, speed, rewinds) starts from here.
+  const adoptWatch = useCallback((res: StartSessionResult) => {
+    sessionIdRef.current = res.session_id;
+    endingRef.current = null;
+    setSessionId(res.session_id);
+    setCompanion(res.companion);
+    const loaded = res.session?.watch_mode !== "rewatch";
+    setQuestions({ list: res.companion.check_ins ?? [], loaded });
+    questionsRequestRef.current = loaded ? Promise.resolve() : null;
+    const passed = restoredAnswers(res.companion.my_passed_check_in_ids);
+    shownRef.current = new Set(passed);
+    setAnswered(passed);
+    watchedRef.current = new Set();
+    armedPlayedRef.current = new Set();
+    coverageRef.current = 0;
+    maxSpeedRef.current = rateRef.current;
+    rewindsFromRef.current = rewindsRef.current.length;
+    setSaved((prev) => ({
+      bestPct: Math.max(prev.bestPct, res.companion.my_best_completeness_pct ?? 0),
+      session: res.session ?? null,
+      completedBefore: finishedBefore(res.companion),
+    }));
+  }, []);
+
   // What a mode takes off the screen: Rewatch asks nothing, and the 60s checkpoint is its own mode's.
   const clearOverlaysFor = useCallback((m: WatchMode) => {
     if (m === "rewatch") setActiveCheckIn(null);
@@ -470,7 +514,22 @@ export function VideoCompanion({
         // been left (which supersedes them all), is never sent.
         const request = modeSyncRef.current
           .catch(() => {})
-          .then(() => (superseded() ? null : adaptiveVideoService.sync(sessionId, { watch_mode: next })));
+          .then(async () => {
+            if (superseded()) return null;
+            const ended = endingRef.current;
+            if (ended && ended.sessionId === sessionIdRef.current) {
+              // This watch has been ended - scored in its mode, which the server now keeps. The
+              // choice starts a new watch in it instead, once the end has landed (until then the
+              // server would hand back the same, still open, session).
+              await ended.done;
+              if (superseded()) return null;
+              const fresh = await adaptiveVideoService.startSession(configId, next);
+              if (superseded()) return null;
+              adoptWatch(fresh);
+              return fresh.session;
+            }
+            return adaptiveVideoService.sync(sessionIdRef.current ?? sessionId, { watch_mode: next });
+          });
         modeSyncRef.current = request;
         const session = await request;
         if (session === null) return;
@@ -498,7 +557,7 @@ export function VideoCompanion({
         setModeSwitch({ pending: false, error: t("adaptiveVideoMode.switchFailed") });
       }
     },
-    [sessionId, watchMode, activeCheckIn, answered, loadQuestions, clearOverlaysFor, confirmMode, t],
+    [sessionId, watchMode, activeCheckIn, answered, loadQuestions, clearOverlaysFor, confirmMode, adoptWatch, configId, t],
   );
 
   // Switch tabs; lazily generate the description the first time its tab is opened (event-driven, so
