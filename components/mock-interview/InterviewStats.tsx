@@ -10,7 +10,12 @@ interface InterviewStatsProps {
   totalInterviews: number;
   completedInterviews: number;
   scheduledInterviews: number;
-  averageScore: number;
+  /**
+   * null when no attempt has been marked yet. Rendered as an em dash with a caption, never
+   * as 0%: a learner with one completed, scored interview was shown "0% Average Score", and
+   * a zero that means "we have no number" is indistinguishable from a zero they earned.
+   */
+  averageScore: number | null;
 }
 
 const InterviewStatsComponent = ({
@@ -20,7 +25,15 @@ const InterviewStatsComponent = ({
   averageScore,
 }: InterviewStatsProps) => {
   const { t } = useTranslation("common");
-  const stats = [
+  const stats: {
+    label: string;
+    value: string | number;
+    /** Only the average has one, and only when there is nothing to average. */
+    caption?: string;
+    icon: string;
+    color: string;
+    bgColor: string;
+  }[] = [
     {
       label: t("mockInterview.totalInterviews"),
       value: totalInterviews,
@@ -44,7 +57,8 @@ const InterviewStatsComponent = ({
     },
     {
       label: t("mockInterview.averageScore"),
-      value: `${averageScore}%`,
+      value: averageScore === null ? "\u2014" : `${averageScore}%`,
+      caption: averageScore === null ? t("interviewLifecycle.notScoredYet") : undefined,
       icon: "mdi:chart-line",
       color: "var(--accent-purple)",
       bgColor: "color-mix(in srgb, var(--accent-purple) 14%, transparent)",
@@ -122,6 +136,22 @@ const InterviewStatsComponent = ({
                 >
                   {stat.label}
                 </Typography>
+                {/* Says why the number is an em dash. Without it "—" is just a
+                    different way of being unexplained. */}
+                {stat.caption && (
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: "block",
+                      color: "var(--font-tertiary, var(--font-secondary))",
+                      fontSize: "0.75rem",
+                      lineHeight: 1.3,
+                      [PHONE]: { fontSize: "0.7rem" },
+                    }}
+                  >
+                    {stat.caption}
+                  </Typography>
+                )}
               </Box>
             </Box>
           </Paper>

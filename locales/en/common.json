@@ -3323,5 +3323,36 @@
     "welcome": "WELCOME, {{name}}",
     "welcomeBack": "WELCOME BACK, {{name}}",
     "momentumNotStarted": "not started yet"
+  },
+  "profileSetup": {
+    "title": "Finish setting up your account",
+    "body": "We need a couple of details before {{modules}} will work. It takes under a minute, and you only do it once.",
+    "bodyGeneric": "We need a couple of details to finish setting up your account. It takes under a minute, and you only do it once.",
+    "moduleResume": "Resume",
+    "moduleJobs": "Jobs",
+    "moduleInterview": "Interview",
+    "save": "Save and continue",
+    "notNow": "Not now",
+    "saveFailed": "We could not save that. Please try again."
+  },
+  "roadmapOwned": {
+    "ready": "Yours",
+    "inProgress": "In progress",
+    "done": "Completed",
+    "locked": "Locked",
+    "legend": "A marked step is one you already have a course for."
+  },
+  "articleNarration": {
+    "resumeFollow": "Jump to what's being read",
+    "resumeFollowAria": "Resume following the narration"
+  },
+  "interviewLifecycle": {
+    "notScoredYet": "No interview scored yet"
+  },
+  "courseCta": {
+    "takeAssessment": "Take the assessment",
+    "startLearning": "Start learning",
+    "resumeLearning": "Resume learning",
+    "reviewCourse": "Review the course"
   }
 }

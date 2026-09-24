@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { Box } from "@mui/material";
 import { createRoot, type Root } from "react-dom/client";
 import { sanitizeHtml } from "./sanitizeHtml";
+import { buildNarrationSegments, NARRATE_ATTR, type NarrationSegment } from "@/lib/utils/article-speech";
 import { CodeBlock } from "./CodeBlock";
 import { RunnableCodeBlock } from "./RunnableCodeBlock";
 
@@ -21,6 +22,11 @@ interface AdaptiveArticleBodyProps {
   /** Reports the article's headings (with assigned ids) so the page can build a
    *  table-of-contents + scroll-spy. Called whenever the html changes. */
   onHeadings?: (headings: ArticleHeading[]) => void;
+  /** Reports the article's narration blocks - the spoken text of each element, tagged
+   *  with `data-narrate-id` - so Read aloud can say WHICH block it is on and the page can
+   *  follow along. Reported from the rendered DOM, not from the html string, so the ids
+   *  always point at elements that exist. */
+  onSegments?: (segments: NarrationSegment[]) => void;
 }
 
 // Target wall-clock for a full reveal; per-frame step scales so long articles
@@ -40,13 +46,15 @@ function slugify(text: string, i: number): string {
  *  - optionally reveals the prose word-by-word.
  * All DOM-walked so it never corrupts the HTML.
  */
-export function AdaptiveArticleBody({ html, explainTerms, onExplain, reveal = false, onHeadings }: AdaptiveArticleBodyProps) {
+export function AdaptiveArticleBody({ html, explainTerms, onExplain, reveal = false, onHeadings, onSegments }: AdaptiveArticleBodyProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const onExplainRef = useRef(onExplain);
   const onHeadingsRef = useRef(onHeadings);
+  const onSegmentsRef = useRef(onSegments);
   useEffect(() => {
     onExplainRef.current = onExplain;
     onHeadingsRef.current = onHeadings;
+    onSegmentsRef.current = onSegments;
   });
 
   useEffect(() => {
@@ -87,6 +95,17 @@ export function AdaptiveArticleBody({ html, explainTerms, onExplain, reveal = fa
       wrap.appendChild(table);
     });
 
+    // Tag the narration blocks and report what each of them SAYS, before anything below
+    // rewrites the tree. It has to happen here rather than from the html string: the ids
+    // are only useful because they are on elements the learner can actually be scrolled
+    // to, and only this function knows what the rendered body ended up containing.
+    onSegmentsRef.current?.(buildNarrationSegments(root));
+    root.querySelectorAll<HTMLElement>(`[${NARRATE_ATTR}]`).forEach((el) => {
+      // A block scrolled to with `block: "start"` would otherwise land under the fixed
+      // AppBar. Headings already carry their own value for the table-of-contents jump.
+      if (!el.style.scrollMarginTop) el.style.scrollMarginTop = "88px";
+    });
+
     // Hydrate code blocks FIRST (before term-wrap / reveal) so the walkers never
     // touch code text. Each <pre> becomes a React island (read-only or runnable).
     const codeRoots: Root[] = [];
@@ -98,6 +117,13 @@ export function AdaptiveArticleBody({ html, explainTerms, onExplain, reveal = fa
       const runnable = (pre.getAttribute("data-runnable") || "").toLowerCase() === "true";
       const mount = document.createElement("div");
       mount.className = "article-code-mount";
+      // The <pre> is a narration block; carry its id onto the island that replaces it, or
+      // Read aloud would announce a code example with nothing on screen to point at.
+      const narrateId = pre.getAttribute(NARRATE_ATTR);
+      if (narrateId) {
+        mount.setAttribute(NARRATE_ATTR, narrateId);
+        mount.style.scrollMarginTop = "88px";
+      }
       pre.replaceWith(mount);
       const r = createRoot(mount);
       r.render(
@@ -272,6 +298,16 @@ export function AdaptiveArticleBody({ html, explainTerms, onExplain, reveal = fa
           border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
         },
         "& .reveal-unit": { transition: "opacity 0.32s ease" },
+        // The block Read aloud is speaking. Background and an inset rule only - no border,
+        // no padding, no margin - so the highlight moving down the article can never
+        // reflow the text under the learner's eyes.
+        "& [data-narrating='true']": {
+          backgroundColor: "color-mix(in srgb, #6366f1 13%, transparent)",
+          boxShadow: "inset 3px 0 0 0 color-mix(in srgb, #6366f1 85%, transparent)",
+          borderRadius: "6px",
+          transition: "background-color 0.25s ease, box-shadow 0.25s ease",
+          "@media (prefers-reduced-motion: reduce)": { transition: "none" },
+        },
         "& .explain-term": {
           cursor: "pointer",
           textDecoration: "underline dotted",

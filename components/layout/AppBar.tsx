@@ -14,7 +14,7 @@ import {
   Tooltip,
 } from "@mui/material";
 import { alpha } from "@mui/material/styles";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth/auth-context";
 import {
   isAdminOnlyRole,
@@ -39,7 +39,7 @@ import { useLeaderboardAndStreak } from "@/lib/hooks/useLeaderboardAndStreak";
 import { useStreakCelebration, primeNavStreak } from "@/lib/streak/streakCelebration";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { PageGuide } from "@/components/common/PageGuide";
-import { PLATFORM_GUIDE } from "@/lib/guide/registry";
+import { PLATFORM_GUIDE, PLATFORM_GUIDE_ROUTE, isPlatformGuideRoute } from "@/lib/guide/registry";
 import { Settings, ShieldCheck } from "lucide-react";
 import { LanguageSelect } from "@/components/common/LanguageSelect";
 import { useTranslation } from "react-i18next";
@@ -71,6 +71,7 @@ interface AppBarProps {
 
 export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
   const router = useRouter();
+  const pathname = usePathname();
   const { user, logout, isAuthenticated } = useAuth();
   const { clientInfo } = useClientInfo();
   const hideLeaderboardView = useHideLeaderboardView();
@@ -87,6 +88,20 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
   // Instructors no longer toggle into student/admin views — only org admins keep the toggle.
   const canToggleAdminMode = isClientOrgAdminRole(role);
   const effectiveAdminMode = isAdminOnlyRole(role) || isAdminMode;
+  /**
+   * The dashboard's guide - the pill on the bar from 600px up and the "Platform guide" item in
+   * the phone overflow are two triggers for the SAME dialog, so they appear and disappear
+   * together. It carries DASHBOARD_TOUR, which spotlights cards that only /dashboard renders,
+   * so it is offered there and nowhere else (see isPlatformGuideRoute).
+   */
+  const showPlatformGuide = isAuthenticated && !isInstructor && isPlatformGuideRoute(pathname);
+  /**
+   * The phone overflow holds what left the bar. With the guide confined to the dashboard it can
+   * now come up empty - a learner with no leaderboard, on any other page - and a "⋮" that opens
+   * an empty sheet is worse than no "⋮" at all.
+   */
+  const overflowHasItems =
+    effectiveAdminMode || showPlatformGuide || (!hideLeaderboardView && !isInstructor);
   // Admin "Settings" (logo / favicon / login text) moved from the sidebar into
   // this menu; keep the same gate the sidebar item used (admin_branding feature).
   const canSeeAdminSettings =
@@ -153,6 +168,14 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
   const [notificationsLoading, setNotificationsLoading] = useState(false);
 
   const clientId = clientInfo?.id ?? config.clientId;
+
+  // This bar is mounted once and survives navigation, so `guideOpen` outlives the page that set
+  // it. Leave the dashboard with the guide open (browser Back, a link behind the backdrop) and
+  // the flag would still be true when the learner next lands on the dashboard, popping the
+  // dialog open unasked. Drop it the moment the guide stops belonging to the route.
+  useEffect(() => {
+    if (!showPlatformGuide) setGuideOpen(false);
+  }, [showPlatformGuide]);
 
   const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -545,23 +568,28 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               </Box>
             </>
           )}
-          {/* Platform guide - "what can I do here" overview + platform tour; sits
-              left of Today's Leaders and stays available regardless of the flag. */}
-          {isAuthenticated && !isInstructor && (
+          {/* The dashboard's guide: a "what can I do here" overview plus a spotlight tour of the
+              dashboard's own cards. It is offered on the dashboard ONLY — its tour anchors to
+              data-tour-id="dash-*" elements that exist nowhere else, and on every other page it
+              duplicated that page's own "?" guide. Rendering nothing (rather than an empty box)
+              means the flex `gap` on this row simply closes up; no placeholder is left behind.
+              Still hidden from instructors, who get a teacher top bar. */}
+          {showPlatformGuide && (
             <PageGuide
               content={PLATFORM_GUIDE}
               variant="nav"
               label="Guide"
               tooltip="Take a platform guide"
-              tourStartPath="/dashboard"
+              tourStartPath={PLATFORM_GUIDE_ROUTE}
               open={guideOpen}
               onOpenChange={setGuideOpen}
               triggerSx={{ [PHONE]: { display: "none" } }}
             />
           )}
-          {/* Phone: one overflow button for what left the bar (guide, Today's Leaders, the
-              admin-mode marker). Hidden from 600px up, where each still sits on the bar. */}
-          {(effectiveAdminMode || !isInstructor) && (
+          {/* Phone: one overflow button for what left the bar (the dashboard guide, Today's
+              Leaders, the admin-mode marker). Hidden from 600px up, where each still sits on the
+              bar - and not rendered at all when none of the three has anything to show. */}
+          {overflowHasItems && (
             <>
               <IconButton
                 onClick={(e) => setOverflowAnchorEl(e.currentTarget)}
@@ -611,7 +639,7 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
                     </Typography>
                   </MenuItem>
                 )}
-                {!isInstructor && (
+                {showPlatformGuide && (
                   <MenuItem
                     onClick={() => {
                       setOverflowAnchorEl(null);
@@ -711,6 +739,12 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
             anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
             transformOrigin={{ vertical: "top", horizontal: "left" }}
             disableRestoreFocus
+            // A hover card must not lock the page. MUI's default scroll lock puts
+            // overflow:hidden + padding-right on the body, which takes the document scrollbar
+            // away; the viewport then widens by its width, and every position:fixed element
+            // that is not .mui-fixed — the Support and Help button, the phone dock — jumps
+            // sideways. Merely pointing at this chip moved them 15px, and back on leave.
+            disableScrollLock
             sx={{
               // Hover-driven from the bar chip, exactly as before. Opened from the phone overflow
               // menu there is no hover to close it, so its backdrop takes the tap outside.
@@ -1148,6 +1182,10 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
               transformOrigin={{ vertical: "top", horizontal: "left" }}
               disableRestoreFocus
+              // Same as the leaderboard card: opened by hover, so it must leave the document
+              // scrollbar alone. With MUI's scroll lock on, hovering this pill moved the
+              // Support and Help button 15px right and widened the phone dock by 15px.
+              disableScrollLock
               sx={{ pointerEvents: streakByTouch ? "auto" : "none" }}
               PaperProps={{
                 sx: {

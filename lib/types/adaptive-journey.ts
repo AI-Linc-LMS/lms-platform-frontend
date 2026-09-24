@@ -80,6 +80,23 @@ export interface AdminCertificateConfig {
   configured: boolean;
 }
 
+/**
+ * The ONE answer to "has this learner done the calibration, and can they sit it now?".
+ *
+ * Derived server-side by adaptive_journey/journey/calibration_state.py and carried by BOTH
+ * the journey board and every dashboard course, so the course page's hero button and the
+ * dashboard's course card can never disagree about it. `pending` is narrower than
+ * `required && !done`: a calibration with no questions yet, or one still generating, is not
+ * somewhere a learner can be sent.
+ */
+export interface CalibrationState {
+  required: boolean;
+  done: boolean;
+  pending: boolean;
+  assessmentId: number | null;
+  assessmentSlug: string | null;
+}
+
 export interface JourneyBoard {
   /** Admin content-lock. false = every step is open, no deadlines, full XP anytime. */
   contentLocked: boolean;
@@ -114,9 +131,7 @@ export interface JourneyBoard {
     nodesTotal: number;
     completionPct: number;
   };
-  calibration: {
-    required: boolean;
-    done: boolean;
+  calibration: CalibrationState & {
     card: {
       assessmentId: number | null;
       assessmentSlug: string | null;

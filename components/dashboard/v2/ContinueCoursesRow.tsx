@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslation } from "react-i18next";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, LinearProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
@@ -8,6 +9,7 @@ import type { DashboardCourse } from "@/lib/types/dashboard";
 import { SectionHeader, daysLeft, fmtDate } from "./parts";
 import { phoneText } from "@/components/common/mobile/phoneText";
 import { PHONE } from "@/components/common/mobile/phone";
+import { courseCta } from "@/lib/adaptive/courseCta";
 
 const ACCENTS = [
   { bar: "linear-gradient(90deg,#7c3aed,#a855f7)", btn: "linear-gradient(135deg,#7c3aed,#a855f7)" },
@@ -18,6 +20,7 @@ const ACCENTS = [
 
 export function ContinueCoursesRow({ courses }: { courses: DashboardCourse[] }) {
   const { push, prefetch } = useInstantNavigation();
+  const { t } = useTranslation();
   if (!courses.length) return null;
 
   return (
@@ -32,9 +35,18 @@ export function ContinueCoursesRow({ courses }: { courses: DashboardCourse[] }) 
           const dl = daysLeft(c.due?.dueAt);
           const overdue = dl != null && dl < 0;
           const soon = dl != null && dl >= 0 && dl <= 2;
-          const resume = c.resumeSubmoduleId
-            ? `/adaptive-courses/${c.id}/submodule/${c.resumeSubmoduleId}`
-            : `/adaptive-courses/${c.id}`;
+          // This card used to say "Continue" whatever the state, and route to
+          // `/adaptive-courses/{id}` whenever `resumeSubmoduleId` was null - which is exactly
+          // what it is while the calibration gate holds every topic locked. So the button
+          // promising to continue landed the learner on the page asking them to start. The
+          // resolver below is the same one the course page's hero uses.
+          const cta = courseCta({
+            courseId: c.id,
+            calibration: c.calibration,
+            resumeSubmoduleId: c.resumeSubmoduleId,
+            completionPct: c.completionPct,
+          });
+          const resume = cta.href;
           return (
             <Reveal key={c.id} delay={i * 0.05}>
               <Box sx={{ borderRadius: 4, border: "1px solid #eef2f7", bgcolor: "#fff", overflow: "hidden", boxShadow: "0 1px 2px rgba(16,24,40,0.04)", display: "flex", flexDirection: "column", height: "100%" }}>
@@ -83,7 +95,7 @@ export function ContinueCoursesRow({ courses }: { courses: DashboardCourse[] }) 
                     onClick={() => push(resume)}
                     sx={{ mt: 1.75, py: 1.1, borderRadius: 2.5, fontWeight: 800, fontSize: "0.88rem", color: "white", gap: 0.5, background: accent.btn, [PHONE]: { minHeight: 44 } }}
                   >
-                    Continue <Icon icon="mdi:arrow-right" width={16} />
+                    {t(cta.labelKey)} <Icon icon="mdi:arrow-right" width={16} />
                   </ButtonBase>
                 </Box>
               </Box>

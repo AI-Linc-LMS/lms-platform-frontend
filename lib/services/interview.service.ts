@@ -117,6 +117,17 @@ export interface QuestionResult {
   question: string;
   score: number;
   max_score: number;
+  /**
+   * Whether this question counted towards the grade at all.
+   *
+   * An unmarkable question - a submission the server could not get a verdict on - is stored
+   * as 0 out of 0. That is correct arithmetic, since it is excluded from both sides of the
+   * total, but the card rendered it as a score of zero, which reads as a failure the
+   * candidate did not earn.
+   */
+  marked?: boolean;
+  /** What the question WOULD have been worth, for a question that could not be marked. */
+  question_worth?: number;
   answered: boolean;
   feedback: string;
   /** What the candidate actually said, from the recorded transcript. */

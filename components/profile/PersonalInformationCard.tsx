@@ -123,7 +123,11 @@ export function PersonalInformationCard({
   const handleSave = async () => {
         // Checked here for speed of feedback only. accounts/validators.py is the authority,
     // and its message wins if something still gets through.
-    const problems = validateMandatoryProfile(formData);
+    // Scoped to what THIS tenant requires, which is the same set the asterisks above come from.
+    // Unscoped, a tenant that had narrowed its required set marked two fields and then refused
+    // the save on five — and a tenant that runs none of the gated modules refused a bio edit for
+    // a date of birth it will never use.
+    const problems = validateMandatoryProfile(formData, required);
     if (Object.keys(problems).length > 0) {
       setFieldErrors(problems);
       return;
@@ -363,7 +367,7 @@ try {
                 helperText={fieldErrors.first_name}
                 fullWidth
                 size="small"
-                required
+                required={required.has("first_name")}
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     borderRadius: 1.5,
@@ -414,7 +418,7 @@ try {
                 helperText={fieldErrors.last_name}
                 fullWidth
                 size="small"
-                required
+                required={required.has("last_name")}
                 sx={{
                   "& .MuiOutlinedInput-root": {
                     borderRadius: 1.5,
@@ -478,7 +482,7 @@ try {
                 }
                 fullWidth
                 size="small"
-                required
+                required={required.has("phone_number")}
                 error={Boolean(fieldErrors.phone_number)}
                 helperText={fieldErrors.phone_number || "Include your country code."}
                 sx={{
@@ -527,7 +531,7 @@ try {
                 value={formData.date_of_birth}
                 id={FIELD_IDS.date_of_birth}
                 onChange={handleChange("date_of_birth")}
-                required
+                required={required.has("date_of_birth")}
                 error={Boolean(fieldErrors.date_of_birth)}
                 helperText={fieldErrors.date_of_birth}
                 fullWidth
@@ -660,7 +664,7 @@ try {
                 value={formData.country || ""}
                 onChange={(name) => setFormData((prev) => ({ ...prev, country: name }))}
                 label=""
-                required
+                required={required.has("country")}
                 error={Boolean(fieldErrors.country)}
                 helperText={fieldErrors.country}
               />

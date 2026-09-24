@@ -23,14 +23,19 @@ export default defineConfig({
         storageState: "e2e/.auth/user.json",
       },
       dependencies: ["setup"],
-      testIgnore: [/.*\.setup\.ts/, /perf-regression\.spec\.ts/, /scroll-regression\.spec\.ts/],
+      testIgnore: [
+        /.*\.setup\.ts/,
+        /perf-regression\.spec\.ts/,
+        /scroll-regression\.spec\.ts/,
+        /chrome-hover-shift\.spec\.ts/,
+      ],
     },
     // Unauthenticated, no dev server, targets a DEPLOYED origin:
     //   PERF_BASE_URL=https://staging.ailinc.com npx playwright test --project=perf
     {
       name: "perf",
       use: { ...devices["Desktop Chrome"] },
-      testMatch: /(perf|scroll)-regression\.spec\.ts/,
+      testMatch: /(perf-regression|scroll-regression|chrome-hover-shift)\.spec\.ts/,
     },
     {
       name: "chromium-unauth",

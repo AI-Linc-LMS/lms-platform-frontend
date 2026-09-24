@@ -51,7 +51,10 @@ export const READING_TIERS: ReadingTier[] = ["Beginner", "Intermediate", "Advanc
 export interface AdaptiveCourseArticleSummary {
   article_id: number;
   title: string;
+  /** The tier the article was BUILT at - "Intermediate" on almost every live article. */
   default_tier: ReadingTier;
+  /** The tier this learner's calibration earned; null when they have not calibrated. */
+  learner_tier?: ReadingTier | null;
   available_tiers: ReadingTier[];
   reading_time_minutes: number;
   concepts: string[];
@@ -62,7 +65,14 @@ export interface AdaptiveArticleDetail {
   id: number;
   title: string;
   default_tier: ReadingTier;
+  /** The tier actually served in `content_html`. */
   rendered_tier: ReadingTier;
+  /**
+   * The tier this learner's calibration earned, or null when uncalibrated. When it differs
+   * from `rendered_tier` that rendering does not exist yet, and the reader asks the async
+   * tier endpoint for it rather than the server blocking a GET on an LLM call.
+   */
+  learner_tier?: ReadingTier | null;
   available_tiers: ReadingTier[];
   content_html: string;
   reading_time_minutes: number;
