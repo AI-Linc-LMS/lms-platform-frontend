@@ -10,6 +10,26 @@ publish = ".next"
 # Production and branch deploys (stagging) are unchanged: every tenant still builds those.
 ignore = '[ "$CONTEXT" = "deploy-preview" ] && [ "$SITE_NAME" != "democlientailinc" ]'
 
+# The build's Node heap ceiling.
+#
+# `next build` runs the TypeScript check in a child "build worker". That worker inherits
+# NODE_OPTIONS (next/dist/build/type-check.js creates it with `isolatedMemory: false`, so unlike
+# the static-export workers it keeps `--max-old-space-size`), and with no flag it gets Node's
+# default old-space limit, which on Netlify's build container is ~2.05 GB.
+#
+# The type-check of this repo reached that ceiling on 2026-09-24. Every build of `main` from
+# 77ce20c7 on, and of any branch that added a few hundred lines of typed code, died with
+#   FATAL ERROR: Ineffective mark-compacts near heap limit - JavaScript heap out of memory
+#   Next.js build worker exited with code: null and signal: SIGABRT
+# which Netlify surfaces only as "Build script returned non-zero exit code: 2". Two unrelated
+# branches crossed the line within an hour of each other because the program was already sitting
+# a few MB under it; nothing in those commits was wrong.
+#
+# Raise the ceiling instead of shrinking the program: the type-check is the deploy gate for the
+# whole repo (see next.config.ts), and it should not be the thing that decides how much code fits.
+[build.environment]
+  NODE_OPTIONS = "--max-old-space-size=4096"
+
 [[plugins]]
 package = "@netlify/plugin-nextjs"
 
