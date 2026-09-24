@@ -20,6 +20,11 @@ import {
   type AdminMcq,
 } from "@/lib/services/admin/admin-adaptive-quiz.service";
 import { MCQReviewTable } from "@/components/admin/adaptive-quiz/MCQReviewTable";
+import {
+  MissingContextDialog,
+  useMissingContextConfirm,
+} from "@/components/admin/adaptive-quiz/MissingContextDialog";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { AdaptiveSectionShell } from "@/components/adaptive-quiz/shared/AdaptiveSectionShell";
 import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
 
@@ -46,6 +51,7 @@ export default function EditAdaptiveQuizPage() {
   const [mcqs, setMcqs] = useState<LocalMcq[]>([]);
   const [initialIds, setInitialIds] = useState<Set<number>>(new Set());
   const [saving, setSaving] = useState(false);
+  const missingContext = useMissingContextConfirm();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -98,18 +104,25 @@ export default function EditAdaptiveQuizPage() {
     };
   }, [detail, mcqs, initialIds, title, instructions, minQ, maxQ, seThreshold, hintTokens, confidencePrompt]);
 
-  async function handleSave() {
+  async function handleSave(confirmMissingContext = false) {
     if (!detail || !diff || saving) return;
     setSaving(true);
     try {
-      const next = await adminAdaptiveQuizService.update(configId, diff);
+      const next = await adminAdaptiveQuizService.update(
+        configId,
+        confirmMissingContext ? { ...diff, confirm_missing_context: true } : diff,
+      );
       showToast("Saved.", "success");
       // Refresh local state from server so MCQ ids of newly-created rows land.
       setDetail(next);
       setMcqs(next.mcqs.map((m) => ({ ...m })));
       setInitialIds(new Set(next.mcqs.map((m) => m.id)));
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't save.", "error");
+      // Questions that point at a figure, table or code they don't include: the author decides.
+      if (!missingContext.intercept(e, () => void handleSave(true))) {
+        // The server's own words. Axios's message is "Request failed with status code 400".
+        showToast(getAxiosErrorDetail(e, "Couldn't save."), "error");
+      }
     } finally {
       setSaving(false);
     }
@@ -297,6 +310,7 @@ export default function EditAdaptiveQuizPage() {
             />
           </Box>
           </Box>
+          <MissingContextDialog {...missingContext.dialogProps} />
         </AdaptiveSectionShell>
       </Container>
     </MainLayout>
