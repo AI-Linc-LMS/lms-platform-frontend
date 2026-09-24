@@ -407,6 +407,44 @@ export interface ProgressResetHistoryEntry {
   note: string;
 }
 
+/** What one (student, course/batch) pair ended up as. "already_enrolled" is a SUCCESS — the
+ *  learner has the course; this run is simply not what gave it to them. */
+export type BulkEnrolOutcome =
+  | "enrolled"
+  | "already_enrolled"
+  | "unenrolled"
+  | "not_enrolled"
+  | "refused"
+  | "error";
+
+export interface BulkEnrolResultRow {
+  student_id: number;
+  course_id?: number | null;
+  adaptive_course_id?: number | null;
+  cohort_id?: number | null;
+  /** Kept for the older shape: "ok" for every outcome above except refused/error. */
+  status: string;
+  outcome?: BulkEnrolOutcome;
+  detail?: string;
+  /** e.g. "paid_course_requires_comp", "student_out_of_scope", "student_inactive". */
+  code?: string;
+}
+
+/** Partial failure is the normal case here, so the response is a REPORT, not a yes/no. */
+export interface BulkEnrolResponse {
+  action: string;
+  /** Rows whose status is "ok" — enrolled plus already-enrolled. Unchanged meaning. */
+  succeeded: number;
+  failed: number;
+  enrolled?: number;
+  already_enrolled?: number;
+  unenrolled?: number;
+  not_enrolled?: number;
+  refused?: number;
+  errors?: number;
+  results: BulkEnrolResultRow[];
+}
+
 export const adminStudentService = {
   /**
    * Preview a progress reset. Runs the same filters as the reset itself, so the confirmation
@@ -581,21 +619,9 @@ export const adminStudentService = {
     adaptiveCourseIds: number[] = [],
     // Gives PAID adaptive courses to learners who have not bought them. Literal `true` only, and
     // only after the admin has confirmed it: silently comping on a bulk action leaks revenue.
-    opts: { compPaid?: boolean } = {}
-  ): Promise<{
-    action: string;
-    succeeded: number;
-    failed: number;
-    results: Array<{
-      student_id: number;
-      course_id?: number | null;
-      adaptive_course_id?: number | null;
-      status: string;
-      detail?: string;
-      /** "paid_course_requires_comp" on a row refused because the course is paid. */
-      code?: string;
-    }>;
-  }> => {
+    // `cohortIds` are BATCHES: adding a learner to one also gives them the batch's courses.
+    opts: { compPaid?: boolean; cohortIds?: number[] } = {}
+  ): Promise<BulkEnrolResponse> => {
     const response = await apiClient.post(
       `/admin-dashboard/api/clients/${config.clientId}/students/bulk-course-action/`,
       {
@@ -603,6 +629,7 @@ export const adminStudentService = {
         student_ids: studentIds,
         course_ids: courseIds,
         adaptive_course_ids: adaptiveCourseIds,
+        ...(opts.cohortIds?.length ? { cohort_ids: opts.cohortIds } : {}),
         ...(opts.compPaid ? { comp_paid: true } : {}),
       }
     );

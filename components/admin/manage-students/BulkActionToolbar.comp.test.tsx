@@ -15,6 +15,20 @@ vi.mock("@/lib/services/admin/admin-student.service", () => ({
   adminStudentService: { bulkCourseAction: mocks.bulk },
 }));
 
+// The real strings, so a renamed button in the locale file shows up here rather than in prod.
+import en from "@/locales/en/common.json";
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string, vars?: Record<string, unknown>) => {
+      const value = key
+        .split(".")
+        .reduce<unknown>((acc, part) => (acc as Record<string, unknown>)?.[part], en);
+      if (typeof value !== "string") return key;
+      return value.replace(/\{\{(\w+)\}\}/g, (_, k) => String(vars?.[k] ?? ""));
+    },
+  }),
+}));
+
 import { BulkActionToolbar } from "./BulkActionToolbar";
 
 const students = [
@@ -29,14 +43,15 @@ const adaptiveCourses = [
 async function enrollBoth() {
   const onDone = vi.fn();
   render(<BulkActionToolbar selected={students} courses={[]} adaptiveCourses={adaptiveCourses} onClear={vi.fn()} onDone={onDone} />);
-  fireEvent.click(screen.getByRole("button", { name: /^enroll/i }));
+  fireEvent.click(screen.getByRole("button", { name: en.bulkEnrol.enrolButton }));
   fireEvent.mouseDown(screen.getByRole("combobox", { name: "Adaptive courses" }));
   const list = await screen.findByRole("listbox");
   fireEvent.click(within(list).getByRole("option", { name: /Data Science/ }));
   fireEvent.click(within(list).getByRole("option", { name: /Intro/ }));
   fireEvent.keyDown(list, { key: "Escape" });
-  const dialog = screen.getByRole("dialog", { name: /enroll 2 students/i });
-  fireEvent.click(within(dialog).getByRole("button", { name: "Enroll" }));
+  // Two steps now: pick the targets, then confirm the sentence that names them.
+  fireEvent.click(screen.getByRole("button", { name: en.bulkEnrol.continue }));
+  fireEvent.click(await screen.findByRole("button", { name: en.bulkEnrol.enrolAction }));
   return { onDone };
 }
 
@@ -63,7 +78,7 @@ describe("BulkActionToolbar on a paid adaptive course", () => {
     const prompt = await screen.findByRole("dialog", { name: "Give a paid course for free?" });
     expect(within(prompt).getByText("Data Science")).toBeInTheDocument();
     expect(onDone).not.toHaveBeenCalled();
-    expect(mocks.bulk).toHaveBeenLastCalledWith("enroll", [7, 8], [], [40, 41]);
+    expect(mocks.bulk).toHaveBeenLastCalledWith("enroll", [7, 8], [], [40, 41], { cohortIds: [] });
 
     fireEvent.click(within(prompt).getByRole("button", { name: "Give free access" }));
     await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1));
@@ -81,12 +96,18 @@ describe("BulkActionToolbar on a paid adaptive course", () => {
     expect(mocks.showToast).toHaveBeenLastCalledWith(expect.stringMatching(/^Enrolled 2\. The paid course was not given/), "info");
   });
 
-  it("keeps the old toast when nothing was refused for being paid", async () => {
-    mocks.bulk.mockResolvedValueOnce({ action: "enroll", succeeded: 4, failed: 0, results: [] });
+  it("goes straight to the report when nothing was refused for being paid", async () => {
+    mocks.bulk.mockResolvedValueOnce({
+      action: "enroll", succeeded: 4, failed: 0, enrolled: 4, already_enrolled: 0, refused: 0,
+      results: [
+        { student_id: 7, adaptive_course_id: 41, status: "ok", outcome: "enrolled" },
+        { student_id: 8, adaptive_course_id: 41, status: "ok", outcome: "enrolled" },
+      ],
+    });
     const { onDone } = await enrollBoth();
     await waitFor(() => expect(onDone).toHaveBeenCalledTimes(1));
     expect(screen.queryByRole("dialog", { name: "Give a paid course for free?" })).toBeNull();
-    expect(mocks.showToast).toHaveBeenLastCalledWith("Enrolled: 4 ok", "success");
+    expect(await screen.findByTestId("bulk-enrol-report")).toBeInTheDocument();
   });
 
   it("comps only the pairs that were refused, one request per course", async () => {
