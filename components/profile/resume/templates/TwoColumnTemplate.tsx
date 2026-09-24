@@ -165,20 +165,27 @@ export function TwoColumnTemplate({ data }: TwoColumnTemplateProps) {
                   {exp.position}
                 </Typography>
                 {exp.description.filter((d) => d.trim()).length > 0 && (
-                  <Typography
-                    sx={{
-                      fontSize: "0.6rem",
-                      color: "var(--font-primary)",
-                      lineHeight: 1.5,
-                      textAlign: "justify",
-                    }}
-                  >
-                    {/* This template runs the bullets together as a paragraph, so the joined
-                        string is what carries the formatting - one rich span, not one per bullet. */}
-                    <ResumeRichText
-                      value={`${exp.description.filter((d) => d.trim()).join(". ")}.`}
-                    />
-                  </Typography>
+                  // One bullet per point, as in every other template. This one used to join the
+                  // points with ". " into a single justified paragraph, so a learner's separate
+                  // achievements came out as one run-on block ("…timelines . • Engaged…").
+                  <Box component="ul" sx={{ m: 0, pl: 1.5 }}>
+                    {exp.description
+                      .filter((d) => d.trim())
+                      .map((d, i) => (
+                        <Typography
+                          key={i}
+                          component="li"
+                          sx={{
+                            fontSize: "0.6rem",
+                            color: "var(--font-primary)",
+                            lineHeight: 1.5,
+                            mb: 0.25,
+                          }}
+                        >
+                          <ResumeRichText value={d} />
+                        </Typography>
+                      ))}
+                  </Box>
                 )}
               </Box>
             ))}

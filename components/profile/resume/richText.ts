@@ -16,6 +16,21 @@ import type { ResumeData } from "./types";
  * So the allowed set is three inline tags and a line break. No links, no colours, no font sizes: a
  * resume that renders differently in the PDF than it did in the preview is worse than one that
  * cannot be bolded, and every additional tag is another way for those two to disagree.
+ *
+ * THE CONTRACT: a resume line (summary, a work bullet, an education or project description) is
+ * always an HTML FRAGMENT - allowed tags, and text with `&`, `<` and `>` escaped exactly once.
+ *
+ * It used to be two formats with nothing to tell them apart. The editor stores what the browser
+ * serialises, which is HTML, so a typed "health & wellness" is stored as "health &amp; wellness".
+ * The renderer decided by looking for a b/i/u tag, found none, and printed the line as text -
+ * so every `&`, `<` and `>` typed into a line with no bold in it appeared on the resume as its
+ * entity. The profile import had the mirror bug: it copied plain text into these fields
+ * unescaped, so "<Button>" typed on the profile vanished as an unknown tag the first time the
+ * editor touched it.
+ *
+ * So text becomes HTML in exactly one place, `textToResumeHtml`, and everything that draws a line
+ * reads it as HTML. Decoding entities before rendering instead would have "fixed" the ampersand
+ * by turning a learner's typed "<script>" into markup.
  */
 
 /** The only tags a resume line may carry. `strong`/`em` are what a paste and execCommand emit. */
@@ -50,8 +65,20 @@ function tagsImpliedByStyle(el: Element): string[] {
   return out;
 }
 
+/**
+ * A document that never loads or runs anything. Parsing into a detached element of the LIVE page
+ * is not inert: `<img src=x onerror=...>` assigned to its innerHTML still fetches the image and
+ * fires the handler. Lines reach this sanitiser from saved resumes and from an AI rewrite of a
+ * pasted job posting, so it parses where nothing can fire.
+ */
+let inertDocument: Document | null = null;
+function inertDoc(): Document {
+  if (!inertDocument) inertDocument = document.implementation.createHTMLDocument("");
+  return inertDocument;
+}
+
 function sanitizeViaDom(value: string): string {
-  const host = document.createElement("div");
+  const host = inertDoc().createElement("div");
   host.innerHTML = value;
 
   const render = (node: Node): string => {
@@ -99,6 +126,41 @@ export function sanitizeResumeHtml(value: string | null | undefined): string {
   if (!value) return "";
   if (!/[<&]/.test(value)) return value;
   return typeof document === "undefined" ? sanitizeViaRegex(value) : sanitizeViaDom(value);
+}
+
+/**
+ * Plain text as a resume line: the ONE place text becomes HTML.
+ *
+ * `&`, `<` and `>` are escaped exactly once, and a newline becomes the line break the editor's
+ * Shift+Enter makes, so the preview shows the break the text had instead of running the lines
+ * together. Used wherever a value that was never HTML enters a resume: the profile import.
+ */
+export function textToResumeHtml(text: string | null | undefined): string {
+  if (!text) return "";
+  return escapeText(text.replace(/\r\n?/g, "\n")).replace(/\n/g, "<br>");
+}
+
+/** `&` that does not start an entity reference: "R&D", "health & wellness". */
+const BARE_AMPERSAND = /&(?!(?:#\d+|#x[0-9a-f]+|[a-z][a-z0-9]*);)/i;
+
+/**
+ * A stored line whose format is not known, as canonical HTML.
+ *
+ * Resumes saved before the contract above hold both formats: lines the editor wrote (HTML) and
+ * lines "Use my profile" copied in (plain text). The two are told apart by what the editor can
+ * and cannot produce. It never writes a raw `<` that is not one of its own tags, and never a bare
+ * `&` - it writes `&lt;` and `&amp;`. So a line with either of those is text and is escaped; a line
+ * whose only `&`s start entities is the editor's HTML and is kept. Canonical HTML passes through
+ * unchanged, so this is safe to apply to a line more than once.
+ *
+ * Also the right reading of an AI rewrite, which may come back as either.
+ */
+export function normalizeResumeLine(value: string | null | undefined): string {
+  if (!value) return "";
+  if (!/[<&]/.test(value)) return value;
+  if (hasResumeMarkup(value)) return sanitizeResumeHtml(value);
+  if (value.includes("<") || BARE_AMPERSAND.test(value)) return textToResumeHtml(value);
+  return sanitizeResumeHtml(value);
 }
 
 /**

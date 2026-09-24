@@ -8,6 +8,44 @@ import { LoadingButton } from "@/components/common/LoadingButton";
 import { UserProfile, Experience } from "@/lib/services/profile.service";
 import { PROFILE, TILE_GRADIENT } from "./theme/profileTokens";
 import { phoneSheetDialogSx } from "@/components/profile/phoneSheet";
+import { ExperienceBulletsEditor } from "@/components/profile/ExperienceBulletsEditor";
+import { bulletsToDescription, bulletsWithinLimits, experienceBullets } from "@/lib/utils/experienceBullets";
+
+/**
+ * An entry as the server should receive it.
+ *
+ * `highlights` goes only with an entry that has them: one the learner saved from the points
+ * editor. An entry saved before points existed is sent back exactly as it came, text only, so
+ * saving the section never rewrites entries the learner did not open - their points are shown
+ * converted, but the conversion is not stored until they save that entry themselves.
+ *
+ * An EMPTY list goes only when the text is empty too. `{ highlights: [], description: "X" }`
+ * sent as it stands would make the server rewrite the text from no points - wiping "X" the next
+ * time any other entry was saved. With text and no points, the text is what the entry holds.
+ */
+function toPayload(exp: Experience): Experience {
+  const stored = Array.isArray(exp.highlights)
+    ? exp.highlights.filter((h): h is string => typeof h === "string").map((h) => h.trim()).filter(Boolean)
+    : null;
+  const points = stored && (stored.length > 0 || !exp.description?.trim()) ? stored : null;
+  return {
+    id: exp.id,
+    company: exp.company,
+    position: exp.position,
+    current: exp.current,
+    start_date: exp.start_date ?? "",
+    end_date: exp.end_date || undefined,
+    location: exp.location || undefined,
+    description: points ? bulletsToDescription(points) : exp.description || undefined,
+    ...(points ? { highlights: points } : {}),
+  };
+}
+
+/** The editor always offers somewhere to type, so an entry with no points gets one empty row. */
+const editablePoints = (exp: Experience) => {
+  const points = experienceBullets(exp);
+  return points.length > 0 ? points : [""];
+};
 
 interface ExperienceSectionProps {
   profile: UserProfile;
@@ -35,6 +73,7 @@ export function ExperienceSection({
     end_date: "",
     current: false,
     description: "",
+    highlights: [""],
   });
 
   useEffect(() => {
@@ -45,16 +84,7 @@ export function ExperienceSection({
     try {
       setSaving(true);
       const dataToSave: Partial<UserProfile> = {
-        experience: experiences.map((exp): Experience => ({
-          id: exp.id,
-          company: exp.company,
-          position: exp.position,
-          current: exp.current,
-          start_date: exp.start_date ?? "",
-          end_date: exp.end_date || undefined,
-          location: exp.location || undefined,
-          description: exp.description || undefined,
-        })),
+        experience: experiences.map(toPayload),
       };
       await onSave(dataToSave);
       setEditing(false);
@@ -82,13 +112,14 @@ export function ExperienceSection({
       end_date: "",
       current: false,
       description: "",
+      highlights: [""],
     });
     setEditingIndex(null);
     setDialogOpen(true);
   };
 
   const handleEdit = (index: number) => {
-    setFormData(experiences[index]);
+    setFormData({ ...experiences[index], highlights: editablePoints(experiences[index]) });
     setEditingIndex(index);
     setDialogOpen(true);
   };
@@ -106,8 +137,11 @@ export function ExperienceSection({
   };
 
   const handleDialogSave = async () => {
+    const points = (formData.highlights ?? []).map((h) => h.trim()).filter(Boolean);
     const newExperience: Experience = {
       ...formData,
+      highlights: points,
+      description: bulletsToDescription(points),
       id: formData.id || Date.now().toString(),
       start_date: toISODate(formData.start_date ?? ""),
       end_date: formData.end_date ? toISODate(formData.end_date) : undefined,
@@ -126,18 +160,7 @@ export function ExperienceSection({
 
     try {
       setSaving(true);
-      await onSave({
-        experience: updated.map((exp) => ({
-          id: exp.id,
-          company: exp.company,
-          position: exp.position,
-          current: exp.current,
-          start_date: exp.start_date ?? "",
-          end_date: exp.end_date || undefined,
-          location: exp.location || undefined,
-          description: exp.description || undefined,
-        })),
-      });
+      await onSave({ experience: updated.map(toPayload) });
     } catch {
       // handled by parent
     } finally {
@@ -351,23 +374,27 @@ export function ExperienceSection({
                       {formatDate(exp.start_date)} - {exp.current ? "Present" : formatDate(exp.end_date || "")}
                       {exp.location && ` • ${exp.location}`}
                     </Typography>
-                    {exp.description && (
-                      <Typography
-                        variant="body2"
-                        sx={{
-                          color: "var(--font-primary)",
-                          mt: 1,
-                          whiteSpace: "pre-wrap",
-                        }}
-                      >
-                        {exp.description}
-                      </Typography>
+                    {experienceBullets(exp).length > 0 && (
+                      // One bullet per point: the same list the resume will draw from it.
+                      <Box component="ul" data-testid="experience-points" sx={{ m: 0, mt: 1, pl: 2.5 }}>
+                        {experienceBullets(exp).map((point, i) => (
+                          <Typography
+                            key={i}
+                            component="li"
+                            variant="body2"
+                            sx={{ color: "var(--font-primary)", mb: 0.25 }}
+                          >
+                            {point}
+                          </Typography>
+                        ))}
+                      </Box>
                     )}
                   </Box>
                   {editing && (
                     <Box sx={{ display: "flex", gap: 0.5 }}>
                       <IconButton
                         size="small"
+                        aria-label={t("profile.editExperience")}
                         onClick={() => handleEdit(index)}
                         sx={{
                           color: "var(--accent-indigo)",
@@ -380,6 +407,7 @@ export function ExperienceSection({
                       </IconButton>
                       <IconButton
                         size="small"
+                        aria-label={t("profile.remove")}
                         onClick={() => handleDelete(index)}
                         sx={{
                           color: "var(--error-500)",
@@ -597,22 +625,19 @@ export function ExperienceSection({
                 },
               }}
             />
-            <TextField
-              label="Description"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              fullWidth
-              multiline
-              rows={4}
-              size="small"
-              placeholder="Describe your role and achievements..."
-              sx={{
-                "& .MuiOutlinedInput-root": {
-                  borderRadius: 1.5,
-                  fontSize: "0.9375rem",
-                },
-              }}
-            />
+            <Box>
+              <Typography
+                id="experience-points-label"
+                sx={{ fontWeight: 600, fontSize: "0.875rem", color: "var(--font-primary)", mb: 1 }}
+              >
+                {t("experienceBullets.label")}
+              </Typography>
+              <ExperienceBulletsEditor
+                labelId="experience-points-label"
+                value={formData.highlights ?? [""]}
+                onChange={(highlights) => setFormData((prev) => ({ ...prev, highlights }))}
+              />
+            </Box>
           </Box>
         </DialogContent>
         <DialogActions
@@ -644,7 +669,14 @@ export function ExperienceSection({
           <Button
             onClick={handleDialogSave}
             variant="contained"
-            disabled={!formData.position || !formData.company || !formData.start_date}
+            disabled={
+              !formData.position ||
+              !formData.company ||
+              !formData.start_date ||
+              // The server refuses more than 50 points or a point over 1000 characters; the
+              // editor says which, and Save waits rather than failing the whole section.
+              !bulletsWithinLimits(formData.highlights ?? [])
+            }
             sx={{
               textTransform: "none",
               fontWeight: 600,

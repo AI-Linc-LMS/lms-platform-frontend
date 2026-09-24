@@ -351,7 +351,9 @@ export function WesternTemplate({ data }: WesternTemplateProps) {
                   borderLeft: `3px solid ${COLORS.accent}`,
                 }}
               >
-                &ldquo;{data.basicInfo.summary}&rdquo;
+                {/* Through ResumeRichText like every other template: printed raw, a bolded word
+                    showed its <b> tags here and a typed & showed as &amp;. */}
+                &ldquo;<ResumeRichText value={data.basicInfo.summary} />&rdquo;
               </Typography>
             </Box>
           )}
