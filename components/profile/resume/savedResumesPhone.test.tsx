@@ -1,7 +1,7 @@
 /**
  * The saved-resumes list on a phone.
  *
- * These were measured in a real 390px and 360px render before being written down here: the Open
+ * These were measured in a real 390px and 360px render before being written down here: the Edit
  * button 44px tall, the three icon actions 44x44 (34x34 everywhere else), Show all 44px, and no
  * type under 12px. jsdom cannot lay anything out, but it can read the CSS Emotion emitted, which
  * is enough to catch the thing that actually goes wrong - a phone size written as a bare `xs`,
@@ -47,10 +47,14 @@ function expectPhoneOnly(el: Element, decl: RegExp) {
 }
 
 describe("saved resumes on a phone", () => {
-  it("gives Open a 44px target on a phone only", () => {
+  it("gives Edit a 44px target on a phone only", () => {
     renderPanel();
-    const open = within(screen.getAllByTestId("saved-resume-row")[0]).getByRole("button", { name: /^open$/i });
-    expectPhoneOnly(open, /min-height:44px/);
+    const edit = within(screen.getAllByTestId("saved-resume-row")[0]).getByTestId("saved-resume-edit");
+    expectPhoneOnly(edit, /min-height:44px/);
+    // As `height` too, and this is not belt and braces. The panel lives on app/profile/page.tsx,
+    // which sets `& .MuiButton-sizeSmall { min-height: 40 }` for phones; that descendant selector
+    // outranks this button's own class, so min-height alone was measured back at 40px.
+    expectPhoneOnly(edit, /(^|;|\{)height:44px/);
   });
 
   it("grows the three row actions to 44x44 on a phone, and leaves them 34x34 elsewhere", () => {

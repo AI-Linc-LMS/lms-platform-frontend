@@ -61,6 +61,17 @@ export default function ProfilePage() {
   const [profileFromApi, setProfileFromApi] = useState<UserProfile | null>(null);
   const [heatmapData, setHeatmapData] = useState<HeatmapData>({});
   const [activeTab, setActiveTab] = useState(0);
+  /**
+   * The document the Saved resumes tab has asked the builder to open, and the builder's answer.
+   *
+   * Edit lives on the list and opening lives in the builder, so the request crosses the two tabs
+   * through here. Both tabs stay mounted, which is what makes this work at all: switching to the
+   * Resume tab hands the builder the id rather than throwing away whatever is in it.
+   */
+  const [documentToOpen, setDocumentToOpen] = useState<number | null>(null);
+  const [openDocumentId, setOpenDocumentId] = useState<number | null>(null);
+  /** Bumped when the list changes, so the builder reloads its own copy of it. */
+  const [documentsToken, setDocumentsToken] = useState(0);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
   const { clientInfo } = useClientInfo();
@@ -94,6 +105,17 @@ export default function ProfilePage() {
   useEffect(() => {
     void loadProfileData();
   }, [loadProfileData]);
+
+  /**
+   * `?tab=saved` opens this page on the Saved resumes tab. The Resume builder links here with
+   * it, so "where are my saved resumes" is answerable with a link rather than an instruction.
+   */
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    if (tab === "saved") setActiveTab(2);
+    else if (tab === "resume") setActiveTab(1);
+  }, []);
 
   useEffect(() => {
     if (!loading && typeof window !== "undefined" && window.location.hash) {
@@ -333,11 +355,29 @@ export default function ProfilePage() {
         </Box>
 
         <Box sx={{ display: activeTab === 1 ? "block" : "none", width: "100%" }}>
-          <ResumeBuilder initialData={buildResumeInitialData(profile)} lockExports={resumeLocked} />
+          <ResumeBuilder
+            initialData={buildResumeInitialData(profile)}
+            lockExports={resumeLocked}
+            openDocumentId={documentToOpen}
+            onDocumentOpened={() => setDocumentToOpen(null)}
+            onOpenDocumentChange={setOpenDocumentId}
+            documentsToken={documentsToken}
+            onShowSavedResumes={() => setActiveTab(2)}
+          />
         </Box>
 
         <Box sx={{ display: activeTab === 2 ? "block" : "none", width: "100%" }}>
-          <SavedResumesSection isActive={activeTab === 2} />
+          <SavedResumesSection
+            isActive={activeTab === 2}
+            openDocumentId={openDocumentId}
+            onEditDocument={(id) => {
+              // Tab first, then the id: the builder reads it in an effect, and it must be on a
+              // visible tab by then or the learner watches nothing happen.
+              setActiveTab(1);
+              setDocumentToOpen(id);
+            }}
+            onDocumentsChanged={() => setDocumentsToken((v) => v + 1)}
+          />
         </Box>
       </Box>
     </MainLayout>

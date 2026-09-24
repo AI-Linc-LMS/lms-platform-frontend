@@ -3065,7 +3065,7 @@
     "editedJustNow": "Just now",
     "editedMinutes": "{{count}}m ago",
     "editingNow": "Editing now",
-    "empty": "Nothing saved yet. Press Save and this resume is kept here with its content, template and section order, ready to open and keep editing later.",
+    "empty": "Nothing saved yet. Press Save in the Resume builder and it is kept here with its content, template and section order, ready to edit again later.",
     "loading": "Loading your saved resumes…",
     "moreSaveOptions": "More save options",
     "nameDescription": "It is kept with its content, template and section order, so you can open it and carry on.",
@@ -3089,7 +3089,13 @@
     "title": "Saved resumes",
     "unsavedChanges": "Unsaved changes",
     "update": "Update",
-    "updated": "Updated \"{{name}}\""
+    "updated": "Updated \"{{name}}\"",
+    "editResume": "Edit",
+    "livesInTab": "Every resume you save is kept in Saved resumes, with its content, template and section order, ready to open and keep editing.",
+    "goToSaved": "Saved resumes",
+    "pdfTitle": "PDF copies",
+    "pdfHint": "These are finished PDFs - what you attach to an application. They cannot be edited: to change one, edit the resume above and save a new PDF from the Resume builder.",
+    "pdfDeleteWarning": "Any job application you sent with this PDF links to this file. Deleting it leaves those applications with nothing to open."
   },
   "lock": {
     "completeProfile": "Complete profile",
