@@ -7,7 +7,8 @@ import { formatDate } from "@/lib/jobs-v2/format";
 import { EmptyState, JButton } from "@/components/jobs-v2/ui";
 import { EmptyJobsIllustration } from "@/components/jobs-v2/illustrations";
 import { ApplyCta } from "@/components/jobs-v2/detail/ApplyCta";
-import type { ApplyState } from "@/components/jobs-v2/detail/useApply";
+import { closedApplyReason, type ApplyState } from "@/components/jobs-v2/detail/useApply";
+import { useJobsTimeZone } from "@/lib/jobs-v2/useJobsTimeZone";
 
 /**
  * **The five interstitials, one component.**
@@ -45,6 +46,7 @@ export function ApplyGate({
   appliedStatusLabel,
 }: ApplyGateProps) {
   const { t } = useTranslation("common");
+  const jobsTimeZone = useJobsTimeZone();
   const backToJob = job ? `/jobs-v2/${job.id}` : "/jobs-v2";
 
   const back = (
@@ -101,7 +103,15 @@ export function ApplyGate({
         return {
           icon: "mdi:lock-clock",
           title: t("jobsV2.apply.closedLabel", { defaultValue: "Applications closed" }),
+          // Why it closed, in the words the job page's disabled Apply button uses. Not the apply
+          // hook's block: that puts eligibility first, and "update your profile" is no answer for
+          // a role that has closed.
           body:
+            (job
+              ? closedApplyReason(job, t as (k: string, o?: object) => string, {
+                  timeZone: jobsTimeZone,
+                })
+              : null) ??
             apply?.block?.reason ??
             t("jobsV2.apply.closedGeneric", { defaultValue: "This role is not accepting applications." }),
           primary: (

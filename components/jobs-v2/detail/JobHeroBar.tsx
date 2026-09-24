@@ -12,6 +12,7 @@ import {
   formatSalary,
   formatWorkMode,
 } from "@/lib/jobs-v2/format";
+import { useJobsTimeZone } from "@/lib/jobs-v2/useJobsTimeZone";
 import {
   J,
   R,
@@ -75,7 +76,8 @@ export function JobHeroBar({
 }: JobHeroBarProps) {
   const { t } = useTranslation("common");
   const scrolled = usePaneScrolled();
-  const deadline = deadlineLabel(job.application_deadline);
+  const jobsTimeZone = useJobsTimeZone();
+  const deadline = deadlineLabel(job.application_deadline, { timeZone: jobsTimeZone });
 
   /**
    * The identity line, in the module's fixed meta order. Every part is omitted when we do not

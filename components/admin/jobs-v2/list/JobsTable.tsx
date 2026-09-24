@@ -22,6 +22,7 @@ import {
   type JDataTableSort,
 } from "@/components/jobs-v2/ui";
 import { deadlineLabel, formatCount, formatDate } from "@/lib/jobs-v2/format";
+import { useJobsTimeZone } from "@/lib/jobs-v2/useJobsTimeZone";
 import type { JobV2 } from "@/lib/services/jobs-v2.service";
 
 const URGENCY_COLOR: Record<string, string> = {
@@ -81,6 +82,8 @@ export function JobsTable({
   onOpenMenu,
 }: JobsTableProps) {
   const { t } = useTranslation("common");
+  // The closing date as the institution set it: read in its zone, not the viewer's.
+  const jobsTimeZone = useJobsTimeZone();
 
   const jobCell = (job: JobV2) => (
     <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, minWidth: 0 }}>
@@ -148,7 +151,7 @@ export function JobsTable({
   );
 
   const closesCell = (job: JobV2) => {
-    const deadline = deadlineLabel(job.application_deadline);
+    const deadline = deadlineLabel(job.application_deadline, { timeZone: jobsTimeZone });
     if (!deadline) {
       return (
         <Typography sx={{ ...TYPE.micro, color: J.ink4 }} aria-label={t("jobsV2.admin.noDeadline", "No closing date") as string}>
@@ -159,7 +162,7 @@ export function JobsTable({
     return (
       <Box sx={{ minWidth: 0 }}>
         <Typography sx={{ ...TYPE.mono, whiteSpace: "nowrap" }}>
-          {formatDate(job.application_deadline)}
+          {formatDate(job.application_deadline, { timeZone: jobsTimeZone })}
         </Typography>
         <Typography
           sx={{
@@ -289,7 +292,7 @@ export function JobsTable({
   );
 
   const mobileCard = (job: JobV2) => {
-    const deadline = deadlineLabel(job.application_deadline);
+    const deadline = deadlineLabel(job.application_deadline, { timeZone: jobsTimeZone });
     return (
       // NOT a link wrapper: the card carries a status control and a kebab, and interactive
       // content inside an <a> is invalid and unusable by keyboard. The title is the link.

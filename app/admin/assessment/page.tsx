@@ -793,11 +793,15 @@ export default function AssessmentPage() {
   const [togglingActiveId, setTogglingActiveId] = useState<number | null>(null);
 
   /**
-   * Take an assessment out of circulation without deleting it.
+   * Take an assessment out of circulation without deleting it, or put it back.
    *
    * `is_active` was already writable through the update endpoint and already rendered as the
    * Active chip on every row -- the state was visible and the switch was not. Deleting was the
    * only way to stop a paper being served, which throws away its submissions with it.
+   *
+   * The request carries `is_active` and nothing else (setAssessmentActive). The server
+   * authorises exactly that body the way it authorises publish, so an instructor who published
+   * a paper as inactive can activate it here.
    *
    * Reloads rather than patching the row in place, so the chip and any list filter agree with
    * the server instead of with an optimistic guess.
@@ -807,16 +811,20 @@ export default function AssessmentPage() {
     const next = !assessment.is_active;
     try {
       setTogglingActiveId(assessment.id);
-      await adminAssessmentService.updateAssessment(config.clientId, assessment.id, {
-        is_active: next,
-      });
+      await adminAssessmentService.setAssessmentActive(config.clientId, assessment.id, next);
       showToast(
         next ? "Assessment activated" : "Assessment deactivated. Learners can no longer open it.",
         "success",
       );
       await loadAssessments();
     } catch (e: unknown) {
-      showToast(getAxiosErrorDetail(e, "Couldn't change the assessment's state"), "error");
+      // The service throws the server's own reason (e.g. activating a paper with no questions is
+      // refused with the message publish gives). getAxiosErrorDetail reads `response.data`, which
+      // that Error does not carry, so it always fell back to the generic line.
+      showToast(
+        e instanceof Error && e.message ? e.message : "Couldn't change the assessment's state",
+        "error",
+      );
     } finally {
       setTogglingActiveId(null);
     }
@@ -1778,6 +1786,28 @@ export default function AssessmentPage() {
               <MenuItem key="dup" onClick={() => { const a = cardMenuTarget; closeCardMenu(); handleDuplicateClick(a); }}>
                 <ListItemIcon><IconWrapper icon="mdi:content-copy" size={18} /></ListItemIcon>
                 <ListItemText>Duplicate</ListItemText>
+              </MenuItem>,
+            ] : []),
+            // The card view is the default on desktop, and its menu had no Activate: a paper
+            // published as inactive could only be switched on from the table view. A draft has
+            // nothing to activate - Publish is how it goes live.
+            ...(!isCourseManager && !cardMenuTarget.is_draft ? [
+              <MenuItem
+                key="active"
+                disabled={togglingActiveId === cardMenuTarget.id}
+                onClick={() => { const a = cardMenuTarget; closeCardMenu(); void handleToggleActive(a); }}
+              >
+                <ListItemIcon>
+                  <IconWrapper
+                    icon={cardMenuTarget.is_active ? "mdi:pause-circle-outline" : "mdi:play-circle-outline"}
+                    size={18}
+                  />
+                </ListItemIcon>
+                <ListItemText>
+                  {cardMenuTarget.is_active
+                    ? t("assessmentPublish.deactivate", { defaultValue: "Deactivate assessment" })
+                    : t("assessmentPublish.activate", { defaultValue: "Activate assessment" })}
+                </ListItemText>
               </MenuItem>,
             ] : []),
             <Divider key="d1" />,

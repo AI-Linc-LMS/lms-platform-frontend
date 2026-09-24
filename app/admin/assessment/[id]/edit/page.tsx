@@ -78,6 +78,8 @@ import { isCourseManagerRole } from "@/lib/auth/auth-utils";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import type { EmailNotificationEditorHandle } from "@/components/admin/assessment/EmailNotificationEditor";
 import { buildAssessmentNotificationEmailHtml } from "@/lib/utils/email-template";
+import { saveAssessmentWithActivation } from "@/lib/utils/assessment-activation";
+import { batchRefusal } from "@/lib/utils/assessment-batch-error";
 import { extractSavedEmailAttachment } from "@/lib/utils/assessment-email-attachment";
 import { generateAssessmentResultPdfVector } from "@/lib/utils/assessment-result-pdf.utils";
 import { preloadPdfBrandAssets } from "@/lib/utils/assessment-pdf-assets";
@@ -460,6 +462,8 @@ export default function AssessmentEditPage() {
   const [isActive, setIsActive] = useState(true);
   const [retiredCourseTitles, setRetiredCourseTitles] = useState<string[]>([]);
   const [cohortIds, setCohortIds] = useState<number[]>([]);
+  /** The server refused the batches a save named. Shown under the picker until they change. */
+  const [serverBatchError, setServerBatchError] = useState<string | null>(null);
   const [cohorts, setCohorts] = useState<{ id: number; name: string }[]>([]);
   const [loadingCohorts, setLoadingCohorts] = useState(false);
   const [colleges, setColleges] = useState<string[]>([]);
@@ -924,7 +928,9 @@ export default function AssessmentEditPage() {
         // Sent even when blank: clearing it back to the institution's zone is a real
         // edit, and omitting the key would silently keep the old override.
         timezone,
-        is_active: isActive,
+        // No `is_active` here. Switching the paper on or off is its own request (below), which
+        // the server authorises like publish; inside this edit it was refused for an
+        // instructor who may publish but not edit, leaving an inactive paper stuck inactive.
         proctoring_enabled: proctoringEnabled,
         live_streaming: canConfigureLiveStreaming ? liveStreaming : false,
         // Populated below from the email editor snapshot.
@@ -988,12 +994,40 @@ export default function AssessmentEditPage() {
       Object.keys(payload).forEach((k) => {
         if ((payload as any)[k] === undefined) delete (payload as any)[k];
       });
-      await adminAssessmentService.updateAssessment(
-        config.clientId,
+      const result = await saveAssessmentWithActivation({
+        clientId: config.clientId,
         assessmentId,
         payload,
-        emailAttachment
-      );
+        attachment: emailAttachment,
+        wasActive: assessment.is_active ?? true,
+        isActive,
+      });
+      if (!result.ok && result.stage === "content") {
+        // A batch they may not give the paper to is fixed under the batch picker.
+        const batch = batchRefusal(result.error);
+        if (batch) setServerBatchError(batch);
+        throw result.error;
+      }
+      if (!result.ok) {
+        // The settings are saved; only the switch did not move. Reload so the switch shows what
+        // the server holds, and say why (e.g. a paper with no questions cannot be activated).
+        const reason =
+          result.error instanceof Error && result.error.message ? result.error.message : "";
+        showToast(
+          isActive
+            ? (t("assessmentPublish.activationFailed", {
+                defaultValue: "Your changes were saved, but the assessment was not activated. {{reason}}",
+                reason,
+              }) as string)
+            : (t("assessmentPublish.deactivationFailed", {
+                defaultValue: "Your changes were saved, but the assessment was not deactivated. {{reason}}",
+                reason,
+              }) as string),
+          "error",
+        );
+        await loadAssessment();
+        return;
+      }
       showToast("Assessment updated successfully", "success");
       await loadAssessment();
     } catch (e: any) {
@@ -1954,7 +1988,11 @@ export default function AssessmentEditPage() {
                   cohortIds={cohortIds}
                   cohorts={cohorts}
                   loadingCohorts={loadingCohorts}
-                  onCohortIdsChange={setCohortIds}
+                  batchError={serverBatchError}
+                  onCohortIdsChange={(ids) => {
+                    setCohortIds(ids);
+                    setServerBatchError(null);
+                  }}
                   retiredCourseTitles={retiredCourseTitles}
                   colleges={colleges}
                   proctoringEnabled={proctoringEnabled}

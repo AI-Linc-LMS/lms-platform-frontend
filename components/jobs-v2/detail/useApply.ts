@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/components/common/Toast";
 import { applyDomain, formatDate } from "@/lib/jobs-v2/format";
+import { useJobsTimeZone } from "@/lib/jobs-v2/useJobsTimeZone";
 import {
   jobsV2Service,
   formatJobPassoutYear,
@@ -118,6 +119,49 @@ export function eligibilityCriteria(job: JobV2 | null, t: (k: string, o?: object
   return out;
 }
 
+/**
+ * Why a role takes no applications, or null when it is open. The one sentence both the detail
+ * page's Apply button and the apply route's closed page show, so a bookmarked apply link and the
+ * job page cannot explain the same closure two ways.
+ *
+ * `is_open` is the server's one answer (jobs_v2/openness.py: published, status 'active', deadline
+ * not passed), the same rule the board lists by and apply enforces. An older backend omits it,
+ * and `undefined` deliberately changes nothing; the status still closes a role on its own.
+ */
+export function closedApplyReason(
+  job: JobV2,
+  t: (k: string, o?: object) => string,
+  options: { timeZone?: string } = {},
+): string | null {
+  const closedByDeadline = job.is_open === false;
+  if (!closedByDeadline && !(job.status && job.status !== "active")) return null;
+  // The closing date in the zone it was set in (useJobsTimeZone): read elsewhere, the last moment
+  // of 12 Sep can already be the 13th.
+  const closedOn = closedByDeadline
+    ? formatDate(job.application_deadline, { timeZone: options.timeZone })
+    : null;
+  const byStatus: Record<string, string> = {
+    inactive: t("jobsV2.apply.closedInactive", {
+      defaultValue: "The employer has paused this posting, so applications are not being accepted.",
+    }),
+    on_hold: t("jobsV2.apply.closedOnHold", {
+      defaultValue: "This role is on hold. The employer has not closed it, but it is not taking applications right now.",
+    }),
+    closed: t("jobsV2.apply.closedClosed", { defaultValue: "This role has closed and is no longer taking applications." }),
+    completed: t("jobsV2.apply.closedCompleted", { defaultValue: "Hiring for this role is complete." }),
+  };
+  return (
+    (job.status ? byStatus[job.status] : undefined) ??
+    (closedOn
+      ? t("jobsV2.apply.closedOnDate", {
+          defaultValue: "This role closed on {{date}}.",
+          date: closedOn,
+        })
+      : undefined) ??
+    t("jobsV2.apply.closedGeneric", { defaultValue: "This role is not accepting applications." })
+  );
+}
+
 export function useApply(job: JobV2 | null, options: UseApplyOptions = {}): ApplyState {
   const { onChanged } = options;
   const { t } = useTranslation("common");
@@ -133,6 +177,7 @@ export function useApply(job: JobV2 | null, options: UseApplyOptions = {}): Appl
 
   const externalLink = job?.apply_link?.trim() || null;
   const hasApplied = Boolean(job?.has_applied);
+  const jobsTimeZone = useJobsTimeZone();
 
   const block = useMemo<ApplyBlock | null>(() => {
     if (!job) return null;
@@ -154,39 +199,19 @@ export function useApply(job: JobV2 | null, options: UseApplyOptions = {}): Appl
         fixLabel: t("jobsV2.apply.updateProfile", { defaultValue: "Update your profile" }),
       };
     }
-    // A role whose deadline has passed is CLOSED IN PLACE, with the button disabled and a
-    // reason — never silently dropped from the list, and never left with a live Apply button
-    // behind an emailed link. `is_open` is the server's own answer to
-    // "status === 'active' AND the deadline has not passed"; it is absent on today's payload,
-    // and `undefined` deliberately changes nothing.
-    const closedByDeadline = job.is_open === false;
-    if (closedByDeadline || (job.status && job.status !== "active")) {
-      const closedOn = closedByDeadline ? formatDate(job.application_deadline) : null;
-      const byStatus: Record<string, string> = {
-        inactive: t("jobsV2.apply.closedInactive", {
-          defaultValue: "The employer has paused this posting, so applications are not being accepted.",
-        }),
-        on_hold: t("jobsV2.apply.closedOnHold", {
-          defaultValue: "This role is on hold. The employer has not closed it, but it is not taking applications right now.",
-        }),
-        closed: t("jobsV2.apply.closedClosed", { defaultValue: "This role has closed and is no longer taking applications." }),
-        completed: t("jobsV2.apply.closedCompleted", { defaultValue: "Hiring for this role is complete." }),
-      };
+    // A closed role — whether its status says so or its deadline passed — gets the button
+    // disabled and a reason, never a live Apply button behind a saved row or an emailed link.
+    const closed = closedApplyReason(job, t as (k: string, o?: object) => string, {
+      timeZone: jobsTimeZone,
+    });
+    if (closed) {
       return {
         label: t("jobsV2.apply.closedLabel", { defaultValue: "Applications closed" }),
-        reason:
-          (job.status ? byStatus[job.status] : undefined) ??
-          (closedOn
-            ? t("jobsV2.apply.closedOnDate", {
-                defaultValue: "This role closed on {{date}}.",
-                date: closedOn,
-              })
-            : undefined) ??
-          t("jobsV2.apply.closedGeneric", { defaultValue: "This role is not accepting applications." }),
+        reason: closed,
       };
     }
     return null;
-  }, [job, hasApplied, t]);
+  }, [job, hasApplied, t, jobsTimeZone]);
 
   const mode: ApplyMode = hasApplied ? "applied" : block ? "blocked" : externalLink ? "external" : "internal";
 

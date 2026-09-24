@@ -477,6 +477,40 @@ describe("JobBoard — filters", () => {
     expect(screen.queryByText("Expired role")).not.toBeInTheDocument();
   });
 
+  /*
+   * A closing date is the END of that day. "Closing in 3 days" measured 72 hours from now, so a
+   * role whose card read "Closes in 3 days" was never in it; and the card itself rounded hours,
+   * so the end of tomorrow read "Closes in 2 days" before noon.
+   */
+  it("counts closing windows in calendar days, the way the cards read", async () => {
+    const endOfDay = (daysAhead: number) => {
+      const d = new Date();
+      d.setDate(d.getDate() + daysAhead);
+      d.setHours(23, 59, 59, 999);
+      return d.toISOString();
+    };
+    getJobs.mockResolvedValue({
+      results: [
+        { ...JOB, id: 1, job_title: "Closes today role", application_deadline: endOfDay(0) },
+        { ...JOB, id: 2, job_title: "Closes tomorrow role", application_deadline: endOfDay(1) },
+        { ...JOB, id: 3, job_title: "Closes in 3 days role", application_deadline: endOfDay(3) },
+        { ...JOB, id: 4, job_title: "Closes in 4 days role", application_deadline: endOfDay(4) },
+      ],
+      count: 4,
+    });
+    search = "close=3d";
+    render(<JobBoard />);
+    await waitFor(() =>
+      expect(within(rail()).getByText("Closes in 3 days role")).toBeInTheDocument(),
+    );
+    expect(within(rail()).getByText("Closes today role")).toBeInTheDocument();
+    expect(within(rail()).getByText("Closes tomorrow role")).toBeInTheDocument();
+    expect(screen.queryByText("Closes in 4 days role")).not.toBeInTheDocument();
+    expect(within(rail()).getAllByText("Closes today").length).toBeGreaterThan(0);
+    expect(within(rail()).getAllByText("Closes tomorrow").length).toBeGreaterThan(0);
+    expect(within(rail()).getAllByText("Closes in 3 days").length).toBeGreaterThan(0);
+  });
+
   it("keeps the salary filter to disclosed / not disclosed, never a band", async () => {
     render(<JobBoard />);
     await waitFor(() => expect(within(rail()).getByText("Frontend Engineer")).toBeInTheDocument());
@@ -789,14 +823,113 @@ describe("JobBoard — the live board's defects", () => {
     expect(screen.queryByRole("button", { name: /^apply/i })).not.toBeInTheDocument();
   });
 
-  it("marks a closed role in place instead of dropping it", async () => {
-    getJobs.mockResolvedValue({
-      results: [{ ...JOB, is_open: false }],
-      count: 1,
-    });
+  /*
+   * A closed role leaves the board (the server lists open roles only) and stays on the learner's
+   * own Saved list, marked closed. Saved is its own request now: filtering the board for hearts
+   * would silently drop every saved role that has closed.
+   */
+  const CLOSED_SAVED: JobV2 = {
+    ...JOB,
+    id: 9,
+    job_title: "Product Manager - Paytm Money",
+    company_name: "Paytm",
+    is_open: false,
+    is_favourited: true,
+  };
+
+  function boardAndSaved(board: JobV2[], saved: JobV2[]) {
+    getJobs.mockImplementation((filters?: { saved?: boolean }) =>
+      Promise.resolve(
+        filters?.saved
+          ? { results: saved, count: saved.length }
+          : { results: board, count: board.length },
+      ),
+    );
+  }
+
+  it("keeps a saved role that has closed on Saved, marked closed", async () => {
+    boardAndSaved([JOB], [CLOSED_SAVED]);
+    search = "tab=saved&fav=1";
+    render(<JobBoard />);
+    await waitFor(() =>
+      expect(within(rail()).getByText("Product Manager - Paytm Money")).toBeInTheDocument(),
+    );
+    expect(within(rail()).getByText("Closed")).toBeInTheDocument();
+    // Saved is the learner's list, not the board filtered for hearts.
+    expect(within(rail()).queryByText("Frontend Engineer")).not.toBeInTheDocument();
+  });
+
+  it("counts a saved role that has closed in Saved (N), and keeps it off the board", async () => {
+    boardAndSaved([JOB], [CLOSED_SAVED]);
     render(<JobBoard />);
     await waitFor(() => expect(within(rail()).getByText("Frontend Engineer")).toBeInTheDocument());
-    expect(within(rail()).getByText("Closed")).toBeInTheDocument();
+    // The count agrees with the list it opens.
+    expect(screen.getByRole("button", { name: /saved \(1\)/i })).toBeInTheDocument();
+    expect(screen.queryByText("Product Manager - Paytm Money")).not.toBeInTheDocument();
+  });
+
+  it("asks for the Saved list with the board's own server filters", async () => {
+    boardAndSaved([JOB], []);
+    search = "q=engineer";
+    render(<JobBoard />);
+    await waitFor(() =>
+      expect(getJobs).toHaveBeenCalledWith(
+        expect.objectContaining({ search: "engineer", saved: true }),
+      ),
+    );
+    expect(getJobs).toHaveBeenCalledWith(expect.not.objectContaining({ saved: true }));
+  });
+
+  it("moves Saved (N) with the heart on a board role", async () => {
+    boardAndSaved([JOB], []);
+    toggleFavorite.mockResolvedValue({ favorited: true });
+    render(<JobBoard />);
+    const card = await waitFor(() => rail().querySelector<HTMLElement>('[data-rail-id="1"]')!);
+    expect(screen.queryByRole("button", { name: /saved \(/i })).not.toBeInTheDocument();
+    await userEvent.click(within(card).getByRole("button", { name: /save this job/i }));
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: /saved \(1\)/i })).toBeInTheDocument(),
+    );
+  });
+
+  /*
+   * The two requests settle separately. With Promise.all a failed Saved request rejected the
+   * pair, and the board showed an error over roles it had in fact loaded.
+   */
+  function savedFails(board: JobV2[]) {
+    getJobs.mockImplementation((filters?: { saved?: boolean }) =>
+      filters?.saved
+        ? Promise.reject(new Error("Saved list unavailable"))
+        : Promise.resolve({ results: board, count: board.length }),
+    );
+  }
+
+  it("keeps the board when only the Saved request fails", async () => {
+    savedFails([JOB]);
+    render(<JobBoard />);
+    await waitFor(() => expect(within(rail()).getByText("Frontend Engineer")).toBeInTheDocument());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByText("Saved list unavailable")).not.toBeInTheDocument();
+  });
+
+  it("falls back to the board's hearts on Saved when the Saved request fails", async () => {
+    savedFails([JOB, { ...JOB, id: 2, job_title: "Hearted Role", is_favourited: true }]);
+    search = "tab=saved&fav=1";
+    render(<JobBoard />);
+    await waitFor(() => expect(within(rail()).getByText("Hearted Role")).toBeInTheDocument());
+    expect(within(rail()).queryByText("Frontend Engineer")).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("marks an application whose role has since closed, and keeps it listed", async () => {
+    getMyApplications.mockResolvedValue({
+      results: [{ ...APPLICATION, status: "shortlisted", job_is_open: false }],
+      count: 1,
+    });
+    search = "tab=applied";
+    render(<JobBoard />);
+    await waitFor(() => expect(screen.getByText("Data Analyst")).toBeInTheDocument());
+    expect(screen.getByText("Closed")).toBeInTheDocument();
   });
 
   it("states why a role is visible, and says nothing when the rule is just 'open'", async () => {

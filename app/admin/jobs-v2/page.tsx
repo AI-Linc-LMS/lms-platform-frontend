@@ -29,6 +29,7 @@ import {
 } from "@/components/admin/jobs-v2/list/JobsToolbar";
 import { JobsBulkActions } from "@/components/admin/jobs-v2/list/JobsBulkActions";
 import { deadlineLabel, formatCount } from "@/lib/jobs-v2/format";
+import { useJobsTimeZone } from "@/lib/jobs-v2/useJobsTimeZone";
 import { useSeq } from "@/lib/jobs-v2/useSeq";
 import { useSelection } from "@/lib/jobs-v2/useSelection";
 import { adminJobsV2Service } from "@/lib/services/admin/admin-jobs-v2.service";
@@ -50,6 +51,8 @@ function matchesSearch(job: JobV2, needle: string): boolean {
 export default function AdminJobsV2Page() {
   const router = useRouter();
   const { t } = useTranslation("common");
+  // Closing dates are read in the institution's zone, the zone the server stored them in.
+  const jobsTimeZone = useJobsTimeZone();
   const { showToast } = useToast();
 
   const [jobs, setJobs] = useState<JobV2[]>([]);
@@ -117,7 +120,7 @@ export default function AdminJobsV2Page() {
       if (filters.visibility === "published" && !job.is_published) return false;
       if (filters.visibility === "draft" && job.is_published) return false;
       if (filters.closingSoon) {
-        const deadline = deadlineLabel(job.application_deadline);
+        const deadline = deadlineLabel(job.application_deadline, { timeZone: jobsTimeZone });
         if (!deadline || deadline.urgency === "past" || deadline.daysLeft > 7) return false;
       }
       return true;
@@ -157,7 +160,7 @@ export default function AdminJobsV2Page() {
       }
     };
     return [...list].sort(compare);
-  }, [filters.closingSoon, filters.search, filters.visibility, jobs, sortDir, sortKey]);
+  }, [filters.closingSoon, filters.search, filters.visibility, jobs, sortDir, sortKey, jobsTimeZone]);
 
   const pageCount = Math.max(1, Math.ceil(visible.length / pageSize));
   const safePage = Math.min(page, pageCount);
@@ -202,12 +205,12 @@ export default function AdminJobsV2Page() {
     for (const job of jobs) {
       if ((job.status ?? "active") === "active") active += 1;
       if (!job.is_published) draft += 1;
-      const deadline = deadlineLabel(job.application_deadline);
+      const deadline = deadlineLabel(job.application_deadline, { timeZone: jobsTimeZone });
       if (deadline && deadline.urgency !== "past" && deadline.daysLeft <= 7) closingSoon += 1;
       applicants += job.applications_count ?? 0;
     }
     return { total: jobs.length, active, draft, closingSoon, applicants };
-  }, [jobs]);
+  }, [jobs, jobsTimeZone]);
 
   const patchFilters = useCallback((patch: Partial<JobsFilterState>) => {
     setFilters((prev) => ({ ...prev, ...patch }));

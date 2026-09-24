@@ -675,6 +675,28 @@
     "radiansHint": "الزوايا بالراديان (مثال: sin(PI/2) = 1).",
     "dragHandleHint": "اسحب الرأس لتحريك اللوحة"
   },
+  "assessmentPublish": {
+    "publishing": "جارٍ النشر…",
+    "saving": "جارٍ الحفظ…",
+    "published": "تم نشر التقييم.",
+    "publishedInactive": "تم نشر التقييم كغير نشط. لن يراه المتعلمون حتى يتم تفعيله.",
+    "savedDraft": "تم الحفظ كمسودة. لا يستطيع المتعلمون رؤيته حتى تنشره.",
+    "savedNotPublished": "تم الحفظ كمسودة، لكن لم يُنشر: {{reason}}",
+    "publishedWithError": "تم نشر التقييم، لكن الخادم أبلغ أيضًا عن: {{reason}}",
+    "publishUnknown": "تم حفظ التقييم، لكن تعذّر التأكد من نشره: {{reason}}",
+    "publishAsConfigured": "النشر كما هو مُعدّ",
+    "saveAsConfigured": "الحفظ كما هو مُعدّ",
+    "activate": "تفعيل التقييم",
+    "deactivate": "إلغاء تفعيل التقييم",
+    "activationFailed": "تم حفظ تغييراتك، لكن لم يتم تفعيل التقييم. {{reason}}",
+    "deactivationFailed": "تم حفظ تغييراتك، لكن لم يتم إلغاء تفعيل التقييم. {{reason}}",
+    "notSavedNotPublished": "تعذّر حفظ تغييراتك، لذلك لم يُنشر شيء: {{reason}}",
+    "lastSavedTitle": "هل تريد نشر آخر نسخة محفوظة؟",
+    "lastSavedBody": "لن تُضمَّن تغييراتك غير المحفوظة. سيحصل المتعلمون على التقييم ورسالة الإشعار الخاصة به تمامًا كما حُفظا آخر مرة.",
+    "lastSavedReason": "تعذّر حفظ تغييراتك: {{reason}}",
+    "keepEditing": "متابعة التعديل",
+    "publishLastSaved": "نشر آخر نسخة محفوظة"
+  },
   "assessments": {
     "title": "التقييمات",
     "subtitle": "اختبر معرفتك وتتبع تقدمك",

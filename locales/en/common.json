@@ -1234,6 +1234,28 @@
       "strictOrderNotice": "This assessment used a fixed section order. Earlier sections cannot be revisited after you moved ahead."
     }
   },
+  "assessmentPublish": {
+    "publishing": "Publishing…",
+    "saving": "Saving…",
+    "published": "Assessment published.",
+    "publishedInactive": "Assessment published as inactive. Learners will not see it until it is activated.",
+    "savedDraft": "Saved as a draft. Learners cannot see it until you publish it.",
+    "savedNotPublished": "Saved as a draft, but not published: {{reason}}",
+    "publishedWithError": "The assessment was published, but the server also reported: {{reason}}",
+    "publishUnknown": "The assessment is saved, but we could not confirm whether it was published: {{reason}}",
+    "publishAsConfigured": "Publish as configured",
+    "saveAsConfigured": "Save as configured",
+    "activate": "Activate assessment",
+    "deactivate": "Deactivate assessment",
+    "activationFailed": "Your changes were saved, but the assessment was not activated. {{reason}}",
+    "deactivationFailed": "Your changes were saved, but the assessment was not deactivated. {{reason}}",
+    "notSavedNotPublished": "Your changes could not be saved, so nothing was published: {{reason}}",
+    "lastSavedTitle": "Publish the last saved version?",
+    "lastSavedBody": "Your unsaved changes will not be included. Learners get the assessment, and its notification email, exactly as they were last saved.",
+    "lastSavedReason": "Your changes could not be saved: {{reason}}",
+    "keepEditing": "Keep editing",
+    "publishLastSaved": "Publish last saved version"
+  },
   "assessmentDevice": {
     "sectionTitle": "Device access",
     "sectionHint": "Choose which device types can take this assessment. At least one must stay enabled.",

@@ -84,7 +84,11 @@ export interface JobV2 {
   fit_note?: string;
 
   /* ---- state the student can act on ------------------------------------------------------ */
-  /** `status === 'active'` AND the deadline has not passed. A closed role is marked in place. */
+  /**
+   * The server's one answer to "can I apply?": published, `status === 'active'` and the deadline
+   * not passed (`jobs_v2/openness.py`). Always true on the board, which lists open roles only;
+   * false on a Saved row whose role has since closed. Absent on backends older than that rule.
+   */
   is_open?: boolean;
   /** Why this role is in THIS student's list: assigned | course | adaptive_course | cohort | college | open. */
   visibility_reason?: string;
@@ -132,6 +136,11 @@ export interface JobV2Filters {
   job_type?: string;
   employment_type?: string;
   search?: string;
+  /**
+   * The learner's Saved list instead of the board: every role they saved that they can still
+   * open, closed ones included (`is_open: false`). The board itself lists open roles only.
+   */
+  saved?: boolean;
 }
 
 export interface JobsV2Response {
@@ -144,6 +153,8 @@ export interface JobApplicationV2 {
   job: number;
   job_title: string;
   company_name: string;
+  /** Whether the role still takes applications. An application outlives its role closing. */
+  job_is_open?: boolean;
   student: number;
   student_name: string;
   student_email: string;
@@ -187,6 +198,7 @@ export const jobsV2Service = {
     if (filters?.job_type) params.append("job_type", filters.job_type);
     if (filters?.employment_type) params.append("employment_type", filters.employment_type);
     if (filters?.search) params.append("search", filters.search);
+    if (filters?.saved) params.append("saved", "1");
 
     try {
       const response = await apiClient.get<JobsV2Response>(
@@ -213,6 +225,11 @@ export const jobsV2Service = {
       return response.data;
     } catch (err) {
       const error = err as AxiosError<ApiErrorPayload>;
+      // A role that is not there for this viewer is not a failure: removed, or never addressed to
+      // them (a visitor who is not signed in gets 404 for any role that is not for everyone). The
+      // pages render "This role is no longer listed" for null; throwing showed a Retry button that
+      // could never succeed.
+      if (error.response?.status === 404) return null;
       const message =
         error.response?.data?.error ||
         error.response?.data?.message ||

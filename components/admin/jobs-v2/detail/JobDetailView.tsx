@@ -13,6 +13,7 @@ import { adminJobsV2Service } from "@/lib/services/admin/admin-jobs-v2.service";
 import type { JobApplicationV2, JobV2 } from "@/lib/services/jobs-v2.service";
 import { config } from "@/lib/config";
 import { deadlineLabel, formatCount, formatDate, formatSalary } from "@/lib/jobs-v2/format";
+import { useJobsTimeZone } from "@/lib/jobs-v2/useJobsTimeZone";
 import { useSeq } from "@/lib/jobs-v2/useSeq";
 import {
   CompanyLogo,
@@ -317,7 +318,10 @@ export function JobDetailView({ jobId }: { jobId: number }) {
     };
   }, [applications]);
 
-  const deadline = job ? deadlineLabel(job.application_deadline) : null;
+  const jobsTimeZone = useJobsTimeZone();
+  const deadline = job
+    ? deadlineLabel(job.application_deadline, { timeZone: jobsTimeZone })
+    : null;
 
   const strip = useMemo<StripItem[]>(() => {
     if (!job) return [];

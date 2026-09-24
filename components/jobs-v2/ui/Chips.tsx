@@ -7,6 +7,7 @@ import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { resolveTone, type StatusKind } from "@/lib/jobs-v2/status";
 import { deadlineLabel, formatCount, type DeadlineUrgency } from "@/lib/jobs-v2/format";
+import { useJobsTimeZone } from "@/lib/jobs-v2/useJobsTimeZone";
 import { CTL_H, J, MOTION, R, SHADOW, TYPE, adminPhone, focusRing, rtlLabel, type Tone } from "./jobsTokens";
 
 /* ==========================================================================
@@ -432,7 +433,9 @@ const URGENCY_TONE: Record<DeadlineUrgency, { fg: string; bg: string; bd: string
  * clothes. Renders nothing when no deadline was stated.
  */
 export function DeadlineChip({ value, explain }: { value?: string; explain?: string }) {
-  const label = deadlineLabel(value);
+  // Read in the zone the closing date was set in, so it says "Closes today" on that date.
+  const timeZone = useJobsTimeZone();
+  const label = deadlineLabel(value, { timeZone });
   if (!label) return null;
   const tone = URGENCY_TONE[label.urgency];
   return (

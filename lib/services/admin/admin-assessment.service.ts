@@ -9,6 +9,50 @@ export interface ApiErrorPayload {
   [key: string]: any;
 }
 
+/**
+ * An Error that remembers the HTTP status and body it came from. The message alone cannot tell
+ * "you may not change this paper" (403) from "you may not give it to that batch" (403, with
+ * `cohort_ids`) or "this change is invalid" (400), and a caller that saves before it publishes
+ * has to act differently on each.
+ */
+function errorWithStatus(
+  message: string,
+  status: number | undefined,
+  body?: unknown,
+): Error & { status: number | null; body: ApiErrorPayload | null } {
+  return Object.assign(new Error(message), {
+    status: typeof status === "number" ? status : null,
+    body: body && typeof body === "object" ? (body as ApiErrorPayload) : null,
+  });
+}
+
+/** The HTTP status a service call failed with, or null when it never reached the server. */
+export function apiErrorStatus(e: unknown): number | null {
+  const status = (e as { status?: unknown } | null)?.status;
+  return typeof status === "number" ? status : null;
+}
+
+/** The response body a service call failed with, or null. */
+export function apiErrorBody(e: unknown): ApiErrorPayload | null {
+  const body = (e as { body?: unknown } | null)?.body;
+  return body && typeof body === "object" ? (body as ApiErrorPayload) : null;
+}
+
+/**
+ * The sentence to show for a 400. The server says it in `error` (or `detail` / `message`);
+ * only a serializer's field-keyed errors need joining. Joining every key turned
+ * {"error": "Cannot publish an assessment that has no questions."} into "error: Cannot publish…".
+ */
+function validationMessage(data: ApiErrorPayload): string {
+  for (const key of ["error", "detail", "message"] as const) {
+    const value = data[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return Object.entries(data)
+    .map(([key, value]) => (Array.isArray(value) ? `${key}: ${value.join(", ")}` : `${key}: ${value}`))
+    .join("; ");
+}
+
 export interface MCQ {
   question_text: string;
   option_a: string;
@@ -534,17 +578,11 @@ export const createAssessment = async (
 
     // Handle validation errors
     if (error.response?.status === 400 && error.response?.data) {
-      const errorData = error.response.data;
-      // Convert error object to a readable message
-      const errorMessages = Object.entries(errorData)
-        .map(([key, value]) => {
-          if (Array.isArray(value)) {
-            return `${key}: ${value.join(", ")}`;
-          }
-          return `${key}: ${value}`;
-        })
-        .join("; ");
-      throw new Error(errorMessages || "Validation error");
+      throw errorWithStatus(
+        validationMessage(error.response.data) || "Validation error",
+        400,
+        error.response.data,
+      );
     }
 
     const message =
@@ -552,7 +590,7 @@ export const createAssessment = async (
       error.response?.data?.message ||
       error.response?.data?.detail ||
       "Failed to create assessment";
-    throw new Error(message);
+    throw errorWithStatus(message, error.response?.status, error.response?.data);
   }
 };
 
@@ -607,7 +645,41 @@ export const publishAssessment = async (
       error.response?.data?.message ||
       error.response?.data?.detail ||
       "Failed to publish assessment";
-    throw new Error(message);
+    throw errorWithStatus(message, error.response?.status, error.response?.data);
+  }
+};
+
+/**
+ * Activate or deactivate an assessment. PATCH .../assessments/{id}/ with `{ is_active }` and
+ * NOTHING else.
+ *
+ * The body is the contract. The server authorises a PATCH that carries only `is_active` the way
+ * it authorises publish: an instructor who may publish a paper may switch it on and off. A PATCH
+ * that also carries content is an edit, which needs the right to change the paper's content. So
+ * folding the switch into a content save refused it for an instructor who can publish but not
+ * edit, and left a paper they had published as inactive with no way to activate it.
+ *
+ * Activating a paper with no questions is refused (400) with the same message publish gives.
+ */
+export const setAssessmentActive = async (
+  clientId: string | number,
+  assessmentId: number,
+  isActive: boolean,
+): Promise<Assessment> => {
+  try {
+    const response = await apiClient.patch(
+      `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/`,
+      { is_active: isActive },
+    );
+    return response.data;
+  } catch (err) {
+    const error = err as AxiosError<ApiErrorPayload>;
+    const message =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.response?.data?.detail ||
+      (isActive ? "Failed to activate the assessment" : "Failed to deactivate the assessment");
+    throw errorWithStatus(message, error.response?.status, error.response?.data);
   }
 };
 
@@ -642,16 +714,11 @@ export const updateAssessment = async (
 
     // Handle validation errors
     if (error.response?.status === 400 && error.response?.data) {
-      const errorData = error.response.data;
-      const errorMessages = Object.entries(errorData)
-        .map(([key, value]) => {
-          if (Array.isArray(value)) {
-            return `${key}: ${value.join(", ")}`;
-          }
-          return `${key}: ${value}`;
-        })
-        .join("; ");
-      throw new Error(errorMessages || "Validation error");
+      throw errorWithStatus(
+        validationMessage(error.response.data) || "Validation error",
+        400,
+        error.response.data,
+      );
     }
 
     const message =
@@ -659,7 +726,7 @@ export const updateAssessment = async (
       error.response?.data?.message ||
       error.response?.data?.detail ||
       "Failed to update assessment";
-    throw new Error(message);
+    throw errorWithStatus(message, error.response?.status, error.response?.data);
   }
 };
 
@@ -1787,6 +1854,7 @@ export const adminAssessmentService = {
   grantAssessmentRetake,
   revokeAssessmentRetake,
   publishAssessment,
+  setAssessmentActive,
   updateAssessment,
   deleteAssessment,
   duplicateAssessment,
