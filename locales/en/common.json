@@ -3151,5 +3151,15 @@
     "interviewSetupCta": "Interview is being set up",
     "interviewClosedCta": "This interview is no longer open",
     "interviewDoneClosed": "Done · this interview is no longer open"
+  },
+  "experienceBullets": {
+    "label": "Responsibilities and achievements",
+    "placeholder": "e.g. Cut report load time from 5s to 1.2s",
+    "pointLabel": "Point {{n}} of {{total}}",
+    "moveUp": "Move point {{n}} up",
+    "moveDown": "Move point {{n}} down",
+    "remove": "Remove point {{n}}",
+    "add": "Add a point",
+    "hint": "Each point becomes its own bullet on your resume. Press Enter to start the next one, or paste a list."
   }
 }
