@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, Chip, LinearProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
@@ -14,6 +15,7 @@ import { JourneySidePanels } from "./JourneySidePanels";
 import { JourneyTopCards } from "./JourneyTopCards";
 import { JourneyBoardSkeleton } from "@/components/courses/CourseSkeletons";
 import { journeyScoreDisplay, journeyAvailabilityLine } from "./journeyScoreDisplay";
+import { courseCta } from "@/lib/adaptive/courseCta";
 import { PHONE } from "@/components/common/mobile/phone";
 
 function fmtDate(iso: string | null | undefined): string {
@@ -318,40 +320,31 @@ function PenaltyCell({ color, bg, head, sub, note }: { color: string; bg: string
 
 function Hero({ board, courseId }: { board: JourneyBoardData; courseId: number }) {
   const { push, prefetch } = useInstantNavigation();
+  const { t } = useTranslation();
   const c = board.course;
   const [liked, setLiked] = useState(false);
   const subject = c.title.split(/[—-]/)[0].trim() || "Course";
 
-  // Resume target: the current node's submodule, else the first UNLOCKED topic.
-  //
-  // The fallback used to take the first topic whatever its status, so on a course whose content is
-  // gated - most obviously by a calibration assessment the learner has not sat - a button reading
-  // "Resume learning" deep-linked straight into a locked step and delivered a wall. The server
-  // refuses that submodule, so the page was honest about it, but the promise was still broken.
-  //
-  // When calibration is what is blocking, send them to the calibration instead: it is the one
-  // action that actually unlocks the course, and it is what the card directly above this is
-  // already telling them to do.
+  // The one button on this page. What it promises, and where it goes, is decided by
+  // lib/adaptive/courseCta.ts - the SAME resolver the dashboard's course card uses, fed the
+  // same server-derived `calibration` state. It used to be worked out here alone, and only
+  // routed to the calibration when there happened to be no unlocked topic at all; a learner
+  // whose entry topic was open still read "Resume learning" on a course they had not begun,
+  // and the dashboard - which had no calibration data of its own - could not even try.
   const nodes = board.weeks.flatMap((w) => w.nodes);
   const current = nodes.find((n) => n.status === "current" && n.ref.submoduleId);
   const firstTopic = nodes.find((n) => n.type === "topic" && n.ref.submoduleId && n.status !== "locked");
-  const resumeSub = current?.ref.submoduleId ?? firstTopic?.ref.submoduleId;
-  const calibCard = board.calibration?.card;
-  // Only offer the calibration route when there is actually a takeable assessment behind it -
-  // same condition CalibrationCard uses for its own CTA, so the two cannot disagree.
-  const resumeToCalibration =
-    !resumeSub &&
-    Boolean(board.calibration?.required && !board.calibration?.done) &&
-    !calibCard?.generating &&
-    calibCard?.status === "not_started" &&
-    Boolean(calibCard?.assessmentSlug);
-  const resumeLabel = resumeToCalibration ? "Start calibration →" : "Resume learning →";
-  const resumeDisabled = !resumeSub && !resumeToCalibration;
-  const resumeHref = resumeToCalibration
-    ? `/assessments/${calibCard!.assessmentSlug}/calibration?courseId=${courseId}`
-    : resumeSub
-      ? `/adaptive-courses/${courseId}/submodule/${resumeSub}`
-      : null;
+  const resumeSub = current?.ref.submoduleId ?? firstTopic?.ref.submoduleId ?? null;
+  const cta = courseCta({
+    courseId,
+    calibration: board.calibration,
+    resumeSubmoduleId: resumeSub,
+    completionPct: c.completionPct,
+  });
+  const resumeLabel = `${t(cta.labelKey)} →`;
+  // Dead only when there is neither a calibration to sit nor a step to open.
+  const resumeDisabled = !cta.toCalibration && !resumeSub;
+  const resumeHref = resumeDisabled ? null : cta.href;
   const meta: { icon: string; label: string }[] = [];
   if (c.startedAt) meta.push({ icon: "mdi:calendar-check", label: `Started ${fmtLongDate(c.startedAt)}` });
   meta.push({ icon: "mdi:account-group", label: `${c.enrolledCount} enrolled` });

@@ -2908,5 +2908,11 @@
     "groupRefusedFallback": "مرفوض",
     "andMore": "و{{n}} آخرين",
     "done": "تم"
+  },
+  "courseCta": {
+    "takeAssessment": "ابدأ الاختبار",
+    "startLearning": "ابدأ التعلم",
+    "resumeLearning": "متابعة التعلم",
+    "reviewCourse": "مراجعة الدورة"
   }
 }

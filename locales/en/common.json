@@ -3304,5 +3304,11 @@
     "groupRefusedFallback": "Refused",
     "andMore": "and {{n}} more",
     "done": "Done"
+  },
+  "courseCta": {
+    "takeAssessment": "Take the assessment",
+    "startLearning": "Start learning",
+    "resumeLearning": "Resume learning",
+    "reviewCourse": "Review the course"
   }
 }

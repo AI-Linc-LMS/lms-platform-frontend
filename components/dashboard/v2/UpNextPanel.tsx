@@ -5,6 +5,7 @@ import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import type { CrossCourseUpNext } from "@/lib/types/dashboard";
 import { PanelCard, SectionHeader } from "./parts";
+import { courseCta } from "@/lib/adaptive/courseCta";
 import { phoneText } from "@/components/common/mobile/phoneText";
 
 const KIND: Record<string, { icon: string; color: string; bg: string }> = {
@@ -18,10 +19,18 @@ export function UpNextPanel({ items }: { items: CrossCourseUpNext[] }) {
   const { push, prefetch } = useInstantNavigation();
   if (!items.length) return null;
 
+  // Same resolver as the course card and the course page's hero, so a row opened from here
+  // cannot land somewhere those two would not have sent the learner. Before the calibration
+  // is done that destination is the calibration itself, not a locked topic's course page.
   const hrefOf = (it: CrossCourseUpNext) =>
-    it.resumeSubmoduleId
-      ? `/adaptive-courses/${it.courseId}/submodule/${it.resumeSubmoduleId}`
-      : `/adaptive-courses/${it.courseId}`;
+    courseCta({
+      courseId: it.courseId,
+      calibration: it.calibration,
+      resumeSubmoduleId: it.resumeSubmoduleId,
+      // The row is only rendered for a course with work outstanding; "review" is not a state
+      // it can be in, so the progress input is not needed to pick a destination.
+      completionPct: 0,
+    }).href;
   const go = (it: CrossCourseUpNext) => push(hrefOf(it));
 
   return (
