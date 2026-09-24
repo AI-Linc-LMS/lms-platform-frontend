@@ -19,7 +19,7 @@ import "@/lib/i18n";
 const player = vi.hoisted(() => ({
   currentTime: 0, duration: 200, endedTick: 0, seekTo: vi.fn(), play: vi.fn(), pause: vi.fn(), setRate: vi.fn(),
 }));
-const api = vi.hoisted(() => ({ startSession: vi.fn(), getCompanion: vi.fn(), sync: vi.fn() }));
+const api = vi.hoisted(() => ({ startSession: vi.fn(), getCompanion: vi.fn(), sync: vi.fn(), answerCheckIn: vi.fn() }));
 
 vi.mock("./useVimeoController", () => ({
   useVimeoController: () => ({
@@ -46,7 +46,7 @@ import { VideoCompanion } from "./VideoCompanion";
 
 const checkIn = (id: number, at: number) => ({
   id, timestamp_seconds: at, concept: `Concept ${id}`, order: id,
-  question_text: `Question ${id}?`, option_a: "A", option_b: "B", option_c: "C", option_d: "D",
+  question_text: `Question ${id}?`, option_a: `Right ${id}`, option_b: "Wrong", option_c: "Wrong", option_d: "Wrong",
 });
 /**
  * 10 is already passed on an earlier visit; 11 sits behind the switch point (0:07); 12 ahead of it.
@@ -77,6 +77,13 @@ function serverAcceptsModes() {
     Promise.resolve(session(signals.watch_mode || "normal")));
 }
 
+/** A request that answers only when the test says so. */
+function deferred<T>() {
+  let resolve!: (v: T) => void;
+  const promise = new Promise<T>((r) => { resolve = r; });
+  return { promise, resolve };
+}
+
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
 /** Move the playhead, one second at a time (playback) or in one jump (a seek). */
@@ -100,6 +107,7 @@ beforeEach(() => {
   for (const f of [player.seekTo, player.play, player.pause, player.setRate]) f.mockReset();
   for (const f of Object.values(api)) f.mockReset();
   serverAcceptsModes();
+  api.answerCheckIn.mockResolvedValue({ is_correct: true, correct_option: "a", explanation: "", rewind_to_seconds: null });
 });
 
 describe("switching from Rewatch to Normal pace", () => {
@@ -117,8 +125,7 @@ describe("switching from Rewatch to Normal pace", () => {
     expect(player.pause).not.toHaveBeenCalled();
 
     pick("Normal pace");
-    await waitFor(() => expect(api.getCompanion).toHaveBeenCalledWith(800));
-    await waitFor(() => expect(api.sync).toHaveBeenCalledWith("s1", { watch_mode: "normal" }));
+    await waitFor(() => expect(modeOption(/Normal pace/)).toHaveAttribute("aria-checked", "true"));
 
     // 11 (at 0:05) was played past in rewatch mode. Arming it now would stop the learner for a
     // moment they are no longer at - and with more of them, stop them over and over.
@@ -126,17 +133,21 @@ describe("switching from Rewatch to Normal pace", () => {
     expect(screen.queryByText("Question 11?")).toBeNull();
     expect(player.pause).not.toHaveBeenCalled();
 
-    // 12 (at 0:09) is ahead of the switch: played through, it is asked.
+    // 12 (at 0:09) is ahead of the switch: played through, it is asked - on this page, no reload.
     await moveTo(10, rerender);
     expect(await screen.findByText("Question 12?")).toBeInTheDocument();
     expect(player.pause).toHaveBeenCalledTimes(1);
     // Passed on an earlier visit, so never asked again.
     expect(screen.queryByText("Question 10?")).toBeNull();
 
-    // The player was neither reloaded nor moved.
+    // How: the questions were fetched once, and the server was told the new mode.
+    expect(api.getCompanion).toHaveBeenCalledTimes(1);
+    expect(api.getCompanion).toHaveBeenCalledWith(800);
+    expect(api.sync).toHaveBeenCalledWith("s1", { watch_mode: "normal" });
+    // The player was neither reloaded, moved nor re-paced.
     expect(container.querySelector("iframe")).toBe(iframe);
     expect(player.seekTo).not.toHaveBeenCalled();
-    expect(modeOption(/Normal pace/)).toHaveAttribute("aria-checked", "true");
+    expect(player.setRate).not.toHaveBeenCalled();
   });
 
   it("still asks a check-in behind the switch point once it is played through again", async () => {
@@ -146,8 +157,7 @@ describe("switching from Rewatch to Normal pace", () => {
     pick("Normal pace");
     await waitFor(() => expect(api.sync).toHaveBeenCalledWith("s1", { watch_mode: "normal" }));
 
-    player.currentTime = 4; // the learner scrubs back...
-    await moveTo(4, rerender, { seek: true });
+    await moveTo(4, rerender, { seek: true }); // the learner scrubs back...
     await moveTo(6, rerender); // ...and watches 0:05 again
     expect(await screen.findByText("Question 11?")).toBeInTheDocument();
   });
@@ -171,13 +181,51 @@ describe("switching from Rewatch to Normal pace", () => {
     expect(api.sync).not.toHaveBeenCalledWith("s1", { watch_mode: "normal" });
     await moveTo(10, rerender);
     expect(player.pause).not.toHaveBeenCalled();
+
+    // A second try fetches again, and this time works.
+    api.getCompanion.mockResolvedValue(companion());
+    pick("Normal pace");
+    await waitFor(() => expect(api.sync).toHaveBeenCalledWith("s1", { watch_mode: "normal" }));
+    expect(screen.queryByText(/Couldn't switch the watch mode/)).toBeNull();
+    expect(api.getCompanion).toHaveBeenCalledTimes(2);
   });
 
   it("goes back to Rewatch when the server refuses the switch", async () => {
     api.sync.mockRejectedValue(new Error("500"));
+    const { rerender } = render(<VideoCompanion configId={800} />);
+    await screen.findByText(/^0:00 \//);
+    pick("Normal pace");
+    expect(await screen.findByText(/Couldn't switch the watch mode/)).toBeInTheDocument();
+    expect(modeOption(/Rewatch/)).toHaveAttribute("aria-checked", "true");
+    // The page does not ask questions the server's session is not scoring.
+    await moveTo(10, rerender);
+    expect(player.pause).not.toHaveBeenCalled();
+  });
+
+  it("makes one fetch for two quick switches, and only the last one reaches the server", async () => {
+    const questions = deferred<ReturnType<typeof companion>>();
+    api.getCompanion.mockReturnValue(questions.promise);
     render(<VideoCompanion configId={800} />);
     await screen.findByText(/^0:00 \//);
     pick("Normal pace");
+    pick("Pause & ask every 60s");
+    await act(async () => questions.resolve(companion()));
+    await waitFor(() => expect(api.sync).toHaveBeenCalledWith("s1", { watch_mode: "pause_60s" }));
+    expect(api.getCompanion).toHaveBeenCalledTimes(1);
+    expect(api.sync).not.toHaveBeenCalledWith("s1", { watch_mode: "normal" });
+    expect(modeOption(/Pause & ask/)).toHaveAttribute("aria-checked", "true");
+  });
+
+  it("falls back to the mode the server holds, not the one clicked in between", async () => {
+    // Normal was clicked but superseded before it was ever sent, so the server is still on Rewatch.
+    const questions = deferred<ReturnType<typeof companion>>();
+    api.getCompanion.mockReturnValue(questions.promise);
+    api.sync.mockRejectedValue(new Error("500"));
+    render(<VideoCompanion configId={800} />);
+    await screen.findByText(/^0:00 \//);
+    pick("Normal pace");
+    pick("Pause & ask every 60s");
+    await act(async () => questions.resolve(companion()));
     expect(await screen.findByText(/Couldn't switch the watch mode/)).toBeInTheDocument();
     expect(modeOption(/Rewatch/)).toHaveAttribute("aria-checked", "true");
   });
@@ -206,6 +254,7 @@ describe("switching to Rewatch", () => {
     expect(player.pause).not.toHaveBeenCalled();
     // It already had the questions: nothing to fetch in either direction.
     expect(api.getCompanion).not.toHaveBeenCalled();
+    expect(player.setRate).not.toHaveBeenCalled();
   });
 
   it("and back again resumes from the new position, without fetching the questions twice", async () => {
@@ -222,6 +271,24 @@ describe("switching to Rewatch", () => {
     expect(screen.queryByText("Question 10?")).toBeNull();
     expect(screen.queryByText("Question 11?")).toBeNull();
     expect(api.getCompanion).not.toHaveBeenCalled();
+  });
+
+  it("keeps a check-in passed on this visit passed, through Rewatch and back", async () => {
+    const { rerender } = render(<VideoCompanion configId={800} />);
+    await screen.findByText(/^0:00 \//);
+    await moveTo(4, rerender);
+    fireEvent.click(await screen.findByText("Right 10"));
+    fireEvent.click(await screen.findByRole("button", { name: /Continue/ }));
+    expect(await screen.findByText("1/3 checks")).toBeInTheDocument();
+
+    pick("Rewatch");
+    await waitFor(() => expect(api.sync).toHaveBeenCalledWith("s1", { watch_mode: "rewatch" }));
+    pick("Normal pace");
+    await waitFor(() => expect(api.sync).toHaveBeenCalledWith("s1", { watch_mode: "normal" }));
+    await moveTo(1, rerender, { seek: true });
+    await moveTo(4, rerender);
+    expect(screen.queryByText("Question 10?")).toBeNull();
+    expect(screen.getByText("1/3 checks")).toBeInTheDocument();
   });
 
   it("is overruled by a server that will not honour it", async () => {
@@ -263,5 +330,20 @@ describe("switching to Pause & ask every 60s", () => {
     await act(async () => {});
     expect(screen.queryByText("Still with it?")).toBeNull();
     expect(player.pause).not.toHaveBeenCalled();
+  });
+
+  it("does not stop twice at a boundary it has already stopped at", async () => {
+    api.startSession.mockResolvedValue({ session_id: "s1", companion: companion({ check_ins: [] }), session: session("pause_60s") });
+    const { rerender } = render(<VideoCompanion configId={800} />);
+    await screen.findByText(/^0:00 \//);
+    await moveTo(58, rerender, { seek: true });
+    await moveTo(61, rerender);
+    expect(await screen.findByText("Still with it?")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /Resume/ }));
+
+    await moveTo(55, rerender, { seek: true }); // a rewind over 1:00...
+    await moveTo(62, rerender); // ...played through again
+    expect(screen.queryByText("Still with it?")).toBeNull();
+    expect(player.pause).toHaveBeenCalledTimes(1);
   });
 });
