@@ -125,7 +125,8 @@ describe("switching from Rewatch to Normal pace", () => {
     expect(player.pause).not.toHaveBeenCalled();
 
     pick("Normal pace");
-    await waitFor(() => expect(modeOption(/Normal pace/)).toHaveAttribute("aria-checked", "true"));
+    // The server hears about it either way - that part always worked.
+    await waitFor(() => expect(api.sync).toHaveBeenCalledWith("s1", { watch_mode: "normal" }));
 
     // 11 (at 0:05) was played past in rewatch mode. Arming it now would stop the learner for a
     // moment they are no longer at - and with more of them, stop them over and over.
@@ -140,14 +141,16 @@ describe("switching from Rewatch to Normal pace", () => {
     // Passed on an earlier visit, so never asked again.
     expect(screen.queryByText("Question 10?")).toBeNull();
 
-    // How: the questions were fetched once, and the server was told the new mode.
+    // How: the questions were fetched once, before the server was told the new mode.
     expect(api.getCompanion).toHaveBeenCalledTimes(1);
     expect(api.getCompanion).toHaveBeenCalledWith(800);
-    expect(api.sync).toHaveBeenCalledWith("s1", { watch_mode: "normal" });
-    // The player was neither reloaded, moved nor re-paced.
+    const told = api.sync.mock.calls.findIndex(([, signals]) => signals?.watch_mode === "normal");
+    expect(api.getCompanion.mock.invocationCallOrder[0]).toBeLessThan(api.sync.mock.invocationCallOrder[told]);
+    // The player was neither reloaded, moved nor re-paced, and the rail shows the mode in force.
     expect(container.querySelector("iframe")).toBe(iframe);
     expect(player.seekTo).not.toHaveBeenCalled();
     expect(player.setRate).not.toHaveBeenCalled();
+    expect(modeOption(/Normal pace/)).toHaveAttribute("aria-checked", "true");
   });
 
   it("still asks a check-in behind the switch point once it is played through again", async () => {
