@@ -3305,6 +3305,9 @@
     "andMore": "and {{n}} more",
     "done": "Done"
   },
+  "interviewLifecycle": {
+    "notScoredYet": "No interview scored yet"
+  },
   "courseCta": {
     "takeAssessment": "Take the assessment",
     "startLearning": "Start learning",

@@ -2909,6 +2909,9 @@
     "andMore": "و{{n}} آخرين",
     "done": "تم"
   },
+  "interviewLifecycle": {
+    "notScoredYet": "لم يتم تقييم أي مقابلة بعد"
+  },
   "courseCta": {
     "takeAssessment": "ابدأ الاختبار",
     "startLearning": "ابدأ التعلم",
