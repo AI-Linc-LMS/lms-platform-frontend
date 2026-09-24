@@ -183,3 +183,26 @@ describe("assessment edit page: the Active switch", () => {
     );
   });
 });
+
+describe("assessment edit page: a batch the server refuses", () => {
+  it("is shown under the batch picker", async () => {
+    h.updateAssessment.mockRejectedValue(
+      Object.assign(new Error("You can only give this assessment to batches you teach."), {
+        status: 403,
+        body: { error: "You can only give this assessment to batches you teach.", cohort_ids: [9] },
+      }),
+    );
+    await openDetails();
+    fireEvent.click(save());
+    await waitFor(() =>
+      expect(h.showToast).toHaveBeenCalledWith(
+        "You can only give this assessment to batches you teach.",
+        "error",
+      ),
+    );
+    // The toast, and the field's own helper text: the refusal is where it is fixed.
+    expect(
+      await screen.findByText("You can only give this assessment to batches you teach."),
+    ).toBeInTheDocument();
+  });
+});

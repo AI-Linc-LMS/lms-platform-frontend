@@ -57,6 +57,7 @@ import { buildAssessmentNotificationEmailHtml } from "@/lib/utils/email-template
 import { getPublicAppOrigin } from "@/lib/config";
 import { extractSavedEmailAttachment } from "@/lib/utils/assessment-email-attachment";
 import { saveAssessmentWithActivation } from "@/lib/utils/assessment-activation";
+import { batchRefusal } from "@/lib/utils/assessment-batch-error";
 import { adminCohortsService } from "@/lib/services/admin/admin-cohorts.service";
 import {
   listProjects,
@@ -256,6 +257,11 @@ function CreateAssessmentPageContent() {
   );
   /** Publish found unsaved changes this author may not save; offer the last saved version. */
   const [lastSavedPrompt, setLastSavedPrompt] = useState<{ reason: string } | null>(null);
+  /**
+   * The server refused the batches a save named (not theirs, or none of theirs). Shown under the
+   * batch picker, where it can be fixed, until the batches change.
+   */
+  const [serverBatchError, setServerBatchError] = useState<string | null>(null);
 
   // Assessment basic info
   const [title, setTitle] = useState("");
@@ -1643,6 +1649,17 @@ function CreateAssessmentPageContent() {
     return { payload, emailAttachment };
   };
 
+  /** Put a batch refusal under the picker, on the step that has it, and bring it into view. */
+  const showBatchRefusal = (message: string) => {
+    setServerBatchError(message);
+    setActiveStep(0);
+    setTimeout(() => {
+      document
+        .getElementById("assessment-batches-field")
+        ?.scrollIntoView({ behavior: "smooth", block: "center" });
+    }, 120);
+  };
+
   const handleCreate = async (options?: SubmitOptions) => {
     // One write at a time. `creating` disables the buttons, but only from the next render; a
     // second click (or a double-click) can land before it.
@@ -1987,6 +2004,8 @@ function CreateAssessmentPageContent() {
         }
       }
     } catch (error: any) {
+      const batch = batchRefusal(error);
+      if (batch) showBatchRefusal(batch);
       showToast(
         error?.message ||
           (editingAssessmentId ? "Failed to update assessment" : "Failed to create assessment"),
@@ -2060,7 +2079,12 @@ function CreateAssessmentPageContent() {
       await adminAssessmentService.updateAssessment(config.clientId, paperId, payload, attachment);
     } catch (e: unknown) {
       const reason = e instanceof Error && e.message ? e.message : "Failed to save";
-      if (
+      // A batch they may not give it to is a mistake in the form, not a paper they may not
+      // change: it is fixed under the batch picker, and nothing is published meanwhile.
+      const batch = batchRefusal(e);
+      if (batch) {
+        showBatchRefusal(batch);
+      } else if (
         editingAssessmentId === paperId &&
         isScopedAdminRole(user?.role) &&
         apiErrorStatus(e) === 403
@@ -2384,7 +2408,10 @@ function CreateAssessmentPageContent() {
             />
             <AssessmentSettingsSection
               batchRequired={batchRequired}
-              batchError={audienceAttempted ? audienceStepError(batchRequired, cohortIds) : null}
+              batchError={
+                serverBatchError ??
+                (audienceAttempted ? audienceStepError(batchRequired, cohortIds) : null)
+              }
               durationMinutes={durationMinutes}
               startTime={startTime}
               endTime={endTime}
@@ -2396,7 +2423,11 @@ function CreateAssessmentPageContent() {
               cohortIds={cohortIds}
               cohorts={cohorts}
               loadingCohorts={loadingCohorts}
-              onCohortIdsChange={setCohortIds}
+              onCohortIdsChange={(ids) => {
+                setCohortIds(ids);
+                // The refusal was about the batches as they were.
+                setServerBatchError(null);
+              }}
               colleges={colleges}
               proctoringEnabled={proctoringEnabled}
               liveStreaming={liveStreaming}

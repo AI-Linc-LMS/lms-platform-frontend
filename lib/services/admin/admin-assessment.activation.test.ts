@@ -15,10 +15,12 @@ vi.mock("@/lib/services/api", () => ({
 import apiClient from "@/lib/services/api";
 import {
   adminAssessmentService,
+  apiErrorBody,
   apiErrorStatus,
 } from "@/lib/services/admin/admin-assessment.service";
 
 const patch = apiClient.patch as unknown as ReturnType<typeof vi.fn>;
+const post = apiClient.post as unknown as ReturnType<typeof vi.fn>;
 
 /** Axios rejects with an Error carrying `response`. */
 function axiosError(status: number, data: Record<string, unknown>) {
@@ -30,6 +32,7 @@ function axiosError(status: number, data: Record<string, unknown>) {
 
 beforeEach(() => {
   patch.mockReset();
+  post.mockReset();
 });
 
 describe("setAssessmentActive", () => {
@@ -82,5 +85,40 @@ describe("updateAssessment keeps the HTTP status", () => {
     patch.mockRejectedValue(new Error("Network Error"));
     const error = await adminAssessmentService.updateAssessment(34, 7, { title: "x" }).catch((e) => e);
     expect(apiErrorStatus(error)).toBeNull();
+  });
+});
+
+describe("a 400 reads the server's sentence, not a key dump", () => {
+  it("update: 'Cannot publish…', not 'error: Cannot publish…'", async () => {
+    patch.mockImplementation(() =>
+      Promise.reject(axiosError(400, { error: "Cannot publish an assessment that has no questions." })),
+    );
+    const error = await adminAssessmentService.updateAssessment(34, 7, { is_draft: false }).catch((e) => e);
+    expect((error as Error).message).toBe("Cannot publish an assessment that has no questions.");
+  });
+
+  it("create: the same, for an admin's non-draft paper with no questions", async () => {
+    post.mockImplementation(() =>
+      Promise.reject(axiosError(400, { error: "Cannot publish an assessment that has no questions." })),
+    );
+    const error = await adminAssessmentService
+      .createAssessment(34, { title: "x", instructions: "y", duration_minutes: 30 })
+      .catch((e) => e);
+    expect((error as Error).message).toBe("Cannot publish an assessment that has no questions.");
+    expect(apiErrorStatus(error)).toBe(400);
+  });
+
+  it("keeps the body, so a batch refusal can name its batches", async () => {
+    patch.mockImplementation(() =>
+      Promise.reject(
+        axiosError(403, {
+          error: "You can only give this assessment to batches you teach.",
+          cohort_ids: [9],
+        }),
+      ),
+    );
+    const error = await adminAssessmentService.updateAssessment(34, 7, { cohort_ids: [5, 9] }).catch((e) => e);
+    expect((error as Error).message).toBe("You can only give this assessment to batches you teach.");
+    expect(apiErrorBody(error)).toMatchObject({ cohort_ids: [9] });
   });
 });

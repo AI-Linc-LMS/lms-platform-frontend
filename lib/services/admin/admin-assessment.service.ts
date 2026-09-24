@@ -10,18 +10,47 @@ export interface ApiErrorPayload {
 }
 
 /**
- * An Error that remembers the HTTP status it came from. The message alone cannot tell "you may
- * not change this paper" (403) from "this change is invalid" (400), and a caller that saves
- * before it publishes has to act differently on each.
+ * An Error that remembers the HTTP status and body it came from. The message alone cannot tell
+ * "you may not change this paper" (403) from "you may not give it to that batch" (403, with
+ * `cohort_ids`) or "this change is invalid" (400), and a caller that saves before it publishes
+ * has to act differently on each.
  */
-function errorWithStatus(message: string, status: number | undefined): Error & { status: number | null } {
-  return Object.assign(new Error(message), { status: typeof status === "number" ? status : null });
+function errorWithStatus(
+  message: string,
+  status: number | undefined,
+  body?: unknown,
+): Error & { status: number | null; body: ApiErrorPayload | null } {
+  return Object.assign(new Error(message), {
+    status: typeof status === "number" ? status : null,
+    body: body && typeof body === "object" ? (body as ApiErrorPayload) : null,
+  });
 }
 
 /** The HTTP status a service call failed with, or null when it never reached the server. */
 export function apiErrorStatus(e: unknown): number | null {
   const status = (e as { status?: unknown } | null)?.status;
   return typeof status === "number" ? status : null;
+}
+
+/** The response body a service call failed with, or null. */
+export function apiErrorBody(e: unknown): ApiErrorPayload | null {
+  const body = (e as { body?: unknown } | null)?.body;
+  return body && typeof body === "object" ? (body as ApiErrorPayload) : null;
+}
+
+/**
+ * The sentence to show for a 400. The server says it in `error` (or `detail` / `message`);
+ * only a serializer's field-keyed errors need joining. Joining every key turned
+ * {"error": "Cannot publish an assessment that has no questions."} into "error: Cannot publish…".
+ */
+function validationMessage(data: ApiErrorPayload): string {
+  for (const key of ["error", "detail", "message"] as const) {
+    const value = data[key];
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return Object.entries(data)
+    .map(([key, value]) => (Array.isArray(value) ? `${key}: ${value.join(", ")}` : `${key}: ${value}`))
+    .join("; ");
 }
 
 export interface MCQ {
@@ -549,17 +578,11 @@ export const createAssessment = async (
 
     // Handle validation errors
     if (error.response?.status === 400 && error.response?.data) {
-      const errorData = error.response.data;
-      // Convert error object to a readable message
-      const errorMessages = Object.entries(errorData)
-        .map(([key, value]) => {
-          if (Array.isArray(value)) {
-            return `${key}: ${value.join(", ")}`;
-          }
-          return `${key}: ${value}`;
-        })
-        .join("; ");
-      throw new Error(errorMessages || "Validation error");
+      throw errorWithStatus(
+        validationMessage(error.response.data) || "Validation error",
+        400,
+        error.response.data,
+      );
     }
 
     const message =
@@ -567,7 +590,7 @@ export const createAssessment = async (
       error.response?.data?.message ||
       error.response?.data?.detail ||
       "Failed to create assessment";
-    throw new Error(message);
+    throw errorWithStatus(message, error.response?.status, error.response?.data);
   }
 };
 
@@ -622,7 +645,7 @@ export const publishAssessment = async (
       error.response?.data?.message ||
       error.response?.data?.detail ||
       "Failed to publish assessment";
-    throw errorWithStatus(message, error.response?.status);
+    throw errorWithStatus(message, error.response?.status, error.response?.data);
   }
 };
 
@@ -656,7 +679,7 @@ export const setAssessmentActive = async (
       error.response?.data?.message ||
       error.response?.data?.detail ||
       (isActive ? "Failed to activate the assessment" : "Failed to deactivate the assessment");
-    throw errorWithStatus(message, error.response?.status);
+    throw errorWithStatus(message, error.response?.status, error.response?.data);
   }
 };
 
@@ -691,16 +714,11 @@ export const updateAssessment = async (
 
     // Handle validation errors
     if (error.response?.status === 400 && error.response?.data) {
-      const errorData = error.response.data;
-      const errorMessages = Object.entries(errorData)
-        .map(([key, value]) => {
-          if (Array.isArray(value)) {
-            return `${key}: ${value.join(", ")}`;
-          }
-          return `${key}: ${value}`;
-        })
-        .join("; ");
-      throw errorWithStatus(errorMessages || "Validation error", 400);
+      throw errorWithStatus(
+        validationMessage(error.response.data) || "Validation error",
+        400,
+        error.response.data,
+      );
     }
 
     const message =
@@ -708,7 +726,7 @@ export const updateAssessment = async (
       error.response?.data?.message ||
       error.response?.data?.detail ||
       "Failed to update assessment";
-    throw errorWithStatus(message, error.response?.status);
+    throw errorWithStatus(message, error.response?.status, error.response?.data);
   }
 };
 

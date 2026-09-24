@@ -79,6 +79,7 @@ import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import type { EmailNotificationEditorHandle } from "@/components/admin/assessment/EmailNotificationEditor";
 import { buildAssessmentNotificationEmailHtml } from "@/lib/utils/email-template";
 import { saveAssessmentWithActivation } from "@/lib/utils/assessment-activation";
+import { batchRefusal } from "@/lib/utils/assessment-batch-error";
 import { extractSavedEmailAttachment } from "@/lib/utils/assessment-email-attachment";
 import { generateAssessmentResultPdfVector } from "@/lib/utils/assessment-result-pdf.utils";
 import { preloadPdfBrandAssets } from "@/lib/utils/assessment-pdf-assets";
@@ -461,6 +462,8 @@ export default function AssessmentEditPage() {
   const [isActive, setIsActive] = useState(true);
   const [retiredCourseTitles, setRetiredCourseTitles] = useState<string[]>([]);
   const [cohortIds, setCohortIds] = useState<number[]>([]);
+  /** The server refused the batches a save named. Shown under the picker until they change. */
+  const [serverBatchError, setServerBatchError] = useState<string | null>(null);
   const [cohorts, setCohorts] = useState<{ id: number; name: string }[]>([]);
   const [loadingCohorts, setLoadingCohorts] = useState(false);
   const [colleges, setColleges] = useState<string[]>([]);
@@ -999,7 +1002,12 @@ export default function AssessmentEditPage() {
         wasActive: assessment.is_active ?? true,
         isActive,
       });
-      if (!result.ok && result.stage === "content") throw result.error;
+      if (!result.ok && result.stage === "content") {
+        // A batch they may not give the paper to is fixed under the batch picker.
+        const batch = batchRefusal(result.error);
+        if (batch) setServerBatchError(batch);
+        throw result.error;
+      }
       if (!result.ok) {
         // The settings are saved; only the switch did not move. Reload so the switch shows what
         // the server holds, and say why (e.g. a paper with no questions cannot be activated).
@@ -1980,7 +1988,11 @@ export default function AssessmentEditPage() {
                   cohortIds={cohortIds}
                   cohorts={cohorts}
                   loadingCohorts={loadingCohorts}
-                  onCohortIdsChange={setCohortIds}
+                  batchError={serverBatchError}
+                  onCohortIdsChange={(ids) => {
+                    setCohortIds(ids);
+                    setServerBatchError(null);
+                  }}
                   retiredCourseTitles={retiredCourseTitles}
                   colleges={colleges}
                   proctoringEnabled={proctoringEnabled}

@@ -431,3 +431,39 @@ describe("draft editor: a save sends back what the paper holds", () => {
     expect(payload.cohort_ids).toEqual([5]);
   });
 });
+
+describe("draft editor: a batch the server refuses", () => {
+  it("is shown under the batch picker, not as a reason to publish the old version", async () => {
+    h.user = { role: "instructor" };
+    h.builderConfig.mockResolvedValue({ batch_required: true, course_required: false });
+    h.updateAssessment.mockRejectedValue(
+      Object.assign(new Error("You can only give this assessment to batches you teach."), {
+        status: 403,
+        body: { error: "You can only give this assessment to batches you teach.", cohort_ids: [9] },
+      }),
+    );
+    const user = await openDraftAndReachFinalStep(renameTo("Unit 3 final check"));
+    await user.click(publishButton());
+
+    // Back on the step with the picker, the refusal under it.
+    expect(
+      await screen.findByText("You can only give this assessment to batches you teach."),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("Publish the last saved version?")).toBeNull();
+    expect(h.publishAssessment).not.toHaveBeenCalled();
+  });
+
+  it("recognises the create rule's 400s too", async () => {
+    h.user = { role: "instructor" };
+    h.builderConfig.mockResolvedValue({ batch_required: true, course_required: false });
+    const none =
+      "None of the selected batches is one you teach. Select at least one of your own batches: an assessment you create is for the batches you teach, not for the whole institute.";
+    h.updateAssessment.mockRejectedValue(
+      Object.assign(new Error(none), { status: 400, body: { error: none } }),
+    );
+    const user = await openDraftAndReachFinalStep(renameTo("Unit 3 final check"));
+    await user.click(publishButton());
+    expect(await screen.findByText(none)).toBeInTheDocument();
+    expect(h.publishAssessment).not.toHaveBeenCalled();
+  });
+});
