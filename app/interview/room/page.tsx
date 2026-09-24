@@ -147,6 +147,16 @@ function InterviewRoom() {
   // A follow-up carries no topic of its own: the server inherits it from the source sitting.
   const followUpOf = params.get("followUp") || "";
 
+  /**
+   * What the server said when it refused an answer. Shown, not swallowed.
+   *
+   * A candidate who pressed Submit in the editor after the sitting had closed got a silent
+   * 409: the modal shut, the interview carried on, and the result page later said "No code
+   * was submitted." Whatever the outcome, the learner must not be left believing a
+   * submission landed when it did not.
+   */
+  const [answerRejected, setAnswerRejected] = useState<string>("");
+
   const {
     phase,
     error,
@@ -163,7 +173,7 @@ function InterviewRoom() {
     setMuted: setMicMuted,
     getLevels,
     submitStructured,
-  } = useRealtimeInterview();
+  } = useRealtimeInterview({ onAnswerRejected: setAnswerRejected });
 
   const [preflightDone, setPreflightDone] = useState(false);
   // Carried out of the preflight so monitoring continues into the call rather than being
@@ -272,22 +282,26 @@ function InterviewRoom() {
   }, [currentQuestionId]);
 
   const submitCoding = useCallback(
-    (payload: { code: string; language: string }) => {
+    async (payload: { code: string; language: string }) => {
       if (!currentQuestion) return;
-      void submitStructured(currentQuestion, {
+      setAnswerRejected("");
+      // Awaited, and the modal closes only on an answer the server actually took. Closing
+      // first made every refusal invisible and unrepeatable in one move.
+      const accepted = await submitStructured(currentQuestion, {
         code: payload.code,
         language_id: LANGUAGE_IDS[payload.language] ?? LANGUAGE_IDS.python,
       });
-      closeStructured();
+      if (accepted) closeStructured();
     },
     [closeStructured, currentQuestion, submitStructured],
   );
 
   const submitMcq = useCallback(
-    (selected: { ids: string[] }) => {
+    async (selected: { ids: string[] }) => {
       if (!currentQuestion || !selected.ids.length) return;
-      void submitStructured(currentQuestion, { choice: selected.ids[0] });
-      closeStructured();
+      setAnswerRejected("");
+      const accepted = await submitStructured(currentQuestion, { choice: selected.ids[0] });
+      if (accepted) closeStructured();
     },
     [closeStructured, currentQuestion, submitStructured],
   );
@@ -527,6 +541,7 @@ function InterviewRoom() {
         open={structuredOpen && structuredKind === "coding"}
         problem={currentQuestion ? toModalProblem(currentQuestion) : null}
         spokenIntro={currentQuestion?.question}
+        submitError={answerRejected}
         onSubmit={submitCoding}
       />
       <MCQQuestionModal

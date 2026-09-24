@@ -75,16 +75,26 @@ export default function MockInterviewPage() {
   const total = interviews.length;
   const completed = interviews.filter((i) => i.status === "completed").length;
   const scheduled = interviews.filter((i) => i.status === "scheduled").length;
-  const completedWithScores = interviews.filter(
-    (i) => i.status === "completed" && i.score !== undefined
+  /**
+   * The average is over ATTEMPTS THAT HAVE A MARK, and it is null when there are none.
+   *
+   * It used to read `i.score !== undefined` against a list payload that has never carried a
+   * score: the set was empty on every render, the ternary fell through to its `0`, and the
+   * card showed "0% Average Score" beside "1 Completed" for a learner whose interview had
+   * actually scored. The backend now sends `score` (null when not yet marked) and
+   * `is_scored`; an attempt still being marked, one whose marking failed, and one an admin
+   * has not released are all excluded rather than counted as zero, and with nothing to
+   * average the card says so instead of inventing a number.
+   */
+  const scored = interviews.filter(
+    (i) => i.status === "completed" && i.is_scored && typeof i.score === "number"
   );
   const averageScore =
-    completedWithScores.length > 0
+    scored.length > 0
       ? Math.round(
-          completedWithScores.reduce((sum, i) => sum + (i.score || 0), 0) /
-            completedWithScores.length
+          scored.reduce((sum, i) => sum + (i.score as number), 0) / scored.length
         )
-      : 0;
+      : null;
 
   const stats = {
     total,

@@ -3304,5 +3304,8 @@
     "groupRefusedFallback": "Refused",
     "andMore": "and {{n}} more",
     "done": "Done"
+  },
+  "interviewLifecycle": {
+    "notScoredYet": "No interview scored yet"
   }
 }
