@@ -30,6 +30,8 @@ interface DifficultyPulseProps {
   streakToMove?: number;
   /** The levels the quiz can still serve after this question (`levels_left`). */
   levelsLeft?: string[] | null;
+  /** The quiz's last question (`is_last`): no line about "the next question". */
+  isLast?: boolean;
 }
 
 const GRADIENT = "linear-gradient(90deg, #10b981 0%, #6366f1 50%, #ef4444 100%)";
@@ -47,12 +49,13 @@ export function DifficultyPulse({
   streak,
   streakToMove,
   levelsLeft,
+  isLast,
 }: DifficultyPulseProps) {
   const { t } = useTranslation("common");
   const certainty = certaintyBand(avgSe);
   const skillLabel = prettySkill(targetSkill, "this skill");
   const predictedPct = Math.round(predictedPCorrect * 100);
-  const line = ladderLine(difficultyLabel, wantedLevel, streak, streakToMove, levelsLeft);
+  const line = ladderLine(difficultyLabel, wantedLevel, streak, streakToMove, levelsLeft, isLast);
   const levelName = (level: LadderLevel) => t(`adaptiveQuizRuntime.level${level}`);
   // The track maps Easy (left) → Hard (right) and shows the *question's* difficulty, NOT your
   // odds of getting it right. Item difficulty b = θ − logit(P): the engine's ladder serves harder

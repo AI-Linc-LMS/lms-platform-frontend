@@ -37,6 +37,14 @@ describe("ladderLine", () => {
     expect(ladderLine("Medium", "Medium", 1, 2, ["Easy", "Medium", "Hard"])).toMatchObject({ kind: "next" });
   });
 
+  it("promises nothing about the next question on the last one", () => {
+    // Review of #1689: on the last question the banner still said "the next question steps up".
+    expect(ladderLine("Medium", "Medium", 1, 2, ["Easy", "Medium", "Hard"], true)).toBeNull();
+    expect(ladderLine("Medium", "Medium", 0, 2, ["Easy", "Medium", "Hard"], true)).toBeNull();
+    // What is true of THIS question is still said.
+    expect(ladderLine("Medium", "Hard", 1, 2, ["Easy"], true)).toEqual({ kind: "outOfLevel", wanted: "Hard", served: "Medium" });
+  });
+
   it("says nothing for a question served before the ladder existed", () => {
     expect(ladderLine("Medium", undefined, undefined, undefined)).toBeNull();
     expect(ladderLine("Medium", "", 0, 0)).toBeNull();

@@ -40,6 +40,16 @@ describe("DifficultyPulse ladder line", () => {
     expect(line()).toBe("2 misses in a row → eases to Easy · No Hard questions left in this quiz");
   });
 
+  it("promises nothing about a next question on the last one", () => {
+    render(<DifficultyPulse {...base} difficultyLabel="Medium" wantedLevel="Medium" streak={1} streakToMove={2} isLast />);
+    expect(line()).toBeNull();
+  });
+
+  it("still explains the last question when the quiz ran out of its level", () => {
+    render(<DifficultyPulse {...base} difficultyLabel="Medium" wantedLevel="Hard" streak={1} streakToMove={2} isLast />);
+    expect(line()).toBe("This quiz has no Hard questions left, so this one is Medium.");
+  });
+
   it("offers no step up from the top level", () => {
     render(<DifficultyPulse {...base} difficultyLabel="Hard" wantedLevel="Hard" streak={0} streakToMove={2} />);
     expect(line()).toBe("2 misses in a row → eases to Medium");

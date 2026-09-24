@@ -44,6 +44,8 @@ export interface AdaptiveQuestion {
   streak_to_move?: number;
   /** The levels the quiz's bank can still serve after this question, easiest first. */
   levels_left?: string[] | null;
+  /** This is the quiz's last question: nothing comes after it, so promise nothing about "next". */
+  is_last?: boolean;
 }
 
 /** The course topic a quiz attempt belongs to - for a re-quiz, its original attempt's topic. */

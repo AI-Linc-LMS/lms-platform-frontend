@@ -35,6 +35,8 @@ export type LadderLine =
  * @param n           how long a run moves the level (`streak_to_move`)
  * @param levelsLeft  the levels the bank can still serve after this question (`levels_left`);
  *                    absent = unknown, and every neighbouring level is assumed available
+ * @param isLast      this is the quiz's last question (`is_last`): there is no next question, so
+ *                    only the note about THIS question can be said
  * @returns null when the server did not send the ladder (it predates it): say nothing, rather
  *          than state a rule the engine serving this question does not follow.
  */
@@ -44,11 +46,13 @@ export function ladderLine(
   streak: number | null | undefined,
   n: number | null | undefined,
   levelsLeft?: readonly string[] | null,
+  isLast?: boolean | null,
 ): LadderLine | null {
   if (!n || n < 1) return null;
   const here = rank(served);
   const earned = wanted ? rank(wanted) : here;
   if (earned !== here) return { kind: "outOfLevel", wanted: LADDER_LEVELS[earned], served: LADDER_LEVELS[here] };
+  if (isLast) return null;
 
   const left = (level: LadderLevel) => !levelsLeft || levelsLeft.includes(level);
   const above = here < LADDER_LEVELS.length - 1 ? LADDER_LEVELS[here + 1] : null;

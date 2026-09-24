@@ -3167,7 +3167,7 @@
     "ladderNextDown": "Miss this one → the next question eases to {{level}}",
     "ladderNoneLeft": "This quiz has no {{wanted}} questions left, so this one is {{served}}.",
     "ladderLevelGone": "No {{level}} questions left in this quiz",
-    "ladderExplain": "It adapts to you. Get {{n}} right in a row and the next question is one level harder; miss {{n}} in a row and it is one level easier. It never moves more than one level at a time, so one lucky guess can't jump you from Easy to Hard, and mixed answers keep it where it is. If the quiz runs out of questions at your level, it says so here.",
+    "ladderExplain": "It adapts to you. Get {{n}} right in a row and the next question is one level harder; miss {{n}} in a row and it is one level easier. A single answer never changes the level, so one lucky guess can't move you up, and mixed answers keep it where it is. If the quiz has run out of questions at a level, you get the nearest level it still has - sometimes that skips a level - and it says so here.",
     "ladderExplainUnknown": "It adapts to you as you answer."
   }
 }

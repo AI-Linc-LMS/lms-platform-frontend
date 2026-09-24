@@ -171,6 +171,7 @@ export function AdaptiveQuizLayout({ sessionId }: AdaptiveQuizLayoutProps) {
         streak={q.streak}
         streakToMove={q.streak_to_move}
         levelsLeft={q.levels_left}
+        isLast={q.is_last}
       />
 
       <Box
