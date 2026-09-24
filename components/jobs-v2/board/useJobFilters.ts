@@ -486,18 +486,25 @@ export function useJobFilters(options: UseJobFiltersOptions = {}): UseJobFilters
 
     try {
       // The same server filters for both, so Saved narrows under a search exactly as it did
-      // when it was a filter over the board.
-      const [res, saved] = await Promise.all([
+      // when it was a filter over the board. Settled separately: with Promise.all a failed Saved
+      // request rejected the pair, and the whole board showed an error over roles it had loaded.
+      const [board, saved] = await Promise.allSettled([
         jobsV2Service.getJobs(apiFilters),
         jobsV2Service.getJobs({ ...apiFilters, saved: true }),
       ]);
       // A newer request owns the screen. Type "eng", pause, type "ineer": without this the
       // slower first response lands last and overwrites the correct rows.
       if (!seq.isCurrent(token)) return;
+      // The board is the page: its failure is the error (or the profile lock) handled below.
+      if (board.status === "rejected") throw board.reason;
+      const res = board.value;
       setAllJobs(res.results);
       // An older backend ignores `saved` and answers with the board; the `fav` filter then
-      // leaves exactly what the Saved tab showed before, so the tab degrades, never breaks.
-      setSavedJobs(saved.results);
+      // leaves exactly what the Saved tab showed before, so the tab degrades, never breaks. A
+      // failed Saved request degrades the same way: the board's hearted roles, which is all the
+      // tab could show before it had a list of its own (a saved role that has closed is missing
+      // until the next load).
+      setSavedJobs(saved.status === "fulfilled" ? saved.value.results : res.results);
       // The endpoint's own total. It used to be fetched and thrown away, so "N jobs found"
       // reported the size of whatever the server happened to return.
       setServerCount(res.count);

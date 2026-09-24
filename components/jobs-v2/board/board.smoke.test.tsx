@@ -858,6 +858,35 @@ describe("JobBoard — the live board's defects", () => {
     );
   });
 
+  /*
+   * The two requests settle separately. With Promise.all a failed Saved request rejected the
+   * pair, and the board showed an error over roles it had in fact loaded.
+   */
+  function savedFails(board: JobV2[]) {
+    getJobs.mockImplementation((filters?: { saved?: boolean }) =>
+      filters?.saved
+        ? Promise.reject(new Error("Saved list unavailable"))
+        : Promise.resolve({ results: board, count: board.length }),
+    );
+  }
+
+  it("keeps the board when only the Saved request fails", async () => {
+    savedFails([JOB]);
+    render(<JobBoard />);
+    await waitFor(() => expect(within(rail()).getByText("Frontend Engineer")).toBeInTheDocument());
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByText("Saved list unavailable")).not.toBeInTheDocument();
+  });
+
+  it("falls back to the board's hearts on Saved when the Saved request fails", async () => {
+    savedFails([JOB, { ...JOB, id: 2, job_title: "Hearted Role", is_favourited: true }]);
+    search = "tab=saved&fav=1";
+    render(<JobBoard />);
+    await waitFor(() => expect(within(rail()).getByText("Hearted Role")).toBeInTheDocument());
+    expect(within(rail()).queryByText("Frontend Engineer")).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   it("marks an application whose role has since closed, and keeps it listed", async () => {
     getMyApplications.mockResolvedValue({
       results: [{ ...APPLICATION, status: "shortlisted", job_is_open: false }],
