@@ -411,7 +411,9 @@ describe("create assessment: one paper per create", () => {
     expect(h.publishAssessment).not.toHaveBeenCalled();
   });
 
-  it("a retry after a failed publish publishes the paper already made, not a second one", async () => {
+  // The behaviour once the redirect has arrived. (This passes on the old page too: by then the
+  // old page was the draft editor as well. The race is the next test.)
+  it("once the draft editor has arrived, a retry publishes the paper already made", async () => {
     h.publishAssessment.mockRejectedValueOnce(new Error("Network Error"));
     serveDraft99();
     routerFollowsPushes();
@@ -434,7 +436,9 @@ describe("create assessment: one paper per create", () => {
     expect(h.updateAssessment).not.toHaveBeenCalled();
   });
 
-  it("after a failed publish the buttons stay off until the draft editor has arrived", async () => {
+  // The race the review found: the redirect is on its way, the page is still the blank new-paper
+  // form, and a retry would POST a second paper (papers 99 and 100 both published).
+  it("a retry after a failed publish, before the draft editor has arrived, makes no second paper", async () => {
     h.publishAssessment.mockRejectedValueOnce(new Error("Network Error"));
     h.getAssessmentById.mockResolvedValue({ id: 99, is_draft: true });
     const user = await reachTheFinalStep();
