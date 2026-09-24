@@ -130,6 +130,15 @@ export function useClientInfo() {
   return context;
 }
 
+/**
+ * The tenant, or null when there is none to read: outside a ClientInfoProvider (a component
+ * rendered on its own, as unit tests do) or before it has loaded. Never throws, so a shared
+ * component can prefer the tenant's settings without requiring the app shell.
+ */
+export function useOptionalClientInfo(): ClientInfo | null {
+  return useContext(ClientInfoContext)?.clientInfo ?? null;
+}
+
 export function useThemePreview() {
   const context = useContext(ThemePreviewContext);
   if (context === undefined) {

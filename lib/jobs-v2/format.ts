@@ -43,11 +43,17 @@ export interface FormatDateOptions {
   fallback?: string;
   /** "short" (12 Mar 2026, default) | "long" (12 March 2026) | "numeric" (12/03/2026). */
   style?: "short" | "long" | "numeric";
+  /**
+   * IANA zone to read the instant in. Omitted: the viewer's own. A job's closing date is the
+   * END of that day in the institution's zone (useJobsTimeZone), so it reads as that date only
+   * in that zone: 23:59 in Riyadh is already the next morning in India.
+   */
+  timeZone?: string;
 }
 
 /** The module's only date renderer. */
 export function formatDate(value: DateInput, options: FormatDateOptions = {}): string {
-  const { withTime = false, fallback = "—", style = "short" } = options;
+  const { withTime = false, fallback = "—", style = "short", timeZone } = options;
   const d = toDate(value);
   if (!d) return fallback;
   const opts: Intl.DateTimeFormatOptions = {
@@ -60,10 +66,72 @@ export function formatDate(value: DateInput, options: FormatDateOptions = {}): s
     opts.minute = "2-digit";
   }
   try {
-    return new Intl.DateTimeFormat(locale(), opts).format(d);
+    return new Intl.DateTimeFormat(locale(), timeZone ? { ...opts, timeZone } : opts).format(d);
   } catch {
-    return d.toISOString().slice(0, 10);
+    // An unknown zone name, or a runtime without the locale: the viewer's own zone, and never
+    // the UTC date, which is a different day for a late-evening deadline east of Greenwich.
+    try {
+      return new Intl.DateTimeFormat(undefined, opts).format(d);
+    } catch {
+      const pad = (n: number) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    }
   }
+}
+
+/** A calendar date: what an instant reads as on a wall calendar in one zone. */
+export interface CalendarDate {
+  year: number;
+  /** 1-12. */
+  month: number;
+  day: number;
+}
+
+/** The calendar date `value` falls on in `timeZone` (the viewer's own zone when omitted). */
+export function calendarDate(value: DateInput, timeZone?: string): CalendarDate | null {
+  const d = toDate(value);
+  if (!d) return null;
+  if (timeZone) {
+    try {
+      const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone,
+        year: "numeric",
+        month: "numeric",
+        day: "numeric",
+      }).formatToParts(d);
+      const get = (type: Intl.DateTimeFormatPartTypes) =>
+        Number(parts.find((p) => p.type === type)?.value);
+      const out = { year: get("year"), month: get("month"), day: get("day") };
+      if (Number.isFinite(out.year) && Number.isFinite(out.month) && Number.isFinite(out.day)) {
+        return out;
+      }
+    } catch {
+      // An unknown zone name: fall through to the viewer's own.
+    }
+  }
+  return { year: d.getFullYear(), month: d.getMonth() + 1, day: d.getDate() };
+}
+
+/**
+ * Whole calendar days from the date `now` falls on to the date `value` falls on, both read in the
+ * same zone: 0 on the day itself, 1 the day before, negative after.
+ *
+ * Calendar days, not elapsed time over 24 hours. A closing date is stored as the END of that day,
+ * so on the morning before it the deadline is about 40 hours away: `Math.ceil` called that 2 days
+ * and relative-time rounding said "in 2 days" - for a role that closes tomorrow.
+ */
+export function calendarDaysUntil(
+  value: DateInput,
+  options: { now?: DateInput; timeZone?: string } = {},
+): number | null {
+  const target = calendarDate(value, options.timeZone);
+  const today = calendarDate(options.now ?? Date.now(), options.timeZone);
+  if (!target || !today) return null;
+  return Math.round(
+    (Date.UTC(target.year, target.month - 1, target.day) -
+      Date.UTC(today.year, today.month - 1, today.day)) /
+      DAY,
+  );
 }
 
 /**
@@ -115,32 +183,80 @@ export type DeadlineUrgency = "none" | "soon" | "urgent" | "past";
 export interface DeadlineLabel {
   text: string;
   urgency: DeadlineUrgency;
-  /** Whole days remaining; negative once the deadline has passed. */
+  /**
+   * Calendar days until the closing date: 0 when it closes today, 1 tomorrow; negative once the
+   * date is behind us. (A role that closed earlier today is `past` with 0.)
+   */
   daysLeft: number;
 }
 
+export interface DeadlineOptions {
+  /** The zone the closing date is defined in; see useJobsTimeZone. The viewer's own when omitted. */
+  timeZone?: string;
+  /** The moment to measure from. Defaults to now; tests pin it. */
+  now?: DateInput;
+}
+
+/** Relative wording stops, and the date is printed, beyond this many days. */
+const DEADLINE_RELATIVE_DAYS = 7;
+
 /**
  * The application deadline, with the urgency the card tints itself by.
- * `urgent` <= 2 days, `soon` <= 7 days, `past` once it is behind us.
+ *
+ * Counted in calendar days to the closing date, in the zone the date was set in: "Closes today"
+ * on the closing date itself, "Closes tomorrow" the day before, "Closes in 3 days", then the
+ * date. `urgent` <= 2 days, `soon` <= 7 days, `past` once the deadline is behind us.
+ *
+ * A closing date is stored as the last moment of that day (23:59:59.999 in the institution's
+ * zone). Elapsed-time rounding misread it: the morning before, ~40 hours out, read "in 2 days".
  */
-export function deadlineLabel(value: DateInput): DeadlineLabel | null {
+export function deadlineLabel(value: DateInput, options: DeadlineOptions = {}): DeadlineLabel | null {
   const d = toDate(value);
   if (!d) return null;
-  const diff = d.getTime() - Date.now();
-  const daysLeft = Math.ceil(diff / DAY);
-  if (diff < 0) {
+  const { timeZone } = options;
+  const now = toDate(options.now ?? Date.now()) ?? new Date();
+  const daysLeft = calendarDaysUntil(d, { now, timeZone }) ?? 0;
+  if (d.getTime() < now.getTime()) {
     return {
-      text: t("jobsV2.meta.deadlinePassed", { date: formatDate(d) }),
+      text: t("jobsV2.meta.deadlinePassed", { date: formatDate(d, { timeZone }) }),
       urgency: "past",
-      daysLeft,
+      daysLeft: Math.min(daysLeft, 0),
     };
   }
   const urgency: DeadlineUrgency = daysLeft <= 2 ? "urgent" : daysLeft <= 7 ? "soon" : "none";
-  if (daysLeft <= 7) {
-    const when = relativeTime(d) ?? formatDate(d);
-    return { text: t("jobsV2.meta.deadlineSoon", { when }), urgency, daysLeft };
+  if (daysLeft <= DEADLINE_RELATIVE_DAYS) {
+    return { text: t("jobsV2.meta.deadlineSoon", { when: relativeDays(daysLeft) }), urgency, daysLeft };
   }
-  return { text: t("jobsV2.meta.deadline", { date: formatDate(d) }), urgency, daysLeft };
+  return { text: t("jobsV2.meta.deadline", { date: formatDate(d, { timeZone }) }), urgency, daysLeft };
+}
+
+/** "today" / "tomorrow" / "in 3 days", in the viewer's language. */
+function relativeDays(days: number): string {
+  try {
+    return new Intl.RelativeTimeFormat(locale(), { numeric: "auto" }).format(days, "day");
+  } catch {
+    return days === 0 ? "today" : days === 1 ? "tomorrow" : `in ${days} days`;
+  }
+}
+
+/**
+ * Does the role close within `days` calendar days, counting today as 0? The board's "Closing in
+ * 3 days" is exactly the roles whose label reads "Closes today" through "Closes in 3 days". A
+ * window measured in hours from now dropped the last of those: a role closing at the end of the
+ * third day is more than 72 hours away all day long.
+ */
+export function closesWithinDays(
+  value: DateInput,
+  days: number,
+  options: DeadlineOptions = {},
+): boolean {
+  const d = toDate(value);
+  if (!d) return false;
+  const now = toDate(options.now ?? Date.now()) ?? new Date();
+  // Already past is not "closing soon". It is closed, and it says so on the card.
+  if (d.getTime() < now.getTime()) return false;
+  const left = calendarDaysUntil(d, { now, timeZone: options.timeZone });
+  return left !== null && left <= days;
 }
 
 /** Locale-grouped integer. Used for every count in the module. */

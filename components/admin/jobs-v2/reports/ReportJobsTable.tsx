@@ -18,6 +18,7 @@ import {
   type JDataTableSort,
 } from "@/components/jobs-v2/ui";
 import { deadlineLabel, formatCount, formatDate } from "@/lib/jobs-v2/format";
+import { useJobsTimeZone } from "@/lib/jobs-v2/useJobsTimeZone";
 import type { JobV2 } from "@/lib/services/jobs-v2.service";
 import type { ApplicationsAggregate } from "./ReportFunnel";
 
@@ -70,6 +71,8 @@ export function ReportJobsTable({
 }: ReportJobsTableProps) {
   const { t } = useTranslation("common");
   const tr = (key: string, fallback: string) => t(key, fallback) as string;
+  // The closing date as the institution set it: read in its zone, not the viewer's.
+  const jobsTimeZone = useJobsTimeZone();
 
   const conversionOf = (stats: ApplicationsAggregate | null) => {
     if (!stats || stats.reached.applied === 0) return null;
@@ -210,10 +213,12 @@ export function ReportJobsTable({
         sortable: true,
         hideBelow: "lg",
         render: (row) => {
-          const deadline = deadlineLabel(row.job.application_deadline);
+          const deadline = deadlineLabel(row.job.application_deadline, { timeZone: jobsTimeZone });
           return (
             <Typography component="span" sx={{ ...TYPE.mono, whiteSpace: "nowrap" }}>
-              {deadline ? formatDate(row.job.application_deadline) : "—"}
+              {deadline
+                ? formatDate(row.job.application_deadline, { timeZone: jobsTimeZone })
+                : "—"}
             </Typography>
           );
         },
@@ -227,7 +232,7 @@ export function ReportJobsTable({
       },
     ],
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [t, rows, selectedJobId, onSelectJob],
+    [t, rows, selectedJobId, onSelectJob, jobsTimeZone],
   );
 
   const mobileCard = (row: ReportRow) => (
@@ -263,7 +268,9 @@ export function ReportJobsTable({
             {tr("jobsV2.admin.col.closes", "Closes")}
           </Typography>
           <Typography component="span" sx={TYPE.mono}>
-            {row.job.application_deadline ? formatDate(row.job.application_deadline) : "—"}
+            {row.job.application_deadline
+              ? formatDate(row.job.application_deadline, { timeZone: jobsTimeZone })
+              : "—"}
           </Typography>
         </Box>
       </Box>

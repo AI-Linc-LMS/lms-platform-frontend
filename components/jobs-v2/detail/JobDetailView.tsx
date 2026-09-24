@@ -19,6 +19,7 @@ import {
   jobTypeBadge,
   postedLabel,
 } from "@/lib/jobs-v2/format";
+import { useJobsTimeZone } from "@/lib/jobs-v2/useJobsTimeZone";
 import { learnerSkillTokens } from "@/lib/jobs-v2/relevance";
 import { buildEligibility } from "@/lib/jobs-v2/eligibility";
 import {
@@ -90,6 +91,7 @@ export function JobDetailView({
   const { t } = useTranslation("common");
   const router = useRouter();
   const searchParams = useSearchParams();
+  const jobsTimeZone = useJobsTimeZone();
 
   /**
    * The learner's own skills, from the profile the gate provider ALREADY fetched for this page.
@@ -166,7 +168,7 @@ export function JobDetailView({
   const experience = formatExperience(job.years_of_experience);
   const salary = formatSalary(job.salary);
   const posted = postedLabel(job.created_at);
-  const deadline = deadlineLabel(job.application_deadline);
+  const deadline = deadlineLabel(job.application_deadline, { timeZone: jobsTimeZone });
   const workMode = formatWorkMode(job.work_mode);
 
   const meta: MetaItem[] = [];

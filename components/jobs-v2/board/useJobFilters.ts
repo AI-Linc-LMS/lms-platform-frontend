@@ -6,6 +6,7 @@ import { useModuleLocked, useProfileGate } from "@/lib/contexts/ProfileGateConte
 import { config } from "@/lib/config";
 import { jobsV2Service, type JobV2, type JobV2Filters } from "@/lib/services/jobs-v2.service";
 import {
+  closesWithinDays,
   foldToken,
   formatCount,
   formatSalary,
@@ -14,6 +15,7 @@ import {
   workMode,
   WORK_MODES,
 } from "@/lib/jobs-v2/format";
+import { useJobsTimeZone } from "@/lib/jobs-v2/useJobsTimeZone";
 import {
   jobSkillEntries,
   jobSkillTokens,
@@ -147,10 +149,16 @@ export const SALARY_VALUES = ["disclosed", "undisclosed"] as const;
  * marked closed.
  */
 export const CLOSING_VALUES = ["3d", "7d", "30d"] as const;
-export const CLOSING_WINDOWS: Record<string, number> = {
-  "3d": 3 * DAY_MS,
-  "7d": 7 * DAY_MS,
-  "30d": 30 * DAY_MS,
+/**
+ * In calendar days to the closing date, counting today as 0: "Closing in 3 days" holds exactly
+ * the roles whose label reads "Closes today" through "Closes in 3 days". It was a window in
+ * milliseconds from now, and a closing date is the END of that day, so the role labelled
+ * "Closes in 3 days" was always more than 72 hours out and never in the 3-day filter.
+ */
+export const CLOSING_DAYS: Record<string, number> = {
+  "3d": 3,
+  "7d": 7,
+  "30d": 30,
 };
 
 /** The work modes a posting may state. `formatWorkMode` returns `null` for anything else. */
@@ -238,6 +246,11 @@ export interface ClientFilterInput {
   close: string;
   salary: string;
   fav: boolean;
+  /**
+   * Not a filter: the zone closing dates are read in (useJobsTimeZone), for `close`. Carried here
+   * so every count reads the dates the way the cards print them.
+   */
+  timeZone?: string;
 }
 
 type ClientFilterKey = keyof ClientFilterInput;
@@ -284,16 +297,14 @@ export function applyClientFilters(
     }
   }
   if (filters.close && omit !== "close") {
-    const window = CLOSING_WINDOWS[filters.close];
-    if (window) {
+    const days = CLOSING_DAYS[filters.close];
+    if (days !== undefined) {
       const now = Date.now();
-      result = result.filter((job) => {
-        const deadline = toDate(job.application_deadline);
-        if (!deadline) return false;
-        const at = deadline.getTime();
-        // Already past is not "closing soon". It is closed, and it says so on the card.
-        return at >= now && at <= now + window;
-      });
+      // Already past is not "closing soon": closesWithinDays says no. It is closed, and the card
+      // says so.
+      result = result.filter((job) =>
+        closesWithinDays(job.application_deadline, days, { now, timeZone: filters.timeZone }),
+      );
     }
   }
   if (filters.salary && omit !== "salary") {
@@ -422,6 +433,9 @@ export function useJobFilters(options: UseJobFiltersOptions = {}): UseJobFilters
   // the resulting Set identity is what the memoised cards compare on.
   const learnerTokens = useMemo(() => learnerSkillTokens(profileSkills), [profileSkills]);
   const seq = useSeq();
+  // Closing dates are read in the zone they were set in, so "Closing in 3 days" and the cards'
+  // "Closes today" agree for every viewer.
+  const jobsTimeZone = useJobsTimeZone();
 
   const [allJobs, setAllJobs] = useState<JobV2[]>([]);
   /**
@@ -614,8 +628,9 @@ export function useJobFilters(options: UseJobFiltersOptions = {}): UseJobFilters
       close,
       salary,
       fav: tab === "saved",
+      timeZone: jobsTimeZone,
     }),
-    [eligibleOnly, role, wm, exp, skills, posted, close, salary, tab],
+    [eligibleOnly, role, wm, exp, skills, posted, close, salary, tab, jobsTimeZone],
   );
 
   const filteredJobs = useMemo(
@@ -902,11 +917,11 @@ export function useJobFilters(options: UseJobFiltersOptions = {}): UseJobFilters
                   : "Closing in 30 days",
           }) as string,
         (job, value) => {
-          const window = CLOSING_WINDOWS[value];
-          const at = toDate(job.application_deadline);
-          if (!window || !at) return false;
-          const time = at.getTime();
-          return time >= now && time <= now + window;
+          const days = CLOSING_DAYS[value];
+          return (
+            days !== undefined &&
+            closesWithinDays(job.application_deadline, days, { now, timeZone: jobsTimeZone })
+          );
         },
       ),
       salary: countedFacet(
@@ -919,7 +934,7 @@ export function useJobFilters(options: UseJobFiltersOptions = {}): UseJobFilters
         (job, value) => (formatSalary(job.salary) !== null) === (value === "disclosed"),
       ),
     };
-  }, [countedFacet, roleValues, workModeValues, skillFacets, t]);
+  }, [countedFacet, roleValues, workModeValues, skillFacets, t, jobsTimeZone]);
 
   /**
    * How many of the roles you are looking at you are actually eligible for. Leave-one-out on

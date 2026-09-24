@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import { useToast } from "@/components/common/Toast";
 import { applyDomain, formatDate } from "@/lib/jobs-v2/format";
+import { useJobsTimeZone } from "@/lib/jobs-v2/useJobsTimeZone";
 import {
   jobsV2Service,
   formatJobPassoutYear,
@@ -130,10 +131,15 @@ export function eligibilityCriteria(job: JobV2 | null, t: (k: string, o?: object
 export function closedApplyReason(
   job: JobV2,
   t: (k: string, o?: object) => string,
+  options: { timeZone?: string } = {},
 ): string | null {
   const closedByDeadline = job.is_open === false;
   if (!closedByDeadline && !(job.status && job.status !== "active")) return null;
-  const closedOn = closedByDeadline ? formatDate(job.application_deadline) : null;
+  // The closing date in the zone it was set in (useJobsTimeZone): read elsewhere, the last moment
+  // of 12 Sep can already be the 13th.
+  const closedOn = closedByDeadline
+    ? formatDate(job.application_deadline, { timeZone: options.timeZone })
+    : null;
   const byStatus: Record<string, string> = {
     inactive: t("jobsV2.apply.closedInactive", {
       defaultValue: "The employer has paused this posting, so applications are not being accepted.",
@@ -171,6 +177,7 @@ export function useApply(job: JobV2 | null, options: UseApplyOptions = {}): Appl
 
   const externalLink = job?.apply_link?.trim() || null;
   const hasApplied = Boolean(job?.has_applied);
+  const jobsTimeZone = useJobsTimeZone();
 
   const block = useMemo<ApplyBlock | null>(() => {
     if (!job) return null;
@@ -194,7 +201,9 @@ export function useApply(job: JobV2 | null, options: UseApplyOptions = {}): Appl
     }
     // A closed role — whether its status says so or its deadline passed — gets the button
     // disabled and a reason, never a live Apply button behind a saved row or an emailed link.
-    const closed = closedApplyReason(job, t as (k: string, o?: object) => string);
+    const closed = closedApplyReason(job, t as (k: string, o?: object) => string, {
+      timeZone: jobsTimeZone,
+    });
     if (closed) {
       return {
         label: t("jobsV2.apply.closedLabel", { defaultValue: "Applications closed" }),
@@ -202,7 +211,7 @@ export function useApply(job: JobV2 | null, options: UseApplyOptions = {}): Appl
       };
     }
     return null;
-  }, [job, hasApplied, t]);
+  }, [job, hasApplied, t, jobsTimeZone]);
 
   const mode: ApplyMode = hasApplied ? "applied" : block ? "blocked" : externalLink ? "external" : "internal";
 

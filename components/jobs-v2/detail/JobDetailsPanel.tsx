@@ -15,6 +15,7 @@ import {
   formatSalary,
   formatWorkMode,
 } from "@/lib/jobs-v2/format";
+import { useJobsTimeZone } from "@/lib/jobs-v2/useJobsTimeZone";
 import {
   J,
   R,
@@ -68,7 +69,8 @@ export function JobDetailsPanel({
 }: JobDetailsPanelProps) {
   const { t } = useTranslation("common");
   const passout = formatJobPassoutYear(job.applicable_passout_year);
-  const deadline = deadlineLabel(job.application_deadline);
+  const jobsTimeZone = useJobsTimeZone();
+  const deadline = deadlineLabel(job.application_deadline, { timeZone: jobsTimeZone });
   const notDisclosed = t("jobsV2.detail.notDisclosed", { defaultValue: "Not disclosed" }) as string;
 
   const items: DefinitionItem[] = [];
@@ -144,7 +146,7 @@ export function JobDetailsPanel({
     push(
       "deadline",
       t("jobsV2.detail.closingDate", { defaultValue: "Closing date" }) as string,
-      formatDate(job.application_deadline),
+      formatDate(job.application_deadline, { timeZone: jobsTimeZone }),
       "mdi:calendar-clock-outline",
       deadline.urgency === "urgent" || deadline.urgency === "past"
         ? J.dangerFg

@@ -477,6 +477,40 @@ describe("JobBoard — filters", () => {
     expect(screen.queryByText("Expired role")).not.toBeInTheDocument();
   });
 
+  /*
+   * A closing date is the END of that day. "Closing in 3 days" measured 72 hours from now, so a
+   * role whose card read "Closes in 3 days" was never in it; and the card itself rounded hours,
+   * so the end of tomorrow read "Closes in 2 days" before noon.
+   */
+  it("counts closing windows in calendar days, the way the cards read", async () => {
+    const endOfDay = (daysAhead: number) => {
+      const d = new Date();
+      d.setDate(d.getDate() + daysAhead);
+      d.setHours(23, 59, 59, 999);
+      return d.toISOString();
+    };
+    getJobs.mockResolvedValue({
+      results: [
+        { ...JOB, id: 1, job_title: "Closes today role", application_deadline: endOfDay(0) },
+        { ...JOB, id: 2, job_title: "Closes tomorrow role", application_deadline: endOfDay(1) },
+        { ...JOB, id: 3, job_title: "Closes in 3 days role", application_deadline: endOfDay(3) },
+        { ...JOB, id: 4, job_title: "Closes in 4 days role", application_deadline: endOfDay(4) },
+      ],
+      count: 4,
+    });
+    search = "close=3d";
+    render(<JobBoard />);
+    await waitFor(() =>
+      expect(within(rail()).getByText("Closes in 3 days role")).toBeInTheDocument(),
+    );
+    expect(within(rail()).getByText("Closes today role")).toBeInTheDocument();
+    expect(within(rail()).getByText("Closes tomorrow role")).toBeInTheDocument();
+    expect(screen.queryByText("Closes in 4 days role")).not.toBeInTheDocument();
+    expect(within(rail()).getAllByText("Closes today").length).toBeGreaterThan(0);
+    expect(within(rail()).getAllByText("Closes tomorrow").length).toBeGreaterThan(0);
+    expect(within(rail()).getAllByText("Closes in 3 days").length).toBeGreaterThan(0);
+  });
+
   it("keeps the salary filter to disclosed / not disclosed, never a band", async () => {
     render(<JobBoard />);
     await waitFor(() => expect(within(rail()).getByText("Frontend Engineer")).toBeInTheDocument());
