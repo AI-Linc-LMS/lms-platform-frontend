@@ -2908,5 +2908,13 @@
     "groupRefusedFallback": "مرفوض",
     "andMore": "و{{n}} آخرين",
     "done": "تم"
+  },
+  "aiTutorQuiz": {
+    "imageAlt": "صورة هذا السؤال",
+    "imageFailedTitle": "تعذّر تحميل هذه الصورة",
+    "imageFailedBody": "يحتاج هذا السؤال إلى صورة تعذّر عرضها، لذلك لن يُحتسب. تخطَّه وتابع الدرس.",
+    "notCountedTitle": "غير محتسب",
+    "notCountedBody": "احتاج هذا السؤال إلى صورة تعذّر عرضها، لذلك لم يُحتسب صحيحًا ولا خطأً.",
+    "skipUnanswerable": "تخطَّ هذا السؤال"
   }
 }
