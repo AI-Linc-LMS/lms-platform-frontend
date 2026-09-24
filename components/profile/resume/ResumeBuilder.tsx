@@ -35,7 +35,7 @@ import {
   type ResumeLayout,
   type SectionId,
 } from "./paging/sectionLayout";
-import { SavedResumesPanel } from "./SavedResumesPanel";
+import { TEMPLATE_KEYS } from "./templateKeys";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import {
   ResumeDocumentsUnavailable,
@@ -63,6 +63,25 @@ import { resumeService } from "@/lib/services/resume.service";
 import { PANEL_BORDER, PANEL_SHADOW, PROFILE, TILE_GRADIENT, CTA_GRADIENT, CTA_SHADOW } from "../theme/profileTokens";
 import { LockedAction } from "@/components/common/ProfileLock";
 import { PHONE } from "@/components/common/mobile/phone";
+import NextLink from "next/link";
+
+/** The one pill that points at the saved resumes list, wherever this builder is rendered. */
+const savedResumesLinkSx = {
+  textTransform: "none",
+  fontWeight: 700,
+  fontSize: "0.78rem",
+  borderRadius: 999,
+  px: 1.75,
+  whiteSpace: "nowrap",
+  flexShrink: 0,
+  borderColor: PROFILE.hairline,
+  color: PROFILE.ink,
+  "&:hover": { borderColor: PROFILE.violet, backgroundColor: PROFILE.violetSoft },
+  // height, not minHeight: app/profile/page.tsx sets a phone floor of
+  // `& .MuiButton-sizeSmall { min-height: 40 }`, and that descendant selector outranks this
+  // button's own class. See PHONE_BUTTON in SavedResumesPanel.
+  [PHONE]: { minHeight: 44, height: 44, fontSize: "0.8125rem", width: "100%", mt: 1 },
+} as const;
 
 /** Where the builder's current content came from. Drives the toolbar's segmented control. */
 type ResumeSource = "sample" | "profile" | "blank" | "saved";
@@ -75,6 +94,26 @@ interface ResumeBuilderProps {
    * a complete profile has the dependency backwards.
    */
   lockExports?: boolean;
+  /**
+   * Open this saved resume as soon as the builder is ready.
+   *
+   * The ONE way a document gets into the builder from outside it. The Saved resumes tab and a
+   * `/resume?doc=<id>` link both set this, and it lands on the same `handleOpenDocument` the
+   * builder has always used, including the "you have unsaved changes" question.
+   */
+  openDocumentId?: number | null;
+  /** That request was honoured (or refused), so the caller can clear it and not re-fire. */
+  onDocumentOpened?: () => void;
+  /** Which document is open, so a list rendered elsewhere can mark the row "Editing now". */
+  onOpenDocumentChange?: (id: number | null) => void;
+  /**
+   * Bumped when a list elsewhere changed something. The builder reloads its own copy, and lets
+   * go of the open document if it has been deleted - otherwise the next Update writes to a row
+   * that is not there any more.
+   */
+  documentsToken?: number;
+  /** Show the learner where their saved resumes are. Given by a surface that can show them. */
+  onShowSavedResumes?: () => void;
 }
 
 const EMPTY_BASIC_INFO: ResumeData["basicInfo"] = {
@@ -93,21 +132,6 @@ const EMPTY_BASIC_INFO: ResumeData["basicInfo"] = {
   hackerrank: "",
   kaggle: "",
   medium: "",
-};
-
-const TEMPLATE_KEYS: Record<string, string> = {
-  modern: "templateModern",
-  classic: "templateClassic",
-  minimal: "templateMinimal",
-  executive: "templateExecutive",
-  creative: "templateCreative",
-  technical: "templateTechnical",
-  western: "templateWestern",
-  luxsleek: "templateLuxsleek",
-  twocolumn: "templateTwocolumn",
-  accentbar: "templateAccentbar",
-  rightsidebar: "templateRightsidebar",
-  bubble: "templateBubble",
 };
 
 /** A representative colour dot per template, so the chip row reads at a glance. */
@@ -237,7 +261,15 @@ type TemplateName =
   | "rightsidebar"
   | "bubble";
 
-export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilderProps) {
+export function ResumeBuilder({
+  initialData,
+  lockExports = false,
+  openDocumentId = null,
+  onDocumentOpened,
+  onOpenDocumentChange,
+  documentsToken = 0,
+  onShowSavedResumes,
+}: ResumeBuilderProps) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [selectedTemplate, setSelectedTemplate] = useState<TemplateName>("modern");
@@ -720,14 +752,6 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
    * something they never asked for.
    */
   const [documentsUnavailable, setDocumentsUnavailable] = useState(false);
-  /**
-   * The list could not be fetched, and it is NOT the 404 above.
-   *
-   * A third state on purpose. A 502 mid-deploy used to leave `documents` at `[]`, which rendered
-   * the empty state - a learner with eight saved resumes being told "Nothing saved yet", which
-   * reads as "they are gone".
-   */
-  const [documentsError, setDocumentsError] = useState(false);
   const [openDoc, setOpenDoc] = useState<{ id: number; name: string } | null>(null);
   const [rowBusyId, setRowBusyId] = useState<number | null>(null);
   const [saveMenuAnchor, setSaveMenuAnchor] = useState<null | HTMLElement>(null);
@@ -749,23 +773,16 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
       const list = await resumeDocumentsService.list();
       setDocuments(list);
       setDocumentsUnavailable(false);
-      setDocumentsError(false);
     } catch (err) {
       if (err instanceof ResumeDocumentsUnavailable) {
         setDocumentsUnavailable(true);
-      } else {
-        // The list stays as it was and the panel says it could not load them. A transient error
-        // must never be reported as "you have no saved resumes".
-        setDocumentsError(true);
       }
+      // Any other failure leaves `documents` exactly as it was. The builder only reads this list
+      // to know what Save should write to; a blip must never be turned into "you have none",
+      // which is what the Saved resumes tab would then render.
     } finally {
       setDocumentsLoading(false);
     }
-  };
-
-  const retryDocuments = async () => {
-    setDocumentsLoading(true);
-    await reloadDocuments();
   };
 
   useEffect(() => {
@@ -841,6 +858,55 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
     }
   };
 
+  /**
+   * A document asked for from outside the builder - the Saved resumes tab, or `/resume?doc=<id>`.
+   *
+   * Routed through `requestOpenDocument`, not straight into the loader, so arriving with a link
+   * still asks before discarding unsaved edits. Waits for the first list call so the confirm
+   * dialog can name the resume being opened, and fires once per id.
+   */
+  const externalOpenRef = useRef<number | null>(null);
+  useEffect(() => {
+    if (!openDocumentId) {
+      // The request was cleared. Forget it, so asking for the SAME resume again - a learner
+      // pressing Edit on the one they are editing to throw their changes away - still opens it.
+      externalOpenRef.current = null;
+      return;
+    }
+    if (documentsLoading || documentsUnavailable) return;
+    if (externalOpenRef.current === openDocumentId) return;
+    externalOpenRef.current = openDocumentId;
+    requestOpenDocument(openDocumentId);
+    onDocumentOpened?.();
+    // requestOpenDocument closes over state that changes every keystroke; re-running this on
+    // those is exactly the loop that would reopen the document under the learner.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openDocumentId, documentsLoading, documentsUnavailable]);
+
+  /** Tell whoever is listing these resumes which one is being edited. */
+  useEffect(() => {
+    onOpenDocumentChange?.(openDoc?.id ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [openDoc?.id]);
+
+  /**
+   * A list elsewhere changed. Reload, and if the open document is gone, stop pointing at it:
+   * otherwise the next Update would PATCH a row that has been deleted.
+   */
+  const firstTokenRef = useRef(documentsToken);
+  useEffect(() => {
+    if (documentsToken === firstTokenRef.current) return;
+    void reloadDocuments();
+  }, [documentsToken]);
+
+  useEffect(() => {
+    if (!openDoc || documentsLoading || documentsUnavailable) return;
+    if (documents.length === 0) return;
+    if (documents.some((d) => d.id === openDoc.id)) return;
+    detachFromSavedResume();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [documents]);
+
   const documentPayload = () => ({
     template: selectedTemplate,
     content: resumeData as unknown as Record<string, unknown>,
@@ -907,53 +973,6 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
       );
     } finally {
       setSavingDoc(false);
-    }
-  };
-
-  const handleRenameDocument = async (id: number, name: string) => {
-    setRowBusyId(id);
-    try {
-      const updated = await resumeDocumentsService.update(id, { name });
-      if (openDoc?.id === id) setOpenDoc({ id, name: updated.name });
-      await reloadDocuments();
-    } catch {
-      showToast(t("savedResumes.renameFailed", { defaultValue: "Could not rename that resume" }), "error");
-    } finally {
-      setRowBusyId(null);
-    }
-  };
-
-  const handleDuplicateDocument = async (id: number) => {
-    setRowBusyId(id);
-    try {
-      const copy = await resumeDocumentsService.duplicate(id);
-      await reloadDocuments();
-      showToast(t("savedResumes.duplicated", { name: copy.name, defaultValue: `Created "${copy.name}"` }), "success");
-    } catch (err) {
-      showToast(
-        err instanceof Error ? err.message : t("savedResumes.duplicateFailed", { defaultValue: "Could not duplicate" }),
-        "error",
-      );
-    } finally {
-      setRowBusyId(null);
-    }
-  };
-
-  const handleDeleteDocument = async (id: number) => {
-    try {
-      await resumeDocumentsService.remove(id);
-      // The builder keeps whatever is on screen: deleting a saved copy must not empty the form
-      // the learner is looking at. It simply stops being attached to a saved resume, so the next
-      // Save asks for a name rather than writing to a row that no longer exists.
-      if (openDoc?.id === id) {
-        setOpenDoc(null);
-        savedSnapshotRef.current = null;
-        setDirty(false);
-      }
-      await reloadDocuments();
-      showToast(t("savedResumes.deleted", { defaultValue: "Resume deleted" }), "success");
-    } catch {
-      showToast(t("savedResumes.deleteFailed", { defaultValue: "Could not delete that resume" }), "error");
     }
   };
 
@@ -1259,24 +1278,81 @@ export function ResumeBuilder({ initialData, lockExports = false }: ResumeBuilde
         </Box>
       </Paper>
 
-      {/* The resumes this learner has saved, in the builder, where they can be opened again.
-          Hidden entirely on a tenant whose API does not offer them yet. */}
+      {/* Where the saved resumes went.
+          They used to be listed right here, under the form editing one of them. A library of
+          resumes does not belong on the page whose job is to edit a single resume, and the tab
+          actually called "Saved resumes" held only rendered PDFs, which cannot be edited. The
+          list moved there; this keeps the feature one tap away from the builder rather than
+          something a learner has to already know about. */}
       {!documentsUnavailable && (
-        <SavedResumesPanel
-          documents={documents}
-          loading={documentsLoading}
-          loadError={documentsError}
-          onRetry={() => void retryDocuments()}
-          openId={openDoc?.id ?? null}
-          busyId={rowBusyId}
-          onOpen={requestOpenDocument}
-          onRename={handleRenameDocument}
-          onDuplicate={(id) => void handleDuplicateDocument(id)}
-          onDelete={handleDeleteDocument}
-          templateLabel={(template) =>
-            TEMPLATE_KEYS[template] ? t(`profile.${TEMPLATE_KEYS[template]}`) : template
-          }
-        />
+        <Paper
+          elevation={0}
+          data-testid="saved-resumes-link"
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: 1.25,
+            px: { xs: 1.75, sm: 2 },
+            py: 1.25,
+            mb: 1.5,
+            border: PANEL_BORDER,
+            borderRadius: 4,
+            boxShadow: PANEL_SHADOW,
+            flexWrap: "wrap",
+          }}
+        >
+          <Box
+            sx={{
+              width: 30,
+              height: 30,
+              borderRadius: 2,
+              flexShrink: 0,
+              display: "grid",
+              placeItems: "center",
+              color: "#fff",
+              background: TILE_GRADIENT,
+            }}
+          >
+            <IconWrapper icon="mdi:folder-open-outline" size={17} />
+          </Box>
+          <Typography
+            sx={{
+              fontSize: "0.8rem",
+              color: PROFILE.inkMuted,
+              lineHeight: 1.55,
+              flex: 1,
+              minWidth: 0,
+              [PHONE]: { fontSize: "0.8125rem", flexBasis: "100%", flex: "unset" },
+            }}
+          >
+            {t("savedResumes.livesInTab", {
+              defaultValue:
+                "Every resume you save is kept in Saved resumes, with its content, template and section order, ready to open and keep editing.",
+            })}
+          </Typography>
+          {onShowSavedResumes ? (
+            <Button
+              size="small"
+              variant="outlined"
+              onClick={onShowSavedResumes}
+              startIcon={<IconWrapper icon="mdi:folder-open-outline" size={15} />}
+              sx={savedResumesLinkSx}
+            >
+              {t("savedResumes.goToSaved", { defaultValue: "Saved resumes" })}
+            </Button>
+          ) : (
+            <Button
+              size="small"
+              variant="outlined"
+              component={NextLink}
+              href="/profile?tab=saved"
+              startIcon={<IconWrapper icon="mdi:folder-open-outline" size={15} />}
+              sx={savedResumesLinkSx}
+            >
+              {t("savedResumes.goToSaved", { defaultValue: "Saved resumes" })}
+            </Button>
+          )}
+        </Paper>
       )}
 
       {/* Template chips + where the content comes from. */}

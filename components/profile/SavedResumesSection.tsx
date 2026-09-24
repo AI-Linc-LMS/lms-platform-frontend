@@ -21,6 +21,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { PANEL_BORDER, PANEL_RADIUS, PANEL_SHADOW } from "./theme/profileTokens";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { resumeService, SavedResume } from "@/lib/services/resume.service";
+import { SavedResumeDocuments } from "@/components/profile/resume/SavedResumeDocuments";
 
 const MAX_RESUMES_PER_USER = 10;
 import { ResumeUploadDialog } from "./ResumeUploadDialog";
@@ -328,11 +329,38 @@ function ResumePreviewCard({
   );
 }
 
+/**
+ * The Saved resumes tab.
+ *
+ * It holds TWO different things, and they are not interchangeable:
+ *
+ *  - resume DOCUMENTS - content, template and section order - which is what the builder is driven
+ *    from, so one can be reopened and edited. These are listed first, because they are the ones a
+ *    learner can still do something with.
+ *  - rendered PDFs. A PDF is what leaves the product: attached to an application, read by someone
+ *    else. Every page of one is rasterised, so nothing in it can be edited again - which is why
+ *    these rows offer View, Download and Delete and no Edit. They also include resumes uploaded
+ *    from a file, which never had a document behind them at all.
+ *
+ * Until now this tab showed only the second kind, and the first was listed inside the builder,
+ * under the form editing one of them.
+ */
 interface SavedResumesSectionProps {
   isActive?: boolean;
+  /** The document the builder currently has open, so its row reads "Editing now". */
+  openDocumentId?: number | null;
+  /** Reopen this document in the builder. Absent, the documents list is not offered at all. */
+  onEditDocument?: (id: number) => void;
+  /** A document was renamed, duplicated or deleted here. */
+  onDocumentsChanged?: () => void;
 }
 
-export function SavedResumesSection({ isActive = true }: SavedResumesSectionProps) {
+export function SavedResumesSection({
+  isActive = true,
+  openDocumentId = null,
+  onEditDocument,
+  onDocumentsChanged,
+}: SavedResumesSectionProps) {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
   const [resumes, setResumes] = useState<SavedResume[]>([]);
@@ -395,6 +423,18 @@ export function SavedResumesSection({ isActive = true }: SavedResumesSectionProp
 
   return (
     <>
+      {/* The editable ones first. */}
+      {onEditDocument && (
+        <Box sx={{ mb: 2.5 }}>
+          <SavedResumeDocuments
+            isActive={isActive}
+            openId={openDocumentId}
+            onEdit={onEditDocument}
+            onChanged={onDocumentsChanged}
+          />
+        </Box>
+      )}
+
       <Paper
         elevation={0}
         sx={{
@@ -444,7 +484,7 @@ export function SavedResumesSection({ isActive = true }: SavedResumesSectionProp
                     letterSpacing: "-0.02em",
                   }}
                 >
-                  {t("profile.savedResumes")}
+                  {t("savedResumes.pdfTitle", { defaultValue: "PDF copies" })}
                 </Typography>
                 {!loading && resumes.length > 0 && (
                   <Chip
@@ -500,6 +540,19 @@ export function SavedResumesSection({ isActive = true }: SavedResumesSectionProp
             </span>
           </Tooltip>
         </Box>
+
+        {/* Said once, here, rather than left for a learner to discover by looking for an Edit
+            button that cannot exist. A PDF page is an image; there is nothing in it to edit, and
+            an uploaded one never had a document behind it to go back to. */}
+        <Typography
+          variant="body2"
+          sx={{ color: "var(--font-secondary)", fontSize: "0.875rem", lineHeight: 1.65, mb: 2.5 }}
+        >
+          {t("savedResumes.pdfHint", {
+            defaultValue:
+              "These are finished PDFs - what you attach to an application. They cannot be edited: to change one, edit the resume above and save a new PDF from the Resume builder.",
+          })}
+        </Typography>
 
         {loading ? (
           <Box
@@ -665,6 +718,19 @@ export function SavedResumesSection({ isActive = true }: SavedResumesSectionProp
           <Typography variant="body2" sx={{ color: "var(--font-secondary)", lineHeight: 1.6 }}>
             {t("profile.deleteResumeMessage", {
               name: resumeToDelete?.display_name || "Resume",
+            })}
+          </Typography>
+          {/* An application does not keep its own copy: it stores a link to this very file, and
+              deleting the row deletes the file. A recruiter opening it afterwards gets nothing.
+              The learner is the only person who can know whether that matters, so they are told
+              rather than stopped. */}
+          <Typography
+            variant="body2"
+            sx={{ color: "var(--font-secondary)", lineHeight: 1.6, mt: 1.25, fontWeight: 600 }}
+          >
+            {t("savedResumes.pdfDeleteWarning", {
+              defaultValue:
+                "Any job application you sent with this PDF links to this file. Deleting it leaves those applications with nothing to open.",
             })}
           </Typography>
         </DialogContent>
