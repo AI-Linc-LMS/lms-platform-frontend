@@ -1,13 +1,15 @@
 /**
- * Saved resumes in the builder.
+ * Saved resumes: the list, and the builder it edits into.
  *
- * Every one of these fails on the previous build, because "Save" there rendered a PDF and
- * uploaded it: there was no list in the builder, nothing to open, and no difference between
- * saving over a resume and saving a new one.
+ * The list used to be rendered by the builder itself, on the page whose job is to edit one
+ * resume, while the tab actually called "Saved resumes" held only rendered PDFs and offered
+ * Download and Delete. This renders the two the way the Saved resumes tab now composes them -
+ * `SavedResumeDocuments` listing, `ResumeBuilder` editing - so every behaviour below is pinned
+ * across the seam rather than inside one component.
  *
  * What is pinned:
- *  - the list of saved resumes appears in the builder;
- *  - opening one restores its content AND its template, not just its text;
+ *  - the list is NOT in the builder;
+ *  - Edit restores that resume's content AND its template, over whatever the builder held;
  *  - Save updates the resume that is open; Save as new leaves it alone and creates another;
  *  - deleting asks first, and the request only goes out after the learner confirms.
  */
@@ -48,7 +50,9 @@ vi.mock("@/lib/services/resumeDocuments.service", async () => {
   };
 });
 
+import { useState } from "react";
 import { ResumeBuilder } from "./ResumeBuilder";
+import { SavedResumeDocuments } from "./SavedResumeDocuments";
 import { ResumeDocumentsUnavailable } from "@/lib/services/resumeDocuments.service";
 
 const BACKEND_CV = {
@@ -100,16 +104,43 @@ const FULL_BACKEND_CV = {
 
 const panel = () => screen.getByTestId("saved-resumes-panel");
 const rows = () => screen.queryAllByTestId("saved-resume-row");
+const editRow = (i: number) => within(rows()[i]).getByTestId("saved-resume-edit");
+
+/**
+ * The Saved resumes tab and the Resume tab, wired as app/profile/page.tsx wires them: the list
+ * asks for a document, the builder is the only thing that opens one.
+ */
+function ResumeTabs({ initialData }: { initialData?: Record<string, unknown> }) {
+  const [documentToOpen, setDocumentToOpen] = useState<number | null>(null);
+  const [openDocumentId, setOpenDocumentId] = useState<number | null>(null);
+  const [token, setToken] = useState(0);
+  return (
+    <>
+      <SavedResumeDocuments
+        openId={openDocumentId}
+        onEdit={setDocumentToOpen}
+        onChanged={() => setToken((v) => v + 1)}
+      />
+      <ResumeBuilder
+        initialData={initialData}
+        openDocumentId={documentToOpen}
+        onDocumentOpened={() => setDocumentToOpen(null)}
+        onOpenDocumentChange={setOpenDocumentId}
+        documentsToken={token}
+      />
+    </>
+  );
+}
 
 /** Renders and waits for the first list call to settle, so no assertion races the fetch. */
-async function renderBuilder() {
-  const view = render(<ResumeBuilder />);
+async function renderBuilder(initialData?: Record<string, unknown>) {
+  const view = render(<ResumeTabs initialData={initialData} />);
   await waitFor(() => expect(list).toHaveBeenCalled());
   await act(async () => {});
   return view;
 }
 
-describe("Saved resumes in the resume builder", () => {
+describe("Saved resumes", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     list.mockResolvedValue([BACKEND_CV, STARTUP_CV]);
@@ -121,6 +152,23 @@ describe("Saved resumes in the resume builder", () => {
   });
 
   // --- the list ------------------------------------------------------------------
+
+  it("does not list saved resumes inside the builder, and says where they are", async () => {
+    // The builder ALONE - the /resume page. It is for editing one resume; the library of them
+    // belongs in Saved resumes. This is the reported defect: the list was rendered right here.
+    render(<ResumeBuilder />);
+    await waitFor(() => expect(list).toHaveBeenCalled());
+    await act(async () => {});
+
+    expect(screen.queryByTestId("saved-resumes-panel")).toBeNull();
+    expect(screen.queryAllByTestId("saved-resume-row")).toHaveLength(0);
+    // It is not simply gone: the builder says where they went, and links there.
+    const link = screen.getByTestId("saved-resumes-link");
+    expect(within(link).getByRole("link", { name: /saved resumes/i })).toHaveAttribute(
+      "href",
+      "/profile?tab=saved",
+    );
+  });
 
   it("lists the resumes the learner has saved", async () => {
     await renderBuilder();
@@ -144,6 +192,8 @@ describe("Saved resumes in the resume builder", () => {
     list.mockRejectedValue(new ResumeDocumentsUnavailable());
     await renderBuilder();
     expect(screen.queryByTestId("saved-resumes-panel")).toBeNull();
+    // And with no saved resumes to point at, the builder does not point at them either.
+    expect(screen.queryByTestId("saved-resumes-link")).toBeNull();
     // And Save is still the button it always was, rather than a control that 404s.
     expect(screen.getByRole("button", { name: /^save resume$/i })).toBeInTheDocument();
     expect(screen.queryByRole("button", { name: /more save options/i })).toBeNull();
@@ -151,9 +201,37 @@ describe("Saved resumes in the resume builder", () => {
 
   // --- opening one ---------------------------------------------------------------
 
+  it("Edit reopens THAT resume, over the profile the builder was seeded with", async () => {
+    // The builder is holding the learner's profile, which is a different thing from any saved
+    // resume. Edit has to replace it with the document - not leave the profile, and not blank
+    // the form. This is the failure the report described from the other side.
+    await renderBuilder({
+      basicInfo: {
+        firstName: "Grace",
+        lastName: "Hopper",
+        professionalTitle: "Rear Admiral",
+        email: "grace@example.com",
+        phone: "",
+        location: "",
+        summary: "",
+      },
+    });
+    fireEvent.click(screen.getByRole("button", { name: /use my profile/i }));
+    expect(screen.getByDisplayValue("Grace")).toBeInTheDocument();
+
+    fireEvent.click(editRow(0));
+    await waitFor(() => expect(get).toHaveBeenCalledWith(7));
+    await act(async () => {});
+
+    expect(screen.getByDisplayValue("Ada")).toBeInTheDocument();
+    expect(screen.getByDisplayValue("Backend Engineer")).toBeInTheDocument();
+    expect(screen.queryByDisplayValue("Grace")).toBeNull();
+    expect(screen.getByRole("heading", { name: "Backend CV" })).toBeInTheDocument();
+  });
+
   it("opens a saved resume back into the builder with its content and its template", async () => {
     await renderBuilder();
-    fireEvent.click(within(rows()[0]).getByRole("button", { name: /^open$/i }));
+    fireEvent.click(editRow(0));
     await waitFor(() => expect(get).toHaveBeenCalledWith(7));
     await act(async () => {});
 
@@ -187,7 +265,7 @@ describe("Saved resumes in the resume builder", () => {
     get.mockResolvedValue(mixed);
     update.mockResolvedValue({ ...BACKEND_CV, ...mixed });
     await renderBuilder();
-    fireEvent.click(within(rows()[0]).getByRole("button", { name: /^open$/i }));
+    fireEvent.click(editRow(0));
     await waitFor(() => expect(get).toHaveBeenCalledWith(7));
     await act(async () => {});
 
@@ -211,7 +289,7 @@ describe("Saved resumes in the resume builder", () => {
 
   it("restores the section arrangement the resume was saved with", async () => {
     await renderBuilder();
-    fireEvent.click(within(rows()[0]).getByRole("button", { name: /^open$/i }));
+    fireEvent.click(editRow(0));
     await waitFor(() => expect(get).toHaveBeenCalled());
     await act(async () => {});
 
@@ -225,7 +303,7 @@ describe("Saved resumes in the resume builder", () => {
   it("saves over the resume that is open, and creates nothing new", async () => {
     update.mockResolvedValue({ ...BACKEND_CV, ...FULL_BACKEND_CV });
     await renderBuilder();
-    fireEvent.click(within(rows()[0]).getByRole("button", { name: /^open$/i }));
+    fireEvent.click(editRow(0));
     await waitFor(() => expect(get).toHaveBeenCalled());
     await act(async () => {});
 
@@ -242,7 +320,7 @@ describe("Saved resumes in the resume builder", () => {
   it("save as new asks for a name and leaves the open resume untouched", async () => {
     create.mockResolvedValue({ ...STARTUP_CV, id: 11, name: "Tailored CV", content: {}, layout: {} });
     await renderBuilder();
-    fireEvent.click(within(rows()[0]).getByRole("button", { name: /^open$/i }));
+    fireEvent.click(editRow(0));
     await waitFor(() => expect(get).toHaveBeenCalled());
     await act(async () => {});
 
@@ -324,7 +402,7 @@ describe("Saved resumes in the resume builder", () => {
 
   /** Open a resume and then type into the form, so the builder holds unsaved edits. */
   async function openAndEdit() {
-    fireEvent.click(within(rows()[0]).getByRole("button", { name: /^open$/i }));
+    fireEvent.click(editRow(0));
     await waitFor(() => expect(get).toHaveBeenCalled());
     await act(async () => {});
     fireEvent.change(screen.getByDisplayValue("Ada"), { target: { value: "Adelaide" } });
@@ -336,7 +414,7 @@ describe("Saved resumes in the resume builder", () => {
     await openAndEdit();
     get.mockClear();
 
-    fireEvent.click(within(rows()[1]).getByRole("button", { name: /^open$/i }));
+    fireEvent.click(editRow(1));
     const dialog = await screen.findByRole("dialog");
     expect(within(dialog).getByText(/open without saving\?/i)).toBeInTheDocument();
     expect(within(dialog).getByText(/Backend CV/)).toBeInTheDocument();
@@ -356,7 +434,7 @@ describe("Saved resumes in the resume builder", () => {
     get.mockClear();
     get.mockResolvedValue({ ...FULL_BACKEND_CV, id: 9, name: "Startup CV", template: "creative" });
 
-    fireEvent.click(within(rows()[1]).getByRole("button", { name: /^open$/i }));
+    fireEvent.click(editRow(1));
     const dialog = await screen.findByRole("dialog");
     fireEvent.click(within(dialog).getByRole("button", { name: /discard and open/i }));
     await waitFor(() => expect(get).toHaveBeenCalledWith(9));
@@ -364,18 +442,18 @@ describe("Saved resumes in the resume builder", () => {
 
   it("does not ask when there is nothing unsaved to lose", async () => {
     await renderBuilder();
-    fireEvent.click(within(rows()[0]).getByRole("button", { name: /^open$/i }));
+    fireEvent.click(editRow(0));
     await waitFor(() => expect(get).toHaveBeenCalled());
     await act(async () => {});
 
     get.mockClear();
-    fireEvent.click(within(rows()[1]).getByRole("button", { name: /^open$/i }));
+    fireEvent.click(editRow(1));
     await waitFor(() => expect(get).toHaveBeenCalledWith(9));
   });
 
   it("Clear stops pointing at the saved resume, so the next save cannot blank it", async () => {
     await renderBuilder();
-    fireEvent.click(within(rows()[0]).getByRole("button", { name: /^open$/i }));
+    fireEvent.click(editRow(0));
     await waitFor(() => expect(get).toHaveBeenCalled());
     await act(async () => {});
     expect(screen.getByRole("button", { name: /^update$/i })).toBeInTheDocument();

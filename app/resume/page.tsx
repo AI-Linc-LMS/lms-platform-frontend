@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { ProfileLockBanner } from "@/components/common/ProfileLock";
 import { useModuleLocked } from "@/lib/contexts/ProfileGateContext";
 import { Box, CircularProgress } from "@mui/material";
@@ -11,12 +12,15 @@ import { profileService, UserProfile } from "@/lib/services/profile.service";
 import { buildResumeInitialData } from "@/lib/utils/buildResumeInitialData";
 
 /**
- * Standalone Resume Builder route, reachable directly from the sidebar.
- * Leads with a dashboard-style hero, then the builder seeded from the user's
- * saved profile (same mapping as the /profile Resume tab); the builder still
- * works if the profile fetch fails.
+ * `/resume?doc=<id>` opens that saved resume. The Saved resumes tab on /profile does its editing
+ * in the builder beside it, so this is for links that arrive from anywhere else - and it lands on
+ * the same `openDocumentId` the tab uses, rather than being a second way into the builder.
  */
-export default function ResumePage() {
+function ResumePageBody() {
+  const searchParams = useSearchParams();
+  const docParam = Number(searchParams.get("doc"));
+  const requestedDocumentId = Number.isInteger(docParam) && docParam > 0 ? docParam : null;
+  const [documentToOpen, setDocumentToOpen] = useState<number | null>(requestedDocumentId);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const { showLock, reportError: reportProfileLock } = useModuleLocked("resume");
@@ -58,8 +62,33 @@ export default function ResumePage() {
         <ResumeBuilder
           initialData={profile ? buildResumeInitialData(profile) : undefined}
           lockExports={showLock}
+          openDocumentId={documentToOpen}
+          onDocumentOpened={() => setDocumentToOpen(null)}
         />
       )}
     </MainLayout>
+  );
+}
+
+/**
+ * Standalone Resume Builder route, reachable directly from the sidebar.
+ * Leads with a dashboard-style hero, then the builder seeded from the user's
+ * saved profile (same mapping as the /profile Resume tab); the builder still
+ * works if the profile fetch fails.
+ *
+ * useSearchParams needs a Suspense boundary above it, or this route cannot be prerendered at all.
+ * The fallback is the page's own spinner, which is what it showed while the profile loaded anyway.
+ */
+export default function ResumePage() {
+  return (
+    <Suspense
+      fallback={
+        <Box sx={{ display: "flex", justifyContent: "center", py: 10 }}>
+          <CircularProgress />
+        </Box>
+      }
+    >
+      <ResumePageBody />
+    </Suspense>
   );
 }

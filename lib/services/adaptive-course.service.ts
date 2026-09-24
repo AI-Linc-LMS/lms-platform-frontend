@@ -167,6 +167,26 @@ export interface AdaptiveCourseModule {
   submodules: AdaptiveCourseSubModule[];
 }
 
+/** Where a learner has got to in one adaptive course, as the list endpoint reports it. */
+export interface AdaptiveCourseProgress {
+  /**
+   * 0-100. The SAME figure the course page prints as "Overall completion"
+   * (`progressCard.completionPct` — journey steps done over steps total), because the
+   * server computes both from one place. A card claiming 40% that opens a page saying 25%
+   * would be worse than a card with no number at all.
+   */
+  percent: number;
+  steps_done: number;
+  steps_total: number;
+  /**
+   * `not_started` is zero steps done, NOT "never visited": opening a course and doing
+   * nothing is not progress, and must not make the card look started.
+   * `completed` is 100% of the journey, not the (configurable, often 80%) certificate
+   * threshold.
+   */
+  state: "not_started" | "in_progress" | "completed";
+}
+
 export interface AdaptiveCourseListItem {
   /** Optional so the Paid/Free tag can ship before every serializer carries it. */
   is_paid?: boolean;
@@ -200,6 +220,11 @@ export interface AdaptiveCourseListItem {
   card_image_url?: string | null;
   /** True when the admin has opened this course to student self-enrollment (catalog listing). */
   self_enroll_enabled?: boolean;
+  /**
+   * How far THIS learner has got. Null/absent on the self-enroll catalog, which lists
+   * courses they are by definition not in, and on any server that predates the field.
+   */
+  progress?: AdaptiveCourseProgress | null;
   updated_at: string;
 }
 
