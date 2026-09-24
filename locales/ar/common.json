@@ -2901,5 +2901,19 @@
   "articleNarration": {
     "resumeFollow": "انتقل إلى ما يُقرأ الآن",
     "resumeFollowAria": "استئناف متابعة القراءة الصوتية"
+  },
+  "assessmentTopicBreakdown": {
+    "title": "الأداء حسب الموضوع",
+    "subtitle": "تفصيل مفصل حسب الموضوع",
+    "correct": "{{n}} صحيحة",
+    "incorrect": "{{n}} خاطئة",
+    "notAnswered": "{{n}} بدون إجابة",
+    "questionsAsked": "{{n}} سؤالاً",
+    "accuracyOfAttempted": "الدقة في {{attempted}} إجابة",
+    "nothingAttempted": "لم تتم الإجابة على أي سؤال هنا",
+    "topicScore": "{{rating}}/5.0 من إجمالي {{total}} سؤالاً"
+  },
+  "interviewLifecycle": {
+    "notScoredYet": "لم يتم تقييم أي مقابلة بعد"
   }
 }

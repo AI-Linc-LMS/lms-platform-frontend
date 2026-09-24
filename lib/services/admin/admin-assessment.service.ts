@@ -1325,9 +1325,12 @@ export interface SubmissionsExportStats {
   topic_wise_stats?: Record<
     string,
     {
+      /** Questions SERVED in this topic - answered and skipped alike. */
       total: number;
       correct: number;
       incorrect: number;
+      attempted?: number;
+      unattempted?: number;
       accuracy_percent: number;
       rating_out_of_5: number;
     }

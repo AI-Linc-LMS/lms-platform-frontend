@@ -243,6 +243,9 @@ function CodingReview({ coding }: { coding: NonNullable<QuestionResult["coding"]
 }
 
 function QuestionReview({ question }: { question: QuestionResult }) {
+  // `marked` is absent on a result served by an older backend; those rows were all marked,
+  // so treat a missing flag as marked rather than relabelling history.
+  const unmarkable = question.marked === false;
   return (
     <Surface>
       <Box sx={{ display: "flex", gap: 2, alignItems: "baseline" }}>
@@ -269,12 +272,36 @@ function QuestionReview({ question }: { question: QuestionResult }) {
             whiteSpace: "nowrap",
           }}
         >
-          {question.answered ? `${question.score} / ${question.max_score}` : "Not answered"}
+          {/* Three states, not two. "0 / 0" said the candidate scored nothing on a
+              question the platform could not mark - which is a different sentence, and the
+              one the feedback underneath is actually making. */}
+          {unmarkable
+            ? "Not marked"
+            : question.answered
+              ? `${question.score} / ${question.max_score}`
+              : "Not answered"}
         </Typography>
       </Box>
       <Typography sx={{ mt: 0.75, fontWeight: 500, fontSize: "0.95rem", color: "var(--font-primary)" }}>
         {question.question}
       </Typography>
+
+      {/* Says what was at stake and that it did not count against them, so "Not marked"
+          beside a question worth a quarter of the paper is not left to be guessed at. */}
+      {unmarkable ? (
+        <Typography
+          sx={{
+            mt: 0.75,
+            fontSize: "0.8rem",
+            lineHeight: 1.5,
+            color: "var(--font-tertiary)",
+          }}
+        >
+          {typeof question.question_worth === "number" && question.question_worth > 0
+            ? `Worth ${question.question_worth} marks. It could not be marked, so it was left out of your score rather than counted as zero.`
+            : "This question could not be marked, so it was left out of your score rather than counted as zero."}
+        </Typography>
+      ) : null}
 
       {question.your_answer ? (
         <Box sx={{ mt: 1.5 }}>
