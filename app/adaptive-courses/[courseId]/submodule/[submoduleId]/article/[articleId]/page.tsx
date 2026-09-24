@@ -112,6 +112,36 @@ export default function AdaptiveArticleReaderPage() {
           .completeArticle(articleId)
           .then(() => { completedRef.current = true; })
           .catch(() => {});
+        // Clear the page skeleton BEFORE any tier upgrade below: that call can take tens of
+        // seconds, and holding the whole reader on a skeleton for it would be a worse bug
+        // than the one being fixed. The upgrade has its own in-place loader.
+        setLoading(false);
+        // The server opens the article at the learner's calibrated tier whenever that
+        // rendering already exists. When it does not, it says so (learner_tier !==
+        // rendered_tier) rather than blocking this GET on an LLM call, and we fetch it here
+        // through the ordinary async tier endpoint. Silent on failure: the learner did not
+        // ask for this, so a toast would be noise - they keep the served tier and the
+        // switcher still works.
+        const want = data.learner_tier;
+        if (want && want !== data.rendered_tier) {
+          setTierLoading(true);
+          setPendingTier(want);
+          try {
+            const res = await adaptiveCourseService.renderArticleTier(articleId, want);
+            if (cancelled) return;
+            setTier(res.tier);
+            setHtml(res.content_html);
+            setReadingTime(res.reading_time_minutes);
+            setArticle((a) => (a ? { ...a, available_tiers: Array.from(new Set([...a.available_tiers, res.tier])) } : a));
+          } catch {
+            /* keep the tier the server served */
+          } finally {
+            if (!cancelled) {
+              setTierLoading(false);
+              setPendingTier(null);
+            }
+          }
+        }
       } catch (e) {
         if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load article.");
       } finally {

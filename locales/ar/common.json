@@ -2933,5 +2933,11 @@
   },
   "interviewLifecycle": {
     "notScoredYet": "لم يتم تقييم أي مقابلة بعد"
+  },
+  "courseCta": {
+    "takeAssessment": "ابدأ الاختبار",
+    "startLearning": "ابدأ التعلم",
+    "resumeLearning": "متابعة التعلم",
+    "reviewCourse": "مراجعة الدورة"
   }
 }

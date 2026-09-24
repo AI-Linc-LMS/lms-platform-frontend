@@ -3329,5 +3329,11 @@
   },
   "interviewLifecycle": {
     "notScoredYet": "No interview scored yet"
+  },
+  "courseCta": {
+    "takeAssessment": "Take the assessment",
+    "startLearning": "Start learning",
+    "resumeLearning": "Resume learning",
+    "reviewCourse": "Review the course"
   }
 }
