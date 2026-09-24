@@ -113,28 +113,18 @@ export function resetLayout(): ResumeLayout {
   return { ...EMPTY_LAYOUT };
 }
 
-const storageKey = (clientId: string | number | undefined) => `resume_layout_v1_${clientId ?? "default"}`;
-
-export function loadLayout(clientId?: string | number): ResumeLayout {
-  if (typeof window === "undefined") return EMPTY_LAYOUT;
-  try {
-    const raw = window.localStorage.getItem(storageKey(clientId));
-    return raw ? normalizeLayout(JSON.parse(raw)) : EMPTY_LAYOUT;
-  } catch {
-    // Private browsing, cleared site data, a browser that blocks storage: an arrangement is a
-    // convenience, and losing it must never stop the builder from rendering.
-    return EMPTY_LAYOUT;
-  }
-}
-
-export function saveLayout(layout: ResumeLayout, clientId?: string | number): void {
-  if (typeof window === "undefined") return;
-  try {
-    window.localStorage.setItem(storageKey(clientId), JSON.stringify(layout));
-  } catch {
-    /* see loadLayout */
-  }
-}
+/**
+ * Where an arrangement lives.
+ *
+ * It used to be `localStorage`, under `resume_layout_v1_<clientId>` - keyed by TENANT, so every
+ * learner who signed in on a browser shared one arrangement, and it was shared by every resume
+ * they made. It is the learner's own arrangement of their own resume, so it belongs to the
+ * document: `ResumeDocument.layout`, saved and restored with the resume's content and template.
+ *
+ * Until a draft is saved it lives in the builder's React state, exactly like the draft's text,
+ * which was never persisted either. A refresh loses an unsaved draft whole rather than losing
+ * half of it - and nothing on a shared device holds a learner's arrangement any more.
+ */
 
 /** What the document itself says: which sections it has, in which column, in what order. */
 export interface DocumentSections {

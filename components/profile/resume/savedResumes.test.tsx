@@ -287,15 +287,27 @@ describe("Saved resumes", () => {
     expect(saved.basicInfo.summary).toBe("P&amp;L owner");
   });
 
-  it("restores the section arrangement the resume was saved with", async () => {
+  it("restores the section arrangement the resume was saved with, and keeps it on the server", async () => {
+    // The arrangement is the learner's own data, so it lives on ResumeDocument.layout and travels
+    // with the resume. It used to be mirrored into `resume_layout_v1_<clientId>` - keyed by
+    // TENANT, so every learner sharing a browser shared one arrangement.
+    update.mockResolvedValue(BACKEND_CV);
     await renderBuilder();
     fireEvent.click(editRow(0));
     await waitFor(() => expect(get).toHaveBeenCalled());
     await act(async () => {});
 
-    const stored = JSON.parse(window.localStorage.getItem("resume_layout_v1_1") ?? "{}");
-    expect(stored.order[0]).toBe("skills");
-    expect(stored.hidden).toEqual(["certifications"]);
+    expect(window.localStorage.getItem("resume_layout_v1_1")).toBeNull();
+    // Certifications is hidden in the saved layout, so the restored document must not render it.
+    expect(document.querySelector('[data-resume-section="certifications"]')).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: /^update$/i }));
+    await waitFor(() => expect(update).toHaveBeenCalled());
+    const savedLayout = update.mock.calls[0][1].layout;
+    expect(savedLayout.order[0]).toBe("skills");
+    expect(savedLayout.hidden).toEqual(["certifications"]);
+    // Still nowhere on the device.
+    expect(window.localStorage.getItem("resume_layout_v1_1")).toBeNull();
   });
 
   // --- save updates vs save as new -----------------------------------------------
