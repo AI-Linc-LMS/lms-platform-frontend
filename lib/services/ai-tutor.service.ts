@@ -61,7 +61,25 @@ export interface StartSessionResponse {
   heartbeat_interval_seconds: number;
   usage_flush_interval_seconds: number;
   question_pool: PooledQuestion[];
+  /**
+   * The language `question_pool` is written in, as an English name ("English", "Hindi").
+   *
+   * The pool is built before the learner has said a word, so this is a starting assumption,
+   * not a fact about the lesson. The room compares it with the language the tutor reports
+   * speaking and asks the server to rewrite the pool when they differ.
+   *
+   * Optional: a browser on this release can talk to a backend without it.
+   */
+  question_pool_language?: string;
   quota: TutorQuota;
+}
+
+/** What the server says after being told what language the lesson is actually in. */
+export interface QuizLanguageResult {
+  ok: boolean;
+  language: string;
+  reason?: "unchanged" | "no_language" | "repool_limit" | "generation_failed";
+  question_pool?: PooledQuestion[];
 }
 
 export interface ReconnectResponse {
@@ -267,6 +285,25 @@ export const aiTutorService = {
       await apiClient.post(`${BASE}/sessions/${sessionId}/tools/image/`, {
         query,
         caption,
+      })
+    ).data,
+
+  /**
+   * Tell the server what language the lesson turned out to be in, and get a pool in it.
+   *
+   * The one mid-lesson round trip this feature allows, and it is at most one per language per
+   * session rather than one per question: the server stores the rewritten pool, so every
+   * `show_quiz` after this resolves in the browser with no network, exactly as English does.
+   * The alternative is not a faster quiz, it is the quiz the learner cannot read, or - when
+   * nothing in an English pool matches a Hindi topic - no quiz at all.
+   */
+  setQuizLanguage: async (
+    sessionId: string,
+    language: string
+  ): Promise<QuizLanguageResult> =>
+    (
+      await apiClient.post(`${BASE}/sessions/${sessionId}/tools/quiz-language/`, {
+        language,
       })
     ).data,
 
