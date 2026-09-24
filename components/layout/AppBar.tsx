@@ -711,6 +711,12 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
             anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
             transformOrigin={{ vertical: "top", horizontal: "left" }}
             disableRestoreFocus
+            // A hover card must not lock the page. MUI's default scroll lock puts
+            // overflow:hidden + padding-right on the body, which takes the document scrollbar
+            // away; the viewport then widens by its width, and every position:fixed element
+            // that is not .mui-fixed — the Support and Help button, the phone dock — jumps
+            // sideways. Merely pointing at this chip moved them 15px, and back on leave.
+            disableScrollLock
             sx={{
               // Hover-driven from the bar chip, exactly as before. Opened from the phone overflow
               // menu there is no hover to close it, so its backdrop takes the tap outside.
@@ -1148,6 +1154,10 @@ export const AppBar: React.FC<AppBarProps> = ({ onMenuClick, DrawerWidth }) => {
               anchorOrigin={{ vertical: "bottom", horizontal: "left" }}
               transformOrigin={{ vertical: "top", horizontal: "left" }}
               disableRestoreFocus
+              // Same as the leaderboard card: opened by hover, so it must leave the document
+              // scrollbar alone. With MUI's scroll lock on, hovering this pill moved the
+              // Support and Help button 15px right and widened the phone dock by 15px.
+              disableScrollLock
               sx={{ pointerEvents: streakByTouch ? "auto" : "none" }}
               PaperProps={{
                 sx: {
