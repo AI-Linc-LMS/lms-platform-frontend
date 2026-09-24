@@ -4,6 +4,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { VimeoPlayerProps } from "../types";
 import { CircularProgress } from "./CircularProgress";
 import { processVimeoUrl } from "../utils/formatters";
+import { pulsePractice } from "@/lib/activity/practicePulse";
 
 export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
   videoUrl,
@@ -190,6 +191,9 @@ export const VimeoPlayer: React.FC<VimeoPlayerProps> = ({
 
       // Handle progress events
       if (data.event === "timeupdate" || data.event === "playProgress") {
+        // A watching learner touches nothing; playback is what tells time tracking they are
+        // still practising rather than idle. See lib/activity/practicePulse.ts.
+        pulsePractice();
         let percent = 0;
         let currentTime = 0;
         let duration = 0;
