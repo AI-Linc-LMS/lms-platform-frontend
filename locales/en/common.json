@@ -3300,5 +3300,47 @@
     "completed": "Completed",
     "steps": "{{done}} of {{total}} steps done",
     "barAria": "{{percent}}% of this course complete"
+  },
+  "profileSetup": {
+    "title": "Finish setting up your account",
+    "body": "We need a couple of details before {{modules}} will work. It takes under a minute, and you only do it once.",
+    "bodyGeneric": "We need a couple of details to finish setting up your account. It takes under a minute, and you only do it once.",
+    "moduleResume": "Resume",
+    "moduleJobs": "Jobs",
+    "moduleInterview": "Interview",
+    "save": "Save and continue",
+    "notNow": "Not now",
+    "saveFailed": "We could not save that. Please try again."
+  },
+  "roadmapOwned": {
+    "ready": "Yours",
+    "inProgress": "In progress",
+    "done": "Completed",
+    "locked": "Locked",
+    "legend": "A marked step is one you already have a course for."
+  },
+  "articleNarration": {
+    "resumeFollow": "Jump to what's being read",
+    "resumeFollowAria": "Resume following the narration"
+  },
+  "assessmentTopicBreakdown": {
+    "title": "Topic-wise Performance",
+    "subtitle": "Detailed breakdown by topic",
+    "correct": "{{n}} Correct",
+    "incorrect": "{{n}} Incorrect",
+    "notAnswered": "{{n}} Not answered",
+    "questionsAsked": "{{n}} asked",
+    "accuracyOfAttempted": "Accuracy on {{attempted}} answered",
+    "nothingAttempted": "Nothing answered here",
+    "topicScore": "{{rating}}/5.0 across all {{total}} questions"
+  },
+  "interviewLifecycle": {
+    "notScoredYet": "No interview scored yet"
+  },
+  "courseCta": {
+    "takeAssessment": "Take the assessment",
+    "startLearning": "Start learning",
+    "resumeLearning": "Resume learning",
+    "reviewCourse": "Review the course"
   }
 }

@@ -60,6 +60,11 @@ type Interview = JourneyBoard["interview"];
 const calibration = (over: Partial<NonNullable<Calibration["card"]>> = {}, outer: Partial<Calibration> = {}): Calibration => ({
   required: true,
   done: over.status === "done",
+  // Server-derived; see journey/calibration_state.py. These cards do not read it, but the
+  // board payload always carries it now, so the fixture must be a real board payload.
+  pending: over.status !== "done" && over.configured !== false && !over.generating,
+  assessmentId: 9,
+  assessmentSlug: "calib-py",
   card: {
     assessmentId: 9, assessmentSlug: "calib-py", title: "Calibration", points: 200,
     durationMinutes: 45, questionCount: 30, proctored: true, configured: true, generating: false,
@@ -147,7 +152,7 @@ describe("what the card opens as", () => {
 
   it("renders neither card when the board sends neither", () => {
     const { container } = render(
-      <JourneyTopCards courseId={COURSE} calibration={{ required: false, done: false, card: null }} interview={{ required: false, done: false, card: null }} />,
+      <JourneyTopCards courseId={COURSE} calibration={{ required: false, done: false, pending: false, assessmentId: null, assessmentSlug: null, card: null }} interview={{ required: false, done: false, card: null }} />,
     );
     expect(container).toBeEmptyDOMElement();
   });

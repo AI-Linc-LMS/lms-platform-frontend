@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useParams } from "next/navigation";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Box, Container, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
@@ -21,8 +21,6 @@ import {
   roadmapsService,
   type ForgeJob,
   type RoadmapNode,
-  type RoadmapProgress,
-  type SelfState,
 } from "@/lib/services/roadmaps.service";
 
 /**
@@ -37,6 +35,7 @@ export default function RoadmapDetailPage() {
   const params = useParams();
   const slug = String(params?.slug ?? "");
   const { push } = useInstantNavigation();
+  const queryClient = useQueryClient();
   const [job, setJob] = useState<ForgeJob | null>(null);
   const [forgeError, setForgeError] = useState<string | null>(null);
   // The node the learner is CONSIDERING. Clicking opens the drawer to read about it; building is
@@ -57,8 +56,13 @@ export default function RoadmapDetailPage() {
     setForgeError(null);
     setBuilding(true);
     try {
-      setJob(await forgeService.create({ nodeId: node.id }));
+      const created = await forgeService.create({ nodeId: node.id });
+      setJob(created);
       setPending(null);
+      // The map now carries a mark per step, so it has to learn about this build. Without this
+      // the learner who just built a course would come back to an unmarked step and be offered
+      // the same build again - which is the bug this whole change is about, one reload later.
+      queryClient.invalidateQueries({ queryKey: roadmapKeys.owned(slug) });
     } catch (err) {
       setForgeError(
         err instanceof ForgeUnavailableError
@@ -78,6 +82,44 @@ export default function RoadmapDetailPage() {
   });
 
   const graph = graphQuery.data;
+
+  /**
+   * Which steps the learner already has a course for.
+   *
+   * ONE request for the whole map, never one per node - the biggest shipped map is 210 steps.
+   * Separate from the graph because the graph is identical for every learner in the tenant and
+   * cached for half an hour; this is per learner and changes the moment they build something.
+   */
+  const ownedQuery = useQuery({
+    queryKey: roadmapKeys.owned(slug),
+    queryFn: () => roadmapsService.owned(slug),
+    enabled: Boolean(slug),
+    staleTime: 60 * 1000,
+  });
+  const owned = ownedQuery.data?.nodes;
+
+  /**
+   * What a click does.
+   *
+   * A step you already have goes STRAIGHT to the course. The mark on the node has already said
+   * "this is yours", so re-stating it in a dialog after the click is the redundancy the report
+   * was about: the learner was being asked "Create a course on this?", pressing yes, and being
+   * told no. Everything else still opens the reading drawer, because building is a real
+   * commitment and one click on a map you are still reading should not start writing rows.
+   *
+   * The dialog's "you already have this" branch STAYS in place. It is still reachable - a build
+   * started in another tab, a free-text build from the search bar, an overlay that has not
+   * refetched - and in those cases it is the honest thing to show.
+   */
+  const openNode = (node: RoadmapNode) => {
+    if (!node.isTrackable) return;
+    const mine = owned?.[node.id];
+    if (mine) {
+      push(`/adaptive-courses/${mine.courseId}`);
+      return;
+    }
+    setPending(node);
+  };
 
   if (graphQuery.isError) {
     return (
@@ -132,7 +174,8 @@ export default function RoadmapDetailPage() {
         {graph && (
           <RoadmapSpine
             graph={graph}
-            onOpenNode={(node) => node.isTrackable && setPending(node)}
+            owned={owned}
+            onOpenNode={openNode}
             onOpenRoadmap={(s) => push(`/roadmaps/${s}`)}
           />
         )}

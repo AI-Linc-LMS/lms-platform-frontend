@@ -216,6 +216,105 @@ export function wholeWord(token: string): RegExp {
   return new RegExp(`(?<![\\p{L}\\p{N}])${escaped}(?![\\p{L}\\p{N}])`, "u");
 }
 
+/**
+ * The language a pool is in when nothing has said otherwise. Matches the backend's own default,
+ * because the two are compared as strings.
+ */
+const DEFAULT_POOL_LANGUAGE = "English";
+
+/**
+ * Codes the model sometimes returns instead of a name, mapped to the name the backend uses.
+ *
+ * `show_quiz` asks for an English name and usually gets one, but a realtime model asked for a
+ * language will occasionally answer "hi" or "es". Comparing that against "English" would look
+ * like a language change on every single call and rewrite the pool for nothing.
+ */
+const LANGUAGE_CODE_NAMES: Record<string, string> = {
+  en: "English",
+  hi: "Hindi",
+  bn: "Bengali",
+  ta: "Tamil",
+  te: "Telugu",
+  mr: "Marathi",
+  gu: "Gujarati",
+  kn: "Kannada",
+  ml: "Malayalam",
+  pa: "Punjabi",
+  ur: "Urdu",
+  ar: "Arabic",
+  es: "Spanish",
+  fr: "French",
+  de: "German",
+  pt: "Portuguese",
+  ru: "Russian",
+  ja: "Japanese",
+  ko: "Korean",
+  zh: "Chinese",
+};
+
+/**
+ * Tidy what the model put in `show_quiz.language` into something comparable.
+ *
+ * Returns "" for anything that is not plausibly a language name, which the caller treats as
+ * "it did not say", i.e. leave the pool alone. Deliberately strict: this string is sent to the
+ * server and ends up inside a prompt there, and the server validates it again.
+ */
+export function normaliseLanguage(raw: string): string {
+  const text = (raw ?? "").trim().replace(/\s+/g, " ");
+  if (!text || text.length > 32) return "";
+  const code = LANGUAGE_CODE_NAMES[text.toLowerCase().replace(/[-_].*$/, "")];
+  if (code) return code;
+  // A name, in any script, possibly two words ("Brazilian Portuguese"). Not a sentence.
+  if (!/^[\p{L}][\p{L}\p{M}' ()-]*$/u.test(text)) return "";
+  return text
+    .split(" ")
+    .map((word) => (word ? word[0].toLocaleUpperCase() + word.slice(1) : word))
+    .join(" ");
+}
+
+/**
+ * Scripts that name a language on their own, so the room can move the pool BEFORE the tutor
+ * asks for a quiz rather than making the learner wait through a rewrite mid-lesson.
+ *
+ * A guess, and only a guess: Devanagari is Marathi and Nepali as well as Hindi. It is worth
+ * making because on this platform it is overwhelmingly Hindi (47 of the 60 production sessions
+ * whose learner spoke a non-Latin language), and because it is free to be wrong: the language
+ * the tutor declares on `show_quiz` is authoritative and corrects it.
+ *
+ * Latin-script languages are deliberately absent. Spanish and English cannot be told apart by
+ * script, and guessing from words is a language detector, which is not something worth carrying
+ * for a signal the model hands us a moment later anyway.
+ */
+const SCRIPT_LANGUAGES: [RegExp, string][] = [
+  [/[ऀ-ॿ]/u, "Hindi"],
+  [/[؀-ۿݐ-ݿ]/u, "Arabic"],
+  [/[ঀ-৿]/u, "Bengali"],
+  [/[਀-੿]/u, "Punjabi"],
+  [/[઀-૿]/u, "Gujarati"],
+  [/[஀-௿]/u, "Tamil"],
+  [/[ఀ-౿]/u, "Telugu"],
+  [/[ಀ-೿]/u, "Kannada"],
+  [/[ഀ-ൿ]/u, "Malayalam"],
+  [/[֐-׿]/u, "Hebrew"],
+  [/[Ͱ-Ͽ]/u, "Greek"],
+  [/[฀-๿]/u, "Thai"],
+  [/[Ѐ-ӿ]/u, "Russian"],
+  [/[぀-ヿ]/u, "Japanese"],
+  [/[가-힯]/u, "Korean"],
+  [/[一-鿿]/u, "Chinese"],
+];
+
+/** How much of a script has to appear before it counts as the language of the lesson. */
+export const SCRIPT_EVIDENCE_CHARS = 12;
+
+/** The language a piece of transcript is written in, or "" when its script does not say. */
+export function languageForScript(text: string): string {
+  for (const [pattern, language] of SCRIPT_LANGUAGES) {
+    if (pattern.test(text)) return language;
+  }
+  return "";
+}
+
 export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   const [phase, setPhase] = useState<TutorPhase>("idle");
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -273,6 +372,18 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   const sessionIdRef = useRef<string | null>(null);
   const questionPoolRef = useRef<PooledQuestion[]>([]);
   const usedQuestionsRef = useRef<Set<number>>(new Set());
+  /**
+   * The language the pool in hand is written in.
+   *
+   * Compared against the language the tutor reports speaking. They differ whenever the lesson
+   * turned out to be in something other than what the tenant was configured for, which is the
+   * normal case: four of the five tenants with the tutor have configured nothing at all.
+   */
+  const poolLanguageRef = useRef<string>(DEFAULT_POOL_LANGUAGE);
+  /** In-flight and finished rewrites, so two triggers cannot pay for the same pool twice. */
+  const languageRequestsRef = useRef<Map<string, Promise<boolean>>>(new Map());
+  /** How much non-Latin script the learner has produced, for the early trigger. */
+  const scriptEvidenceRef = useRef(0);
   /** A quiz the tutor has asked for, held until its turn's audio finishes. */
   const pendingQuizRef = useRef<PooledQuestion | null>(null);
   /**
@@ -283,6 +394,8 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
    * quizzes as a side effect.
    */
   const quizOpenRef = useRef(false);
+  /** True while a `show_quiz` call is mid-flight, including a pool rewrite it is waiting on. */
+  const quizResolvingRef = useRef(false);
   const pendingQuizTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const seqRef = useRef(0);
   const startedAtRef = useRef(0);
@@ -561,6 +674,56 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     });
   }, []);
 
+  // --- the language the lesson turned out to be in ---------------------------
+
+  /**
+   * Make sure the question pool is in `language`, fetching a rewritten one if it is not.
+   *
+   * The reported bug in one sentence: the pool is built before the learner has said a word, so
+   * it is written in whatever the TENANT was configured for, and a learner speaking Hindi gets
+   * an English card - or, because the room picks a question by matching the tutor's topic
+   * against the question stems, no card at all, since a Hindi topic shares no word with an
+   * English stem and `show_quiz` is declined with `no_question`.
+   *
+   * Only the conversation knows what language it is in, so the tutor reports it and this acts
+   * on it. At most one round trip per language per session: the server stores the rewritten
+   * pool, and every later `show_quiz` resolves locally with no network, exactly as English
+   * does.
+   *
+   * Returns true when the pool is now in that language. False is not an error: the caller
+   * carries on with the pool it has, which is what would have happened anyway.
+   */
+  const ensurePoolLanguage = useCallback(async (language: string): Promise<boolean> => {
+    const wanted = normaliseLanguage(language);
+    const sid = sessionIdRef.current;
+    if (!wanted || !sid) return false;
+    if (wanted.toLowerCase() === poolLanguageRef.current.toLowerCase()) return true;
+
+    const inFlight = languageRequestsRef.current.get(wanted.toLowerCase());
+    if (inFlight) return inFlight;
+
+    const request = (async () => {
+      try {
+        const result = await aiTutorService.setQuizLanguage(sid, wanted);
+        if (!result?.ok) return false;
+        poolLanguageRef.current = result.language || wanted;
+        if (result.question_pool?.length) {
+          questionPoolRef.current = result.question_pool;
+          // A generated pool numbers its questions -1, -2, -3, so ids from the pool being
+          // replaced would mark the new questions used before they have ever been shown.
+          usedQuestionsRef.current = new Set();
+        }
+        return true;
+      } catch {
+        // A lesson without a quiz is still a lesson, and the tutor is already told to ask the
+        // question out loud itself when one cannot be shown.
+        return false;
+      }
+    })();
+    languageRequestsRef.current.set(wanted.toLowerCase(), request);
+    return request;
+  }, []);
+
   // --- tool dispatch ---------------------------------------------------------
 
   const handleToolCall = useCallback(
@@ -645,79 +808,104 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
            * as long as the overlay is up, so an abandoned quiz disables the cost guard and
            * the session runs to its server deadline with nothing refunded.
            */
-          if (pendingQuizRef.current || quizOpenRef.current) {
+          if (pendingQuizRef.current || quizOpenRef.current || quizResolvingRef.current) {
             return respondToTool(callId, { ok: false, reason: "quiz_already_open" });
           }
-          /**
-           * Pick by what the tutor asked for, not by position.
-           *
-           * `show_quiz` declares a REQUIRED `topic` ("the specific idea to test") and the
-           * model supplies it, but this branch used to take the first unused pool entry.
-           * So the tutor could finish teaching recursion, call show_quiz({topic:
-           * "base case"}), and the learner would get whichever question happened to sit at
-           * index 0 of a pool ordered only by difficulty.
-           *
-           * Scored against `question` text rather than `topic`: the bank's topic column
-           * holds coarse categories ("OOPs", "DBMS"), and on a generated pool it is stamped
-           * with the session topic on every entry, so it carries no signal to rank on.
-           */
-          const wanted = topicTokens(String(args.topic ?? ""));
-          const unused = questionPoolRef.current.filter(
-            (q) => !usedQuestionsRef.current.has(q.id)
-          );
-          let next: (typeof unused)[number] | undefined;
-          if (wanted.length && unused.length) {
-            // Score the STEM only. `q.topic` holds a coarse bank category ("OOPs", "DBMS") and
-            // on a generated pool it is stamped with the SESSION topic on every entry, so
-            // including it gives every question the same constant floor and makes a real match
-            // indistinguishable from none.
-            let bestScore = 0;
-            for (const q of unused) {
-              const blob = q.question.toLowerCase();
-              const score = wanted.filter((t) => wholeWord(t).test(blob)).length;
-              if (score > bestScore) {
-                bestScore = score;
-                next = q;
+          // Held across the await below. `pendingQuizRef` is only set once a question has been
+          // chosen, so without this a second call arriving while the pool is being rewritten
+          // would walk straight through the guard above - the exact race the guard exists for,
+          // reopened by making this branch wait for the network.
+          quizResolvingRef.current = true;
+          try {
+            /**
+             * Put the pool in the language of the LESSON before choosing from it.
+             *
+             * Everything below matches the tutor's topic against the question stems, and that
+             * comparison is only meaningful when both sides are in the same language. A Hindi
+             * topic against an English stem scores zero on every question in the pool, and the
+             * branch below then declines with `no_question` - which is the reported "if we talk
+             * to the AI Tutor in any language other than English, it does not ask the quiz
+             * questions", exactly.
+             *
+             * `language` is the tutor telling us what it is actually speaking. The first call in
+             * a non-English lesson waits for the rewrite; the ones after it cost nothing, and an
+             * English lesson never touches the network here at all.
+             */
+            await ensurePoolLanguage(String(args.language ?? ""));
+
+            /**
+             * Pick by what the tutor asked for, not by position.
+             *
+             * `show_quiz` declares a REQUIRED `topic` ("the specific idea to test") and the
+             * model supplies it, but this branch used to take the first unused pool entry.
+             * So the tutor could finish teaching recursion, call show_quiz({topic:
+             * "base case"}), and the learner would get whichever question happened to sit at
+             * index 0 of a pool ordered only by difficulty.
+             *
+             * Scored against `question` text rather than `topic`: the bank's topic column
+             * holds coarse categories ("OOPs", "DBMS"), and on a generated pool it is stamped
+             * with the session topic on every entry, so it carries no signal to rank on.
+             */
+            const wanted = topicTokens(String(args.topic ?? ""));
+            const unused = questionPoolRef.current.filter(
+              (q) => !usedQuestionsRef.current.has(q.id)
+            );
+            let next: (typeof unused)[number] | undefined;
+            if (wanted.length && unused.length) {
+              // Score the STEM only. `q.topic` holds a coarse bank category ("OOPs", "DBMS") and
+              // on a generated pool it is stamped with the SESSION topic on every entry, so
+              // including it gives every question the same constant floor and makes a real match
+              // indistinguishable from none.
+              let bestScore = 0;
+              for (const q of unused) {
+                const blob = q.question.toLowerCase();
+                const score = wanted.filter((t) => wholeWord(t).test(blob)).length;
+                if (score > bestScore) {
+                  bestScore = score;
+                  next = q;
+                }
               }
             }
+            /**
+             * No match means NO question, not the first one in the pool.
+             *
+             * This used to be `let next = unused[0]`, so when nothing in the pre-warmed pool was
+             * about the concept just taught, the learner got whichever question sorted first by
+             * difficulty. That is the reported "it is asking something in the quick question but
+             * teaching something else": a positional fallback presented as a targeted check.
+             *
+             * Declining is only the better answer because the tutor is now told what to do with
+             * it - ask the question out loud itself, without mentioning the tool (see
+             * ai_tutor/services/prompts.py). Shipping this decline without that guidance would
+             * trade a mismatched question for an audible apology.
+             */
+            if (!next) {
+              return respondToTool(callId, { ok: false, reason: "no_question" });
+            }
+            usedQuestionsRef.current.add(next.id);
+            /**
+             * Held, not shown. The modal used to open here - the instant OpenAI finished
+             * streaming the tool arguments - while the audio for that same turn was still
+             * playing out as RTP. The learner saw the quiz appear mid-sentence and heard the
+             * tutor announce it afterwards.
+             *
+             * Released on `output_audio_buffer.stopped`, which is the authoritative "the tutor
+             * has stopped making sound" signal on WebRTC. Deliberately NOT on `.cleared`:
+             * that is the echo of the `output_audio_buffer.clear` this hook sends on barge-in,
+             * so releasing there would pop the quiz at the moment the learner interrupts.
+             *
+             * The backstop matters more than it looks: if that event never arrives the
+             * question would be consumed from the pool and never shown, which is the Hindi
+             * half of the same complaint - "it said it was giving me a quiz but it never
+             * showed up".
+             */
+            pendingQuizRef.current = next;
+            if (pendingQuizTimerRef.current) clearTimeout(pendingQuizTimerRef.current);
+            pendingQuizTimerRef.current = setTimeout(releasePendingQuiz, 12000);
+            return respondToTool(callId, { ok: true, asked: next.question });
+          } finally {
+            quizResolvingRef.current = false;
           }
-          /**
-           * No match means NO question, not the first one in the pool.
-           *
-           * This used to be `let next = unused[0]`, so when nothing in the pre-warmed pool was
-           * about the concept just taught, the learner got whichever question sorted first by
-           * difficulty. That is the reported "it is asking something in the quick question but
-           * teaching something else": a positional fallback presented as a targeted check.
-           *
-           * Declining is only the better answer because the tutor is now told what to do with
-           * it - ask the question out loud itself, without mentioning the tool (see
-           * ai_tutor/services/prompts.py). Shipping this decline without that guidance would
-           * trade a mismatched question for an audible apology.
-           */
-          if (!next) {
-            return respondToTool(callId, { ok: false, reason: "no_question" });
-          }
-          usedQuestionsRef.current.add(next.id);
-          /**
-           * Held, not shown. The modal used to open here - the instant OpenAI finished
-           * streaming the tool arguments - while the audio for that same turn was still
-           * playing out as RTP. The learner saw the quiz appear mid-sentence and heard the
-           * tutor announce it afterwards.
-           *
-           * Released on `output_audio_buffer.stopped`, which is the authoritative "the tutor
-           * has stopped making sound" signal on WebRTC. Deliberately NOT on `.cleared`:
-           * that is the echo of the `output_audio_buffer.clear` this hook sends on barge-in,
-           * so releasing there would pop the quiz at the moment the learner interrupts.
-           *
-           * The backstop matters more than it looks: if that event never arrives the
-           * question would be consumed from the pool and never shown, which is the Hindi
-           * half of the same complaint - "it said it was giving me a quiz but it never
-           * showed up".
-           */
-          pendingQuizRef.current = next;
-          if (pendingQuizTimerRef.current) clearTimeout(pendingQuizTimerRef.current);
-          pendingQuizTimerRef.current = setTimeout(releasePendingQuiz, 12000);
-          return respondToTool(callId, { ok: true, asked: next.question });
         }
 
         // Backend round trips. Budgeted, and each returns a result the model can act on
@@ -761,7 +949,7 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           return respondToTool(callId, { ok: false, reason: "unknown_tool" });
       }
     },
-    [pushCard, respondToTool]
+    [pushCard, respondToTool, ensurePoolLanguage]
   );
 
   /** Answer a quiz. Grading is server-side; the browser never had the key. */
@@ -972,6 +1160,24 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
         case "conversation.item.input_audio_transcription.completed": {
           const text = String(event.transcript ?? "").trim();
           if (text) {
+            /**
+             * Start the rewrite from the learner's own words, before a quiz is asked for.
+             *
+             * Waiting for `show_quiz` would work, but it puts the rewrite in the middle of the
+             * lesson: the tutor says "here is a question" and the card is a couple of seconds
+             * behind it. The learner's script says what language this is long before that, and
+             * the guess is free to be wrong because the language the tutor declares on the tool
+             * call is authoritative and corrects it.
+             *
+             * Threshold rather than first character: one borrowed word is not a language.
+             */
+            const script = languageForScript(text);
+            if (script) {
+              scriptEvidenceRef.current += text.length;
+              if (scriptEvidenceRef.current >= SCRIPT_EVIDENCE_CHARS) {
+                void ensurePoolLanguage(script);
+              }
+            }
             const sequence = seqRef.current++;
             pendingTurnsRef.current.push({
               role: "student",
@@ -1070,7 +1276,15 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           break;
       }
     },
-    [handleToolCall, respondToTool, send, releaseResponseGate, armResponseWatchdog, requestResponse]
+    [
+      handleToolCall,
+      respondToTool,
+      send,
+      releaseResponseGate,
+      armResponseWatchdog,
+      requestResponse,
+      ensurePoolLanguage,
+    ]
   );
 
   // --- flushing --------------------------------------------------------------
@@ -1445,6 +1659,13 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
         sessionIdRef.current = started.session.id;
         setSessionId(started.session.id);
         questionPoolRef.current = started.question_pool ?? [];
+        // What the server wrote that pool in. Older backends do not send it; English is what
+        // they always meant, and it is what the shared question bank is written in.
+        poolLanguageRef.current =
+          normaliseLanguage(started.question_pool_language ?? "") || DEFAULT_POOL_LANGUAGE;
+        usedQuestionsRef.current = new Set();
+        languageRequestsRef.current = new Map();
+        scriptEvidenceRef.current = 0;
         startedAtRef.current = Date.now();
         setRemainingSeconds(started.max_seconds);
 

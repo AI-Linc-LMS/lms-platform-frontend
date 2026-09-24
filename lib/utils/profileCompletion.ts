@@ -1,4 +1,25 @@
 import { UserProfile } from "@/lib/services/profile.service";
+import { MANDATORY_PROFILE_FIELDS } from "@/lib/schemas/profile.schema";
+
+/**
+ * Profile STRENGTH — how rich this profile is for the people who read it.
+ *
+ * Not to be confused with profile COMPLETENESS, which is the server's five-field rule in
+ * `accounts/profile_completion.py` and the thing that actually gates Resume, Jobs and Interview.
+ * Two numbers, two questions:
+ *
+ *   strength      27 fields, from bio to certifications. What a recruiter sees.
+ *   completeness  the required 5. What the API enforces.
+ *
+ * They were drifting in the worst possible way: this list called `bio` REQUIRED and put
+ * `date_of_birth` and `country` — the two fields the gate actually blocks on — under OPTIONAL.
+ * So /profile told a learner their date of birth was optional while the dashboard told them it
+ * was the thing standing between them and three modules.
+ *
+ * The gating five are no longer written out here. They are imported from the one frontend
+ * definition, `MANDATORY_PROFILE_FIELDS`, which is itself only a fallback for the server's
+ * answer. A sixth mandatory field added on the backend lands in both places or neither.
+ */
 
 export interface ProfileCompletionResult {
   percentage: number;
@@ -7,18 +28,12 @@ export interface ProfileCompletionResult {
   totalFields: number;
 }
 
-const REQUIRED_FIELDS = [
-  "first_name",
-  "last_name",
-  "email",
-  "phone_number",
-  "bio",
-] as const;
+/** The gating five, plus email — which every account has and nobody can edit here. */
+const REQUIRED_FIELDS = [...MANDATORY_PROFILE_FIELDS, "email"] as const;
 
 const OPTIONAL_FIELDS = [
-  "date_of_birth",
+  "bio",
   "gender",
-  "country",
   "college_name",
   "degree_type",
   "branch",
