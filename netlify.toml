@@ -1,6 +1,6 @@
 [build]
-command = "yarn next build" # or "yarn next build"
-publish = ".next"
+command = "bash -c 'set +e; yarn next build > /tmp/b.log 2>&1; code=$?; mkdir -p diag; cp /tmp/b.log diag/build.txt; { echo exit=$code; node -v; yarn -v; echo cpus=$(nproc); free -m; df -h /; echo NODE_OPTIONS=$NODE_OPTIONS; ls node_modules/.bin/next; } > diag/env.txt 2>&1; tail -c 400000 /tmp/b.log > diag/build.txt; exit 0'"
+publish = "diag"
 # A pull request's preview builds on the demo site only; every other site skips it
 # (an ignore command that exits 0 means "skip").
 #
@@ -10,8 +10,6 @@ publish = ".next"
 # Production and branch deploys (stagging) are unchanged: every tenant still builds those.
 ignore = '[ "$CONTEXT" = "deploy-preview" ] && [ "$SITE_NAME" != "democlientailinc" ]'
 
-[[plugins]]
-package = "@netlify/plugin-nextjs"
 
 # Proctoring model weights: immutable, and on the critical path of a graded exam.
 #
