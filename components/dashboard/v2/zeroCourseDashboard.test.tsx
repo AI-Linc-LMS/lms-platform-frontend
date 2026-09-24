@@ -323,6 +323,10 @@ describe("a learner who DOES have courses is untouched", () => {
         },
         skillProfile: { abilityIndex: null, fieldTier: null, mastery: 30, skillsTracked: 2, skills: [], aiTip: null },
         upNext: null, resumeSubmoduleId: 9, due: null, leaderboardRank: null,
+        // A learner who is already IN the course has done its calibration - otherwise the CTA
+        // resolver would send them to the assessment and this fixture would stop being
+        // "a learner who DOES have courses".
+        calibration: { required: true, done: true, pending: false, assessmentId: 7, assessmentSlug: "python-calibration" },
         certificate: { enabled: false, pct: 22, threshold: 80 },
       },
     ] as LearnerDashboard["courses"];
