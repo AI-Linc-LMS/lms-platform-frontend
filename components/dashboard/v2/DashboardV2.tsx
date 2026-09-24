@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { ProfileCompletionPanel } from "./ProfileCompletionPanel";
 import { Box, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
@@ -8,7 +9,6 @@ import { useQuery } from "@tanstack/react-query";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
 import { useHideLeaderboardView } from "@/lib/contexts/ClientInfoContext";
 import { DashboardContent } from "@/components/dashboard/DashboardContent";
-import type { LearnerDashboard } from "@/lib/types/dashboard";
 import { AiBriefingHero } from "./AiBriefingHero";
 import { StatCards } from "./StatCards";
 import { CourseReadinessCard } from "./CourseReadinessCard";
@@ -42,8 +42,14 @@ function LegacyFallback() {
  *  button always led to "No courses are open to join right now" - reported as "the buttons of
  *  this block don't work if I am not enrolled in any course". On a tenant whose admins assign every
  *  course there is nothing for the learner to press here, so it says what happens next instead.
+ *
+ *  It then said it in the SAME words as the briefing card directly above it ("Your organisation
+ *  adds you to your courses..."), so the page opened by telling a learner the same thing twice.
+ *  The briefing owns "what happens next"; this card owns what this SLOT will hold, which is the
+ *  one thing nothing else on the page explains.
  */
 function CoursesOnTheirWayCard() {
+  const { t } = useTranslation("common");
   return (
     <Box
       data-testid="courses-on-their-way"
@@ -52,10 +58,14 @@ function CoursesOnTheirWayCard() {
       <Box sx={{ width: 56, height: 56, mx: "auto", mb: 2, borderRadius: "50%", display: "grid", placeItems: "center", background: "linear-gradient(135deg,var(--module-tile-from, #7c3aed),var(--module-tile-to, #a855f7))" }}>
         <Icon icon="mdi:school-outline" width={28} color="#fff" />
       </Box>
-      <Typography sx={{ fontWeight: 800, fontSize: "1.15rem", color: "#0f172a" }}>Your courses are on their way</Typography>
+      <Typography sx={{ fontWeight: 800, fontSize: "1.15rem", color: "#0f172a" }}>
+        {t("zeroCourseDashboard.courseSlotTitle", { defaultValue: "Your course will appear here" })}
+      </Typography>
       <Typography sx={{ color: "#64748b", mt: 1, maxWidth: 480, mx: "auto" }}>
-        Your organisation adds you to your courses. As soon as it does, they appear here with your
-        progress, and the engine starts at your level.
+        {t("zeroCourseDashboard.courseSlotBody", {
+          defaultValue:
+            "The moment your organisation adds you to one, this is where your next lesson, your progress and your readiness score live.",
+        })}
       </Typography>
     </Box>
   );
@@ -103,6 +113,10 @@ export function DashboardV2() {
 
   const hasCourses = data.courses.length > 0;
   const activeCourse = data.courses.find((c) => c.id === activeCourseId) ?? data.courses[0];
+  // Nothing enrolled, nothing earned, no streak ever: this learner has not been here before, so
+  // the hero greets them rather than welcoming them BACK.
+  const firstRun =
+    !hasCourses && data.aggregate.totalPoints === 0 && data.profile.bestStreak === 0;
 
   return (
     // Two columns like the mockup: AI briefing + stats + readiness + continue on the left;
@@ -126,7 +140,7 @@ export function DashboardV2() {
       <Box sx={{ minWidth: 0 }}>
         {data.briefing && (
           <Box data-tour-id="dash-briefing">
-            <AiBriefingHero briefing={data.briefing} profile={data.profile} />
+            <AiBriefingHero briefing={data.briefing} profile={data.profile} firstRun={firstRun} />
           </Box>
         )}
         <Box data-tour-id="dash-stats">
