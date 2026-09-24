@@ -43,7 +43,14 @@ export interface Experience {
   start_date: string;
   end_date?: string;
   current: boolean;
+  /**
+   * The entry's points as text, one per line. Written by the server from `highlights` for readers
+   * that predate the list; on an entry saved before the list existed it is the only source, and
+   * `experienceBullets()` recovers points from it. Read points through that helper, not this.
+   */
   description?: string;
+  /** One string per responsibility or achievement: one bullet each on a resume. */
+  highlights?: string[];
 }
 
 export interface Education {

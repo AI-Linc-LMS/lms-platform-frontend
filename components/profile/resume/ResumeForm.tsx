@@ -125,6 +125,26 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
     });
   };
 
+  /** A pasted list: this point takes the first item, the rest become the points after it. */
+  const pasteDescriptionPoints = (id: string, index: number, own: string, following: string[]) => {
+    setResumeData({
+      ...resumeData,
+      workExperience: resumeData.workExperience.map((exp) =>
+        exp.id === id
+          ? {
+              ...exp,
+              description: [
+                ...exp.description.slice(0, index),
+                own,
+                ...following,
+                ...exp.description.slice(index + 1),
+              ],
+            }
+          : exp
+      ),
+    });
+  };
+
   const removeDescriptionPoint = (id: string, index: number) => {
     setResumeData({
       ...resumeData,
@@ -715,6 +735,9 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                         value={desc}
                         onChange={(value) =>
                           updateDescriptionPoint(exp.id, descIndex, value)
+                        }
+                        onPasteList={(own, following) =>
+                          pasteDescriptionPoints(exp.id, descIndex, own, following)
                         }
                         placeholder="Achievement or responsibility"
                         actions={
