@@ -127,3 +127,43 @@ describe("what the profile page shows", () => {
     ).toEqual(["Built dashboards", "Cut costs by 40%"]);
   });
 });
+
+describe("review follow-ups", () => {
+  it("does not wipe an entry whose text has no points when another entry is saved", async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    const kept = { ...LEGACY, id: "e0", highlights: [], description: "Kept text" };
+    render(<ExperienceSection profile={profileWith([kept, OTHER])} onSave={onSave} />);
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.click(screen.getAllByRole("button", { name: "Edit Experience" })[1]);
+    fireEvent.click(within(screen.getByRole("dialog")).getByRole("button", { name: "Save" }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    const [first] = onSave.mock.calls[0][0].experience;
+    expect(first.description).toBe("Kept text");
+    expect(first).not.toHaveProperty("highlights");
+  });
+
+  it("still clears an entry whose points were all removed", async () => {
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    render(<ExperienceSection profile={profileWith([{ ...OTHER, highlights: ["Only point"] }])} onSave={onSave} />);
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit Experience" }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Remove point 1" }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Save" }));
+
+    await waitFor(() => expect(onSave).toHaveBeenCalled());
+    const [entry] = onSave.mock.calls[0][0].experience;
+    expect(entry.highlights).toEqual([]);
+    expect(entry.description).toBe("");
+  });
+
+  it("will not save an entry with a point over 1000 characters, rather than failing the section", () => {
+    const long = { ...OTHER, description: `Built ${"x".repeat(1000)}.` };
+    render(<ExperienceSection profile={profileWith([long])} onSave={vi.fn()} />);
+    fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    fireEvent.click(screen.getByRole("button", { name: "Edit Experience" }));
+    expect(within(screen.getByRole("dialog")).getByRole("button", { name: "Save" })).toBeDisabled();
+  });
+});
+

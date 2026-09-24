@@ -6,7 +6,12 @@ import { Box, Button, IconButton, TextField, Typography } from "@mui/material";
 
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { PHONE } from "@/components/common/mobile/phone";
-import { looksLikeAList, splitIntoBullets } from "@/lib/utils/experienceBullets";
+import {
+  MAX_POINT_LENGTH,
+  MAX_POINTS,
+  looksLikeAList,
+  splitIntoBullets,
+} from "@/lib/utils/experienceBullets";
 
 /**
  * A work-experience entry's points, edited one at a time.
@@ -21,6 +26,9 @@ import { looksLikeAList, splitIntoBullets } from "@/lib/utils/experienceBullets"
  * - Pasting several lines, or text with bullet markers, adds one point per bullet, with the
  *   markers dropped (the same rule that converts descriptions saved before this editor existed).
  * - Up and down reorder a point; the button keeps focus, so a keyboard user can keep moving it.
+ * - The server takes at most MAX_POINTS points of MAX_POINT_LENGTH characters. Typing stops at the
+ *   length, adding stops at the count, a paste adds only what fits and says so, and a point that is
+ *   already too long (converted from an old description) is marked with how to fix it.
  *
  * Phone sizes live under PHONE, never in a bare `xs`, which MUI would apply at every width: the
  * three row actions are 30px squares on a desktop and 44px on a phone, where they wrap onto their
@@ -65,6 +73,10 @@ export function ExperienceBulletsEditor({ value, onChange, labelId }: Experience
     setIds(rowIds);
   }
 
+  /** Something the learner tried that did not all happen: a capped paste, Enter at the cap. */
+  const [notice, setNotice] = useState<string | null>(null);
+  const full = value.length >= MAX_POINTS;
+
   const elements = useRef(new Map<string, HTMLElement>());
   const register = (key: string) => (el: HTMLElement | null) => {
     if (el) elements.current.set(key, el);
@@ -106,6 +118,7 @@ export function ExperienceBulletsEditor({ value, onChange, labelId }: Experience
     // still deliver one. A point is one line.
     const next = [...value];
     next[i] = text.replace(/[\r\n]+/g, " ");
+    setNotice(null);
     commit(next, rowIds);
   };
 
@@ -115,6 +128,7 @@ export function ExperienceBulletsEditor({ value, onChange, labelId }: Experience
       commit(value, rowIds, { id: rowIds[last], part: "input", caret: 0 });
       return;
     }
+    if (full) return; // the button is disabled; this is the keyboard's way round it
     const id = newRowId();
     commit([...value, ""], [...rowIds, id], { id, part: "input", caret: 0 });
   };
@@ -159,6 +173,10 @@ export function ExperienceBulletsEditor({ value, onChange, labelId }: Experience
       const before = text.slice(0, start).trimEnd();
       const after = text.slice(end).trimStart();
       if (!before && !after) return; // an empty point does not breed more empty points
+      if (full) {
+        setNotice(t("experienceBullets.full", { max: MAX_POINTS }));
+        return;
+      }
       const { nextValue, nextIds, newIds } = splice(i, [before, after]);
       commit(nextValue, nextIds, { id: newIds[1], part: "input", caret: 0 });
       return;
@@ -188,9 +206,17 @@ export function ExperienceBulletsEditor({ value, onChange, labelId }: Experience
   const onPaste = (event: ClipboardEvent<HTMLDivElement>, i: number) => {
     const pasted = event.clipboardData.getData("text/plain");
     if (!pasted || !looksLikeAList(pasted)) return; // one plain sentence: the browser's own paste
-    const items = splitIntoBullets(pasted);
+    const found = splitIntoBullets(pasted);
     event.preventDefault();
-    if (items.length === 0) return;
+    if (found.length === 0) return;
+    // This point takes the first item; only as many more as the cap leaves room for are added.
+    const room = MAX_POINTS - value.length + 1;
+    const items = found.slice(0, Math.max(1, room));
+    setNotice(
+      items.length < found.length
+        ? t("experienceBullets.pasteTrimmed", { added: items.length, found: found.length, max: MAX_POINTS })
+        : null,
+    );
     const field = event.target as HTMLTextAreaElement;
     const text = value[i];
     const start = field.selectionStart ?? text.length;
@@ -210,12 +236,15 @@ export function ExperienceBulletsEditor({ value, onChange, labelId }: Experience
     <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
       <Box
         component="ul"
+        // listStyle "none" makes Safari stop announcing this as a list; the role puts it back.
+        role="list"
         aria-labelledby={labelId}
         sx={{ listStyle: "none", m: 0, p: 0, display: "flex", flexDirection: "column", gap: 1 }}
       >
         {value.map((text, i) => {
           const id = rowIds[i];
           const n = i + 1;
+          const tooLong = text.trim().length > MAX_POINT_LENGTH;
           return (
             <Box
               component="li"
@@ -248,8 +277,20 @@ export function ExperienceBulletsEditor({ value, onChange, labelId }: Experience
                 maxRows={6}
                 size="small"
                 fullWidth
+                // Stops typing at the length. A point converted from an old description can
+                // already be longer; it is then marked, and the dialog will not save it.
+                error={tooLong}
+                helperText={
+                  tooLong
+                    ? t("experienceBullets.tooLong", { max: MAX_POINT_LENGTH, count: text.trim().length })
+                    : undefined
+                }
                 slotProps={{
-                  htmlInput: { "aria-label": t("experienceBullets.pointLabel", { n, total: value.length }) },
+                  htmlInput: {
+                    "aria-label": t("experienceBullets.pointLabel", { n, total: value.length }),
+                    maxLength: MAX_POINT_LENGTH,
+                  },
+                  formHelperText: { sx: { fontSize: "0.75rem", mx: 0 } },
                 }}
                 sx={{
                   flex: 1,
@@ -305,6 +346,7 @@ export function ExperienceBulletsEditor({ value, onChange, labelId }: Experience
           size="small"
           startIcon={<IconWrapper icon="mdi:plus" size={16} />}
           onClick={add}
+          disabled={full && Boolean(value[value.length - 1]?.trim())}
           sx={{
             textTransform: "none",
             fontWeight: 600,
@@ -315,9 +357,19 @@ export function ExperienceBulletsEditor({ value, onChange, labelId }: Experience
           {t("experienceBullets.add")}
         </Button>
         <Typography sx={{ fontSize: "0.75rem", color: "var(--font-secondary)" }}>
-          {t("experienceBullets.hint")}
+          {full ? t("experienceBullets.full", { max: MAX_POINTS }) : t("experienceBullets.hint")}
         </Typography>
       </Box>
+      {value.length > MAX_POINTS && (
+        <Typography role="alert" sx={{ fontSize: "0.75rem", color: "var(--error-500)" }}>
+          {t("experienceBullets.tooMany", { max: MAX_POINTS, extra: value.length - MAX_POINTS })}
+        </Typography>
+      )}
+      {notice && (
+        <Typography role="status" data-testid="experience-points-notice" sx={{ fontSize: "0.75rem", color: "var(--font-secondary)" }}>
+          {notice}
+        </Typography>
+      )}
     </Box>
   );
 }

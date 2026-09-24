@@ -9,7 +9,7 @@ import { UserProfile, Experience } from "@/lib/services/profile.service";
 import { PROFILE, TILE_GRADIENT } from "./theme/profileTokens";
 import { phoneSheetDialogSx } from "@/components/profile/phoneSheet";
 import { ExperienceBulletsEditor } from "@/components/profile/ExperienceBulletsEditor";
-import { bulletsToDescription, experienceBullets } from "@/lib/utils/experienceBullets";
+import { bulletsToDescription, bulletsWithinLimits, experienceBullets } from "@/lib/utils/experienceBullets";
 
 /**
  * An entry as the server should receive it.
@@ -18,9 +18,16 @@ import { bulletsToDescription, experienceBullets } from "@/lib/utils/experienceB
  * editor. An entry saved before points existed is sent back exactly as it came, text only, so
  * saving the section never rewrites entries the learner did not open - their points are shown
  * converted, but the conversion is not stored until they save that entry themselves.
+ *
+ * An EMPTY list goes only when the text is empty too. `{ highlights: [], description: "X" }`
+ * sent as it stands would make the server rewrite the text from no points - wiping "X" the next
+ * time any other entry was saved. With text and no points, the text is what the entry holds.
  */
 function toPayload(exp: Experience): Experience {
-  const points = Array.isArray(exp.highlights) ? exp.highlights.map((h) => h.trim()).filter(Boolean) : null;
+  const stored = Array.isArray(exp.highlights)
+    ? exp.highlights.filter((h): h is string => typeof h === "string").map((h) => h.trim()).filter(Boolean)
+    : null;
+  const points = stored && (stored.length > 0 || !exp.description?.trim()) ? stored : null;
   return {
     id: exp.id,
     company: exp.company,
@@ -662,7 +669,14 @@ export function ExperienceSection({
           <Button
             onClick={handleDialogSave}
             variant="contained"
-            disabled={!formData.position || !formData.company || !formData.start_date}
+            disabled={
+              !formData.position ||
+              !formData.company ||
+              !formData.start_date ||
+              // The server refuses more than 50 points or a point over 1000 characters; the
+              // editor says which, and Save waits rather than failing the whole section.
+              !bulletsWithinLimits(formData.highlights ?? [])
+            }
             sx={{
               textTransform: "none",
               fontWeight: 600,

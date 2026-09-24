@@ -233,3 +233,56 @@ describe("state", () => {
     expect(field(2, 2)).toBe(before);
   });
 });
+
+describe("limits the server enforces (50 points, 1000 characters)", () => {
+  const many = (n: number) => Array.from({ length: n }, (_, i) => `Point ${i + 1}`);
+
+  it("stops typing at 1000 characters", () => {
+    render(<Harness initial={["Built X"]} />);
+    expect(field(1, 1)).toHaveAttribute("maxlength", "1000");
+  });
+
+  it("marks a point that is already too long, and says how to fix it", () => {
+    render(<Harness initial={["x".repeat(1001)]} />);
+    expect(field(1, 1)).toHaveAttribute("aria-invalid", "true");
+    expect(screen.getByText(/under 1000 characters \(1001 now\)/)).toBeInTheDocument();
+  });
+
+  it("does not add a point past 50, and says why", () => {
+    render(<Harness initial={many(50)} />);
+    expect(screen.getByRole("button", { name: "Add a point" })).toBeDisabled();
+    expect(screen.getByText("An entry holds up to 50 points.")).toBeInTheDocument();
+  });
+
+  it("does not split a point with Enter at 50, and says why", () => {
+    render(<Harness initial={many(50)} />);
+    const input = field(3, 50);
+    input.focus();
+    input.setSelectionRange(3, 3);
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(points()).toHaveLength(50);
+    expect(screen.getByTestId("experience-points-notice")).toHaveTextContent("up to 50 points");
+  });
+
+  it("adds only the pasted points that fit, and says how many", () => {
+    render(<Harness initial={[...many(47), ""]} />);
+    paste(field(48, 48), "• One\n• Two\n• Three\n• Four\n• Five");
+    expect(points()).toHaveLength(50);
+    expect(points().slice(-3)).toEqual(["One", "Two", "Three"]);
+    expect(screen.getByTestId("experience-points-notice")).toHaveTextContent(
+      "Added 3 of the 5 points you pasted: an entry holds up to 50.",
+    );
+  });
+
+  it("asks for points to be removed when a converted entry is already over 50", () => {
+    render(<Harness initial={many(52)} />);
+    expect(screen.getByRole("alert")).toHaveTextContent("Remove 2 to save it.");
+  });
+
+  it("keeps list semantics that listStyle none takes away in Safari", () => {
+    // jsdom gives every <ul> the list role, so the implicit one proves nothing here. Safari drops
+    // it once list-style is none, and only an explicit role brings it back.
+    render(<Harness initial={["A"]} />);
+    expect(screen.getAllByTestId("experience-point")[0].parentElement).toHaveAttribute("role", "list");
+  });
+});

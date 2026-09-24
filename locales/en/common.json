@@ -3160,6 +3160,10 @@
     "moveDown": "Move point {{n}} down",
     "remove": "Remove point {{n}}",
     "add": "Add a point",
-    "hint": "Each point becomes its own bullet on your resume. Press Enter to start the next one, or paste a list."
+    "hint": "Each point becomes its own bullet on your resume. Press Enter to start the next one, or paste a list.",
+    "full": "An entry holds up to {{max}} points.",
+    "tooMany": "An entry holds up to {{max}} points. Remove {{extra}} to save it.",
+    "tooLong": "Keep a point under {{max}} characters ({{count}} now). Press Enter where it should split.",
+    "pasteTrimmed": "Added {{added}} of the {{found}} points you pasted: an entry holds up to {{max}}."
   }
 }
