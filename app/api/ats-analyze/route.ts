@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import type { ResumeData } from "@/components/profile/resume/types";
+import { plainTextResume } from "@/components/profile/resume/richText";
 
 const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
 const OPENAI_URL = "https://api.openai.com/v1/chat/completions";
@@ -347,7 +348,9 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Missing resumeData" }, { status: 400 });
   }
 
-  const resumeSummary = buildResumeSummary(resumeData);
+  // Resume lines are HTML ("health &amp; wellness", "<b>Led</b>"). The model is asked to judge
+  // the words, so it is given the words.
+  const resumeSummary = buildResumeSummary(plainTextResume(resumeData));
   const jobText = (jobDescription && typeof jobDescription === "string") ? jobDescription.trim() : "";
 
   if (light === true) {

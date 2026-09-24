@@ -23,6 +23,8 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
 import { ResumeData } from "./types";
+import ResumeRichText from "./ResumeRichText";
+import { normalizeResumeLine } from "./richText";
 
 export type TailorSection = "summary" | "skills" | "experience" | "projects";
 
@@ -192,7 +194,7 @@ export function SectionTailorButton({
     if (!result?.summaryAfter || !onResumeChange) return;
     onResumeChange({
       ...resumeData,
-      basicInfo: { ...resumeData.basicInfo, summary: result.summaryAfter },
+      basicInfo: { ...resumeData.basicInfo, summary: normalizeResumeLine(result.summaryAfter) },
     });
     setOpen(false);
   };
@@ -266,7 +268,9 @@ export function SectionTailorButton({
       const at = locateBullet(exp, change);
       if (at < 0) return exp;
       applied = true;
-      return { ...exp, description: exp.description.map((d, i) => (i === at ? change.after : d)) };
+      // A rewrite arrives as text or as HTML, depending on what the model echoed back.
+      const after = normalizeResumeLine(change.after);
+      return { ...exp, description: exp.description.map((d, i) => (i === at ? after : d)) };
     });
     return applied ? { ...data, workExperience } : null;
   };
@@ -301,7 +305,7 @@ export function SectionTailorButton({
     if (!onResumeChange) return;
     const updated = resumeData.projects.map((p) =>
       p.name.trim().toLowerCase() === change.name.trim().toLowerCase()
-        ? { ...p, description: change.afterDescription }
+        ? { ...p, description: normalizeResumeLine(change.afterDescription) }
         : p
     );
     onResumeChange({ ...resumeData, projects: updated });
@@ -706,7 +710,13 @@ function DiffPanel({
       >
         {label}
       </Typography>
-      {text || <em style={{ color: "var(--font-secondary)" }}>(empty)</em>}
+      {/* A resume line is HTML (see richText.ts). Printed as text, a bolded bullet showed its
+          <b> tags here and a typed & showed as &amp; - in the dialog asking whether to apply it. */}
+      {text ? (
+        <ResumeRichText value={normalizeResumeLine(text)} />
+      ) : (
+        <em style={{ color: "var(--font-secondary)" }}>(empty)</em>
+      )}
     </Paper>
   );
 }

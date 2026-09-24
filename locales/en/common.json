@@ -3169,5 +3169,24 @@
     "ladderLevelGone": "No {{level}} questions left in this quiz",
     "ladderExplain": "It adapts to you. Get {{n}} right in a row and the next question is one level harder; miss {{n}} in a row and it is one level easier. A single answer never changes the level, so one lucky guess can't move you up, and mixed answers keep it where it is. If the quiz has run out of questions at a level, you get the nearest level it still has - sometimes that skips a level - and it says so here.",
     "ladderExplainUnknown": "It adapts to you as you answer."
+  },
+  "adaptiveVideoMode": {
+    "groupLabel": "Watch mode",
+    "switching": "Switching…",
+    "switchFailed": "Couldn't switch the watch mode just now. Try again."
+  },
+  "experienceBullets": {
+    "label": "Responsibilities and achievements",
+    "placeholder": "e.g. Cut report load time from 5s to 1.2s",
+    "pointLabel": "Point {{n}} of {{total}}",
+    "moveUp": "Move point {{n}} up",
+    "moveDown": "Move point {{n}} down",
+    "remove": "Remove point {{n}}",
+    "add": "Add a point",
+    "hint": "Each point becomes its own bullet on your resume. Press Enter to start the next one, or paste a list.",
+    "full": "An entry holds up to {{max}} points.",
+    "tooMany": "An entry holds up to {{max}} points. Remove {{extra}} to save it.",
+    "tooLong": "Keep a point under {{max}} characters ({{count}} now). Press Enter where it should split.",
+    "pasteTrimmed": "Added {{added}} of the {{found}} points you pasted: an entry holds up to {{max}}."
   }
 }

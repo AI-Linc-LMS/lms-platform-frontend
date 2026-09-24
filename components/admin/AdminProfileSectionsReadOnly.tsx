@@ -11,6 +11,7 @@ import type {
   Certification,
   Achievement,
 } from "@/lib/services/profile.service";
+import { experienceBullets } from "@/lib/utils/experienceBullets";
 
 interface AdminProfileSectionsReadOnlyProps {
   profile: UserProfile;
@@ -108,10 +109,15 @@ export function AdminProfileSectionsReadOnly({ profile }: AdminProfileSectionsRe
                   {formatDate(exp.start_date)} – {exp.current ? "Present" : formatDate(exp.end_date)}
                   {exp.location && ` • ${exp.location}`}
                 </Typography>
-                {exp.description && (
-                  <Typography variant="body2" sx={{ mt: 0.5, whiteSpace: "pre-wrap" }}>
-                    {exp.description}
-                  </Typography>
+                {experienceBullets(exp).length > 0 && (
+                  // The learner's points, one bullet each, as their resume shows them.
+                  <Box component="ul" sx={{ m: 0, mt: 0.5, pl: 2.5 }}>
+                    {experienceBullets(exp).map((point, k) => (
+                      <Typography key={k} component="li" variant="body2">
+                        {point}
+                      </Typography>
+                    ))}
+                  </Box>
                 )}
               </Box>
             ))}

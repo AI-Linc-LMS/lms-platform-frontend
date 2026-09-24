@@ -56,6 +56,7 @@ import {
   Certification,
 } from "./types";
 import { SAMPLE_RESUME_DATA } from "./sampleResumeData";
+import { normalizeResumeLine } from "./richText";
 import { useToast } from "@/components/common/Toast";
 import { toPng } from "html-to-image";
 import { resumeService } from "@/lib/services/resume.service";
@@ -149,7 +150,7 @@ function sanitizeWorkExperience(items?: WorkExperience[]): WorkExperience[] {
     endDate: s(e.endDate),
     current: Boolean(e.current),
     description: Array.isArray(e.description)
-      ? e.description.map((d) => s(d)).filter((d) => d.length > 0)
+      ? e.description.map((d) => normalizeResumeLine(s(d))).filter((d) => d.length > 0)
       : [],
   }));
 }
@@ -164,7 +165,7 @@ function sanitizeEducation(items?: Education[]): Education[] {
     startDate: s(e.startDate),
     endDate: s(e.endDate),
     gpa: s(e.gpa),
-    description: s(e.description),
+    description: normalizeResumeLine(s(e.description)),
   }));
 }
 
@@ -186,7 +187,7 @@ function sanitizeProjects(items?: Project[]): Project[] {
   return items.map((p, i) => ({
     id: s(p.id) || String(i + 1),
     name: s(p.name),
-    description: s(p.description),
+    description: normalizeResumeLine(s(p.description)),
     technologies: Array.isArray(p.technologies) ? p.technologies.map((t) => s(t)) : [],
     link: s(p.link),
   }));
@@ -204,11 +205,16 @@ function sanitizeCertifications(items?: Certification[]): Certification[] {
 }
 
 /** Build resume data from the user's profile. Empty profile = empty form (no mocks).
- *  All null/undefined string fields are coerced to "" so MUI inputs stay controlled. */
+ *  All null/undefined string fields are coerced to "" so MUI inputs stay controlled.
+ *
+ *  Also the way a SAVED resume comes back in, so every rich line is normalised to the HTML the
+ *  editor writes (see normalizeResumeLine): a resume saved before that contract can hold plain
+ *  text beside HTML, and the two render differently. */
 const buildResumeData = (d?: Partial<ResumeData>): ResumeData => ({
   basicInfo: {
     ...EMPTY_BASIC_INFO,
     ...(d?.basicInfo ? dropNullish(d.basicInfo as unknown as Record<string, unknown>) : {}),
+    summary: normalizeResumeLine(s(d?.basicInfo?.summary)),
   },
   workExperience: sanitizeWorkExperience(d?.workExperience),
   education: sanitizeEducation(d?.education),

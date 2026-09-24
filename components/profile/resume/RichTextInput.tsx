@@ -4,7 +4,8 @@ import React, { useCallback, useEffect, useRef, useState } from "react";
 import { Box, ToggleButton, ToggleButtonGroup, Tooltip } from "@mui/material";
 
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { sanitizeResumeHtml } from "./richText";
+import { sanitizeResumeHtml, textToResumeHtml } from "./richText";
+import { looksLikeAList, splitIntoBullets } from "@/lib/utils/experienceBullets";
 
 type Command = "bold" | "italic" | "underline";
 
@@ -35,6 +36,13 @@ interface RichTextInputProps {
   minRows?: number;
   /** Rendered to the right of the B/I/U buttons - the row's delete button, typically. */
   actions?: React.ReactNode;
+  /**
+   * For a field that is ONE point of a list. When a paste holds several points (lines, or bullet
+   * markers), the first goes into this field and the rest are handed back to become the next
+   * points, instead of all of them landing here as one run ("• A… • B… • C…"). Both arrive in
+   * one call so the owner can apply them in one state update.
+   */
+  onPasteList?: (ownValue: string, following: string[]) => void;
 }
 
 /**
@@ -55,6 +63,7 @@ export default function RichTextInput({
   placeholder,
   minRows = 1,
   actions,
+  onPasteList,
 }: RichTextInputProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const [focused, setFocused] = useState(false);
@@ -114,6 +123,18 @@ export default function RichTextInput({
   };
 
   const onPaste = (event: React.ClipboardEvent<HTMLDivElement>) => {
+    const plain = event.clipboardData.getData("text/plain");
+    if (onPasteList && plain && looksLikeAList(plain)) {
+      const points = splitIntoBullets(plain).map(textToResumeHtml);
+      if (points.length > 0) {
+        event.preventDefault();
+        const [first, ...following] = points;
+        if (!exec("insertHTML", first) && ref.current) ref.current.innerHTML += first;
+        const own = ref.current ? sanitizeResumeHtml(ref.current.innerHTML) : first;
+        onPasteList(own === "<br>" ? "" : own, following);
+        return;
+      }
+    }
     const html = event.clipboardData.getData("text/html");
     const cleaned = html ? sanitizeResumeHtml(html) : "";
     event.preventDefault();
