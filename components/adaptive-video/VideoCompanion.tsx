@@ -3,6 +3,7 @@
 import { Box, ButtonBase, IconButton, Tab, Tabs, Typography, CircularProgress, Tooltip } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslation } from "react-i18next";
 import {
   adaptiveVideoService,
   type VideoCompanion as CompanionData,
@@ -77,15 +78,29 @@ export function VideoCompanion({
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [tab, setTab] = useState(0);
+  const { t } = useTranslation();
   const [watchMode, setWatchMode] = useState<WatchMode>("normal");
+  // The in-video questions, and whether the server has sent them at all.
+  //
+  // A session the server opens in rewatch mode is sent NONE - it withholds them rather than trust
+  // the player to hide them - and the start payload used to be the only place they ever arrived.
+  // So switching from Rewatch to Normal pace told the server the new mode and moved the rail, while
+  // the player went on holding an empty list: no check-in could fire until a reload fetched the
+  // (by then normal) session again. `loaded` is what tells a switch that it has to fetch them.
+  const [questions, setQuestions] = useState<{ list: CheckInMarker[]; loaded: boolean }>({ list: [], loaded: false });
+  const questionsLoadedRef = useRef(false);
+  // A switch in flight, or the reason the last one did not happen.
+  const [modeSwitch, setModeSwitch] = useState<{ pending: boolean; error: string | null }>({ pending: false, error: null });
+  // Bumped on every switch, so a slow answer to an older switch cannot undo a newer one.
+  const modeSeqRef = useRef(0);
   // Auto-generated description (lazily fetched the first time the Description tab is opened).
   const [genDesc, setGenDesc] = useState("");
   const [descLoading, setDescLoading] = useState(false);
   const descTriedRef = useRef(false);
   // "Pause & ask every 60s" watch mode - the second we paused at for a checkpoint (null = none) +
-  // the last minute boundary we fired on.
+  // whether the tick that just landed carried playback across a minute boundary.
   const [checkpoint, setCheckpoint] = useState<number | null>(null);
-  const lastCheckpointRef = useRef(0);
+  const minuteCrossedRef = useRef(false);
   const [activeCheckIn, setActiveCheckIn] = useState<CheckInMarker | null>(null);
   // Reactive set of answered check-in ids - drives the counter chip + the green
   // timeline markers, so they update the instant an answer lands (a ref wouldn't
@@ -106,13 +121,23 @@ export function VideoCompanion({
 
   // Destructure the controller into stable locals - passing `setIframe` to a ref taints the
   // whole object for the react-hooks/refs rule, so we never read `ctl.<member>` during render.
-  const { setIframe, currentTime, duration, playbackRate, rewinds, endedTick, play, pause, seekTo, setRate } =
+  //
+  // `setRate` is deliberately not used. Every offered mode plays at the learner's own speed, and
+  // re-asserting 1x on each mode change reset whatever speed they had picked in the player every
+  // time they switched - a switch is not supposed to touch playback at all.
+  const { setIframe, currentTime, duration, playbackRate, rewinds, endedTick, play, pause, seekTo } =
     useVimeoController();
 
   // Real watched-coverage tracking: each whole second actually PLAYED (not skipped) is marked, so
   // points scale with genuine watching - skipping to the end earns little. Refs (not state): these
   // feed the periodic + final sync without re-rendering. coverage = distinct watched secs / duration.
   const watchedRef = useRef<Set<number>>(new Set());
+  // The same seconds, counted only while the check-ins are ARMED: a questioning mode, with the
+  // questions in hand. This - not watchedRef - is what the auto-pause gate reads, so arming them
+  // mid-video (switching out of Rewatch) schedules them from where the learner is. Reading
+  // watchedRef made every check-in already played past in rewatch mode due at once.
+  const armedPlayedRef = useRef<Set<number>>(new Set());
+  const armedRef = useRef(false);
   const prevTimeRef = useRef(0);
   const coverageRef = useRef(0);
   const maxSpeedRef = useRef(1);
@@ -129,6 +154,10 @@ export function VideoCompanion({
         if (!alive) return;
         setCompanion(res.companion);
         setSessionId(res.session_id);
+        // A rewatch session is sent an empty list on purpose; anything else was sent the lot.
+        const loaded = res.session?.watch_mode !== "rewatch";
+        questionsLoadedRef.current = loaded;
+        setQuestions({ list: res.companion.check_ins ?? [], loaded });
         // The check-ins this learner has already passed, whichever visit they passed them on.
         // Seeding BOTH the reactive set (green markers + counter) and the shown-ref (the
         // auto-pause gate) is what stops a finished concept being re-examined on the way back.
@@ -150,17 +179,33 @@ export function VideoCompanion({
     };
   }, [configId]);
 
+  // The check-ins are armed in a questioning mode once the questions are in hand. Arming them -
+  // on load, or by switching out of Rewatch - starts the count of armed seconds afresh, so what was
+  // played while they were off can never fire them. Declared before the effects that read it.
+  const armed = watchMode !== "rewatch" && questions.loaded;
+  useEffect(() => {
+    if (armed && !armedRef.current) armedPlayedRef.current = new Set();
+    armedRef.current = armed;
+  }, [armed]);
+
   // Mark each whole second actually played into watchedRef. A small forward delta is normal playback;
   // a large jump is a seek/skip and is NOT counted - so skipping ahead doesn't earn coverage.
   //
   // Declared BEFORE the auto-pause effect on purpose: effects run in declaration order, and the
-  // check-in gate below reads watchedRef for the tick that just landed.
+  // check-in gate below reads the played seconds for the tick that just landed.
   useEffect(() => {
     const prev = prevTimeRef.current;
     prevTimeRef.current = currentTime;
     const delta = currentTime - prev;
     if (delta > 0 && delta <= 1.5) {
-      for (let s = Math.floor(prev); s <= Math.floor(currentTime); s++) watchedRef.current.add(s);
+      for (let s = Math.floor(prev); s <= Math.floor(currentTime); s++) {
+        watchedRef.current.add(s);
+        if (armedRef.current) armedPlayedRef.current.add(s);
+      }
+      // Playback carried the playhead over a minute boundary: the "Pause & ask every 60s" trigger.
+      // A seek is not playback, so jumping across a boundary, resuming mid-video or switching into
+      // that mode never stops the learner for minutes already behind them.
+      if (Math.floor(currentTime / 60) > Math.floor(prev / 60)) minuteCrossedRef.current = true;
     }
     coverageRef.current = duration > 0 ? Math.min((watchedRef.current.size / duration) * 100, 100) : 0;
     const whole = Math.floor(coverageRef.current);
@@ -178,65 +223,60 @@ export function VideoCompanion({
     if (resumeAt !== null) seekTo(resumeAt);
   }, [duration, resumeAt, saved.session, seekTo]);
 
-  // --- Check-in auto-pause ---------------------------------------------------
+  // --- Check-in auto-pause, and the 60s checkpoint ----------------------------
+  // One effect for both, so a single tick can never stop the learner twice: a check-in that falls
+  // due wins, and the checkpoint for the same moment is dropped rather than queued behind it.
   useEffect(() => {
-    if (!companion || activeCheckIn) return;
-    // Rewatch mode is the one that asks nothing. The server already withholds the questions from
-    // the payload, so `companion.check_ins` is empty and this loop finds nothing to fire; the
-    // explicit bail is here so the intent survives a future change that starts sending them.
-    if (watchMode === "rewatch") return;
-    // Fire the FIRST un-shown, un-answered check-in whose moment has actually been WATCHED.
-    //
-    // Reaching a timestamp is not the same as viewing it. Gating on position alone meant that
-    // jumping via the chapter rail or the timeline armed a probe, while a learner playing the video
-    // straight through got none - the clock only moved on a seek (see useVimeoController). Requiring
-    // the marker's second to be in watchedRef makes playback the trigger and leaves the chapter rail
-    // a review affordance, which is the behaviour the surface promises.
-    //
-    // The +/-1s tolerance absorbs a dropped tick; watchedRef only ever records playback-sized
-    // deltas, so a pure jump still arms nothing until the learner actually watches.
-    // Still a catch-up scan rather than an edge test, so a coarse tick can't drop a marker forever.
-    const played = (ts: number) => {
-      const sec = Math.floor(ts);
-      return watchedRef.current.has(sec) || watchedRef.current.has(sec - 1) || watchedRef.current.has(sec + 1);
-    };
-    const due = companion.check_ins
-      .filter(
-        (c) =>
-          !shownRef.current.has(c.id) &&
-          !answered.has(c.id) &&
-          currentTime >= c.timestamp_seconds &&
-          played(c.timestamp_seconds),
-      )
-      .sort((a, b) => a.timestamp_seconds - b.timestamp_seconds)[0];
-    if (due) {
-      shownRef.current.add(due.id);
-      pause();
-      setActiveCheckIn(due);
+    const crossedMinute = minuteCrossedRef.current;
+    minuteCrossedRef.current = false;
+    // Rewatch is the mode that asks nothing - neither the check-ins nor the checkpoint.
+    if (!companion || activeCheckIn || watchMode === "rewatch") return;
+    if (armed) {
+      // Fire the FIRST un-shown, un-answered check-in whose moment has actually been WATCHED, with
+      // the questions armed.
+      //
+      // Reaching a timestamp is not the same as viewing it. Gating on position alone meant that
+      // jumping via the chapter rail or the timeline armed a probe, while a learner playing the
+      // video straight through got none - the clock only moved on a seek (see useVimeoController).
+      // Requiring the marker's second to have been PLAYED makes playback the trigger and leaves the
+      // chapter rail a review affordance, which is the behaviour the surface promises. Requiring it
+      // to have been played while armed is what makes a switch out of Rewatch ask from here on
+      // instead of firing every check-in already behind the playhead, one after another.
+      //
+      // The +/-1s tolerance absorbs a dropped tick; only playback-sized deltas are ever recorded, so
+      // a pure jump still arms nothing until the learner actually watches. Still a catch-up scan
+      // rather than an edge test, so a coarse tick can't drop a marker forever.
+      const played = (ts: number) => {
+        const sec = Math.floor(ts);
+        const seen = armedPlayedRef.current;
+        return seen.has(sec) || seen.has(sec - 1) || seen.has(sec + 1);
+      };
+      const due = questions.list
+        .filter(
+          (c) =>
+            !shownRef.current.has(c.id) &&
+            !answered.has(c.id) &&
+            currentTime >= c.timestamp_seconds &&
+            played(c.timestamp_seconds),
+        )
+        .sort((a, b) => a.timestamp_seconds - b.timestamp_seconds)[0];
+      if (due) {
+        shownRef.current.add(due.id);
+        pause();
+        setActiveCheckIn(due);
+        return;
+      }
     }
-  }, [currentTime, companion, activeCheckIn, pause, answered, watchMode]);
-
-  // Every offered watch mode plays at normal speed; the rate is asserted once the player is wired
-  // so a mode change never leaves a stale rate behind.
-  useEffect(() => {
-    setRate(1);
-  }, [watchMode, setRate]);
-
-  // --- Watch mode: pause & ask every 60s ------------------------------------
-  // Mirrors the check-in auto-pause above: a ref gates re-fires (advances to the current minute),
-  // so this never loops, and we don't depend on the `checkpoint` state it sets.
-  useEffect(() => {
-    if (watchMode !== "pause_60s" || !companion || activeCheckIn) return;
-    const minute = Math.floor(currentTime / 60);
-    if (minute >= 1 && minute > lastCheckpointRef.current) {
-      lastCheckpointRef.current = minute;
+    // "Pause & ask every 60s": stop when playback crosses a minute boundary. Keyed on the crossing
+    // rather than on the minute the playhead is in, which fired at once on switching into the mode
+    // (and on resuming, or jumping ahead, in it) for a minute the learner had already watched.
+    if (crossedMinute && watchMode === "pause_60s" && checkpoint === null) {
       pause();
-      // Player-time-driven external sync (same shape as the check-in auto-pause above); the ref
-      // gate makes it fire at most once per minute, so there's no cascade.
-      // eslint-disable-next-line react-hooks/set-state-in-effect
+      // Player-time-driven, like the check-in above; the crossing flag is consumed on every run, so
+      // it fires at most once per boundary and cannot cascade.
       setCheckpoint(currentTime);
     }
-  }, [currentTime, watchMode, companion, activeCheckIn, pause]);
+  }, [currentTime, companion, activeCheckIn, pause, answered, watchMode, armed, questions, checkpoint]);
 
   // --- Periodic sync of watch signals ---------------------------------------
   const completeness = useMemo(
@@ -250,21 +290,25 @@ export function VideoCompanion({
 
   // Periodic save of watch signals. Reads everything from refs at fire time, so the interval isn't
   // torn down on every timeupdate (it would never reach 10s otherwise) and the BE gets true coverage.
+  //
+  // It no longer carries the watch mode. The mode reaches the server once, from the switch itself,
+  // which also handles that request failing; repeating it here every 10s let a tick already in
+  // flight with the OLD mode land after the switch and quietly put the session back, and it
+  // restarted this interval on every switch.
   useEffect(() => {
     if (!sessionId) return;
-    const t = setInterval(() => {
+    const timer = setInterval(() => {
       adaptiveVideoService
         .sync(sessionId, {
           current_timestamp: prevTimeRef.current,
           completeness_pct: coverageRef.current,
           max_speed: maxSpeedRef.current,
-          watch_mode: watchMode,
           rewinds: rewindsRef.current.length ? rewindsRef.current : undefined,
         })
         .catch(() => {});
     }, 10000);
-    return () => clearInterval(t);
-  }, [sessionId, watchMode]);
+    return () => clearInterval(timer);
+  }, [sessionId]);
 
   // Flush the FINAL coverage/speed, THEN end + score (so the award reflects everything watched,
   // including the last stretch the periodic sync may not have sent yet). Server-side this is
@@ -338,6 +382,68 @@ export function VideoCompanion({
     },
     [sessionId]
   );
+
+  // --- Watch mode switch ------------------------------------------------------
+  // The questions a rewatch session was never sent. The companion endpoint carries them (and a
+  // fresh list of the ones this learner has passed, which may include some passed on this page).
+  const ensureQuestions = useCallback(async () => {
+    if (questionsLoadedRef.current) return;
+    const fresh = await adaptiveVideoService.getCompanion(configId);
+    questionsLoadedRef.current = true;
+    setQuestions({ list: fresh.check_ins ?? [], loaded: true });
+    const passed = restoredAnswers(fresh.my_passed_check_in_ids);
+    passed.forEach((id) => shownRef.current.add(id));
+    setAnswered((prev) => new Set([...prev, ...passed]));
+  }, [configId]);
+
+  // What a mode takes off the screen: Rewatch asks nothing, and the 60s checkpoint is its own mode's.
+  const clearOverlaysFor = useCallback((m: WatchMode) => {
+    if (m === "rewatch") setActiveCheckIn(null);
+    if (m !== "pause_60s") setCheckpoint(null);
+  }, []);
+
+  // Takes effect at once, and never touches the player - no reload, no seek, no speed change.
+  // The rail moves first. A switch out of Rewatch fetches the questions BEFORE the server is told,
+  // so a failure at either step leaves the page and the session on the mode they were both on,
+  // and the learner is told rather than left looking at a mode that is not in force.
+  const changeMode = useCallback(
+    async (next: WatchMode) => {
+      if (!sessionId || next === watchMode) return;
+      const prev = watchMode;
+      const seq = ++modeSeqRef.current;
+      const superseded = () => seq !== modeSeqRef.current;
+      // A check-in on screen when the learner turns the questions off was not answered, so it is
+      // not spent: it is asked again if they come back to it with the questions on.
+      if (next === "rewatch" && activeCheckIn && !answered.has(activeCheckIn.id)) shownRef.current.delete(activeCheckIn.id);
+      setWatchMode(next);
+      clearOverlaysFor(next);
+      setModeSwitch({ pending: true, error: null });
+      try {
+        if (next !== "rewatch") await ensureQuestions();
+        // A newer switch was made while the questions were on their way; only that one may reach
+        // the server, or the two requests could land in either order.
+        if (superseded()) return;
+        const session = await adaptiveVideoService.sync(sessionId, { watch_mode: next });
+        if (superseded()) return;
+        // The server has the last word: it quietly downgrades a rewatch it will not grant, and the
+        // rail shows the mode in force, not the one asked for.
+        const inForce = session?.watch_mode || next;
+        if (inForce !== next) {
+          setWatchMode(inForce);
+          clearOverlaysFor(inForce);
+          if (inForce !== "rewatch") await ensureQuestions();
+        }
+        if (!superseded()) setModeSwitch({ pending: false, error: null });
+      } catch {
+        if (superseded()) return;
+        setWatchMode(prev);
+        clearOverlaysFor(prev);
+        setModeSwitch({ pending: false, error: t("adaptiveVideoMode.switchFailed") });
+      }
+    },
+    [sessionId, watchMode, activeCheckIn, answered, ensureQuestions, clearOverlaysFor, t],
+  );
+
   // Switch tabs; lazily generate the description the first time its tab is opened (event-driven, so
   // the generation kick-off isn't a synchronous setState inside an effect).
   const onTabChange = useCallback(
@@ -408,11 +514,17 @@ export function VideoCompanion({
   // leaving them looking at "Marked as watched" they never pressed, unable to press it, and their
   // award pegged at zero coverage forever. Two learner-videos on prod are in that state today.
   const declaredWatched = markedWatched || saved.bestPct >= 100;
+  // The check-ins in force: none in Rewatch - a rewatch visit is sent none, and one switched into
+  // must look the same - and none until a switch out of Rewatch has fetched them. The markers, the
+  // counter and the "checks pending" badge all read this one list, so they cannot disagree with
+  // what the player will actually ask.
+  const liveCheckIns = armed ? questions.list : [];
+  const answeredLive = liveCheckIns.filter((c) => answered.has(c.id)).length;
   // The checks counter. Rewatch mode ships no check-ins at all, so a learner returning with four
   // passed ones would have read "4/0"; and a video that has no check-ins has nothing to count.
   const checksChip =
-    companion.check_ins.length > 0
-      ? `${Math.min(answered.size, companion.check_ins.length)}/${companion.check_ins.length} checks`
+    liveCheckIns.length > 0
+      ? `${answeredLive}/${liveCheckIns.length} checks`
       : answered.size > 0
         ? `${answered.size} check${answered.size === 1 ? "" : "s"} passed`
         : "";
@@ -423,8 +535,7 @@ export function VideoCompanion({
   // getting through the video is completed (they keep their tick) AND is no longer exempt from the
   // questions. A flat "Completed" over a video that then stops to ask eight questions reads as a
   // bug, so this one state says what is actually true. The rule is unchanged - only the wording.
-  const checksPending =
-    finished && companion.check_ins.length > 0 && answered.size < companion.check_ins.length;
+  const checksPending = finished && liveCheckIns.length > 0 && answeredLive < liveCheckIns.length;
   const conceptTime = finished ? Number.MAX_SAFE_INTEGER : currentTime;
   const watchedConcepts = companion.concept_map?.nodes?.filter((n) => conceptTime >= (n.timestamp_seconds ?? 0)).length ?? 0;
   const watchedPct = finished ? 100 : watchedPercent(saved.bestPct, thisVisitPct);
@@ -578,7 +689,7 @@ export function VideoCompanion({
             <Box data-testid="playhead-track" sx={{ position: "absolute", left: 0, top: 0, bottom: 0, width: `${completeness}%`, borderRadius: 999,
               background: "linear-gradient(90deg, #6366f1, #a855f7, #ec4899)", transition: "width 400ms ease" }} />
             {duration > 0 &&
-              companion.check_ins.map((c) => {
+              liveCheckIns.map((c) => {
                 const isAnswered = answered.has(c.id);
                 return (
                   <Tooltip key={c.id} title={`${fmt(c.timestamp_seconds)} · ${c.concept || "Check-in"}`} arrow>
@@ -719,10 +830,9 @@ export function VideoCompanion({
           <WatchModeSelector
             value={watchMode}
             rewatchAvailable={Boolean(companion.rewatch_available)}
-            onChange={(m) => {
-              setWatchMode(m);
-              if (sessionId) adaptiveVideoService.sync(sessionId, { watch_mode: m }).catch(() => {});
-            }}
+            busy={modeSwitch.pending}
+            error={modeSwitch.error}
+            onChange={(m) => void changeMode(m)}
           />
           {/* No transcript, nothing to re-explain. The server answers 400 for these, and 36
               production companions have an empty `transcript_segments` - without this gate
