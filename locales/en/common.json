@@ -3311,13 +3311,24 @@
     "andMore": "and {{n}} more",
     "done": "Done"
   },
-  "aiTutorQuiz": {
-    "imageAlt": "Picture for this question",
-    "imageFailedTitle": "This picture did not load",
-    "imageFailedBody": "This question needs a picture we could not show, so it will not be marked. Skip it and carry on with the lesson.",
-    "notCountedTitle": "Not counted",
-    "notCountedBody": "This question needed a picture we could not show, so it has not been marked right or wrong.",
-    "skipUnanswerable": "Skip this one"
+  "zeroCourseDashboard": {
+    "promoTitle": "Your learning experience just got an upgrade ✨",
+    "promoBodyMigrating": "We've moved to Adaptive Courses that adjust to your skill level as you go. Heads up: your adaptive progress starts fresh at 0 - your earlier course history doesn't carry over.",
+    "promoBodyOpen": "We've added Adaptive Courses that adjust to your skill level as you learn - pick one and the engine meets you right where you are.",
+    "promoBodyWaiting": "We've added Adaptive Courses that adjust to your skill level as you learn. Your organisation picks yours - the moment it does, the engine meets you right where you are.",
+    "promoCtaCourse": "Explore Adaptive Courses",
+    "promoCtaCatalog": "Browse courses",
+    "promoCtaMyCourses": "Go to my courses",
+    "promoDismiss": "Dismiss",
+    "introCtaCourse": "Open Adaptive Courses",
+    "introCtaCatalog": "Browse courses",
+    "introCtaMyCourses": "Go to my courses",
+    "introCtaNone": "Got it",
+    "courseSlotTitle": "Your course will appear here",
+    "courseSlotBody": "The moment your organisation adds you to one, this is where your next lesson, your progress and your readiness score live.",
+    "welcome": "WELCOME, {{name}}",
+    "welcomeBack": "WELCOME BACK, {{name}}",
+    "momentumNotStarted": "not started yet"
   },
   "profileSetup": {
     "title": "Finish setting up your account",
@@ -3356,5 +3367,13 @@
     "completed": "Completed",
     "steps": "{{done}} of {{total}} steps done",
     "barAria": "{{percent}}% of this course complete"
+  },
+  "aiTutorQuiz": {
+    "imageAlt": "Picture for this question",
+    "imageFailedTitle": "This picture did not load",
+    "imageFailedBody": "This question needs a picture we could not show, so it will not be marked. Skip it and carry on with the lesson.",
+    "notCountedTitle": "Not counted",
+    "notCountedBody": "This question needed a picture we could not show, so it has not been marked right or wrong.",
+    "skipUnanswerable": "Skip this one"
   }
 }

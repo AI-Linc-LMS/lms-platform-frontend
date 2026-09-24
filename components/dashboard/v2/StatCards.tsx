@@ -9,6 +9,7 @@ import { StreakInfo } from "@/components/common/StreakInfo";
 import { MomentumInfo } from "@/components/common/MomentumInfo";
 import type { DashboardAggregate } from "@/lib/types/dashboard";
 import { StatBox } from "./parts";
+import { useTranslation } from "react-i18next";
 
 const LAST_TOTAL_KEY = "ailinc_last_total_points";
 
@@ -30,8 +31,15 @@ function TotalPointsValue({ total }: { total: number }) {
 export function StatCards({
   aggregate, hideLeaderboard,
 }: { aggregate: DashboardAggregate; hideLeaderboard: boolean }) {
+  const { t } = useTranslation("common");
   const a = aggregate;
   const rankDelta = a.cohortRank.rankDelta || 0;
+  // Momentum is derived from the streak, so a learner who has never done anything scores a
+  // genuine 0 - and "0 / of 100" reads as a mark they were given rather than a measurement that
+  // has not been taken. On-time rate already says "-" / "no data yet" for exactly this; momentum
+  // now agrees. "No activity at all" is the only case: one point or one day of streak and the
+  // number is real again.
+  const noActivityYet = a.totalPoints === 0 && a.streak.best === 0 && a.momentum === 0;
   const cards: React.ReactNode[] = [
     <StatBox
       key="points"
@@ -73,8 +81,8 @@ export function StatCards({
     <StatBox
       key="momentum"
       label="Momentum"
-      value={<CountUp value={a.momentum} />}
-      sub="of 100"
+      value={noActivityYet ? "-" : <CountUp value={a.momentum} />}
+      sub={noActivityYet ? t("zeroCourseDashboard.momentumNotStarted", { defaultValue: "not started yet" }) : "of 100"}
       icon="mdi:chart-line-variant"
       accent="#f59e0b"
       info={<MomentumInfo info={a.momentumInfo} size={13} />}

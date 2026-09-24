@@ -5,14 +5,33 @@ import { Box, Button, Dialog, IconButton, Stack, Typography } from "@mui/materia
 import { Icon } from "@iconify/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
+import type { PromoCtaKind } from "@/lib/services/adaptive-course.service";
 
 interface Props {
-  course: { id: number; title: string; route: string };
   /** When true (has prior/legacy courses), the first step warns progress doesn't transfer; when
    *  false (brand-new user), it shows a plain welcome instead. Defaults to true. */
   hasPriorCourses?: boolean;
+  /** Where the last step sends them. **Null means nowhere they can open** - the walkthrough then
+   *  ends on a plain "Got it" instead of a button that lands on "You are not enrolled in this
+   *  course." See `promotion.promotion_cta`. */
+  ctaRoute: string | null;
+  ctaKind: PromoCtaKind;
   onClose: () => void;   // called on X / Skip / final CTA - persists "seen forever"
 }
+
+const FINISH_KEY: Record<PromoCtaKind, string> = {
+  course: "zeroCourseDashboard.introCtaCourse",
+  catalog: "zeroCourseDashboard.introCtaCatalog",
+  my_courses: "zeroCourseDashboard.introCtaMyCourses",
+  none: "zeroCourseDashboard.introCtaNone",
+};
+const FINISH_DEFAULT: Record<PromoCtaKind, string> = {
+  course: "Open Adaptive Courses",
+  catalog: "Browse courses",
+  my_courses: "Go to my courses",
+  none: "Got it",
+};
 
 type Step = { icon: string; accent: string; title: string; body: string };
 
@@ -45,8 +64,9 @@ const buildSteps = (hasPriorCourses: boolean): Step[] => [
   },
 ];
 
-export function AdaptiveCourseIntroModal({ course, hasPriorCourses = true, onClose }: Props) {
+export function AdaptiveCourseIntroModal({ hasPriorCourses = true, ctaRoute, ctaKind, onClose }: Props) {
   const router = useRouter();
+  const { t } = useTranslation("common");
   const [step, setStep] = useState(0);
   const [dir, setDir] = useState(1);
   // The dialog must CLOSE (exit transition + MUI Modal cleanup) BEFORE the
@@ -61,7 +81,7 @@ export function AdaptiveCourseIntroModal({ course, hasPriorCourses = true, onClo
 
   const go = (next: number) => { setDir(next > step ? 1 : -1); setStep(next); };
   const requestClose = () => setOpen(false);
-  const finish = () => { pendingRoute.current = course.route; setOpen(false); };
+  const finish = () => { pendingRoute.current = ctaRoute; setOpen(false); };
   const handleExited = () => {
     onClose(); // persist "seen" + unmount, now that Modal cleanup has run
     if (pendingRoute.current) router.push(pendingRoute.current);
@@ -149,11 +169,11 @@ export function AdaptiveCourseIntroModal({ course, hasPriorCourses = true, onClo
         <Button
           onClick={() => (isLast ? finish() : go(step + 1))}
           variant="contained"
-          endIcon={<Icon icon={isLast ? "mdi:arrow-right-circle" : "mdi:arrow-right"} width={18} />}
+          endIcon={<Icon icon={isLast && !ctaRoute ? "mdi:check" : isLast ? "mdi:arrow-right-circle" : "mdi:arrow-right"} width={18} />}
           sx={{ textTransform: "none", fontWeight: 800, borderRadius: 999, px: 2.5,
             background: "linear-gradient(135deg,var(--module-tile-from, #6366f1),var(--module-tile-to, #a855f7))" }}
         >
-          {isLast ? "Open Adaptive Courses" : "Next"}
+          {isLast ? t(FINISH_KEY[ctaKind], { defaultValue: FINISH_DEFAULT[ctaKind] }) : "Next"}
         </Button>
       </Stack>
     </Dialog>

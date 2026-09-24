@@ -8,12 +8,25 @@ const TIER_POLL_INTERVAL_MS = 3000;
 const BASE = "/adaptive-quiz/api";
 
 /** Promotion payload for nudging users toward Adaptive Courses. */
+/** What kind of place the promotion's call to action leads to. `none` means NOWHERE this user can
+ *  open - the surfaces then render no button at all rather than a dead one. */
+export type PromoCtaKind = "course" | "catalog" | "my_courses" | "none";
+
 export interface AdaptivePromotion {
   eligible: boolean;
+  /** `route` is the destination a client should use, NOT necessarily this course's own page: a
+   *  learner may open only courses they are enrolled in. Kept for clients that predate
+   *  `cta_route`, and the server guarantees it is a page that renders. */
   adaptive_course?: { id: number; title: string; route: string };
   /** True when the user has >=1 prior (legacy) course - drives migration-worded copy vs a plain
    *  welcome for brand-new users with no course history. */
   has_prior_courses?: boolean;
+  /** True when the user is already on at least one adaptive course. */
+  enrolled?: boolean;
+  /** Where the CTA goes. **Null = nowhere they can open**, so render no button. Absent (undefined)
+   *  on a backend that predates the field; fall back to `adaptive_course.route` then. */
+  cta_route?: string | null;
+  cta_kind?: PromoCtaKind;
   show_banner?: boolean;
   show_intro_modal?: boolean;
 }

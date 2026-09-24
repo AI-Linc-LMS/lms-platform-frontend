@@ -13,6 +13,7 @@ import {
   MODULE_HERO_SHADOW,
 } from "@/lib/theme/gradients";
 import { phoneText } from "@/components/common/mobile/phoneText";
+import { useTranslation } from "react-i18next";
 
 const ACTION_ICON: Record<string, string> = {
   topic: "mdi:book-open-page-variant",
@@ -51,9 +52,17 @@ function ActionCard({
 }
 
 export function AiBriefingHero({
-  briefing, profile,
-}: { briefing: AiBriefing; profile: LearnerDashboard["profile"] }) {
+  briefing, profile, firstRun = false,
+}: {
+  briefing: AiBriefing;
+  profile: LearnerDashboard["profile"];
+  /** True for a learner with no course, no points and no streak they have ever held. "Welcome
+   *  BACK" is the one line on this page that claims a history, and it was the first thing a
+   *  brand-new learner read. */
+  firstRun?: boolean;
+}) {
   const router = useRouter();
+  const { t } = useTranslation("common");
   const go = (route?: string | null) => route && router.push(route);
   const action0 = briefing.actions[0];
   // A card or button renders as a link only when there is somewhere to go.
@@ -119,7 +128,9 @@ export function AiBriefingHero({
         </Box>
 
         <Typography sx={{ fontSize: phoneText(0.72), fontWeight: 800, letterSpacing: 1.2, color: "rgba(255,255,255,0.7)", mb: 1 }}>
-          WELCOME BACK, {profile.name.toUpperCase()}
+          {firstRun
+            ? t("zeroCourseDashboard.welcome", { defaultValue: "WELCOME, {{name}}", name: profile.name.toUpperCase() })
+            : t("zeroCourseDashboard.welcomeBack", { defaultValue: "WELCOME BACK, {{name}}", name: profile.name.toUpperCase() })}
         </Typography>
 
         {briefing.lastWeek && (
