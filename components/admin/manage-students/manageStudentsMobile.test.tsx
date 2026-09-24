@@ -425,24 +425,29 @@ describe("bulk actions on selected students", () => {
   const renderIt = () =>
     render(<BulkActionToolbar selected={selected} courses={[{ id: 1, title: "Python" }]} onClear={vi.fn()} onDone={vi.fn()} />);
 
+  // The enrol action is translated now (it names batches as well as courses), and this file's
+  // `t` returns the key. The shape being pinned here is the phone bar vs the desktop bar.
+  const ENROL = "bulkEnrol.enrolButton";
+  const PICK_TITLE = "bulkEnrol.pickEnrolTitle";
+
   it("is a pinned bar of 44px actions on a phone, and enrols through a sheet", () => {
     viewport(PHONE);
     renderIt();
     const bar = screen.getByTestId("phone-bulk-toolbar");
     expect(within(bar).getByText("2 selected")).toBeTruthy();
-    fireEvent.click(within(bar).getByRole("button", { name: /Enroll to course/ }));
+    fireEvent.click(within(bar).getByRole("button", { name: ENROL }));
     expect(sheetPaper()).toBeTruthy();
-    expect(screen.getByRole("heading", { name: /Enroll 2 students/ })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: PICK_TITLE })).toBeTruthy();
   });
 
   it("is the original wrapped toolbar and centred dialog on a desktop", () => {
     viewport(DESKTOP);
     renderIt();
     expect(screen.queryByTestId("phone-bulk-toolbar")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: /Enroll to course/ }));
+    fireEvent.click(screen.getByRole("button", { name: ENROL }));
     expect(dialogPaper()).toBeTruthy();
     expect(sheetPaper()).toBeNull();
-    expect(screen.getByRole("dialog", { name: /Enroll 2 students/ })).toBeTruthy();
+    expect(screen.getByRole("dialog", { name: PICK_TITLE })).toBeTruthy();
   });
 });
 

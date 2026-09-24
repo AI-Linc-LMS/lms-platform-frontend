@@ -16,6 +16,7 @@ import {
 } from "@/lib/services/admin/admin-student.service";
 import { adminCoursesService } from "@/lib/services/admin/admin-courses.service";
 import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
+import { adminCohortsService } from "@/lib/services/admin/admin-cohorts.service";
 import { useAuth } from "@/lib/auth/auth-context";
 import {
   isClientOrgAdminRole,
@@ -222,6 +223,9 @@ export default function ManageStudentsPage() {
   const [courses, setCourses] = useState<Array<{ id: number; title: string }>>(
     []
   );
+  // Batches the caller may bulk-enrol into. Empty when the tenant has no Cohort Builder (the
+  // endpoint 403s) or when a scoped role staffs none — either way, no batch picker.
+  const [batches, setBatches] = useState<Array<{ id: number; name: string }>>([]);
   const [adaptiveCourses, setAdaptiveCourses] = useState<Array<{ id: number; title: string }>>(
     []
   );
@@ -300,8 +304,21 @@ export default function ManageStudentsPage() {
         // Optional - tenant may not have the adaptive feature.
       }
     };
+    const loadBatches = async () => {
+      try {
+        const list = await adminCohortsService.listCohorts();
+        setBatches(
+          list
+            .filter((b) => !b.is_template && b.status !== "archived")
+            .map((b) => ({ id: b.id, name: b.name }))
+        );
+      } catch {
+        // Optional - the tenant may not have the Cohort Builder turned on.
+      }
+    };
     loadCourses();
     loadAdaptiveCourses();
+    loadBatches();
   }, []);
 
   // Load students from API - only when course filter changes or initial load
@@ -1118,6 +1135,7 @@ export default function ManageStudentsPage() {
             selected={selectedStudents}
             courses={courses}
             adaptiveCourses={adaptiveCourses}
+            batches={batches}
             onClear={handleClearSelection}
             onDone={handleBulkActionDone}
           />

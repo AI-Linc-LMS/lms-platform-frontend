@@ -15,19 +15,30 @@ import {
   TextField,
   CircularProgress,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useToast } from "@/components/common/Toast";
-import { adminStudentService, Student } from "@/lib/services/admin/admin-student.service";
+import {
+  adminStudentService,
+  type BulkEnrolResponse,
+  type BulkEnrolResultRow,
+  Student,
+} from "@/lib/services/admin/admin-student.service";
+import { BULK_MAX_PAIRS, BULK_MAX_STUDENTS } from "./bulkEnrolLimits";
 import { PAID_COURSE_NEEDS_COMP } from "@/lib/services/admin/admin-adaptive-course.service";
 import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
 import { ScrollRow } from "@/components/common/mobile/ScrollRow";
 import { PHONE_TAP, SHEET_BUTTON_SX, useIsPhone } from "./mobile";
+import { BulkEnrolReport } from "./BulkEnrolReport";
 
 interface BulkActionToolbarProps {
   selected: Student[];
   courses: Array<{ id: number; title: string }>;
   /** Adaptive courses available for bulk enroll/unenroll (optional). */
   adaptiveCourses?: Array<{ id: number; title: string }>;
+  /** Batches (cohorts) the caller may put the selection into. Empty when the tenant has no
+   *  Cohort Builder, or when a scoped role staffs none — in which case no batch picker shows. */
+  batches?: Array<{ id: number; name: string }>;
   onClear: () => void;
   /** Called after a successful bulk operation so the parent can refresh + clear. */
   onDone: () => void;
@@ -42,16 +53,28 @@ export function BulkActionToolbar({
   selected,
   courses,
   adaptiveCourses = [],
+  batches = [],
   onClear,
   onDone,
 }: BulkActionToolbarProps) {
   const { showToast } = useToast();
+  const { t } = useTranslation("common");
   const isPhone = useIsPhone();
   const [courseDialog, setCourseDialog] = useState<CourseDialogMode>(null);
   const [confirm, setConfirm] = useState<ConfirmMode>(null);
   const [pickedCourses, setPickedCourses] = useState<number[]>([]);
   const [pickedAdaptiveCourses, setPickedAdaptiveCourses] = useState<number[]>([]);
+  const [pickedCohorts, setPickedCohorts] = useState<number[]>([]);
+  /** The enrol dialog is two steps: choose the targets, then confirm the exact sentence. */
+  const [step, setStep] = useState<"pick" | "confirm">("pick");
   const [busy, setBusy] = useState(false);
+  // The per-student report, with the selection SNAPSHOT it describes. Snapshotted for the same
+  // reason compAsk is held here: onDone clears the selection, and the report names the learners.
+  const [report, setReport] = useState<{
+    action: "enroll" | "unenroll";
+    data: BulkEnrolResponse;
+    students: Student[];
+  } | null>(null);
   // Paid adaptive courses the bulk enrol was refused on, waiting on the admin's "give it free?".
   // Held HERE, before onDone: onDone clears the selection, and with no selection this toolbar
   // returns null, which would unmount the prompt along with it.
@@ -72,17 +95,58 @@ export function BulkActionToolbar({
     setCourseDialog(null);
     setPickedCourses([]);
     setPickedAdaptiveCourses([]);
+    setPickedCohorts([]);
+    setStep("pick");
+  };
+
+  /** Every picked target, with the name the admin will see in the confirmation. */
+  const pickedTargets = useMemo(
+    () => [
+      ...pickedCourses.map((id) => ({
+        key: `c${id}`,
+        name: courses.find((c) => c.id === id)?.title ?? `#${id}`,
+      })),
+      ...pickedAdaptiveCourses.map((id) => ({
+        key: `a${id}`,
+        name: adaptiveCourses.find((c) => c.id === id)?.title ?? `#${id}`,
+      })),
+      ...pickedCohorts.map((id) => ({
+        key: `b${id}`,
+        name: t("bulkEnrol.batchNamed", { name: batches.find((b) => b.id === id)?.name ?? `#${id}` }),
+      })),
+    ],
+    [pickedCourses, pickedAdaptiveCourses, pickedCohorts, courses, adaptiveCourses, batches, t]
+  );
+  const pairCount = count * pickedTargets.length;
+  // Refused HERE, before the request, and with the same numbers the server would answer with:
+  // a count an admin reads has to be the count that gets enrolled.
+  const overCap = count > BULK_MAX_STUDENTS || pairCount > BULK_MAX_PAIRS;
+
+  /** A result row's course / batch, by the name the admin picked. */
+  const targetName = (row: BulkEnrolResultRow) => {
+    if (typeof row.cohort_id === "number") {
+      return t("bulkEnrol.batchNamed", { name: batches.find((b) => b.id === row.cohort_id)?.name ?? `#${row.cohort_id}` });
+    }
+    if (typeof row.adaptive_course_id === "number") {
+      return adaptiveCourses.find((c) => c.id === row.adaptive_course_id)?.title ?? `#${row.adaptive_course_id}`;
+    }
+    if (typeof row.course_id === "number") {
+      return courses.find((c) => c.id === row.course_id)?.title ?? `#${row.course_id}`;
+    }
+    return t("bulkEnrol.theSelection");
   };
 
   const runCourseAction = async () => {
-    if (!courseDialog || pickedCourses.length + pickedAdaptiveCourses.length === 0) return;
+    if (!courseDialog || pickedTargets.length === 0 || overCap) return;
+    const actedOn = selected;
     try {
       setBusy(true);
       const res = await adminStudentService.bulkCourseAction(
         courseDialog,
         studentIds,
         pickedCourses,
-        pickedAdaptiveCourses
+        pickedAdaptiveCourses,
+        { cohortIds: pickedCohorts }
       );
       const paidRefusals =
         courseDialog === "enroll" ? res.results.filter((r) => r.code === PAID_COURSE_NEEDS_COMP) : [];
@@ -102,12 +166,9 @@ export function BulkActionToolbar({
         setCourseDialog(null);
         return;
       }
-      showToast(
-        `${courseDialog === "enroll" ? "Enrolled" : "Unenrolled"}: ${res.succeeded} ok${
-          res.failed ? `, ${res.failed} failed` : ""
-        }`,
-        res.failed ? "warning" : "success"
-      );
+      // Not a toast: some of the selection is always already enrolled and some is always
+      // refused, and "37 ok" is exactly the sentence that hides both.
+      setReport({ action: courseDialog, data: res, students: actedOn });
       closeCourseDialog();
       onDone();
     } catch (e: unknown) {
@@ -219,7 +280,20 @@ export function BulkActionToolbar({
     URL.revokeObjectURL(url);
   };
 
-  if (count === 0) return null;
+  const reportDialog = (
+    <BulkEnrolReport
+      open={report !== null}
+      onClose={() => setReport(null)}
+      action={report?.action ?? "enroll"}
+      report={report?.data ?? null}
+      students={report?.students ?? []}
+      targetName={targetName}
+    />
+  );
+
+  // The report OUTLIVES the selection: onDone clears it, and with nothing selected this toolbar
+  // is gone — which would take the report with it before anyone read a word of it.
+  if (count === 0) return report ? reportDialog : null;
 
   const actionBtnSx = {
     fontWeight: 700,
@@ -231,17 +305,39 @@ export function BulkActionToolbar({
 
   // ---- the three dialogs' bodies, shared by the desktop Dialog and the phone sheet ----------
 
-  const courseTitle = (
-    <>
-      {courseDialog === "enroll" ? "Enroll" : "Unenroll"} {count} student
-      {count > 1 ? "s" : ""}
-    </>
+  const enrolling = courseDialog === "enroll";
+  const courseTitle =
+    step === "confirm"
+      ? enrolling
+        ? t("bulkEnrol.confirmEnrolTitle", { n: count })
+        : t("bulkEnrol.confirmRemoveTitle", { n: count })
+      : enrolling
+        ? t("bulkEnrol.pickEnrolTitle", { n: count })
+        : t("bulkEnrol.pickRemoveTitle", { n: count });
+
+  const targetList = pickedTargets.map((tt) => tt.name).join(", ");
+  const confirmStepBody = (
+    <Box data-testid="bulk-enrol-confirm">
+      <Typography variant="body2" sx={{ color: "var(--font-primary)", mb: 1.5, lineHeight: 1.6 }}>
+        {enrolling
+          ? t("bulkEnrol.confirmEnrolBody", { n: count, targets: targetList })
+          : t("bulkEnrol.confirmRemoveBody", { n: count, targets: targetList })}
+      </Typography>
+      <Typography variant="body2" sx={{ color: "var(--font-secondary)", lineHeight: 1.6 }}>
+        {enrolling ? t("bulkEnrol.confirmEnrolNote") : t("bulkEnrol.confirmRemoveNote")}
+      </Typography>
+      {enrolling && pickedCohorts.length > 0 && (
+        <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 1, lineHeight: 1.6 }}>
+          {t("bulkEnrol.confirmBatchNote")}
+        </Typography>
+      )}
+    </Box>
   );
-  const courseBody = (
+
+  const pickStepBody = (
     <>
       <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 2 }}>
-        Choose one or more courses. Each selected student will be{" "}
-        {courseDialog === "enroll" ? "enrolled in" : "unenrolled from"} every course you pick.
+        {enrolling ? t("bulkEnrol.pickEnrolHint") : t("bulkEnrol.pickRemoveHint")}
       </Typography>
       <TextField
         select
@@ -295,8 +391,62 @@ export function BulkActionToolbar({
           ))}
         </TextField>
       )}
+
+      {batches.length > 0 && (
+        <TextField
+          select
+          fullWidth
+          data-testid="bulk-batch-picker"
+          label={t("bulkEnrol.batchesLabel")}
+          helperText={enrolling ? t("bulkEnrol.batchesHelp") : undefined}
+          value={pickedCohorts}
+          onChange={(e) => {
+            const v = e.target.value as unknown as number[];
+            setPickedCohorts(typeof v === "string" ? [] : v);
+          }}
+          sx={{ mt: 2 }}
+          SelectProps={{
+            multiple: true,
+            renderValue: (sel) =>
+              (sel as number[]).map((id) => batches.find((b) => b.id === id)?.name || id).join(", "),
+          }}
+        >
+          {batches.map((b) => (
+            <MenuItem key={b.id} value={b.id} sx={PHONE_TAP}>
+              <Checkbox checked={pickedCohorts.includes(b.id)} size="small" />
+              <ListItemText primary={b.name} />
+            </MenuItem>
+          ))}
+        </TextField>
+      )}
+
+      {overCap && (
+        <Typography
+          data-testid="bulk-over-cap"
+          variant="body2"
+          sx={{ mt: 2, color: "#ef4444", fontWeight: 600, lineHeight: 1.6 }}
+        >
+          {t("bulkEnrol.tooMany", {
+            students: count,
+            targets: pickedTargets.length,
+            pairs: pairCount,
+            maxStudents: BULK_MAX_STUDENTS,
+            maxPairs: BULK_MAX_PAIRS,
+          })}
+        </Typography>
+      )}
     </>
   );
+
+  const courseBody = step === "confirm" ? confirmStepBody : pickStepBody;
+  const canContinue = pickedTargets.length > 0 && !overCap;
+  const primaryLabel =
+    step === "pick"
+      ? t("bulkEnrol.continue")
+      : enrolling
+        ? t("bulkEnrol.enrolAction")
+        : t("bulkEnrol.removeAction");
+  const onPrimary = () => (step === "pick" ? setStep("confirm") : void runCourseAction());
 
   const compBody = compAsk && (
     <Typography variant="body2" sx={{ color: "var(--font-secondary)", lineHeight: 1.6 }}>
@@ -336,8 +486,8 @@ export function BulkActionToolbar({
   if (isPhone) {
     const noop = () => undefined;
     const phoneActions: Array<{ label: string; icon: string; onClick: () => void }> = [
-      { label: "Enroll to course", icon: "mdi:account-plus", onClick: () => setCourseDialog("enroll") },
-      { label: "Unenroll from course", icon: "mdi:account-minus", onClick: () => setCourseDialog("unenroll") },
+      { label: t("bulkEnrol.enrolButton"), icon: "mdi:account-plus", onClick: () => setCourseDialog("enroll") },
+      { label: t("bulkEnrol.removeButton"), icon: "mdi:account-minus", onClick: () => setCourseDialog("unenroll") },
       { label: "Activate", icon: "mdi:account-check", onClick: () => setConfirm("activate") },
       { label: "Deactivate", icon: "mdi:account-off", onClick: () => setConfirm("deactivate") },
       { label: "Clear activity log", icon: "mdi:refresh", onClick: () => setConfirm("reset") },
@@ -397,17 +547,22 @@ export function BulkActionToolbar({
           title={courseTitle}
           footer={
             <>
-              <Button variant="outlined" onClick={closeCourseDialog} disabled={busy} sx={SHEET_BUTTON_SX}>
-                Cancel
+              <Button
+                variant="outlined"
+                onClick={step === "confirm" ? () => setStep("pick") : closeCourseDialog}
+                disabled={busy}
+                sx={SHEET_BUTTON_SX}
+              >
+                {step === "confirm" ? t("bulkEnrol.back") : "Cancel"}
               </Button>
               <Button
                 variant="contained"
-                onClick={runCourseAction}
-                disabled={busy || pickedCourses.length + pickedAdaptiveCourses.length === 0}
+                onClick={onPrimary}
+                disabled={busy || !canContinue}
                 startIcon={busyIcon}
                 sx={{ ...SHEET_BUTTON_SX, bgcolor: INDIGO }}
               >
-                {courseDialog === "enroll" ? "Enroll" : "Unenroll"}
+                {primaryLabel}
               </Button>
             </>
           }
@@ -465,6 +620,8 @@ export function BulkActionToolbar({
         >
           {confirmBody}
         </ResponsiveDialog>
+
+        {reportDialog}
       </>
     );
   }
@@ -500,7 +657,7 @@ export function BulkActionToolbar({
           onClick={() => setCourseDialog("enroll")}
           sx={actionBtnSx}
         >
-          Enroll to course
+          {t("bulkEnrol.enrolButton")}
         </Button>
         <Button
           size="small"
@@ -509,7 +666,7 @@ export function BulkActionToolbar({
           onClick={() => setCourseDialog("unenroll")}
           sx={actionBtnSx}
         >
-          Unenroll from course
+          {t("bulkEnrol.removeButton")}
         </Button>
         <Button
           size="small"
@@ -563,17 +720,20 @@ export function BulkActionToolbar({
         <DialogTitle sx={{ fontWeight: 800 }}>{courseTitle}</DialogTitle>
         <DialogContent>{courseBody}</DialogContent>
         <DialogActions sx={{ px: 3, pb: 2 }}>
-          <Button onClick={closeCourseDialog} disabled={busy}>
-            Cancel
+          <Button
+            onClick={step === "confirm" ? () => setStep("pick") : closeCourseDialog}
+            disabled={busy}
+          >
+            {step === "confirm" ? t("bulkEnrol.back") : "Cancel"}
           </Button>
           <Button
             variant="contained"
-            onClick={runCourseAction}
-            disabled={busy || pickedCourses.length + pickedAdaptiveCourses.length === 0}
+            onClick={onPrimary}
+            disabled={busy || !canContinue}
             startIcon={busyIcon}
             sx={{ bgcolor: INDIGO, fontWeight: 700, textTransform: "none" }}
           >
-            {courseDialog === "enroll" ? "Enroll" : "Unenroll"}
+            {primaryLabel}
           </Button>
         </DialogActions>
       </Dialog>
@@ -618,6 +778,8 @@ export function BulkActionToolbar({
           </Button>
         </DialogActions>
       </Dialog>
+
+      {reportDialog}
     </>
   );
 }
