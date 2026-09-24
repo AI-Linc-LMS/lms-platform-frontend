@@ -12,11 +12,14 @@ import type { ResumeDocumentSummary } from "@/lib/services/resumeDocuments.servi
 import { MAX_RESUME_DOCUMENTS } from "@/lib/services/resumeDocuments.service";
 
 /**
- * The resumes a learner has saved, in the builder, where they can be opened again.
+ * The resumes a learner has saved, listed where a learner looks for them: the Saved resumes tab.
  *
  * Before this, saving produced a PDF on the profile page: it could be viewed and downloaded, but
  * never reopened, so every edit after the first meant retyping the resume. These rows open back
  * into the builder with their content, template and section arrangement intact.
+ *
+ * Presentational on purpose. It renders rows and asks before a delete; it does not fetch, and it
+ * does not open anything. `SavedResumeDocuments` owns the list, and the builder owns opening.
  */
 
 /** How many rows show before the list asks to be expanded. Three is a panel; twenty is a page. */
@@ -32,6 +35,7 @@ export interface SavedResumesPanelProps {
   openId: number | null;
   /** True while one row is mid-request; that row shows it and its actions are unavailable. */
   busyId: number | null;
+  /** Reopen this resume in the builder. The row calls it "Edit", because that is what it does. */
   onOpen: (id: number) => void;
   onRename: (id: number, name: string) => Promise<void> | void;
   onDuplicate: (id: number) => void;
@@ -65,6 +69,16 @@ const META_CHIP = {
   // 12px is the floor on a phone: 0.72rem would read at 11.5px.
   [PHONE]: { fontSize: "0.75rem" },
 };
+
+/**
+ * 44px on a phone for the panel's text buttons - as `height`, not `minHeight`, deliberately.
+ *
+ * This panel now renders inside app/profile/page.tsx, which sets a page-wide phone floor of
+ * `& .MuiButton-sizeSmall { min-height: 40 }`. That descendant selector outranks a button's own
+ * emotion class, so a `minHeight: 44` written here was silently clamped back to 40 - measured at
+ * 390px, not guessed. `height` is not something the page floor sets, so it lands.
+ */
+const PHONE_BUTTON = { minHeight: 44, height: 44 };
 
 /** 44px on a phone, the comfortable 34px the rest of this toolbar uses everywhere else. */
 const ICON_ACTION = {
@@ -202,7 +216,7 @@ export function SavedResumesPanel({
                 borderColor: PROFILE.hairline,
                 color: PROFILE.ink,
                 "&:hover": { borderColor: PROFILE.violet, backgroundColor: PROFILE.violetSoft },
-                [PHONE]: { minHeight: 44, fontSize: "0.8125rem" },
+                [PHONE]: { ...PHONE_BUTTON, fontSize: "0.8125rem" },
               }}
             >
               {t("savedResumes.retry", { defaultValue: "Try again" })}
@@ -215,7 +229,7 @@ export function SavedResumesPanel({
         <Typography sx={{ fontSize: "0.8rem", color: PROFILE.inkFaint, lineHeight: 1.6, [PHONE]: { fontSize: "0.8125rem" } }}>
           {t("savedResumes.empty", {
             defaultValue:
-              "Nothing saved yet. Press Save and this resume is kept here with its content, template and section order, ready to open and keep editing later.",
+              "Nothing saved yet. Press Save in the Resume builder and it is kept here with its content, template and section order, ready to edit again later.",
           })}
         </Typography>
       ) : (
@@ -301,8 +315,12 @@ export function SavedResumesPanel({
                     size="small"
                     variant="outlined"
                     disabled={busy}
+                    data-testid="saved-resume-edit"
                     onClick={() => onOpen(doc.id)}
-                    startIcon={<IconWrapper icon="mdi:pencil-outline" size={15} />}
+                    /* A document with a pencil, not a bare pencil: Rename sits two buttons away
+                       and is also a pencil, and at 15px two pencils in a row read as one
+                       control repeated. */
+                    startIcon={<IconWrapper icon="mdi:file-document-edit-outline" size={15} />}
                     sx={{
                       textTransform: "none",
                       fontWeight: 700,
@@ -314,10 +332,10 @@ export function SavedResumesPanel({
                       borderColor: PROFILE.hairline,
                       color: PROFILE.ink,
                       "&:hover": { borderColor: PROFILE.violet, backgroundColor: PROFILE.violetSoft },
-                      [PHONE]: { minHeight: 44, fontSize: "0.8125rem", flex: 1, mr: 0 },
+                      [PHONE]: { ...PHONE_BUTTON, fontSize: "0.8125rem", flex: 1, mr: 0 },
                     }}
                   >
-                    {t("savedResumes.open", { defaultValue: "Open" })}
+                    {t("savedResumes.editResume", { defaultValue: "Edit" })}
                   </Button>
                   <Tooltip title={t("savedResumes.rename", { defaultValue: "Rename" })}>
                     <span>
@@ -374,7 +392,7 @@ export function SavedResumesPanel({
                 fontWeight: 700,
                 fontSize: "0.78rem",
                 color: PROFILE.violet,
-                [PHONE]: { minHeight: 44, fontSize: "0.8125rem" },
+                [PHONE]: { ...PHONE_BUTTON, fontSize: "0.8125rem" },
               }}
             >
               {expanded

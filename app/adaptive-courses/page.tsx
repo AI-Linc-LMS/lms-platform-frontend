@@ -27,6 +27,7 @@ import { AdaptiveCourseListSkeleton } from "@/components/courses/CourseSkeletons
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { PhoneCourseControls, type SortOption } from "@/components/courses/PhoneCourseControls";
 import { PHONE } from "@/components/common/mobile/phone";
+import { CourseProgressMeter } from "@/components/courses/CourseProgressMeter";
 
 type SortKey = "recent" | "title" | "content";
 
@@ -282,6 +283,14 @@ function AdaptiveCourseRow({
         <Typography sx={{ color: "var(--font-secondary)", fontSize: "0.82rem" }} noWrap>
           {course.description || course.target_audience || "Adaptive course"}
         </Typography>
+        {/* The list view is the same list as the cards, so it has to answer the same
+            question. Capped rather than full-width: a bar spanning a 1700px row reads as a
+            page-loading indicator, not this course's progress. */}
+        {course.progress && (
+          <Box sx={{ mt: 0.75, maxWidth: 260 }}>
+            <CourseProgressMeter progress={course.progress} compact />
+          </Box>
+        )}
       </Box>
       <Stack direction="row" spacing={2.5} sx={{ flexShrink: 0, display: { xs: "none", md: "flex" } }}>
         {[
