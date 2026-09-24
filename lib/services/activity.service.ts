@@ -26,9 +26,15 @@ export interface TrackTimePayload {
   date: string;
   device_type: string;
   session_only: boolean;
-  /** True when this segment was spent on a LEARNING surface (lesson, article, video, quiz, coding
-   *  problem) rather than anywhere in the app. The server keeps it as a separate total so that a
-   *  goal claiming the learner PRACTISED is not satisfied by sitting on the dashboard. */
+  /** How many of `time_spent_seconds` were spent WORKING ON CONTENT (a lesson, video, coding
+   *  problem, quiz runtime or paper) rather than anywhere in the app. Never more than
+   *  `time_spent_seconds`. The server keeps it as a separate total so that a goal claiming the
+   *  learner PRACTISED is not satisfied by sitting on the dashboard. A split rather than a flag
+   *  because a delta straddles a navigation: tagging the whole delta by the route it ended on
+   *  filed the dashboard time before a click into a lesson as practice. */
+  learning_seconds?: number;
+  /** Superseded by `learning_seconds`; still sent so a backend that has not shipped the split
+   *  records what it would have recorded anyway. */
   is_learning?: boolean;
 }
 

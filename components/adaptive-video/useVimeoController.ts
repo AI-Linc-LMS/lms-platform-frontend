@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { pulsePractice } from "@/lib/activity/practicePulse";
+
 /**
  * Thin wrapper over Vimeo's iframe postMessage API - no @vimeo/player dependency,
  * same protocol the existing VideoPlayer uses. Gives the companion the control it
@@ -163,6 +165,12 @@ export function useVimeoController(): VimeoController {
           break;
         case "timeupdate":
         case "playProgress":
+          // A watching learner touches nothing, so time tracking would read them as idle and
+          // stop crediting the practice minutes they are actually earning. Playback is the
+          // evidence they are working; report it.
+          pulsePractice();
+          applyTime(payload?.seconds);
+          break;
         case "seeked":
         case "seek":
           applyTime(payload?.seconds);
