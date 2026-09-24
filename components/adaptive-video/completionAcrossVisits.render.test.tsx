@@ -60,7 +60,8 @@ function companion(over: Record<string, unknown> = {}) {
 
 function session(over: Record<string, unknown> = {}) {
   return { id: "s1", status: "active", watch_mode: "normal", current_timestamp: 0, completeness_pct: 0,
-    max_speed: 1, comprehension_state: {}, comprehension_score: 0, started_at: "", completed_at: null, ...over };
+    max_speed: 1, comprehension_state: {}, comprehension_score: 0, answered_check_in_ids: [],
+    started_at: "", completed_at: null, ...over };
 }
 
 beforeEach(() => {
@@ -81,11 +82,17 @@ async function playTo(seconds: number, rerender: (ui: ReactNode) => void) {
 }
 
 describe("a check-in the learner has already passed", () => {
-  it("is not asked again on the next visit", async () => {
+  it("is not asked again in Rewatch - the mode that exists to ask nothing", async () => {
+    // It WAS suppressed in every mode, from the learner's lifetime passes. That made a video
+    // whose checks were all passed silent in Normal pace too, so the mode that asks and the mode
+    // that does not became the same thing (see `normalPaceAsksAgain`). Rewatch is where "not
+    // asked again" belongs, and there the server sends no check-ins at all.
     start.mockResolvedValue({
       session_id: "s1",
-      companion: companion({ my_completed: true, rewatch_available: true, my_passed_check_in_ids: [10] }),
-      session: session(),
+      companion: companion({
+        my_completed: true, rewatch_available: true, check_ins: [], my_passed_check_in_ids: [10],
+      }),
+      session: session({ watch_mode: "rewatch" }),
     });
     const { rerender } = render(<VideoCompanion configId={800} />);
     await screen.findByTestId("video-completed");
@@ -94,14 +101,32 @@ describe("a check-in the learner has already passed", () => {
     expect(player.pause).not.toHaveBeenCalled();
   });
 
-  it("comes back marked, so the counter does not reset to zero", async () => {
+  it("IS asked again in a questioning mode, and the counter counts this watch", async () => {
     start.mockResolvedValue({
       session_id: "s1",
       companion: companion({ my_completed: true, my_passed_check_in_ids: [10] }),
       session: session(),
     });
+    const { rerender } = render(<VideoCompanion configId={800} />);
+    // It read "1/1 checks" before a single question had been asked - the reported "5/5 checks"
+    // over a video that then played through in silence.
+    expect(await screen.findByText("0/1 checks")).toBeInTheDocument();
+    await playTo(5, rerender);
+    expect(await screen.findByText("What stops a recursion?")).toBeInTheDocument();
+    // The pass is not lost: it is shown on the marker, and the server scores it only once.
+    expect(screen.getByText("Practice")).toBeInTheDocument();
+  });
+
+  it("still reports the passes in Rewatch, where there is no list to count against", async () => {
+    start.mockResolvedValue({
+      session_id: "s1",
+      companion: companion({
+        my_completed: true, rewatch_available: true, check_ins: [], my_passed_check_in_ids: [10],
+      }),
+      session: session({ watch_mode: "rewatch" }),
+    });
     render(<VideoCompanion configId={800} />);
-    expect(await screen.findByText("1/1 checks")).toBeInTheDocument();
+    expect(await screen.findByText("1 check passed")).toBeInTheDocument();
   });
 
   it("is still asked when this learner has not passed it", async () => {
@@ -196,11 +221,24 @@ describe("completed, but this visit is still being asked the checks", () => {
     expect(await screen.findByTestId("video-completed")).toHaveTextContent("Completed · checks pending");
   });
 
-  it("goes back to a plain Completed once every check is passed", async () => {
+  it("says it of a watch that will ask them again, however many were passed before", async () => {
+    // Passing them before does not make this watch's checks done: Normal pace is going to ask
+    // them. A flat "Completed" over a video about to stop three times is what this state exists
+    // to avoid, and it is as true on a rewatch as on a first visit.
     start.mockResolvedValue({
       session_id: "s1",
       companion: companion({ my_completed: true, rewatch_available: false, my_passed_check_in_ids: [10] }),
       session: session(),
+    });
+    render(<VideoCompanion configId={800} />);
+    expect(await screen.findByTestId("video-completed")).toHaveTextContent("Completed · checks pending");
+  });
+
+  it("goes back to a plain Completed once this watch has answered them", async () => {
+    start.mockResolvedValue({
+      session_id: "s1",
+      companion: companion({ my_completed: true, rewatch_available: false, my_passed_check_in_ids: [10] }),
+      session: session({ answered_check_in_ids: [10] }),  // answered in this watch, before a reload
     });
     render(<VideoCompanion configId={800} />);
     expect(await screen.findByTestId("video-completed")).toHaveTextContent(/^Completed$/);

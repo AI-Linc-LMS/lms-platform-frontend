@@ -2799,7 +2799,9 @@
   "adaptiveVideoMode": {
     "groupLabel": "وضع المشاهدة",
     "switching": "جارٍ التبديل…",
-    "switchFailed": "تعذّر تغيير وضع المشاهدة الآن. حاول مرة أخرى."
+    "switchFailed": "تعذّر تغيير وضع المشاهدة الآن. حاول مرة أخرى.",
+    "practiceLabel": "تدريب",
+    "practiceNote": "سبق أن اجتزته · لا يُحتسب مرة أخرى"
   },
   "experienceBullets": {
     "label": "المسؤوليات والإنجازات",

@@ -69,8 +69,11 @@ function companion(over: Record<string, unknown> = {}) {
 }
 
 function session(mode: string) {
+  // `answered_check_in_ids: []` - a new watch has spent none of them, so a questioning mode asks
+  // all three however many the learner has passed before (`my_passed_check_in_ids`).
   return { id: "s1", status: "active", watch_mode: mode, current_timestamp: 0, completeness_pct: 0,
-    max_speed: 1, comprehension_state: {}, comprehension_score: 0, started_at: "", completed_at: null };
+    max_speed: 1, comprehension_state: {}, comprehension_score: 0, answered_check_in_ids: [],
+    started_at: "", completed_at: null };
 }
 
 /** What the server does with a switch: it records the mode and answers with the session. */
@@ -142,7 +145,8 @@ describe("switching from Rewatch to Normal pace", () => {
     await moveTo(10, rerender);
     expect(await screen.findByText("Question 12?")).toBeInTheDocument();
     expect(player.pause).toHaveBeenCalledTimes(1);
-    // Passed on an earlier visit, so never asked again.
+    // 10 (at 0:03) was passed on an earlier visit, but that is not why it is silent: like 11 it
+    // went by before the switch, and only seconds played WHILE armed can fall due.
     expect(screen.queryByText("Question 10?")).toBeNull();
 
     // How: the questions were fetched once, before the server was told the new mode.
@@ -165,16 +169,29 @@ describe("switching from Rewatch to Normal pace", () => {
     await waitFor(() => expect(api.sync).toHaveBeenCalledWith("s1", { watch_mode: "normal" }));
 
     await moveTo(4, rerender, { seek: true }); // the learner scrubs back...
-    await moveTo(6, rerender); // ...and watches 0:05 again
+    await moveTo(6, rerender); // ...and watches 0:03-0:05 again
+
+    // 10 (at 0:03) comes first. It was passed on an earlier visit and it is asked anyway: Normal
+    // pace asks its scheduled check-ins, which is the whole of the difference between it and
+    // Rewatch. It is labelled practice, and the server does not score it twice.
+    expect(await screen.findByText("Question 10?")).toBeInTheDocument();
+    expect(screen.getByText("Practice")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("Right 10"));
+    fireEvent.click(await screen.findByRole("button", { name: /Continue/ }));
+
+    // ...and then 11, which was played past before the switch and has now been watched again.
+    await moveTo(6, rerender);
     expect(await screen.findByText("Question 11?")).toBeInTheDocument();
   });
 
   it("marks the timeline and counts the checks as soon as the questions arrive", async () => {
     render(<VideoCompanion configId={800} />);
-    // Rewatch: nothing is asked, so nothing is counted against the video.
+    // Rewatch: nothing is asked, so the chip reports what the learner has passed instead.
     expect(await screen.findByText("1 check passed")).toBeInTheDocument();
     pick("Normal pace");
-    expect(await screen.findByText("1/3 checks")).toBeInTheDocument();
+    // Three in force, none answered in THIS watch. It read "1/3" - the earlier visit's pass
+    // counted against a watch that had asked nothing, which is the shape of the whole bug.
+    expect(await screen.findByText("0/3 checks")).toBeInTheDocument();
   });
 
   it("leaves the mode where it was, and says so, when the questions cannot be fetched", async () => {
@@ -338,7 +355,7 @@ describe("a switch the server has not confirmed yet", () => {
 
     serverAcceptsModes();
     pick("Normal pace");
-    expect(await screen.findByText("1/3 checks")).toBeInTheDocument(); // confirmed, and armed
+    expect(await screen.findByText("0/3 checks")).toBeInTheDocument(); // confirmed, and armed
     await moveTo(8, rerender, { seek: true });
     await moveTo(10, rerender);
     expect(await screen.findByText("Question 12?")).toBeInTheDocument();
@@ -418,7 +435,7 @@ describe("the 10-second save", () => {
       expect(tick()).not.toHaveProperty("watch_mode");
 
       await act(async () => held.resolve(session("normal")));
-      await screen.findByText("1/3 checks");
+      await screen.findByText("0/3 checks");
       expect(tick()).toMatchObject({ watch_mode: "normal" });
     } finally {
       spy.mockRestore();
