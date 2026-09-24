@@ -3293,5 +3293,12 @@
     "groupRefusedFallback": "Refused",
     "andMore": "and {{n}} more",
     "done": "Done"
+  },
+  "adaptiveCourseProgress": {
+    "notStarted": "Not started",
+    "inProgress": "In progress",
+    "completed": "Completed",
+    "steps": "{{done}} of {{total}} steps done",
+    "barAria": "{{percent}}% of this course complete"
   }
 }

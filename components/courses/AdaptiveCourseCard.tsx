@@ -5,6 +5,7 @@ import { PriceTag } from "@/components/common/PriceTag";
 import { Icon } from "@iconify/react";
 import type { AdaptiveCourseListItem } from "@/lib/services/adaptive-course.service";
 import { PHONE } from "@/components/common/mobile/phone";
+import { CourseProgressMeter } from "@/components/courses/CourseProgressMeter";
 
 /** A single adaptive-course card. Shared by the standalone library page and the
  *  "Adaptive courses" section embedded under /courses. */
@@ -92,8 +93,18 @@ export function AdaptiveCourseCard({
         {course.description || ""}
       </Typography>
 
-      {/* Meta pinned to the card bottom so it aligns across every card. */}
-      <Box sx={{ display: "flex", gap: 1.5, columnGap: 2, mt: "auto", pt: 2, flexWrap: "wrap", [PHONE]: { rowGap: 1, columnGap: 1.75, pt: 1.75 } }}>
+      {/* Progress, then meta — both pinned to the card bottom so they align across every
+          card whatever the description length. The meter is what tells a started course
+          apart from an untouched one; before it, both rendered identically. It is absent
+          only on the catalog, where the learner is not in the course at all. */}
+      {course.progress && (
+        <Box sx={{ mt: "auto", pt: 2, [PHONE]: { pt: 1.75 } }}>
+          <CourseProgressMeter progress={course.progress} />
+        </Box>
+      )}
+
+      {/* `mt: auto` stays here too: it is what pins this block when there is no meter. */}
+      <Box sx={{ display: "flex", gap: 1.5, columnGap: 2, mt: course.progress ? 0 : "auto", pt: 2, flexWrap: "wrap", [PHONE]: { rowGap: 1, columnGap: 1.75, pt: 1.75 } }}>
         <Metric icon="mdi:view-module-outline" label="modules" value={course.module_count} />
         <Metric icon="mdi:file-tree-outline" label="submodules" value={course.submodule_count} />
         <Metric icon="mdi:book-open-variant" label="articles" value={course.article_count} />

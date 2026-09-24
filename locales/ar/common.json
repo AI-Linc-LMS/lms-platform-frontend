@@ -2897,5 +2897,12 @@
     "groupRefusedFallback": "مرفوض",
     "andMore": "و{{n}} آخرين",
     "done": "تم"
+  },
+  "adaptiveCourseProgress": {
+    "notStarted": "لم يبدأ",
+    "inProgress": "قيد التقدم",
+    "completed": "مكتمل",
+    "steps": "تم إنجاز {{done}} من {{total}} خطوة",
+    "barAria": "تم إنجاز {{percent}}٪ من هذه الدورة"
   }
 }
