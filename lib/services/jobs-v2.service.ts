@@ -225,6 +225,11 @@ export const jobsV2Service = {
       return response.data;
     } catch (err) {
       const error = err as AxiosError<ApiErrorPayload>;
+      // A role that is not there for this viewer is not a failure: removed, or never addressed to
+      // them (a visitor who is not signed in gets 404 for any role that is not for everyone). The
+      // pages render "This role is no longer listed" for null; throwing showed a Retry button that
+      // could never succeed.
+      if (error.response?.status === 404) return null;
       const message =
         error.response?.data?.error ||
         error.response?.data?.message ||
