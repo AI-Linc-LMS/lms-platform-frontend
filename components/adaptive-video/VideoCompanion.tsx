@@ -567,6 +567,10 @@ export function VideoCompanion({
   const conceptTime = finished ? Number.MAX_SAFE_INTEGER : currentTime;
   const watchedConcepts = companion.concept_map?.nodes?.filter((n) => conceptTime >= (n.timestamp_seconds ?? 0)).length ?? 0;
   const watchedPct = finished ? 100 : watchedPercent(saved.bestPct, thisVisitPct);
+  // Fixed for the life of the page (the takeaways come with the companion), so the layout below
+  // that depends on it never changes while the learner is using it.
+  const hasTakeaways = (companion.takeaways?.length ?? 0) > 0;
+  const takeawaysAcross = hasTakeaways && (companion.chapters?.length ?? 0) > 0;
 
   return (
     <Box>
@@ -586,9 +590,36 @@ export function VideoCompanion({
         }
       />
 
-      <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 340px" }, gap: 2.5, mt: 1 }}>
+      <Box
+        sx={{
+          display: "grid", gridTemplateColumns: { xs: "1fr", lg: "1fr 340px" }, gap: 2.5, mt: 1,
+          // The takeaways are their own grid item, so each width can put them where the columns
+          // come out closest - by CSS alone: nothing is measured, nothing moves while the page is in
+          // use, and the player keeps its place in the tree at every width.
+          //
+          // - One column: unchanged - they close the stack, after the chapters.
+          // - lg (1200-1535px): the main column is at its narrowest, so the player is small, and the
+          //   four rail panels ran 130-460px past the lesson. Without the takeaways the rail (mode,
+          //   re-explain, chapters) comes out within ~20-170px of the lesson, so the takeaways - the
+          //   one panel that keeps growing as the video plays - go below both columns, full width.
+          //   Moving them under the lesson instead only turned the gap round (the lesson then ran
+          //   280-530px past the rail). Not for a video with no chapters: that rail would be short
+          //   of the lesson by the whole of the chapters card, so the takeaways stay in it.
+          // - xl and up: the player is big enough that the old stack comes out even; it stays.
+          ...(hasTakeaways && {
+            gridTemplateAreas: {
+              xs: '"main" "rail" "takeaways"',
+              lg: takeawaysAcross ? '"main rail" "takeaways takeaways"' : '"main rail" "main takeaways"',
+              xl: '"main rail" "main takeaways"',
+            },
+            // Where the takeaways stay in the rail, the lesson spans both rows, so a longer lesson
+            // puts its spare height under the takeaways rather than between them and the chapters.
+            gridTemplateRows: { lg: "auto 1fr" },
+          }),
+        }}
+      >
         {/* Main column */}
-        <Box sx={{ minWidth: 0 }}>
+        <Box sx={{ minWidth: 0, gridArea: hasTakeaways ? "main" : undefined }}>
           {/* Player */}
           <Box
             ref={playerBoxRef}
@@ -854,7 +885,7 @@ export function VideoCompanion({
         </Box>
 
         {/* Right rail */}
-        <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+        <Box sx={{ display: "flex", flexDirection: "column", gap: 2, gridArea: hasTakeaways ? "rail" : undefined }}>
           <WatchModeSelector
             value={watchMode}
             rewatchAvailable={Boolean(companion.rewatch_available)}
@@ -867,8 +898,17 @@ export function VideoCompanion({
               those learners get a prominent headline button that fails every single time. */}
           {(companion.transcript_segments?.length ?? 0) > 0 && <ReExplainPanel onReExplain={onReExplain} />}
           <AutoChapters chapters={companion.chapters} currentTime={currentTime} onJump={(s) => seekTo(s)} />
-          <LiveTakeaways takeaways={companion.takeaways} currentTime={currentTime} chapters={companion.chapters} />
         </Box>
+        {hasTakeaways && (
+          // Wherever they follow the chapters, -4px takes the grid's 20px row gap back to the rail's
+          // own 16px, so they sit exactly where they did as the rail's last card.
+          <Box
+            data-testid="takeaways-slot"
+            sx={{ gridArea: "takeaways", minWidth: 0, alignSelf: "start", mt: { xs: -0.5, lg: takeawaysAcross ? 0 : -0.5, xl: -0.5 } }}
+          >
+            <LiveTakeaways takeaways={companion.takeaways} currentTime={currentTime} chapters={companion.chapters} />
+          </Box>
+        )}
       </Box>
 
       <style jsx global>{`
