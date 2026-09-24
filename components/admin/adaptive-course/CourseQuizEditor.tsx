@@ -9,7 +9,12 @@ import {
   type AdminMcq,
 } from "@/lib/services/admin/admin-adaptive-quiz.service";
 import { MCQReviewTable } from "@/components/admin/adaptive-quiz/MCQReviewTable";
+import {
+  MissingContextDialog,
+  useMissingContextConfirm,
+} from "@/components/admin/adaptive-quiz/MissingContextDialog";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { readMissingContext } from "@/lib/utils/missing-context";
 
 interface CourseQuizEditorProps {
   configId: number;
@@ -44,6 +49,7 @@ export function CourseQuizEditor({ configId, topic, onSaved }: CourseQuizEditorP
   const [targetSkills, setTargetSkills] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [adding, setAdding] = useState(false);
+  const missingContext = useMissingContextConfirm();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -83,7 +89,7 @@ export function CourseQuizEditor({ configId, topic, onSaved }: CourseQuizEditorP
     }
   }
 
-  async function handleSave() {
+  async function handleSave(confirmMissingContext = false) {
     if (saving) return;
     const upserts = mcqs.filter(isComplete);
     const skipped = mcqs.length - upserts.length;
@@ -97,6 +103,7 @@ export function CourseQuizEditor({ configId, topic, onSaved }: CourseQuizEditorP
       const next = await adminAdaptiveQuizService.update(configId, {
         mcqs_upsert: upserts,
         mcqs_delete: deletedIds,
+        ...(confirmMissingContext ? { confirm_missing_context: true } : {}),
       });
       setMcqs(next.mcqs.map((m) => ({ ...m })));
       setInitialIds(new Set(next.mcqs.map((m) => m.id)));
@@ -106,7 +113,19 @@ export function CourseQuizEditor({ configId, topic, onSaved }: CourseQuizEditorP
         skipped > 0 ? "info" : "success",
       );
     } catch (e) {
-      showToast(getAxiosErrorDetail(e, "Couldn't save."), "error");
+      const flagged = readMissingContext(e);
+      if (flagged) {
+        // Questions that point at a figure, table or code they don't include: the author decides.
+        // The server numbers the questions it was SENT, which leaves out incomplete ones, so
+        // number them the way this list shows them.
+        const shown = flagged.map((q) => {
+          const at = mcqs.indexOf(upserts[q.index]);
+          return at >= 0 ? { ...q, index: at } : q;
+        });
+        missingContext.open(shown, () => void handleSave(true));
+      } else {
+        showToast(getAxiosErrorDetail(e, "Couldn't save."), "error");
+      }
     } finally {
       setSaving(false);
     }
@@ -159,6 +178,7 @@ export function CourseQuizEditor({ configId, topic, onSaved }: CourseQuizEditorP
           {saving ? "Saving…" : "Save questions"}
         </ButtonBase>
       </Box>
+      <MissingContextDialog {...missingContext.dialogProps} />
       <style jsx global>{`
         @keyframes acb-spin { to { transform: rotate(360deg); } }
         .acb-spin { animation: acb-spin 0.9s linear infinite; }

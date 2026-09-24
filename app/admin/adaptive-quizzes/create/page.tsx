@@ -15,6 +15,11 @@ import { Icon } from "@iconify/react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { adminAdaptiveQuizService } from "@/lib/services/admin/admin-adaptive-quiz.service";
+import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import {
+  MissingContextDialog,
+  useMissingContextConfirm,
+} from "@/components/admin/adaptive-quiz/MissingContextDialog";
 import {
   emptyDraft,
   totalQuestions,
@@ -35,6 +40,7 @@ export default function CreateAdaptiveQuizPage() {
   const [stepIndex, setStepIndex] = useState(0);
   const [draft, setDraft] = useState<AdaptiveQuizDraft>(emptyDraft());
   const [publishing, setPublishing] = useState(false);
+  const missingContext = useMissingContextConfirm();
 
   const total = totalQuestions(draft.matrix);
 
@@ -60,7 +66,7 @@ export default function CreateAdaptiveQuizPage() {
     }
   }, [stepIndex, draft, total]);
 
-  async function handlePublish() {
+  async function handlePublish(confirmMissingContext = false) {
     if (publishing) return;
     setPublishing(true);
     try {
@@ -74,11 +80,16 @@ export default function CreateAdaptiveQuizPage() {
         hint_tokens: draft.hint_tokens,
         confidence_prompt_enabled: draft.confidence_prompt_enabled,
         mcqs: draft.mcqs,
+        ...(confirmMissingContext ? { confirm_missing_context: true } : {}),
       });
       showToast(`"${draft.title}" published.`, "success");
       router.push("/admin/adaptive-quizzes");
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't publish.", "error");
+      // Questions that point at a figure, table or code they don't include: the author decides.
+      if (!missingContext.intercept(e, () => void handlePublish(true))) {
+        // The server's own words. Axios's message is "Request failed with status code 400".
+        showToast(getAxiosErrorDetail(e, "Couldn't publish."), "error");
+      }
     } finally {
       setPublishing(false);
     }
@@ -141,6 +152,14 @@ export default function CreateAdaptiveQuizPage() {
             {stepIndex === 2 && <Step3Review draft={draft} setDraft={setDraft} />}
             {stepIndex === 3 && <Step4Publish draft={draft} />}
           </Box>
+
+          <MissingContextDialog
+            {...missingContext.dialogProps}
+            onGoBack={() => {
+              missingContext.dismiss();
+              setStepIndex(2); // Review, where each question can be edited
+            }}
+          />
 
           <Box sx={{ display: "flex", justifyContent: "space-between" }}>
             <ButtonBase

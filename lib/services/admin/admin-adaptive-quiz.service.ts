@@ -45,6 +45,8 @@ export interface FinalizeAdaptiveQuizPayload {
   hint_tokens: number;
   confidence_prompt_enabled: boolean;
   mcqs: AdminMcq[];
+  /** The author saw the missing-context warning for these questions and publishes them anyway. */
+  confirm_missing_context?: boolean;
 }
 
 export const adminAdaptiveQuizService = {
@@ -123,6 +125,8 @@ export const adminAdaptiveQuizService = {
       quiz_instructions?: string;
       mcqs_upsert?: AdminMcq[];
       mcqs_delete?: number[];
+      /** See FinalizeAdaptiveQuizPayload.confirm_missing_context. */
+      confirm_missing_context?: boolean;
     },
   ): Promise<AdminAdaptiveQuizDetail> {
     const { data } = await apiClient.patch<AdminAdaptiveQuizDetail>(
