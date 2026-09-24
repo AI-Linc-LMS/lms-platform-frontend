@@ -81,6 +81,18 @@ function toAssessmentApiDecimalString(
 
 const steps = ["Assessment Details", "Add Questions", "Review & Create"];
 
+interface SubmitOptions {
+  skipSectionValidation?: boolean;
+  forceDraft?: boolean;
+  /**
+   * Make the paper live once it is saved. A new paper is created as a draft and then published
+   * through the same endpoint a reopened draft uses, so both paths run the same checks.
+   */
+  publish?: boolean;
+  /** Set once the author has seen the "these questions will not be served" dialog. */
+  acknowledgeExtraQuestions?: boolean;
+}
+
 function CreateAssessmentPageContent() {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
@@ -142,6 +154,10 @@ function CreateAssessmentPageContent() {
   const [loadingDraft, setLoadingDraft] = useState(false);
   const [loadedIsDraft, setLoadedIsDraft] = useState(false);
   const [savingDraft, setSavingDraft] = useState(false);
+  /** Which final-step button is busy, so only that one says "Publishing…" / "Saving…". */
+  const [submitIntent, setSubmitIntent] = useState<"save" | "publish" | null>(null);
+  /** The submit the extra-questions dialog interrupted, finished by its "…as configured" button. */
+  const pendingSubmitRef = useRef<SubmitOptions>({});
 
   // Assessment basic info
   const [title, setTitle] = useState("");
@@ -1077,14 +1093,10 @@ function CreateAssessmentPageContent() {
     return getAllMCQsWithSections().map(({ sectionId, ...mcq }) => mcq);
   };
 
-  const handleCreate = async (options?: {
-    skipSectionValidation?: boolean;
-    forceDraft?: boolean;
-    /** Set once the author has seen the "these questions will not be served" dialog. */
-    acknowledgeExtraQuestions?: boolean;
-  }) => {
+  const handleCreate = async (options?: SubmitOptions) => {
     try {
       setCreating(true);
+      setSubmitIntent(options?.publish ? "publish" : "save");
 
       if (!allowDesktop && !allowMobile && !allowTablet) {
         showToast(t("assessmentDevice.atLeastOne"), "error");
@@ -1335,6 +1347,8 @@ function CreateAssessmentPageContent() {
       const extraQuestionSections = overSelectedSections(extraQuestionCandidates);
 
       if (!options?.acknowledgeExtraQuestions && extraQuestionSections.length > 0) {
+        // Remember which button asked, so "…as configured" finishes the same action.
+        pendingSubmitRef.current = options ?? {};
         setExtraQuestionPrompt(extraQuestionSections);
         setCreating(false);
         return;
@@ -1729,7 +1743,11 @@ function CreateAssessmentPageContent() {
       payload.codingProblemSection = payload.codingProblemSection ?? [];
       payload.subjectiveQuestionSection = payload.subjectiveQuestionSection ?? [];
 
-      if (options?.forceDraft) {
+      // Publishing a NEW paper saves it as a draft first, for every role, and then makes the same
+      // publish call a reopened draft makes (publishCreatedDraft). The create endpoint forces a
+      // scoped author's paper into a draft anyway; doing it for everyone means there is one way
+      // a paper goes live from this page, with one set of checks.
+      if (options?.forceDraft || (options?.publish && !editingAssessmentId)) {
         payload.is_draft = true;
         payload.is_active = false;
       }
@@ -1752,8 +1770,17 @@ function CreateAssessmentPageContent() {
           payload,
           emailAttachment
         );
+        if (options?.publish) {
+          // The draft exists now. Whatever happens next, the author is told the truth about it.
+          await publishCreatedDraft(created.id);
+          return;
+        }
         showToast(
-          options?.forceDraft ? "Draft saved successfully" : "Assessment created successfully",
+          options?.forceDraft
+            ? (t("assessmentPublish.savedDraft", {
+                defaultValue: "Saved as a draft. Learners cannot see it until you publish it.",
+              }) as string)
+            : "Assessment created successfully",
           "success"
         );
         if (options?.forceDraft) {
@@ -1770,6 +1797,7 @@ function CreateAssessmentPageContent() {
       );
     } finally {
       setCreating(false);
+      setSubmitIntent(null);
     }
   };
 
@@ -1837,45 +1865,52 @@ function CreateAssessmentPageContent() {
     );
   };
 
+  /**
+   * The publish request, built once for both doors: a reopened draft (handlePublishAssessment)
+   * and a new paper (publishCreatedDraft). Snapshots the email editor so the call carries the
+   * notification details (subject, body, rendered HTML, attachment).
+   */
+  const buildPublishRequest = (activate: boolean) => {
+    const emailSnapshot = emailNotificationEnabled
+      ? emailEditorRef.current?.getValues() ?? emailSnapshotRef.current
+      : null;
+    const body = {
+      is_active: activate,
+      email_notification_enabled: emailNotificationEnabled,
+      email_base_url: getPublicAppOrigin(),
+      ...(emailSnapshot
+        ? {
+            email_subject: emailSnapshot.subject,
+            email_body: emailSnapshot.body,
+            email_html: buildAssessmentNotificationEmailHtml({
+              subject: emailSnapshot.subject,
+              bodyHtml: emailSnapshot.body,
+              clientName: clientInfo?.name?.trim() || "Your team",
+              logoUrl: clientInfo?.app_logo_url ?? null,
+              schedule: emailSchedule,
+            }),
+            // Retain the previously-saved attachment unless a new file was
+            // picked (in which case the multipart `email_attachment` wins).
+            ...(emailSnapshot.attachmentUrl
+              ? { attachment_url: emailSnapshot.attachmentUrl }
+              : {}),
+          }
+        : {}),
+    };
+    return { body, attachment: emailSnapshot?.attachment ?? null };
+  };
+
   const handlePublishAssessment = async () => {
     if (!editingAssessmentId || !config.clientId) return;
     try {
       setCreating(true);
-      // Snapshot the email editor so the publish call also carries the
-      // notification details (subject, body, rendered HTML, attachment).
-      // Backend can use these to actually send the email on publish.
-      const emailSnapshot = emailNotificationEnabled
-        ? emailEditorRef.current?.getValues() ?? emailSnapshotRef.current
-        : null;
-      const publishBody = {
-        is_active: true,
-        email_notification_enabled: emailNotificationEnabled,
-        email_base_url: getPublicAppOrigin(),
-        ...(emailSnapshot
-          ? {
-              email_subject: emailSnapshot.subject,
-              email_body: emailSnapshot.body,
-              email_html: buildAssessmentNotificationEmailHtml({
-                subject: emailSnapshot.subject,
-                bodyHtml: emailSnapshot.body,
-                clientName: clientInfo?.name?.trim() || "Your team",
-                logoUrl: clientInfo?.app_logo_url ?? null,
-                schedule: emailSchedule,
-              }),
-              // Retain the previously-saved attachment unless a new file was
-              // picked (in which case the multipart `email_attachment` wins).
-              ...(emailSnapshot.attachmentUrl
-                ? { attachment_url: emailSnapshot.attachmentUrl }
-                : {}),
-            }
-          : {}),
-      };
-      const publishAttachment = emailSnapshot?.attachment ?? null;
+      setSubmitIntent("publish");
+      const { body, attachment } = buildPublishRequest(true);
       await adminAssessmentService.publishAssessment(
         config.clientId,
         editingAssessmentId,
-        publishBody,
-        publishAttachment
+        body,
+        attachment
       );
       showToast("Assessment published", "success");
       setLoadedIsDraft(false);
@@ -1884,6 +1919,79 @@ function CreateAssessmentPageContent() {
       showToast(e instanceof Error ? e.message : "Failed to publish", "error");
     } finally {
       setCreating(false);
+      setSubmitIntent(null);
+    }
+  };
+
+  /**
+   * The second half of "Publish assessment" on a NEW paper, which handleCreate has just saved as
+   * a draft: the same publish call a reopened draft makes, so the server runs the same checks
+   * (the paper is yours, it has questions) and sends the same notifications and email.
+   *
+   * It never throws. If the publish fails the paper is still a draft, and the author is told what
+   * the server actually holds - read back, not assumed, because a publish can fail after it has
+   * saved (a lost response, a notification that could not be queued). A paper is either a draft
+   * they can reopen and publish, or live; the message never leaves them guessing which.
+   */
+  const publishCreatedDraft = async (id: number) => {
+    // No attachment here: it went up with the create, and resending it would turn this into a
+    // multipart request, where the server reads no `is_active` and always activates.
+    const { body } = buildPublishRequest(isActive);
+    try {
+      await adminAssessmentService.publishAssessment(config.clientId, id, body);
+      showToast(
+        isActive
+          ? (t("assessmentPublish.published", { defaultValue: "Assessment published." }) as string)
+          : (t("assessmentPublish.publishedInactive", {
+              defaultValue:
+                "Assessment published as inactive. Learners will not see it until it is activated.",
+            }) as string),
+        "success",
+      );
+      router.push(`/admin/assessment/${id}/edit`);
+      return;
+    } catch (e: unknown) {
+      const reason = e instanceof Error && e.message ? e.message : "Failed to publish";
+      let stillDraft: boolean | null = null;
+      try {
+        const detail = (await adminAssessmentService.getAssessmentById(config.clientId, id)) as {
+          is_draft?: boolean;
+        };
+        stillDraft = detail.is_draft !== false;
+      } catch {
+        stillDraft = null;
+      }
+      if (stillDraft === true) {
+        showToast(
+          t("assessmentPublish.savedNotPublished", {
+            defaultValue: "Saved as a draft, but not published: {{reason}}",
+            reason,
+          }) as string,
+          "error",
+        );
+        // The draft editor, where "Publish assessment" is one click once the problem is fixed.
+        router.push(`/admin/assessment/create?fromDraft=${id}`);
+      } else if (stillDraft === false) {
+        showToast(
+          t("assessmentPublish.publishedWithError", {
+            defaultValue: "The assessment was published, but the server also reported: {{reason}}",
+            reason,
+          }) as string,
+          "warning",
+        );
+        router.push(`/admin/assessment/${id}/edit`);
+      } else {
+        showToast(
+          t("assessmentPublish.publishUnknown", {
+            defaultValue:
+              "The assessment is saved, but we could not confirm whether it was published: {{reason}}",
+            reason,
+          }) as string,
+          "warning",
+        );
+        // The paper's own page shows whether it is a draft or live.
+        router.push(`/admin/assessment/${id}/edit`);
+      }
     }
   };
 
@@ -2535,21 +2643,38 @@ function CreateAssessmentPageContent() {
           <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", justifyContent: "flex-end", alignItems: "center" }}>
             {activeStep === steps.length - 1 ? (
               <>
-                {editingAssessmentId && loadedIsDraft && (
+                {/* The same pair on a new paper as on a reopened draft. A new paper used to offer
+                    only "Create Assessment", which an instructor's create turns into a draft, so
+                    the only way to publish was to leave, reopen the draft and come back here. */}
+                {(!editingAssessmentId || loadedIsDraft) && (
                   <Button
                     variant="outlined"
-                    onClick={() => void handlePublishAssessment()}
+                    onClick={() =>
+                      void (editingAssessmentId
+                        ? handlePublishAssessment()
+                        : handleCreate({ publish: true }))
+                    }
                     disabled={saveDraftDisabled}
+                    startIcon={
+                      submitIntent === "publish" ? (
+                        <CircularProgress size={18} color="inherit" />
+                      ) : undefined
+                    }
                   >
-                    Publish assessment
+                    {submitIntent === "publish"
+                      ? t("assessmentPublish.publishing", { defaultValue: "Publishing…" })
+                      : "Publish assessment"}
                   </Button>
                 )}
                 <Button
                   variant="contained"
-                  onClick={() => void handleCreate()}
+                  onClick={() =>
+                    // A new paper is saved as a draft; a reopened one keeps what it is.
+                    void (editingAssessmentId ? handleCreate() : handleCreate({ forceDraft: true }))
+                  }
                   disabled={creating || loadingDraft || savingDraft}
                   startIcon={
-                    creating ? (
+                    submitIntent === "save" ? (
                       <CircularProgress size={18} color="inherit" />
                     ) : (
                       <IconWrapper icon="mdi:check" size={18} />
@@ -2570,13 +2695,9 @@ function CreateAssessmentPageContent() {
                     },
                   }}
                 >
-                  {creating
-                    ? editingAssessmentId
-                      ? "Saving..."
-                      : "Creating..."
-                    : editingAssessmentId
-                      ? "Save assessment"
-                      : "Create Assessment"}
+                  {submitIntent === "save"
+                    ? t("assessmentPublish.saving", { defaultValue: "Saving…" })
+                    : "Save assessment"}
                 </Button>
               </>
             ) : (
@@ -2643,11 +2764,14 @@ function CreateAssessmentPageContent() {
             variant="outlined"
             onClick={() => {
               setExtraQuestionPrompt(null);
-              void handleCreate({ acknowledgeExtraQuestions: true });
+              // Finish what was asked for: a publish stays a publish, a save stays a save.
+              void handleCreate({ ...pendingSubmitRef.current, acknowledgeExtraQuestions: true });
             }}
             sx={{ textTransform: "none" }}
           >
-            Publish as configured
+            {pendingSubmitRef.current.publish
+              ? t("assessmentPublish.publishAsConfigured", { defaultValue: "Publish as configured" })
+              : t("assessmentPublish.saveAsConfigured", { defaultValue: "Save as configured" })}
           </Button>
           <Button
             variant="contained"

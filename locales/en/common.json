@@ -1234,6 +1234,18 @@
       "strictOrderNotice": "This assessment used a fixed section order. Earlier sections cannot be revisited after you moved ahead."
     }
   },
+  "assessmentPublish": {
+    "publishing": "Publishing…",
+    "saving": "Saving…",
+    "published": "Assessment published.",
+    "publishedInactive": "Assessment published as inactive. Learners will not see it until it is activated.",
+    "savedDraft": "Saved as a draft. Learners cannot see it until you publish it.",
+    "savedNotPublished": "Saved as a draft, but not published: {{reason}}",
+    "publishedWithError": "The assessment was published, but the server also reported: {{reason}}",
+    "publishUnknown": "The assessment is saved, but we could not confirm whether it was published: {{reason}}",
+    "publishAsConfigured": "Publish as configured",
+    "saveAsConfigured": "Save as configured"
+  },
   "assessmentDevice": {
     "sectionTitle": "Device access",
     "sectionHint": "Choose which device types can take this assessment. At least one must stay enabled.",
