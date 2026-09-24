@@ -52,8 +52,10 @@ export function AchievementsSection({
       };
       await onSave(dataToSave);
       setEditing(false);
-    } catch (error) {
-      // Silently handle profile save error
+    } catch {
+      // The page reports what the server refused and re-throws. Caught here so the editor
+      // stays OPEN with the entries still in it: a refused save must not look like a
+      // finished one, and must not cost the learner what they typed.
     } finally {
       setSaving(false);
     }

@@ -122,6 +122,23 @@ describe("it asks on the way in", () => {
     expect(Object.keys(updateUserProfile.mock.calls[0][0])).toHaveLength(2);
   });
 
+  it("shows the reason the SERVER gave, not a generic could-not-save", async () => {
+    // The endpoint answers `{"error": {field: [...]}}`. This read the top level of the body, so
+    // every per-field message was skipped and the learner was told nothing they could act on.
+    updateUserProfile.mockRejectedValueOnce({
+      response: { status: 400, data: { error: { country: ["Enter a country we recognise."] } } },
+    });
+    render(<ProfileSetupPrompt />);
+    await screen.findByText(/finish setting up your account/i);
+
+    await userEvent.type(screen.getByLabelText(/date of birth/i), "2000-01-01");
+    await userEvent.click(screen.getByLabelText(/country/i));
+    await userEvent.click(await screen.findByText("India"));
+    await userEvent.click(screen.getByTestId("profile-setup-save"));
+
+    expect(await screen.findByText("Enter a country we recognise.")).toBeInTheDocument();
+  });
+
   it("refuses a date of birth the server would refuse, before the round trip", async () => {
     render(<ProfileSetupPrompt />);
     await screen.findByText(/finish setting up your account/i);

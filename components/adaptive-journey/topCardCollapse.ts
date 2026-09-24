@@ -21,7 +21,7 @@
  * The learner's own choice wins over that default, per course and per card, for the session.
  * ======================================================================== */
 
-import { currentUserId } from "@/lib/utils/profile-cache";
+import { currentUserId } from "@/lib/utils/current-user";
 import type { JourneyBoard } from "@/lib/types/adaptive-journey";
 
 export type TopCardKind = "calibration" | "interview";

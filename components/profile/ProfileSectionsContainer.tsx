@@ -18,10 +18,27 @@ import { AchievementsSection } from "./AchievementsSection";
 import { ExternalProfilesCard } from "./ExternalProfilesCard";
 import { UserProfile } from "@/lib/services/profile.service";
 import { config } from "@/lib/config";
+import { currentUserId } from "@/lib/utils/current-user";
 import { phoneText } from "@/components/common/mobile/phoneText";
 
-const PROFILE_SECTIONS_KEY = `profile_visible_sections_${config.clientId}`;
-const PROFILE_HIDDEN_KEY = `profile_hidden_sections_${config.clientId}`;
+/**
+ * Which sections this learner shows on their own profile page.
+ *
+ * This is a VIEW preference, not a record: it changes nothing on the server, and losing it costs
+ * a learner a few clicks. So it may live in browser storage - but per VIEWER, not per tenant.
+ * Scoped to the tenant alone, as it was, one learner's arrangement applied to the next person who
+ * signed in on the same browser, which is the shape of the incident that made the profile cache
+ * user-scoped in the first place. An account we cannot identify gets the defaults and writes
+ * nothing.
+ */
+const sectionsKey = () => {
+  const uid = currentUserId();
+  return uid ? `profile_visible_sections_${config.clientId}_u${uid}` : null;
+};
+const hiddenKey = () => {
+  const uid = currentUserId();
+  return uid ? `profile_hidden_sections_${config.clientId}_u${uid}` : null;
+};
 const SECTION_ORDER: ProfileSectionId[] = [
   "skills",
   "experience",
@@ -127,7 +144,9 @@ function getSectionsWithData(profile: UserProfile): ProfileSectionId[] {
 function loadVisibleSections(): ProfileSectionId[] | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = localStorage.getItem(PROFILE_SECTIONS_KEY);
+    const key = sectionsKey();
+    if (!key) return null;
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return parsed;
@@ -140,7 +159,8 @@ function loadVisibleSections(): ProfileSectionId[] | null {
 function saveVisibleSections(sections: ProfileSectionId[]) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(PROFILE_SECTIONS_KEY, JSON.stringify(sections));
+    const key = sectionsKey();
+    if (key) localStorage.setItem(key, JSON.stringify(sections));
   } catch {
     // ignore
   }
@@ -162,7 +182,9 @@ function saveVisibleSections(sections: ProfileSectionId[]) {
 function loadHiddenSections(): ProfileSectionId[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(PROFILE_HIDDEN_KEY);
+    const key = hiddenKey();
+    if (!key) return [];
+    const raw = localStorage.getItem(key);
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     return Array.isArray(parsed) ? parsed : [];
@@ -174,7 +196,8 @@ function loadHiddenSections(): ProfileSectionId[] {
 function saveHiddenSections(sections: ProfileSectionId[]) {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(PROFILE_HIDDEN_KEY, JSON.stringify(sections));
+    const key = hiddenKey();
+    if (key) localStorage.setItem(key, JSON.stringify(sections));
   } catch {
     // ignore
   }

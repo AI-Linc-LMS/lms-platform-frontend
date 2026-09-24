@@ -18,6 +18,7 @@ import { FieldLabel } from "@/components/profile/FieldLabel";
 import { PHONE } from "@/components/common/mobile/phone";
 import { useProfileGate } from "@/lib/contexts/ProfileGateContext";
 import { profileService } from "@/lib/services/profile.service";
+import { readProfileSaveError } from "@/lib/utils/profileSaveError";
 import {
   validateMandatoryProfile,
   type MandatoryProfileField,
@@ -184,22 +185,20 @@ export function ProfileSetupPrompt() {
       await refresh();
       setOpen(false);
     } catch (error) {
-      const data =
-        (error as { response?: { data?: Record<string, unknown> } })?.response?.data ?? {};
+      // The endpoint answers `{"error": {field: [...]}}`, one level deeper than this read the
+      // top level of the body: every per-field message was skipped, and the learner got the
+      // generic "could not save" instead of "Enter a valid phone number". One reader now, shared
+      // with the profile page, so the two cannot disagree about the shape again.
+      const { message, fields } = readProfileSaveError(error, t("profileSetup.saveFailed"));
       const perField: Partial<Record<MandatoryProfileField, string>> = {};
       let generic: string | null = null;
-      for (const key of Object.keys(data)) {
-        const value = (data as Record<string, unknown>)[key];
-        const message = Array.isArray(value) ? value[0] : value;
-        if (typeof message !== "string") continue;
-        if (key in EMPTY_DRAFT) perField[key as MandatoryProfileField] = message;
-        else generic = message;
+      for (const [key, text] of Object.entries(fields)) {
+        if (key in EMPTY_DRAFT) perField[key as MandatoryProfileField] = text;
+        else generic = text;
       }
       setErrors(perField);
       setSaveError(
-        Object.keys(perField).length > 0
-          ? null
-          : generic ?? t("profileSetup.saveFailed"),
+        Object.keys(perField).length > 0 ? null : generic ?? message,
       );
     } finally {
       setSaving(false);

@@ -1,112 +1,109 @@
-import Cookies from "js-cookie";
 import { config } from "@/lib/config";
+import { currentUserId } from "@/lib/utils/current-user";
 
 /**
- * The local profile cache — keyed by USER, and cleared when they leave.
+ * What is left of the local profile cache: the means to GET RID of it.
  *
- * It used to be keyed by tenant alone (`user_profile_extra_<clientId>`), which meant one browser
- * had one profile cache shared by every account that ever signed in on it. Sign out, sign up as
- * somebody new, and the profile page merged the previous person's name, phone and date of birth
- * into the new account's empty fields — and the community page built post authors from the same
- * blob. Pressing Save then wrote that data to the new account for real.
+ * The line this file now draws
+ * ----------------------------
+ * **Learner data** - anything a learner typed that belongs to their record: name, phone, date of
+ * birth, bio, experience, education, a resume's section arrangement - lives on the server and
+ * nowhere else. A **per-viewer UI convenience** - a collapsed panel, a remembered tab - may live
+ * in browser storage, because losing it costs nothing and it is not anybody's record.
  *
- * Two independent defences, because either alone is not enough:
- *   1. The key includes the user id from the access token, so two accounts cannot collide even
- *      if the cache is never cleared.
- *   2. `clearProfileCache()` runs on logout, so nothing is left behind on a shared machine.
+ * Why the cache is gone
+ * ---------------------
+ * The profile page used to write the learner's edits to `localStorage` BEFORE it tried the
+ * server, and merge that copy back over the API profile on the next load. When the save failed
+ * the learner was told "Profile saved locally", as an *info* toast, and the merge made the data
+ * keep looking saved for as long as they stayed in that browser. The server never had it. Open
+ * the app on a phone, or clear site data, and the work was simply gone - and nothing had ever
+ * said so.
  *
- * Legacy tenant-only keys are deleted on first read. They belong to whoever used the browser
- * before and must never be merged into anyone.
+ * Why it existed at all
+ * ---------------------
+ * It was keyed by tenant alone (`user_profile_extra_<clientId>`), which meant one browser had
+ * one profile cache shared by every account that signed in on it: a new account saw the previous
+ * person's name, phone and date of birth merged into its empty fields, the community page built
+ * post authors from the same blob, and pressing Save wrote that data to the new account for real.
+ * The fix at the time was to key it per user and clear it on logout. Not writing learner data to
+ * the browser at all is the same defence, taken to its conclusion.
+ *
+ * What is still here
+ * ------------------
+ * Blobs written by earlier builds are still sitting on learners' devices, and some of them hold
+ * edits that never reached the server. They are NEVER merged into a profile - that is the
+ * incident above - but they are not thrown away silently either: the profile page reads one,
+ * shows the learner what is in it, and offers to save it or discard it. Both answers end with
+ * the key removed.
  */
 
 const PREFIX = "user_profile_extra";
 
+/** Every key an earlier build could have written a learner's own data to. */
+const LEGACY_LEARNER_DATA_KEYS = [
+  // The resume builder's draft, written by a build before the resume was a server document.
+  "resumeData",
+];
+const LEGACY_LEARNER_DATA_PREFIXES = [
+  PREFIX,
+  // A resume's section arrangement, keyed by TENANT - so it was shared by every learner on a
+  // browser, the very bug the profile cache was re-keyed to fix. It lives on ResumeDocument.layout.
+  "resume_layout_v1_",
+];
+
+/** Null when we cannot identify the learner - in which case nothing is read or removed. */
+function strandedKey(): string | null {
+  const uid = currentUserId();
+  return uid ? `${PREFIX}_${config.clientId}_u${uid}` : null;
+}
+
 /**
- * The `user_id` claim from the access token, or null when signed out.
+ * The stranded edits of the signed-in learner, if any: data an earlier build wrote here and
+ * never got onto the server.
  *
- * Exported because it is the one place in the app that answers "which learner is this?" without
- * a React context: any per-learner key written to browser storage needs it, and a second copy of
- * the decode would be a second thing to get wrong.
+ * Only ever OFFERED to the learner, never merged. Returns null when there is nothing, when we
+ * cannot tell who is signed in, or when storage is unavailable.
  */
-export function currentUserId(): string | null {
+export function readStrandedProfile<T extends object>(): Partial<T> | null {
+  if (typeof window === "undefined") return null;
+  const key = strandedKey();
+  if (!key) return null;
   try {
-    const token = Cookies.get("access_token");
-    if (!token) return null;
-    const payload = token.split(".")[1];
-    if (!payload) return null;
-    const json = JSON.parse(
-      decodeURIComponent(
-        atob(payload.replace(/-/g, "+").replace(/_/g, "/"))
-          .split("")
-          .map((c) => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`)
-          .join(""),
-      ),
-    );
-    const id = json.user_id ?? json.userId ?? json.sub ?? null;
-    return id === null || id === undefined ? null : String(id);
+    const raw = localStorage.getItem(key);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<T>;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return null;
+    return Object.keys(parsed).length ? parsed : null;
   } catch {
     return null;
   }
 }
 
-function legacyKey(): string {
-  return `${PREFIX}_${config.clientId}`;
-}
-
-/** Null when we cannot identify the user — in which case nothing is read or written. */
-export function profileCacheKey(): string | null {
-  const uid = currentUserId();
-  return uid ? `${PREFIX}_${config.clientId}_u${uid}` : null;
-}
-
-/** Remove any pre-user-scoping cache. It cannot be attributed to anyone, so it cannot be used. */
-function dropLegacy(): void {
-  try {
-    localStorage.removeItem(legacyKey());
-  } catch {
-    // storage unavailable
-  }
-}
-
-export function loadProfileCache<T extends object>(): Partial<T> {
-  if (typeof window === "undefined") return {};
-  dropLegacy();
-  const key = profileCacheKey();
-  // No identifiable user => no cache. Returning {} is the safe answer: showing SOMEONE's data
-  // is worse than showing none.
-  if (!key) return {};
-  try {
-    const raw = localStorage.getItem(key);
-    return raw ? (JSON.parse(raw) as Partial<T>) : {};
-  } catch {
-    return {};
-  }
-}
-
-export function saveProfileCache<T extends object>(data: Partial<T>): void {
-  if (typeof window === "undefined") return;
-  const key = profileCacheKey();
-  if (!key) return;
-  try {
-    const existing = loadProfileCache<T>();
-    localStorage.setItem(key, JSON.stringify({ ...existing, ...data }));
-  } catch {
-    // storage unavailable
-  }
-}
-
-/** Called on logout. Clears this user's cache and any legacy blob still lying around. */
-export function clearProfileCache(): void {
+/** Forget the signed-in learner's stranded edits. Called once they have answered for them. */
+export function discardStrandedProfile(): void {
   if (typeof window === "undefined") return;
   try {
-    const key = profileCacheKey();
+    const key = strandedKey();
     if (key) localStorage.removeItem(key);
-    dropLegacy();
-    // Belt and braces: sweep every profile cache on this device. Logging out on a shared
-    // machine should not leave another account's details recoverable.
+  } catch {
+    // storage unavailable
+  }
+}
+
+/**
+ * Called on logout. Sweeps every key any build ever wrote learner data to, for every account,
+ * because logging out on a shared machine must not leave someone's details recoverable.
+ */
+export function purgeLearnerStorage(): void {
+  if (typeof window === "undefined") return;
+  try {
+    for (const key of LEGACY_LEARNER_DATA_KEYS) localStorage.removeItem(key);
     for (let i = localStorage.length - 1; i >= 0; i--) {
       const k = localStorage.key(i);
-      if (k && k.startsWith(PREFIX)) localStorage.removeItem(k);
+      if (k && LEGACY_LEARNER_DATA_PREFIXES.some((p) => k.startsWith(p))) {
+        localStorage.removeItem(k);
+      }
     }
   } catch {
     // storage unavailable

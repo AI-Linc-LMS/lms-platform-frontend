@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { loadProfileCache } from "@/lib/utils/profile-cache";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
@@ -37,6 +36,7 @@ import { ShareDialog } from "@/components/community/ShareDialog";
 import { ReportDialog } from "@/components/community/ReportDialog";
 import { useXPGain } from "@/components/community/XPGainProvider";
 import { useAuth } from "@/lib/auth/auth-context";
+import type { UserProfile as AuthUser } from "@/lib/services/accounts.service";
 import {
   communityService,
   Thread,
@@ -68,33 +68,24 @@ const POST_TYPES = Object.keys(POST_TYPE_CONFIG) as PostType[];
 const THREAD_EXTRAS_KEY = `community_thread_extras_${config.clientId}`;
 
 
-/** Shape this page reads out of the local profile cache. */
-interface CachedAuthor {
-  id?: number;
-  user_name?: string;
-  name?: string;
-  full_name?: string;
-  profile_pic_url?: string;
-  avatar?: string;
-  role?: string;
-}
-
-function getCurrentUserAuthor(): Author | null {
-  try {
-    // User-scoped and cleared on logout. Previously this read a TENANT-scoped blob, so a fresh
-    // account on a shared browser posted under the previous user's name and avatar.
-    const p = loadProfileCache<CachedAuthor>();
-    if (Object.keys(p).length) {
-      return {
-        id: p.id ?? 0,
-        user_name: p.user_name ?? "",
-        name: p.name ?? p.full_name ?? p.user_name ?? "You",
-        profile_pic_url: p.profile_pic_url ?? p.avatar ?? "",
-        role: p.role ?? "student",
-      } as Author;
-    }
-  } catch {}
-  return null;
+/**
+ * Who is posting, from the signed-in session rather than from browser storage.
+ *
+ * This used to read the profile page's `localStorage` cache - a blob that held whatever the
+ * profile page last wrote, saved or not, and that in an earlier form was keyed by tenant alone,
+ * so a fresh account on a shared browser posted under the previous person's name and avatar.
+ * `useAuth().user` is the server's own answer to the same question and cannot drift from it.
+ */
+function authorFromSession(user: AuthUser | null): Author | null {
+  if (!user) return null;
+  const fullName = `${user.first_name ?? ""} ${user.last_name ?? ""}`.trim();
+  return {
+    id: user.id ?? 0,
+    user_name: user.user_name ?? "",
+    name: fullName || user.user_name || "You",
+    profile_pic_url: user.profile_picture ?? "",
+    role: user.role ?? "student",
+  } as Author;
 }
 
 function loadThreadExtras(): Map<number, ThreadExtras> {
@@ -116,16 +107,7 @@ function saveThreadExtras(extras: Map<number, ThreadExtras>): void {
   } catch {}
 }
 
-function getCurrentUserName(): string | null {
-  try {
-    const raw = JSON.stringify(loadProfileCache<Record<string, unknown>>());
-    if (raw) {
-      const profile = JSON.parse(raw);
-      return profile.user_name || null;
-    }
-  } catch {}
-  return null;
-}
+
 
 const FILTER_CONFIG: { key: ActiveFilter; label: string; icon: string; color: string }[] = [
   { key: "all", label: "All Posts", icon: "mdi:view-grid-outline", color: "#6b7280" },
@@ -434,7 +416,7 @@ export default function CommunityPage() {
     image_urls?: string[];
   }) => {
     const tempId = -Date.now();
-    const author = getCurrentUserAuthor() ?? {
+    const author = authorFromSession(user) ?? {
       id: 0, user_name: "", name: "You", profile_pic_url: "", role: "student" as const,
     };
 
@@ -714,7 +696,7 @@ export default function CommunityPage() {
   };
 
   const filteredThreads = useMemo(() => {
-    const currentUserName = getCurrentUserName();
+    const currentUserName = user?.user_name ?? null;
     return threads
       .filter((thread) => {
         // Post type / my posts filter. "bookmarks" + "following" are server-side
@@ -763,7 +745,7 @@ export default function CommunityPage() {
         }
         return b.upvotes - b.downvotes - (a.upvotes - a.downvotes);
       });
-  }, [threads, searchQuery, sortBy, activeFilter, selectedTag]);
+  }, [threads, searchQuery, sortBy, activeFilter, selectedTag, user]);
 
   const paginatedThreads = useMemo(() => {
     const start = (page - 1) * pageSize;
@@ -1061,7 +1043,7 @@ export default function CommunityPage() {
                   onAuthorClick={(authorId) => router.push(`/community/user/${authorId}`)}
                   onShare={(id) => setShareTarget({ id, title: thread.title })}
                   onReport={(id) => setReportTarget({ id })}
-                  currentUserName={getCurrentUserName()}
+                  currentUserName={user?.user_name ?? null}
                 />
               ))}
             </Box>

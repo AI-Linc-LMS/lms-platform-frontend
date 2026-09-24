@@ -12,6 +12,7 @@ import type { SelectChangeEvent } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { UserProfile } from "@/lib/services/profile.service";
+import { readProfileSaveError } from "@/lib/utils/profileSaveError";
 import { PROFILE, TILE_GRADIENT } from "./theme/profileTokens";
 import { CollegeAutocomplete } from "@/components/profile/CollegeAutocomplete";
 
@@ -161,16 +162,12 @@ try {
       // making the learner reload to see what they just unlocked.
       void refreshProfileGate();
     } catch (error) {
-      // Previously swallowed entirely, so a rejected save looked like a successful one.
-      const resp = (error as { response?: { data?: Record<string, unknown> } })?.response;
-      const data = resp?.data ?? {};
-      const perField: Record<string, string> = {};
-      for (const key of Object.keys(data)) {
-        const val = (data as Record<string, unknown>)[key];
-        if (Array.isArray(val) && typeof val[0] === "string") perField[key] = val[0];
-        else if (typeof val === "string" && key !== "detail") perField[key] = val;
-      }
-      setFieldErrors(perField);
+      // This block was unreachable until now: the page's save handler caught every failure and
+      // resolved, so `onSave` never rejected and the card closed its editor on a save the server
+      // had refused. And it read the errors off the top level of the response, while this
+      // endpoint answers `{"error": {field: [...]}}` - so even when it did run it found nothing.
+      setFieldErrors(readProfileSaveError(error, "").fields);
+      // The editor deliberately stays open, with what the learner typed still in it.
     } finally {
       setSaving(false);
     }
