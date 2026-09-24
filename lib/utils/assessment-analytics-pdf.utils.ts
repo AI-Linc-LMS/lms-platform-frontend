@@ -561,9 +561,12 @@ export async function generateAssessmentAnalyticsPdfVector(
 
   drawSectionTitle("Overview", "Submission and score aggregates for this assessment.");
   drawKpiRow([
-    { label: "Total submissions", value: String(s.total_submissions ?? 0) },
-    { label: "Completed", value: String(s.completed_submissions ?? 0) },
-    { label: "In progress", value: String(s.in_progress_submissions ?? 0) },
+    // "Submitted" and not "Total": `total_submissions` counts finished attempts only. It used to
+    // include attempts still being sat, so an exported PDF reported more submissions than the
+    // report it was exported from had results for.
+    { label: "Submitted attempts", value: String(s.total_submissions ?? 0) },
+    { label: "Counted in report", value: String(s.completed_submissions ?? 0) },
+    { label: "Still attempting", value: String(s.in_progress_submissions ?? 0) },
   ]);
   drawKpiRow([
     {

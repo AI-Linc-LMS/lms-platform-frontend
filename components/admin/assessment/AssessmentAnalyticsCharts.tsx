@@ -1004,10 +1004,15 @@ export function AssessmentAnalyticsCharts({ data, toolbar }: Props) {
           </Typography>
           <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
             {[
-              ["Total tries (submissions)", summary.total_submissions],
-              ["Finished the test", summary.completed_submissions],
+              // `total_submissions` counts SUBMITTED attempts. It used to include attempts still
+              // being sat, which made it a count of "people who opened the paper" sitting under a
+              // label that said submissions, and disagreeing with every other number on the page.
+              ["Submitted attempts", summary.total_submissions],
+              ["Counted in this report", summary.completed_submissions],
               ["Received a final score", summary.completed_with_score],
-              ["Still in progress", summary.in_progress_submissions],
+              // Reported separately on purpose: an open attempt is not a submission, but an admin
+              // still needs to see that someone is mid-attempt or never finished.
+              ["Still attempting (not submitted)", summary.in_progress_submissions],
               [
                 "Average score (out of top score)",
                 `${summary.average_score?.toFixed(1) ?? "-"} / ${summary.maximum_marks ?? assessment?.maximum_marks ?? "-"}`,

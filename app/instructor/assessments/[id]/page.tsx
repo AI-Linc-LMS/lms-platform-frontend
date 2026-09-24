@@ -42,7 +42,11 @@ import {
   type QuestionsExportSubjectiveQuestion,
 } from "@/lib/services/admin/admin-assessment.service";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
-import { instructorService, type InstructorSubmissionRow } from "@/lib/services/instructor.service";
+import {
+  instructorService,
+  type InstructorInProgressRow,
+  type InstructorSubmissionRow,
+} from "@/lib/services/instructor.service";
 import {
   getSubmissionsExportJson,
   type SubmissionsExportResponse,
@@ -290,6 +294,9 @@ function SubmissionsPanel({ assessmentId }: { assessmentId: number }) {
   const { showToast } = useToast();
   const [rows, setRows] = useState<InstructorSubmissionRow[] | null>(null);
   const [pending, setPending] = useState(0);
+  // Attempts still open, kept out of `rows`. They have no score and nothing to grade, so counting
+  // them as submissions only ever misled; an instructor still needs to see who is stuck.
+  const [inProgress, setInProgress] = useState<InstructorInProgressRow[]>([]);
   const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
@@ -300,6 +307,7 @@ function SubmissionsPanel({ assessmentId }: { assessmentId: number }) {
         if (cancelled) return;
         setRows(r.results);
         setPending(r.pending_grading);
+        setInProgress(r.in_progress ?? []);
       } catch (e) {
         if (!cancelled) setErr(getAxiosErrorDetail(e, "Couldn't load who sat this paper."));
       }
@@ -362,18 +370,60 @@ function SubmissionsPanel({ assessmentId }: { assessmentId: number }) {
   if (rows === null) {
     return <Typography sx={{ color: "text.secondary", py: 4, textAlign: "center" }}>Loading submissions…</Typography>;
   }
+  /**
+   * Named for what it is, and never folded into the roster above. An attempt that is still open
+   * is not a submission: it has no mark, and treating it as one is what made a learner who had
+   * handed in nothing appear as an attempt.
+   */
+  const stillAttempting = inProgress.length > 0 && (
+    <Box
+      data-testid="in-progress-attempts"
+      sx={{ mb: 2, p: 1.5, borderRadius: 3, border: "1px dashed var(--border-default)" }}
+    >
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 0.5, fontWeight: 800 }}>
+        <Icon icon="mdi:progress-clock" width={18} />
+        Still attempting ({inProgress.length})
+      </Box>
+      <Typography variant="caption" sx={{ color: "text.secondary", display: "block", mb: 1 }}>
+        Not submitted, so not counted above and nothing to grade yet.
+      </Typography>
+      <Stack spacing={0.5}>
+        {inProgress.map((a) => (
+          <Typography
+            key={a.submission_id}
+            variant="body2"
+            // At 360px a name plus an email is wider than the card; wrap it rather than push the
+            // page sideways.
+            sx={{ color: "text.secondary", minWidth: 0, wordBreak: "break-word" }}
+          >
+            <Box component="span" sx={{ fontWeight: 700, color: "var(--font-primary)" }}>
+              {a.name || "Unknown learner"}
+            </Box>
+            {a.email ? ` · ${a.email}` : ""}
+          </Typography>
+        ))}
+      </Stack>
+    </Box>
+  );
+
   if (rows.length === 0) {
     return (
-      <Box sx={{ p: 4, textAlign: "center", borderRadius: 3, border: "1px dashed var(--border-default)" }}>
-        <Typography sx={{ color: "text.secondary" }}>
-          Nobody in your batches has sat this paper yet.
-        </Typography>
-      </Box>
+      <>
+        {stillAttempting}
+        <Box sx={{ p: 4, textAlign: "center", borderRadius: 3, border: "1px dashed var(--border-default)" }}>
+          <Typography sx={{ color: "text.secondary" }}>
+            {inProgress.length > 0
+              ? "Nobody in your batches has submitted this paper yet."
+              : "Nobody in your batches has sat this paper yet."}
+          </Typography>
+        </Box>
+      </>
     );
   }
 
   return (
     <>
+      {stillAttempting}
       {pending > 0 && (
         <Box sx={{ mb: 2, p: 1.5, borderRadius: 2, display: "inline-flex", alignItems: "center", gap: 1,
           bgcolor: "color-mix(in srgb, #f59e0b 12%, transparent)", color: "#b45309", fontWeight: 700 }}>

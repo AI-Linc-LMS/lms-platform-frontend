@@ -1329,6 +1329,24 @@ export interface AttemptIntegrity {
   claims: string;
 }
 
+/**
+ * An attempt still being sat. Deliberately thinner than a submission: there is no score and no
+ * answer worth reading, only "this person is mid-attempt". Anything richer invites reading it as
+ * a submission, which is the bug this split exists to fix.
+ */
+export interface SubmissionsExportInProgress {
+  submission_id?: number;
+  user_profile_id?: number | null;
+  name: string;
+  email: string;
+  started_at?: string | null;
+  /**
+   * The last autosave, NOT a submission time - the backend's `submitted_at` is `auto_now` on this
+   * model, so on an unfinished attempt it ticks every time the learner's answers are saved.
+   */
+  last_activity_at?: string | null;
+}
+
 export interface SubmissionsExportResponse {
   assessment: {
     id: number;
@@ -1337,7 +1355,18 @@ export interface SubmissionsExportResponse {
     maximum_marks?: number;
     show_result?: boolean;
   };
+  /**
+   * Submitted attempts only. An attempt the learner has not finished is NOT in here - it has no
+   * score to report and counting it made the Submissions tab read "Total 2" over a single result.
+   */
   submissions: SubmissionsExportSubmission[];
+  /**
+   * Attempts still open, listed separately so an admin can still spot a stuck attempt, a failed
+   * device check or someone who never finished. Optional: a payload cached by an older backend
+   * build will not carry it.
+   */
+  in_progress?: SubmissionsExportInProgress[];
+  in_progress_count?: number;
 }
 
 export interface ManualEvaluationQuestionScore {

@@ -263,11 +263,33 @@ export interface InstructorSubmissionRow {
   submitted_at: string | null;
 }
 
+/**
+ * An attempt still being sat. No score, nothing to grade - just "this person is mid-attempt",
+ * so a stuck attempt or a failed device check is still findable without being counted as work.
+ */
+export interface InstructorInProgressRow {
+  submission_id: number;
+  user_profile_id: number | null;
+  name: string;
+  email: string;
+  started_at: string | null;
+  /** The last autosave, NOT a submission time. */
+  last_activity_at: string | null;
+}
+
 export interface InstructorSubmissionsResponse {
   assessment: { id: number; title: string; max_marks: number | null; course_title: string };
+  /**
+   * Submitted attempts by THIS instructor's students - the same number the gradebook card shows.
+   * Both are scoped to the batches they staff; the card used to report the tenant-wide total, so
+   * a paper one of their learners had sat read "41 submissions".
+   */
   count: number;
   pending_grading: number;
   results: InstructorSubmissionRow[];
+  /** Optional: a backend that predates the split does not send it. */
+  in_progress?: InstructorInProgressRow[];
+  in_progress_count?: number;
 }
 
 export interface InstructorAssessment {
