@@ -22,9 +22,12 @@ interface ConfirmDialogProps {
   onCancel: () => void;
   confirmColor?: "primary" | "error" | "warning" | "success";
   /**
-   * The confirmed action is running. On a phone the sheet then cannot be swiped or tapped away
-   * and both buttons are inert, so a second tap cannot fire the action twice. The desktop dialog
-   * ignores it, exactly as before.
+   * The confirmed action is running. The dialog then cannot be dismissed - no backdrop click, no
+   * Escape - and both buttons are inert, so a second click cannot fire the action twice and
+   * nobody walks away from a half-finished delete.
+   *
+   * This used to hold on the phone sheet only, and the desktop dialog ignored it: the same
+   * request that a phone protected could be abandoned mid-flight with a click outside it.
    */
   busy?: boolean;
 }
@@ -87,7 +90,9 @@ export function ConfirmDialog({
   return (
     <Dialog
       open={open}
-      onClose={onCancel}
+      onClose={() => {
+        if (!busy) onCancel();
+      }}
       maxWidth="sm"
       fullWidth
       PaperProps={{
@@ -127,6 +132,7 @@ export function ConfirmDialog({
       >
         <Button
           onClick={onCancel}
+          disabled={busy}
           variant="outlined"
           sx={{
             textTransform: "none",
@@ -144,6 +150,7 @@ export function ConfirmDialog({
         </Button>
         <Button
           onClick={onConfirm}
+          disabled={busy}
           variant="contained"
           color={confirmColor}
           sx={{

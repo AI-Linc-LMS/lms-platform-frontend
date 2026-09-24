@@ -18,8 +18,11 @@ import {
   Avatar,
 } from "@mui/material";
 import type { Theme } from "@mui/material/styles";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { useToast } from "@/components/common/Toast";
 import RichTextInput from "./RichTextInput";
+import { MAX_PHOTO_BYTES, prepareResumePhoto } from "./photoUpload";
 import {
   ResumeData,
   WorkExperience,
@@ -46,6 +49,8 @@ interface ResumeFormProps {
 
 export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
   const [expanded, setExpanded] = useState<string>("basicInfo");
+  const { t } = useTranslation("common");
+  const { showToast } = useToast();
 
 
   const handleAccordionChange =
@@ -387,20 +392,36 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                       hidden
                       onChange={(e) => {
                         const file = e.target.files?.[0];
+                        e.target.value = "";
                         if (!file) return;
-                        const reader = new FileReader();
-                        reader.onload = () => {
-                          const dataUrl = reader.result as string;
+                        // The photo lives inside the resume as base64, so its size is the
+                        // resume's size. Shrunk here, and refused here if it still will not
+                        // fit, so the learner is told about the PHOTO rather than being told
+                        // at save time that their resume is too large.
+                        void prepareResumePhoto(file).then((result) => {
+                          if (!result.ok) {
+                            showToast(
+                              t(`savedResumes.photo.${result.reason}`, {
+                                max: Math.round(MAX_PHOTO_BYTES / 1024),
+                                defaultValue:
+                                  result.reason === "notAnImage"
+                                    ? "That file is not an image. Choose a JPEG or PNG photo."
+                                    : result.reason === "unreadable"
+                                      ? "That photo could not be read. Try another one."
+                                      : `That photo is too large to store in a resume, even after shrinking it. Choose one under ${Math.round(MAX_PHOTO_BYTES / 1024)}KB.`,
+                              }),
+                              "error",
+                            );
+                            return;
+                          }
                           setResumeData({
                             ...resumeData,
                             basicInfo: {
                               ...resumeData.basicInfo,
-                              photo: dataUrl,
+                              photo: result.dataUrl,
                             },
                           });
-                        };
-                        reader.readAsDataURL(file);
-                        e.target.value = "";
+                        });
                       }}
                     />
                   </Button>

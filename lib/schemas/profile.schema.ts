@@ -74,3 +74,25 @@ export function validateMandatoryProfile(values: {
 
   return errors;
 }
+
+/**
+ * Which of those fields THIS tenant actually requires.
+ *
+ * The server is the authority and it already says so: `profile_completion.required_fields` is
+ * built from `accounts/profile_completion.required_fields_for(client)`, which a tenant can
+ * narrow (a school whose learners have no date of birth on record drops that one). Reading the
+ * constant instead would put an asterisk on a field this tenant does not require, which is the
+ * same class of lie as the missing asterisk this exists to fix.
+ *
+ * Falls back to the platform default only when the payload has not arrived, so a slow profile
+ * fetch under-marks nothing: the five defaults are what every unconfigured tenant requires.
+ */
+export function requiredProfileFields(
+  completion?: { required_fields?: { field: string }[] } | null,
+): ReadonlySet<string> {
+  const known = new Set<string>(MANDATORY_PROFILE_FIELDS);
+  const fromServer = (completion?.required_fields ?? [])
+    .map((f) => f.field)
+    .filter((f) => known.has(f));
+  return new Set(fromServer.length > 0 ? fromServer : MANDATORY_PROFILE_FIELDS);
+}
