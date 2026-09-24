@@ -3157,6 +3157,17 @@
     "backToTopic": "Back to {{title}}",
     "backToTopicUnnamed": "Back to topic",
     "backToRoadmap": "Back to roadmap",
-    "backToLibrary": "Back to library"
+    "backToLibrary": "Back to library",
+    "levelEasy": "Easy",
+    "levelMedium": "Medium",
+    "levelHard": "Hard",
+    "ladderUp": "{{n}} right in a row → steps up to {{level}}",
+    "ladderDown": "{{n}} misses in a row → eases to {{level}}",
+    "ladderNextUp": "Get this one right → the next question steps up to {{level}}",
+    "ladderNextDown": "Miss this one → the next question eases to {{level}}",
+    "ladderNoneLeft": "This quiz has no {{wanted}} questions left, so this one is {{served}}.",
+    "ladderLevelGone": "No {{level}} questions left in this quiz",
+    "ladderExplain": "It adapts to you. Get {{n}} right in a row and the next question is one level harder; miss {{n}} in a row and it is one level easier. It never moves more than one level at a time, so one lucky guess can't jump you from Easy to Hard, and mixed answers keep it where it is. If the quiz runs out of questions at your level, it says so here.",
+    "ladderExplainUnknown": "It adapts to you as you answer."
   }
 }
