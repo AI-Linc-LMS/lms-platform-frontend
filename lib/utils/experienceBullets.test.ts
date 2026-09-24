@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  MAX_POINT_LENGTH,
+  MAX_POINTS,
   bulletsToDescription,
+  bulletsWithinLimits,
   experienceBullets,
   looksLikeAList,
   splitIntoBullets,
@@ -324,3 +327,76 @@ describe("looksLikeAList", () => {
     expect(looksLikeAList("end-to-end testing")).toBe(false);
   });
 });
+
+describe("review follow-ups: meaning is never changed", () => {
+  it("keeps '>' when it means 'more than', instead of dropping it as a marker", () => {
+    expect(splitIntoBullets("> 99% uptime across 3 regions")).toEqual(["> 99% uptime across 3 regions"]);
+    expect(splitIntoBullets("• Kept the API up\n> 99% uptime")).toEqual(["Kept the API up > 99% uptime"]);
+  });
+
+  it("does not glue a heading onto the bullet above it", () => {
+    expect(
+      splitIntoBullets("• Handled client escalations\nKey Achievements\n• Won the regional sales award"),
+    ).toEqual(["Handled client escalations", "Key Achievements", "Won the regional sales award"]);
+    expect(splitIntoBullets("• Built the ETL jobs\nRoles and Responsibilities:\n• Led the team")).toEqual([
+      "Built the ETL jobs",
+      "Roles and Responsibilities:",
+      "Led the team",
+    ]);
+  });
+
+  it("still joins a capitalised wrap that is not a heading", () => {
+    // "team" is lowercase, so the line is the rest of the bullet, not a title.
+    expect(splitIntoBullets("• Worked with the Data\nEngineering team on the pipeline")).toEqual([
+      "Worked with the Data Engineering team on the pipeline",
+    ]);
+    // A full stop at the end is a sentence, not a heading.
+    expect(splitIntoBullets("• Finalist in the national Deep\nRacer Competition.")).toEqual([
+      "Finalist in the national Deep Racer Competition.",
+    ]);
+  });
+
+  it("documents the trade-off: a short wrap capitalised throughout reads as a heading", () => {
+    expect(splitIntoBullets("• Partnered with the Global\nMarketing Team")).toEqual([
+      "Partnered with the Global",
+      "Marketing Team",
+    ]);
+  });
+
+  it("does not split a list of tools separated by bullets", () => {
+    expect(splitIntoBullets("Tech stack: React • Node • SQL")).toEqual(["Tech stack: React • Node • SQL"]);
+  });
+
+  it("never splits inside brackets", () => {
+    expect(splitIntoBullets("Built dashboards (React • D3) for the sales team")).toEqual([
+      "Built dashboards (React • D3) for the sales team",
+    ]);
+    expect(
+      splitIntoBullets("• Built dashboards (React • D3) for sales • Led the migration to AWS"),
+    ).toEqual(["Built dashboards (React • D3) for sales", "Led the migration to AWS"]);
+  });
+
+  it("still splits a run of phrases, with or without a leading bullet", () => {
+    expect(splitIntoBullets("Managed product timelines • Engaged with clients • Created walkthroughs")).toEqual([
+      "Managed product timelines",
+      "Engaged with clients",
+      "Created walkthroughs",
+    ]);
+    expect(splitIntoBullets("• Led the migration • Mentoring")).toEqual(["Led the migration", "Mentoring"]);
+  });
+});
+
+describe("bulletsWithinLimits", () => {
+  it("accepts the caps exactly and refuses one past either", () => {
+    expect(bulletsWithinLimits(Array.from({ length: MAX_POINTS }, (_, i) => `Point ${i}`))).toBe(true);
+    expect(bulletsWithinLimits(Array.from({ length: MAX_POINTS + 1 }, (_, i) => `Point ${i}`))).toBe(false);
+    expect(bulletsWithinLimits(["x".repeat(MAX_POINT_LENGTH)])).toBe(true);
+    expect(bulletsWithinLimits(["x".repeat(MAX_POINT_LENGTH + 1)])).toBe(false);
+  });
+
+  it("counts what is sent: blank points are dropped and ends are trimmed", () => {
+    expect(bulletsWithinLimits([...Array.from({ length: MAX_POINTS }, () => "Point"), "", "  "])).toBe(true);
+    expect(bulletsWithinLimits([`  ${"x".repeat(MAX_POINT_LENGTH)}  `])).toBe(true);
+  });
+});
+

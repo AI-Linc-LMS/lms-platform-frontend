@@ -29,12 +29,19 @@ const INLINE_GLYPHS = "\u2022\u25CF\u25AA\u25E6\u2023\u27A2\u27A4\u25BA\uF0B7\uF
  * Markers that mean "bullet" only at the START of a line, and only when followed by a space: a
  * hyphen inside a line is a dash ("end-to-end", "Tech Stack - COBOL"), and "·" inside a line is a
  * separator ("React · Node · SQL").
+ *
+ * Not ">": at the start of a line it is as likely to mean "more than" - "> 99% uptime" - and
+ * dropping it as a marker would turn that into the opposite claim, "99% uptime".
  */
-const LEAD_ONLY = "\u25CB\u25A0\u25A1\u25AB\u2043\u2219\u25B6\u2713\u2714\u2756\u25C6\u25C7\u00B7*\\-\u2013\u2014>";
+const LEAD_ONLY = "\u25CB\u25A0\u25A1\u25AB\u2043\u2219\u25B6\u2713\u2714\u2756\u25C6\u25C7\u00B7*\\-\u2013\u2014";
 
 const GLYPH_AT_START = new RegExp(`^[${INLINE_GLYPHS}]\\s*`);
 const LEAD_AT_START = new RegExp(`^(?:[${LEAD_ONLY}]|\\(?\\d{1,2}[.)])(?:\\s+|$)`);
-const INLINE_SPLIT = new RegExp(`\\s*[${INLINE_GLYPHS}]\\s*`);
+const INLINE_GLYPH_SET: ReadonlySet<string> = new Set(INLINE_GLYPHS);
+
+/** The most points an entry can hold, and the longest a point can be. The server enforces both. */
+export const MAX_POINTS = 50;
+export const MAX_POINT_LENGTH = 1000;
 
 /** A line that ends like this finished its point: the next line starts a new one. */
 const TERMINAL = /[.!?;:]["'\u201D\u2019)\]]*$/;
@@ -44,13 +51,35 @@ const DANGLING_PUNCT = /[,&(/+\-\u2013\u2014]$/;
 const DANGLING_WORD =
   /\b(a|an|the|and|or|nor|but|of|to|in|on|for|with|by|from|at|as|into|onto|via|using|including|like|such|than|that|which|while|across|through|over|under|between|within|without|about|per|plus|both|its|their|our|my|his|her|is|are|was|were|be|been|has|have|had|will|can)$/i;
 
-/** The text after a bullet marker, or null when the line does not start with one. */
-function afterMarker(line: string): string | null {
+/**
+ * The text after a bullet marker and which kind of marker it was, or null when the line does not
+ * start with one. A glyph (•, ● …) says "this line is a list" more firmly than a hyphen or a
+ * number, and that decides how readily the rest of the line is split (see splitInline).
+ */
+function readMarker(line: string): { rest: string; glyph: boolean } | null {
   const glyph = GLYPH_AT_START.exec(line);
-  if (glyph) return line.slice(glyph[0].length);
+  if (glyph) return { rest: line.slice(glyph[0].length), glyph: true };
   const lead = LEAD_AT_START.exec(line);
-  if (lead) return line.slice(lead[0].length);
+  if (lead) return { rest: line.slice(lead[0].length), glyph: false };
   return null;
+}
+
+const afterMarker = (line: string): string | null => readMarker(line)?.rest ?? null;
+
+/** Words a heading may keep in lowercase: "Roles and Responsibilities". */
+const MINOR_WORDS: ReadonlySet<string> = new Set([
+  "a", "an", "and", "&", "as", "at", "by", "for", "in", "of", "on", "or", "the", "to", "with",
+]);
+
+/**
+ * A short line with every word capitalised and no full stop: "Key Achievements", "Tools Used:".
+ * Such a line under an unfinished bullet starts something new; it is not the bullet's wrap.
+ */
+function looksLikeHeading(line: string): boolean {
+  if (/[.!?]["'\u201D\u2019)\]]*$/.test(line)) return false;
+  const words = line.split(" ").filter((w) => /[\p{L}\p{N}]/u.test(w));
+  if (words.length === 0 || words.length > 6) return false;
+  return words.every((w) => /^[^\p{L}\p{N}]*[\p{Lu}\p{N}]/u.test(w) || MINOR_WORDS.has(w.toLowerCase()));
 }
 
 /**
@@ -62,9 +91,13 @@ function afterMarker(line: string): string | null {
  */
 function isContinuation(prev: string, line: string, inMarkedPoint: boolean, lowercaseStyle: boolean): boolean {
   if (TERMINAL.test(prev)) return false;
-  // Under a bullet marker, an unmarked line that follows an unfinished point is its wrap.
-  if (inMarkedPoint) return true;
   if (DANGLING_PUNCT.test(prev) || DANGLING_WORD.test(prev)) return true;
+  // Under a bullet marker, an unmarked line that follows an unfinished point is its wrap - unless
+  // it reads as a heading. "…Handled client escalations\nKey Achievements\n• …" was one bullet
+  // ending "escalations Key Achievements". "…with the Data\nEngineering team" still joins, because
+  // "team" is not capitalised. What still splits wrongly is a wrap that is short and capitalised
+  // throughout: "…with the Global\nMarketing Team".
+  if (inMarkedPoint) return !looksLikeHeading(line);
   // A lowercase start continues a sentence - unless this writer starts every line in lowercase.
   return !lowercaseStyle && /^\p{Ll}/u.test(line);
 }
@@ -92,15 +125,45 @@ function splitFlattenedHyphenList(point: string, hyphenMarked: boolean): string[
 const tidy = (s: string) => s.replace(/\s+/g, " ").trim();
 
 /**
+ * A point cut at the bullet glyphs inside it: "A • B • C".
+ *
+ * A glyph mid-line is also how people separate a list of TOOLS ("Tech stack: React • Node • SQL"),
+ * and splitting that makes "Node" and "SQL" bullets of their own. So the cut is made only when the
+ * line itself started with a glyph (it is a list, flattened onto one line), or when every piece is
+ * at least two words long. Never inside brackets: "(React • D3)" is one thing.
+ */
+function splitInline(point: string, glyphStarted: boolean): string[] {
+  const pieces: string[] = [];
+  let depth = 0;
+  let from = 0;
+  for (let i = 0; i < point.length; i += 1) {
+    const c = point[i];
+    if (c === "(" || c === "[") depth += 1;
+    else if ((c === ")" || c === "]") && depth > 0) depth -= 1;
+    else if (depth === 0 && INLINE_GLYPH_SET.has(c)) {
+      pieces.push(point.slice(from, i));
+      from = i + 1;
+    }
+  }
+  if (pieces.length === 0) return [point];
+  pieces.push(point.slice(from));
+  const segments = pieces.map(tidy).filter(Boolean);
+  const phrases = segments.every((s) => s.split(" ").filter((w) => /[\p{L}\p{N}]/u.test(w)).length >= 2);
+  return glyphStarted || phrases ? segments : [point];
+}
+
+/**
  * Free text as a list of points.
  *
  * The rule, in order:
  *   1. A blank line ends a point.
  *   2. A line that starts with a bullet marker (•, ●, ▪, -, *, –, 1., 2) …) starts a new point;
  *      the marker is dropped.
- *   3. Any other line continues the previous point when it is a wrap of it (see isContinuation),
- *      and starts a new point otherwise.
- *   4. Inside a point, a bullet glyph (•, ●, ▪ …) splits it: "A • B • C" is three points.
+ *   3. Any other line continues the previous point when it is a wrap of it, and starts a new
+ *      point otherwise - including a heading under a bullet (see isContinuation).
+ *   4. Inside a point, a bullet glyph (•, ●, ▪ …) splits it: "A • B • C" is three points - when
+ *      the line started with a glyph or every piece is a phrase, and never inside brackets
+ *      (see splitInline).
  *   5. So does a hyphen that separates flattened points (see splitFlattenedHyphenList).
  *   6. Nothing else splits. A paragraph of several sentences stays ONE point: cutting prose at
  *      full stops would turn a learner's paragraph into bullets they never wrote.
@@ -115,7 +178,7 @@ export function splitIntoBullets(input: string | null | undefined): string[] {
   const firstLine = lines.find(Boolean) ?? "";
   const lowercaseStyle = /^\p{Ll}/u.test(afterMarker(firstLine) ?? firstLine);
 
-  type Point = { text: string; lastLine: string; marked: boolean; hyphen: boolean };
+  type Point = { text: string; lastLine: string; marked: boolean; hyphen: boolean; glyph: boolean };
   const points: Point[] = [];
   let open: Point | null = null;
 
@@ -124,21 +187,22 @@ export function splitIntoBullets(input: string | null | undefined): string[] {
       open = null;
       continue;
     }
-    const rest = afterMarker(line);
-    if (rest !== null) {
-      open = { text: rest, lastLine: rest, marked: true, hyphen: /^-\s/.test(line) };
+    const marker = readMarker(line);
+    if (marker !== null) {
+      const { rest, glyph } = marker;
+      open = { text: rest, lastLine: rest, marked: true, hyphen: /^-\s/.test(line), glyph };
       points.push(open);
     } else if (open && isContinuation(open.lastLine, line, open.marked, lowercaseStyle)) {
       open.text = open.text ? `${open.text} ${line}` : line;
       open.lastLine = line;
     } else {
-      open = { text: line, lastLine: line, marked: false, hyphen: false };
+      open = { text: line, lastLine: line, marked: false, hyphen: false, glyph: false };
       points.push(open);
     }
   }
 
   return points
-    .flatMap((p) => p.text.split(INLINE_SPLIT).flatMap((part) => splitFlattenedHyphenList(part, p.hyphen)))
+    .flatMap((p) => splitInline(p.text, p.glyph).flatMap((part) => splitFlattenedHyphenList(part, p.hyphen)))
     .map(tidy)
     .filter(Boolean);
 }
@@ -162,6 +226,17 @@ export function experienceBullets(entry: HasBullets | null | undefined): string[
     ? entry.highlights.filter((h): h is string => typeof h === "string").map(tidy).filter(Boolean)
     : [];
   return stored.length > 0 ? stored : splitIntoBullets(entry.description);
+}
+
+/**
+ * Whether points can be saved as they stand: the server refuses more than MAX_POINTS, and a point
+ * longer than MAX_POINT_LENGTH once trimmed (which is how it is sent and how the server counts).
+ * An entry converted from a long old description can exceed either, and has to be shortened in the
+ * editor rather than failing the whole section's save.
+ */
+export function bulletsWithinLimits(points: readonly string[]): boolean {
+  const filled = points.map((p) => p.trim()).filter(Boolean);
+  return filled.length <= MAX_POINTS && filled.every((p) => p.length <= MAX_POINT_LENGTH);
 }
 
 /** `description` for readers that predate `highlights`: one point per line. */
