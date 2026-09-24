@@ -33,10 +33,10 @@ export interface PageGuideContent {
 
 /**
  * Anchored spotlight tour of the STUDENT DASHBOARD - each step highlights a real
- * component on /dashboard (via its data-tour-id, added in DashboardV2). Used both
- * as the dashboard's own tour and as the platform tour (the top-nav Guide starts it
- * on /dashboard). Steps whose target isn't rendered (e.g. leaderboard hidden for a
- * tenant) degrade to a centered card - TourProvider handles a missing target.
+ * component on /dashboard (via its data-tour-id, added in DashboardV2). It is the
+ * dashboard's own tour, which is why the button that carries it (`PLATFORM_GUIDE`) is
+ * offered on the dashboard only. Steps whose target isn't rendered (e.g. leaderboard
+ * hidden for a tenant) degrade to a centered card - TourProvider handles a missing target.
  */
 export const DASHBOARD_TOUR: TourStep[] = [
   {
@@ -103,16 +103,42 @@ export const DASHBOARD_TOUR: TourStep[] = [
   {
     title: "You're all set",
     narration:
-      "That's your dashboard. Explore each module from the sidebar, and open the Guide any time to take a tour of the page you're on.",
+      "That's your dashboard. Explore each module from the sidebar, and look for the question mark in any page's header to take a tour of the page you're on.",
     icon: "mdi:rocket-launch-outline",
     color: "#a78bfa",
   },
 ];
 
 /**
- * The platform-wide guide, opened from the "Guide" button in the top nav - a
+ * The route the top-nav "Guide" belongs to.
+ *
+ * `PLATFORM_GUIDE` carries `DASHBOARD_TOUR`, whose steps anchor to `data-tour-id="dash-*"`
+ * elements that exist ONLY on the student dashboard. So the button that opens it is the
+ * DASHBOARD's guide, however platform-wide its wording is, and it is offered here and
+ * nowhere else. Every other page is covered by its own "?" guide (see `resolveGuide`),
+ * which is the genuinely per-page, app-wide half of this system and is unaffected.
+ */
+export const PLATFORM_GUIDE_ROUTE = "/dashboard";
+
+/**
+ * Should the top-nav Guide be offered on this route?
+ *
+ * Only on the dashboard. Mounted unconditionally in the AppBar it rendered at the top of
+ * all ~110 pages, where it duplicated the page's own "?" and where "Take a tour" navigated
+ * the learner off the page they were reading to spotlight dashboard widgets.
+ */
+export function isPlatformGuideRoute(pathname: string | null | undefined): boolean {
+  return pathname === PLATFORM_GUIDE_ROUTE;
+}
+
+/**
+ * The platform-wide guide, opened from the "Guide" button on the DASHBOARD - a
  * bird's-eye overview of what the platform offers and where to find each area, plus an
- * anchored tour of the student dashboard (the Guide starts it on /dashboard).
+ * anchored tour of the student dashboard.
+ *
+ * The overview copy is app-wide, but `tourSteps` is not: `DASHBOARD_TOUR` spotlights the
+ * dashboard's own cards, so this guide is only offered on `PLATFORM_GUIDE_ROUTE`. On every
+ * other page the page's own "?" (from `PAGE_GUIDES`) is the guide.
  *
  * `{brand}` is replaced at render time with the tenant's own name, so an Agileology learner is
  * welcomed to Agileology rather than to AI Linc. See `PageGuide`.
