@@ -2916,5 +2916,36 @@
     "notCountedTitle": "غير محتسب",
     "notCountedBody": "احتاج هذا السؤال إلى صورة تعذّر عرضها، لذلك لم يُحتسب صحيحًا ولا خطأً.",
     "skipUnanswerable": "تخطَّ هذا السؤال"
+  },
+  "profileSetup": {
+    "title": "أكمل إعداد حسابك",
+    "body": "نحتاج إلى بعض التفاصيل قبل أن تعمل {{modules}}. يستغرق الأمر أقل من دقيقة، وتقوم بذلك مرة واحدة فقط.",
+    "bodyGeneric": "نحتاج إلى بعض التفاصيل لإكمال إعداد حسابك. يستغرق الأمر أقل من دقيقة، وتقوم بذلك مرة واحدة فقط.",
+    "moduleResume": "السيرة الذاتية",
+    "moduleJobs": "الوظائف",
+    "moduleInterview": "المقابلة",
+    "save": "حفظ ومتابعة",
+    "notNow": "ليس الآن",
+    "saveFailed": "تعذر الحفظ. يرجى المحاولة مرة أخرى."
+  },
+  "roadmapOwned": {
+    "ready": "لديك",
+    "inProgress": "قيد التقدم",
+    "done": "مكتمل",
+    "locked": "مقفل",
+    "legend": "الخطوة المميزة هي خطوة لديك دورة لها بالفعل."
+  },
+  "articleNarration": {
+    "resumeFollow": "انتقل إلى ما يُقرأ الآن",
+    "resumeFollowAria": "استئناف متابعة القراءة الصوتية"
+  },
+  "interviewLifecycle": {
+    "notScoredYet": "لم يتم تقييم أي مقابلة بعد"
+  },
+  "courseCta": {
+    "takeAssessment": "ابدأ الاختبار",
+    "startLearning": "ابدأ التعلم",
+    "resumeLearning": "متابعة التعلم",
+    "reviewCourse": "مراجعة الدورة"
   }
 }

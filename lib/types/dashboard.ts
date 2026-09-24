@@ -1,4 +1,4 @@
-import type { FieldTier, LeaderboardRow } from "./adaptive-journey";
+import type { CalibrationState, FieldTier, LeaderboardRow } from "./adaptive-journey";
 import type { MomentumInfo } from "./momentum";
 
 // Payload for GET /adaptive-journey/api/learner/dashboard/
@@ -56,6 +56,7 @@ export interface CrossCourseUpNext extends UpNextNode {
   courseId: number;
   courseTitle: string;
   resumeSubmoduleId: number | null;
+  calibration: CalibrationState;
 }
 
 export interface CourseDue {
@@ -73,6 +74,8 @@ export interface DashboardCourse {
   skillProfile: CourseSkillProfile;
   upNext: UpNextNode | null;
   resumeSubmoduleId: number | null;
+  /** Same object the journey board carries - see CalibrationState. */
+  calibration: CalibrationState;
   due: CourseDue | null;
   leaderboardRank: number | null;
   certificate: { enabled: boolean; pct: number; threshold: number };

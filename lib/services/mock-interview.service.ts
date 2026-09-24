@@ -14,7 +14,17 @@ export interface MockInterview {
   job_role?: string; // Legacy field
   experience_level?: string; // Legacy field
   interview_type?: string; // Legacy field
-  score?: number;
+  /**
+   * The attempt's mark out of 100, or null when it does not have one yet.
+   *
+   * Null is NOT zero. An attempt still being marked, one whose marking failed, and one whose
+   * result an admin has not released all arrive as null, and averaging any of them as zero
+   * is precisely what put "0% Average Score" next to "1 Completed". Use `is_scored` rather
+   * than a truthiness test.
+   */
+  score?: number | null;
+  /** Whether `score` is a real, releasable mark. */
+  is_scored?: boolean;
   feedback?: string;
   /** Opening question text, returned by the template-start (claim) endpoint so the client can
    *  prewarm the interviewer's first TTS clip before the candidate clicks Begin. */
