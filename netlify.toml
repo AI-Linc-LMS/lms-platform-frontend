@@ -1,5 +1,5 @@
 [build]
-command = "free -m; nproc; node -p \"['heap_limit_MB', require('v8').getHeapStatistics().heap_size_limit/1048576, 'totalmem_MB', require('os').totalmem()/1048576, 'cpus', require('os').cpus().length]\"; yarn next build"
+command = "yarn next build" # or "yarn next build"
 publish = ".next"
 # A pull request's preview builds on the demo site only; every other site skips it
 # (an ignore command that exits 0 means "skip").
