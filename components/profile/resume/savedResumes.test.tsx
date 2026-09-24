@@ -168,6 +168,47 @@ describe("Saved resumes in the resume builder", () => {
     expect(within(panel()).getByText(/editing now/i)).toBeInTheDocument();
   });
 
+  it("opens a resume saved with both line formats and shows every line as it was typed", async () => {
+    // Saved before a resume line was always HTML: the editor's line holds "&amp;" (it escaped a
+    // typed &), while "Use my profile" copied plain text in, bare & and < included.
+    const mixed = {
+      ...FULL_BACKEND_CV,
+      content: {
+        ...FULL_BACKEND_CV.content,
+        basicInfo: { ...FULL_BACKEND_CV.content.basicInfo, summary: "P&L owner" },
+        workExperience: [
+          {
+            ...FULL_BACKEND_CV.content.workExperience[0],
+            description: ["Segmented health &amp; wellness markets", "Built R&D kits of <Button> parts"],
+          },
+        ],
+      },
+    };
+    get.mockResolvedValue(mixed);
+    update.mockResolvedValue({ ...BACKEND_CV, ...mixed });
+    await renderBuilder();
+    fireEvent.click(within(rows()[0]).getByRole("button", { name: /^open$/i }));
+    await waitFor(() => expect(get).toHaveBeenCalledWith(7));
+    await act(async () => {});
+
+    const preview = document.querySelector('[data-resume-section="workExperience"]')!;
+    expect(preview.textContent).toContain("Segmented health & wellness markets");
+    expect(preview.textContent).toContain("Built R&D kits of <Button> parts");
+    expect(document.body.textContent).not.toContain("&amp;");
+    // Reading the lines canonically is not an edit: the resume just opened is not "unsaved".
+    expect(screen.queryByText(/unsaved changes/i)).toBeNull();
+
+    // The next save writes the one format.
+    fireEvent.click(screen.getByRole("button", { name: /^update$/i }));
+    await waitFor(() => expect(update).toHaveBeenCalled());
+    const saved = update.mock.calls[0][1].content;
+    expect(saved.workExperience[0].description).toEqual([
+      "Segmented health &amp; wellness markets",
+      "Built R&amp;D kits of &lt;Button&gt; parts",
+    ]);
+    expect(saved.basicInfo.summary).toBe("P&amp;L owner");
+  });
+
   it("restores the section arrangement the resume was saved with", async () => {
     await renderBuilder();
     fireEvent.click(within(rows()[0]).getByRole("button", { name: /^open$/i }));
