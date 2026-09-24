@@ -91,6 +91,14 @@ export interface UseRealtimeInterviewOptions {
   onQuestion?: (question: NextQuestion) => void;
   onPhase?: (phase: InterviewPhase) => void;
   onError?: (message: string) => void;
+  /**
+   * Fired when the server REFUSES an answer the candidate just submitted, with the reason it
+   * gave. There was no such callback: `submitStructured` swallowed every failure, so a
+   * candidate who pressed Submit after the server had closed the sitting watched their code
+   * disappear into a success and then read "No code was submitted." on their result. A
+   * refusal the learner is never told about is worse than the refusal.
+   */
+  onAnswerRejected?: (message: string) => void;
 }
 
 export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) {
@@ -166,6 +174,27 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
    */
   const answeringQuestionRef = useRef<NextQuestion | null>(null);
 
+  /**
+   * WHICH QUESTION EACH PIECE OF AUDIO BELONGS TO, keyed by the realtime item id.
+   *
+   * The latch above is still not enough on its own, and production proved it. Both
+   * `input_audio_buffer.speech_started` and
+   * `conversation.item.input_audio_transcription.completed` carry the SAME `item_id`, but in
+   * between them the model can call next_question, which released the next question and set
+   * the latch back to null. `commitTranscript` then fell through to
+   * `activeQuestionRef.current` - the question that had just been released - and filed the
+   * words under it.
+   *
+   * Session 7cff9c92 on production is that exact sequence: the candidate's spoken answer
+   * about RAII, given before the coding task was even announced, was stored as the answer to
+   * an arithmetic-progression coding question.
+   *
+   * The id makes it order-independent. A transcript finds the question that was on screen
+   * when its audio was captured, however long it takes to arrive and whatever has been
+   * released since.
+   */
+  const itemQuestionRef = useRef<Map<string, NextQuestion>>(new Map());
+
   /** Accumulated transcript per question id. A candidate may pause and resume. */
   const answersRef = useRef<Map<number, string>>(new Map());
 
@@ -216,8 +245,13 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
    * accumulated text is sent each time, and the server does update_or_create, so a candidate
    * who pauses mid-answer ends up with one row containing everything they said.
    */
-  const commitTranscript = useCallback(async (text: string) => {
-    const question = answeringQuestionRef.current ?? activeQuestionRef.current;
+  const commitTranscript = useCallback(async (text: string, itemId?: string) => {
+    // In order of how sure we are: the question this specific audio item was captured
+    // against, then whatever the candidate is mid-answer on, then the question on screen.
+    const question =
+      (itemId ? itemQuestionRef.current.get(itemId) : undefined) ??
+      answeringQuestionRef.current ??
+      activeQuestionRef.current;
     const trimmed = text.trim();
     if (!question?.question_id || !trimmed || !sessionIdRef.current) return;
 
@@ -361,6 +395,7 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
         },
       });
       requestResponse();
+      return true;
     },
     [requestResponse, sendEvent],
   );
@@ -422,9 +457,20 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
           setCandidateSpeaking(true);
           setPhaseSafe("candidate-speaking");
           // Bind these words to the question that is on screen NOW, before the model has a
-          // chance to move on.
+          // chance to move on. Under the item id as well as in the latch, because the latch
+          // is cleared when the next question is released and a slow transcription outlives
+          // it; the id survives.
           if (activeQuestionRef.current) {
             answeringQuestionRef.current = activeQuestionRef.current;
+            const startedItemId = String(event.item_id ?? "");
+            if (startedItemId) {
+              itemQuestionRef.current.set(startedItemId, activeQuestionRef.current);
+              // Bounded: a long sitting must not accumulate a map forever.
+              if (itemQuestionRef.current.size > 200) {
+                const oldest = itemQuestionRef.current.keys().next().value;
+                if (oldest !== undefined) itemQuestionRef.current.delete(oldest);
+              }
+            }
           }
           // They have something more to say. Let them finish the conversation.
           if (closingTimerRef.current) {
@@ -482,7 +528,7 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
           // which time the question has moved on.
           const text = String(event.transcript ?? "");
           recordTurn("candidate", text);
-          void commitTranscript(text);
+          void commitTranscript(text, String(event.item_id ?? ""));
           break;
         }
 
@@ -550,6 +596,7 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
       closedRef.current = false;
       paperDoneRef.current = false;
       answersRef.current = new Map();
+      itemQuestionRef.current = new Map();
       answeringQuestionRef.current = null;
       anyResponseStartedRef.current = false;
       if (openingTimerRef.current) {
@@ -703,7 +750,7 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
       question: NextQuestion,
       payload: { code?: string; language_id?: number; choice?: string },
     ) => {
-      if (!question.question_id || !sessionIdRef.current) return;
+      if (!question.question_id || !sessionIdRef.current) return false;
       // A structured answer is typed against a question the candidate can see, so there is
       // no attribution ambiguity here.
       try {
@@ -711,8 +758,22 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
           question_id: question.question_id,
           ...payload,
         });
-      } catch {
-        /* the turn record still carries the conversation; never kill the call over this */
+      } catch (err) {
+        // Still never kills the call - but the candidate is TOLD. A refusal the server was
+        // explicit about ("this interview had already closed when your answer arrived") has
+        // to reach the person whose work it refused.
+        const detail = (err as {
+          response?: { status?: number; data?: { error?: string; interview_closed?: boolean } };
+        })?.response;
+        const message = detail?.data?.error;
+        if (detail?.status === 409 && message) {
+          optionsRef.current.onAnswerRejected?.(message);
+        } else {
+          optionsRef.current.onAnswerRejected?.(
+            "We could not record that submission. Please try submitting it again.",
+          );
+        }
+        return false;
       }
       sendEvent({
         type: "conversation.item.create",

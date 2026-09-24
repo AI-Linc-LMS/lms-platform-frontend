@@ -28,6 +28,14 @@ interface CodingQuestionModalProps {
   spokenIntro?: string;
   budgetSeconds?: number;
   allowClipboard?: boolean;
+  /**
+   * What the server said when it would not take the last submission, if anything.
+   *
+   * The modal used to close the instant Submit was pressed, whatever the server did with it.
+   * A candidate submitting after the sitting had closed got a silent refusal and only found
+   * out from their result page, which said no code had been submitted at all.
+   */
+  submitError?: string;
   onSubmit: (payload: { code: string; language: string }) => void;
 }
 
@@ -45,6 +53,7 @@ function CodingQuestionModalComponent({
   spokenIntro,
   budgetSeconds = 0,
   allowClipboard = false,
+  submitError = "",
   onSubmit,
 }: CodingQuestionModalProps) {
   const initialLang = useMemo(
@@ -321,9 +330,13 @@ function CodingQuestionModalComponent({
             backgroundColor: "var(--surface)",
           }}
         >
-          <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
-            Your code is auto-scored when the interview is submitted. There's no run button -
-            focus on getting the logic right.
+          <Typography
+            variant="caption"
+            sx={{ color: submitError ? "var(--ats-error)" : "var(--font-secondary)" }}
+            role={submitError ? "alert" : undefined}
+          >
+            {submitError ||
+              "Your code is auto-scored when the interview is submitted. There's no run button - focus on getting the logic right."}
           </Typography>
           <Button
             variant="contained"

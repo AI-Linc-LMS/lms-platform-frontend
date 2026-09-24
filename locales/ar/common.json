@@ -2897,5 +2897,8 @@
     "groupRefusedFallback": "مرفوض",
     "andMore": "و{{n}} آخرين",
     "done": "تم"
+  },
+  "interviewLifecycle": {
+    "notScoredYet": "لم يتم تقييم أي مقابلة بعد"
   }
 }
