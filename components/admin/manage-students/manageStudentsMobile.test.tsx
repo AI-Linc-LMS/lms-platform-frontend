@@ -317,12 +317,38 @@ describe("segment presets on a phone", () => {
     render(<PhoneStudentSegments segment="inactive" onSegmentChange={onSegmentChange} />);
     const row = screen.getByRole("group", { name: "Segments" });
     const pills = within(row).getAllByRole("button");
-    expect(pills.map((p) => p.textContent)).toEqual(["At risk", "Inactive 30d", "Low completion", "High performers"]);
+    // Six, not four: the phone row is built from the same table as the desktop row and the
+    // popover, so a documented signal cannot be missing a chip here either.
+    expect(pills.map((p) => p.textContent)).toEqual([
+      "At risk",
+      "Inactive 30d",
+      "Low completion",
+      "High performers",
+      "Never logged in",
+      "Never active",
+    ]);
     expect(pills[1]).toHaveAttribute("aria-pressed", "true");
     fireEvent.click(pills[0]);
     expect(onSegmentChange).toHaveBeenCalledWith("at_risk");
     // The "how is this calculated" button is kept.
     expect(screen.getByRole("button", { name: "How segments are calculated" })).toBeTruthy();
+  });
+
+  it("carries each chip's count, and keeps a 44px tap target on a 360px phone", () => {
+    viewport(360);
+    render(
+      <PhoneStudentSegments
+        segment="all"
+        counts={{ at_risk: 3, inactive: 2, low_completion: 9, high_performers: 1, never_logged_in: 2354, never_active: 2082 }}
+        onSegmentChange={vi.fn()}
+      />,
+    );
+    expect(screen.getByTestId("segment-count-never_logged_in").textContent).toBe("2354");
+    const pill = screen.getByTestId("segment-chip-never_active");
+    // A number must not shrink the pill below the tap target, and the row scrolls sideways
+    // rather than wrapping - a 360px screen cannot fit six chips on one line.
+    expect(cssOf(pill).unscoped).toMatch(/min-height:\s*44px/);
+    expect(pill.textContent).toContain("2082");
   });
 });
 

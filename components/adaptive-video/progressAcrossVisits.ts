@@ -50,15 +50,38 @@ export function finishedBefore(
   return companion.my_completed ?? Boolean(companion.rewatch_available);
 }
 
+function idSet(ids: number[] | null | undefined): Set<number> {
+  return new Set((ids ?? []).filter((id) => Number.isFinite(id)));
+}
+
 /**
- * The check-ins to show as already answered, from the ids the server says this learner has passed.
+ * The check-ins spent for THIS watch - the ones already asked, which must not be asked again.
  *
- * A response belongs to a session and a revisit opens a new one, so without this the player
- * re-armed every probe: the green markers went back to purple, the counter reset to 0, and the
- * learner was asked questions they had already got right (on prod, one learner passed the same
- * eight check-ins in three separate sessions). Passing a check-in is a fact about the learner and
- * the concept, not about the visit it happened in.
+ * Per WATCH, deliberately. It used to be seeded from the learner's lifetime passes
+ * (`my_passed_check_in_ids`) so that returning to a video did not re-ask what they had got right.
+ * But every questioning mode reads this set, so on a video whose check-ins were all passed there
+ * was nothing left for Normal pace to ask: it played straight through in silence, which is what
+ * Rewatch is for, and the counter opened at "5/5 checks" on a watch that had asked nothing.
+ *
+ * What to ask is the watch's business; what to score is the learner's history. A reload resumes
+ * the same session, so what it answered is still spent - and a new watch starts empty and is asked
+ * the video's check-ins again. The server records a repeat of one already passed as practice, so
+ * asking again cannot be scored twice.
  */
-export function restoredAnswers(passedIds: number[] | null | undefined): Set<number> {
-  return new Set((passedIds ?? []).filter((id) => Number.isFinite(id)));
+export function answeredThisWatch(
+  session: { answered_check_in_ids?: number[] } | null | undefined,
+): Set<number> {
+  return idSet(session?.answered_check_in_ids);
+}
+
+/**
+ * The check-ins this learner has PASSED, on any visit. For showing - never for suppressing.
+ *
+ * It marks the timeline and fills the "N checks passed" chip in Rewatch, where no check-in is in
+ * force. Feeding it to `answeredThisWatch`'s set instead is the bug above.
+ */
+export function passedBefore(
+  companion: { my_passed_check_in_ids?: number[] } | null | undefined,
+): Set<number> {
+  return idSet(companion?.my_passed_check_in_ids);
 }

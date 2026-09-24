@@ -21,6 +21,7 @@ import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ScrollRow } from "@/components/common/mobile/ScrollRow";
 import type { CourseCompletionStats, Student } from "@/lib/services/admin/admin-student.service";
+import { completionStatsFor } from "@/lib/utils/student-risk";
 import { CardStat } from "./mobile";
 import { StudentResumeDialog } from "./StudentResumeDialog";
 
@@ -208,7 +209,7 @@ export function StudentCards({
         </Box>
       ) : (
         students.map((student) => {
-          const stats = completionStats[student.user_id] || completionStats[student.id];
+          const stats = completionStatsFor(completionStats, student);
           const live = student.live_attendance;
           const attendance =
             live && live.percent !== null

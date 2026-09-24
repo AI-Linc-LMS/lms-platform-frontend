@@ -81,7 +81,8 @@ export interface VideoCompanion {
    *  reads, so the badge here and the tick there cannot disagree. */
   my_completed?: boolean;
   /** The check-ins this learner has already answered correctly, in any visit. They come back
-   *  marked, and are not asked again. */
+   *  marked - but they ARE asked again in a questioning mode, and answering one again is practice
+   *  that does not score. Use `VideoSession.answered_check_in_ids` for what this watch has spent. */
   my_passed_check_in_ids?: number[];
   /** The most of this video the learner has covered in any visit, 0-100. */
   my_best_completeness_pct?: number;
@@ -107,6 +108,10 @@ export interface VideoSession {
   max_speed: number;
   comprehension_state: Record<string, number>;
   comprehension_score: number;
+  /** The check-ins answered in THIS watch, right or wrong. The player's "already asked" set: a
+   *  reload mid-watch is not asked the same question twice, and a NEW watch is asked them all
+   *  again however many the learner has passed before. */
+  answered_check_in_ids?: number[];
   started_at: string;
   completed_at: string | null;
 }
@@ -122,6 +127,9 @@ export interface CheckInResult {
   correct_option: string;
   explanation: string;
   rewind_to_seconds: number | null;
+  /** This check-in had already been passed, so the answer is practice: recorded and explained,
+   *  but never scored a second time. */
+  practice?: boolean;
 }
 
 /**

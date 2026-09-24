@@ -24,6 +24,7 @@ import {
   StatusSelect,
   TYPE,
   controlSx,
+  focusRing,
 } from "@/components/jobs-v2/ui";
 import { AudienceSummary } from "../AudienceSummary";
 import { ChipBinField, type StepProps } from "./StepRole";
@@ -62,6 +63,8 @@ export interface StepAudienceProps extends StepProps {
   questionsError: string | null;
   onRetryQuestions: () => void;
   onAddQuestion: () => void;
+  /** Remove a question from the bank (and from this job). Opens the confirmation. */
+  onDeleteQuestion: (question: JobQuestionV2) => void;
 
   onOpenStudentPicker: () => void;
   /** Student ids already assigned on the server, so "new" additions can be counted honestly. */
@@ -100,6 +103,7 @@ export function StepAudience({
   questionsError,
   onRetryQuestions,
   onAddQuestion,
+  onDeleteQuestion,
   onOpenStudentPicker,
   serverAssignedIds,
 }: StepAudienceProps) {
@@ -443,6 +447,7 @@ export function StepAudience({
                     question={question}
                     selected={selectedIds.has(question.id)}
                     onToggle={() => form.toggleQuestion(question.id)}
+                    onRemove={() => onDeleteQuestion(question)}
                   />
                 ))}
               </Box>
@@ -531,10 +536,12 @@ function QuestionCard({
   question,
   selected,
   onToggle,
+  onRemove,
 }: {
   question: JobQuestionV2;
   selected: boolean;
   onToggle: () => void;
+  onRemove: () => void;
 }) {
   const { t } = useTranslation("common");
   const meta = QUESTION_TYPE_KEYS[question.question_type] ?? {
@@ -545,86 +552,159 @@ function QuestionCard({
     question.question_type === "yes_no"
       ? [t("jobsV2.questions.yes"), t("jobsV2.questions.no")]
       : (question.options ?? []);
+  // Retired from the bank, but this job still asks it - the list only shows such a row for the
+  // job that kept it alive, and the chip is the only honest explanation of why it is here.
+  const retired = Boolean(question.archived_at);
 
   return (
     <JCard
-      interactive
-      // A real <button role="checkbox">: focusable, and Enter/Space toggle natively. The
-      // shipped question cards were clickable <Box>es, unreachable by keyboard entirely.
-      component="button"
-      role="checkbox"
-      onClick={onToggle}
-      aria-label={question.question_text}
+      padded={false}
       sx={{
-        p: 2,
-        width: "100%",
-        textAlign: "start",
-        font: "inherit",
         display: "flex",
-        gap: 1.5,
-        alignItems: "flex-start",
+        alignItems: "stretch",
+        overflow: "hidden",
         borderColor: selected ? J.azureBorder : J.hairline,
         bgcolor: selected ? J.azureSoft : J.surface,
       }}
-      {...({ "aria-checked": selected, type: "button" } as Record<string, unknown>)}
     >
+      {/*
+        A real <button role="checkbox">: focusable, and Enter/Space toggle natively. The
+        shipped question cards were clickable <Box>es, unreachable by keyboard entirely.
+        It is a SIBLING of the remove button, never its parent - a button inside a button is
+        invalid HTML and the inner one stops being reachable.
+      */}
       <Box
-        aria-hidden
+        component="button"
+        role="checkbox"
+        onClick={onToggle}
+        aria-label={question.question_text}
+        aria-checked={selected}
+        type="button"
         sx={{
-          width: 22,
-          height: 22,
-          flexShrink: 0,
-          mt: 0.25,
-          borderRadius: R.ctl,
-          display: "grid",
-          placeItems: "center",
-          border: `2px solid ${selected ? J.azure : J.hairlineStrong}`,
-          bgcolor: selected ? J.azure : "transparent",
-          color: J.surface,
+          p: 2,
+          flex: 1,
+          minWidth: 0,
+          textAlign: "start",
+          font: "inherit",
+          color: "inherit",
+          display: "flex",
+          gap: 1.5,
+          alignItems: "flex-start",
+          border: "none",
+          bgcolor: "transparent",
+          cursor: "pointer",
           transition: `background-color ${MOTION.micro}ms ${MOTION.ease}`,
+          "&:hover": { bgcolor: selected ? J.azureSoft : J.surface2 },
+          ...focusRing,
         }}
       >
-        {selected && <IconWrapper icon="mdi:check" size={14} />}
-      </Box>
-      <Box sx={{ minWidth: 0, flex: 1 }}>
-        <Typography sx={{ ...TYPE.bodyStrong }}>
-          {question.question_text}
-          {question.is_required && (
-            <Box component="span" aria-hidden sx={{ color: J.dangerFg, ml: 0.5 }}>
-              *
-            </Box>
-          )}
-        </Typography>
-        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, alignItems: "center", mt: 1 }}>
-          <Typography
-            component="span"
-            sx={{
-              ...TYPE.micro,
-              px: 0.75,
-              py: 0.25,
-              borderRadius: R.pill,
-              border: `1px solid ${J.hairline}`,
-              bgcolor: J.surface2,
-            }}
-          >
-            {t(meta.key, meta.fallback)}
+        <Box
+          aria-hidden
+          sx={{
+            width: 22,
+            height: 22,
+            flexShrink: 0,
+            mt: 0.25,
+            borderRadius: R.ctl,
+            display: "grid",
+            placeItems: "center",
+            border: `2px solid ${selected ? J.azure : J.hairlineStrong}`,
+            bgcolor: selected ? J.azure : "transparent",
+            color: J.surface,
+            transition: `background-color ${MOTION.micro}ms ${MOTION.ease}`,
+          }}
+        >
+          {selected && <IconWrapper icon="mdi:check" size={14} />}
+        </Box>
+        <Box sx={{ minWidth: 0, flex: 1 }}>
+          <Typography sx={{ ...TYPE.bodyStrong }}>
+            {question.question_text}
+            {question.is_required && (
+              <Box component="span" aria-hidden sx={{ color: J.dangerFg, ml: 0.5 }}>
+                *
+              </Box>
+            )}
           </Typography>
-          {options.map((option, index) => (
+          <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.75, alignItems: "center", mt: 1 }}>
             <Typography
-              key={`${option}-${index}`}
               component="span"
               sx={{
                 ...TYPE.micro,
                 px: 0.75,
                 py: 0.25,
-                borderRadius: R.ctl,
-                border: `1px solid ${J.hairlineSoft}`,
+                borderRadius: R.pill,
+                border: `1px solid ${J.hairline}`,
+                bgcolor: J.surface2,
               }}
             >
-              {String.fromCharCode(65 + index)}. {option}
+              {t(meta.key, meta.fallback)}
             </Typography>
-          ))}
+            {retired && (
+              <Typography
+                component="span"
+                sx={{
+                  ...TYPE.micro,
+                  px: 0.75,
+                  py: 0.25,
+                  borderRadius: R.pill,
+                  border: `1px solid ${J.warnBd}`,
+                  bgcolor: J.warnBg,
+                  color: J.warnFg,
+                }}
+              >
+                {t("jobsV2.questionBank.retiredChip", "Retired — still asked on this job")}
+              </Typography>
+            )}
+            {options.map((option, index) => (
+              <Typography
+                key={`${option}-${index}`}
+                component="span"
+                sx={{
+                  ...TYPE.micro,
+                  px: 0.75,
+                  py: 0.25,
+                  borderRadius: R.ctl,
+                  border: `1px solid ${J.hairlineSoft}`,
+                }}
+              >
+                {String.fromCharCode(65 + index)}. {option}
+              </Typography>
+            ))}
+          </Box>
         </Box>
+      </Box>
+
+      {/*
+        The remove affordance. 40px on a pointer, 44px under PHONE only — an `xs` value would
+        widen the desktop row too, which is exactly the regression the mobile pass forbids.
+      */}
+      <Box
+        component="button"
+        type="button"
+        onClick={onRemove}
+        aria-label={t("jobsV2.questionBank.action", "Remove “{{question}}”", {
+          question: question.question_text,
+        })}
+        title={t("jobsV2.questionBank.tooltip", "Remove this question") as string}
+        sx={{
+          flexShrink: 0,
+          alignSelf: "stretch",
+          width: 40,
+          display: "grid",
+          placeItems: "center",
+          border: "none",
+          borderInlineStart: `1px solid ${J.hairline}`,
+          p: 0,
+          bgcolor: "transparent",
+          color: J.ink3,
+          cursor: "pointer",
+          transition: `color ${MOTION.micro}ms ${MOTION.ease}, background-color ${MOTION.micro}ms ${MOTION.ease}`,
+          "&:hover": { bgcolor: J.dangerBg, color: J.dangerFg },
+          ...focusRing,
+          [PHONE]: { width: 48 },
+        }}
+      >
+        <IconWrapper icon="mdi:trash-can-outline" size={18} />
       </Box>
     </JCard>
   );

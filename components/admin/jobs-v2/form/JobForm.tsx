@@ -8,6 +8,7 @@ import {
   adminJobsV2Service,
   type JobCreateUpdatePayload,
   type JobQuestionV2,
+  type JobQuestionUsage,
 } from "@/lib/services/admin/admin-jobs-v2.service";
 import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-course.service";
 import type { JobV2 } from "@/lib/services/jobs-v2.service";
@@ -122,17 +123,27 @@ export function JobForm({
   const [questionsLoading, setQuestionsLoading] = useState(true);
   const [questionsError, setQuestionsError] = useState<string | null>(null);
 
+  /**
+   * The job this form edits, or undefined on the create page. The bank endpoint needs it: a
+   * question retired while ANOTHER job still asked it stays on that job, and the row has to
+   * keep appearing here or the "N selected" chip would count something not in the list.
+   */
+  const jobId = useMemo(() => {
+    const raw = mode === "edit" ? initialData?.id : undefined;
+    return typeof raw === "number" && Number.isFinite(raw) ? raw : undefined;
+  }, [initialData?.id, mode]);
+
   const loadQuestions = useCallback(async () => {
     setQuestionsLoading(true);
     setQuestionsError(null);
     try {
-      setQuestionBank(await adminJobsV2Service.getQuestions());
+      setQuestionBank(await adminJobsV2Service.getQuestions(undefined, jobId));
     } catch (err) {
       setQuestionsError((err as Error)?.message ?? t("jobsV2.error.body"));
     } finally {
       setQuestionsLoading(false);
     }
-  }, [t]);
+  }, [jobId, t]);
 
   useEffect(() => {
     void loadAdaptive();
@@ -165,6 +176,84 @@ export function JobForm({
     },
     [form],
   );
+
+  /* ---- removing a question ---------------------------------------------- */
+  const [removeTarget, setRemoveTarget] = useState<JobQuestionV2 | null>(null);
+  const [removeUsage, setRemoveUsage] = useState<JobQuestionUsage | null>(null);
+  const [removeBusy, setRemoveBusy] = useState(false);
+  const [removeError, setRemoveError] = useState<string | null>(null);
+
+  const requestRemoveQuestion = useCallback(
+    (question: JobQuestionV2) => {
+      setRemoveTarget(question);
+      setRemoveUsage(null);
+      setRemoveError(null);
+      // Counted server-side at the moment of the confirmation, never guessed from the form:
+      // the number of applicants who already answered is the whole reason for the dialog.
+      void adminJobsV2Service
+        .getQuestionUsage(question.id, jobId)
+        .then(setRemoveUsage)
+        .catch((err: Error) => setRemoveError(err?.message ?? t("jobsV2.error.body")));
+    },
+    [jobId, t],
+  );
+
+  const confirmRemoveQuestion = useCallback(async () => {
+    if (!removeTarget) return;
+    setRemoveBusy(true);
+    setRemoveError(null);
+    try {
+      await adminJobsV2Service.removeQuestion(removeTarget.id, jobId);
+      // The list and the count move together, in one commit. `deselectQuestion`, never
+      // `toggleQuestion`: toggling an UNSELECTED row would have selected it on the way out.
+      setQuestionBank((prev) => prev.filter((q) => q.id !== removeTarget.id));
+      form.deselectQuestion(removeTarget.id);
+      setRemoveTarget(null);
+      setRemoveUsage(null);
+    } catch (err) {
+      setRemoveError((err as Error)?.message ?? t("jobsV2.error.body"));
+    } finally {
+      setRemoveBusy(false);
+    }
+  }, [form, jobId, removeTarget, t]);
+
+  /** Exactly what the confirmation promises will happen. Empty until the counts land. */
+  const removeConsequences = useMemo(() => {
+    if (!removeUsage) return [];
+    const lines: string[] = [];
+    if (removeUsage.on_this_job) {
+      lines.push(
+        t("jobsV2.questionBank.thisJob", "This job stops asking it on the application form"),
+      );
+    }
+    if (removeUsage.other_jobs > 0) {
+      lines.push(
+        t("jobsV2.questionBank.otherJobs", "{{count}} other job(s) keep asking it, unchanged", {
+          count: removeUsage.other_jobs,
+        }),
+      );
+    }
+    if (removeUsage.answers > 0) {
+      lines.push(
+        t(
+          "jobsV2.questionBank.answersKept",
+          "{{answers}} answer(s) from {{applications}} application(s) are kept and stay readable",
+          { answers: removeUsage.answers, applications: removeUsage.applications },
+        ),
+      );
+    } else {
+      lines.push(
+        t("jobsV2.questionBank.noAnswers", "Nobody has answered it, so no answer is affected"),
+      );
+    }
+    lines.push(
+      t(
+        "jobsV2.questionBank.bankLine",
+        "It leaves the shared question bank and cannot be added to another job",
+      ),
+    );
+    return lines;
+  }, [removeUsage, t]);
 
   /* ---- steps ------------------------------------------------------------ */
   const stepLabels = useMemo(
@@ -345,6 +434,7 @@ export function JobForm({
             questionsError={questionsError}
             onRetryQuestions={() => void loadQuestions()}
             onAddQuestion={() => setQuestionModalOpen(true)}
+            onDeleteQuestion={requestRemoveQuestion}
             onOpenStudentPicker={() => setStudentPickerOpen(true)}
             serverAssignedIds={serverAssignedIds}
           />
@@ -469,6 +559,7 @@ export function JobForm({
         open={questionModalOpen}
         onClose={() => setQuestionModalOpen(false)}
         onSubmit={addNewQuestion}
+        existingQuestions={questionBank}
         // The order is the index within THIS job's selection, not the size of the global bank.
         nextOrder={(form.data.question_ids ?? []).length}
       />
@@ -516,6 +607,40 @@ export function JobForm({
         tone="danger"
         onConfirm={guard.confirmLeave}
         onCancel={guard.cancelLeave}
+      />
+
+      {/*
+        Removing a question is one click plus this confirmation, always - not only when it has
+        answers. The bank is shared, so even a row that looks unused on this form may be asked
+        by another job, and the counts that decide it are only knowable server-side. The dialog
+        turns danger-toned once real applicant answers or other jobs are in play.
+      */}
+      <JConfirm
+        open={removeTarget !== null}
+        title={t("jobsV2.questionBank.title", "Remove this question?")}
+        body={
+          removeError
+            ? removeError
+            : removeUsage
+              ? t("jobsV2.questionBank.body", "“{{question}}” is removed from the shared bank.", {
+                  question: removeTarget?.question_text ?? "",
+                })
+              : t("jobsV2.questionBank.loading", "Checking where this question is used…")
+        }
+        consequences={removeConsequences}
+        tone={
+          removeUsage && (removeUsage.answers > 0 || removeUsage.other_jobs > 0)
+            ? "danger"
+            : "neutral"
+        }
+        confirmLabel={t("jobsV2.questionBank.confirm", "Remove question")}
+        busy={removeBusy || (removeTarget !== null && removeUsage === null && !removeError)}
+        onConfirm={() => void confirmRemoveQuestion()}
+        onCancel={() => {
+          setRemoveTarget(null);
+          setRemoveUsage(null);
+          setRemoveError(null);
+        }}
       />
     </Box>
   );

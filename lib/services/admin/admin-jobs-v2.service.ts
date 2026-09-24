@@ -80,6 +80,24 @@ export interface JobQuestionV2 {
   order: number;
   options?: string[];
   created_at?: string;
+  /**
+   * Set once an admin has removed the question from the shared bank. It is then off the menu
+   * for every new job, and only still listed for a job that was already asking it.
+   */
+  archived_at?: string | null;
+}
+
+/** What removing a question would touch. Read fresh, right before the confirmation. */
+export interface JobQuestionUsage {
+  id: number;
+  question_text: string;
+  archived: boolean;
+  /** Whether the job being edited currently asks it. */
+  on_this_job: boolean;
+  /** Jobs OTHER than the one being edited that keep asking it after the removal. */
+  other_jobs: number;
+  answers: number;
+  applications: number;
 }
 
 const getClientId = () => String(config.clientId);
@@ -419,12 +437,20 @@ export const adminJobsV2Service = {
     window.URL.revokeObjectURL(url);
   },
 
-  getQuestions: async (clientId?: string | number): Promise<JobQuestionV2[]> => {
+  /**
+   * The tenant's shared question bank. `jobId` matters on the EDIT page: a question retired
+   * while another job still asked it stays on that job, so the job being edited has to keep
+   * seeing the row - otherwise the "N selected" chip counts something that is not in the list.
+   */
+  getQuestions: async (
+    clientId?: string | number,
+    jobId?: number
+  ): Promise<JobQuestionV2[]> => {
     const cid = clientId ?? getClientId();
     try {
       const response = await apiClient.get<JobQuestionV2[]>(
         `/jobs-v2/api/admin/questions/`,
-        { params: { client_id: cid } }
+        { params: jobId ? { client_id: cid, job_id: jobId } : { client_id: cid } }
       );
       return response.data ?? [];
     } catch (err) {
@@ -475,6 +501,57 @@ export const adminJobsV2Service = {
         error.response?.data?.message ||
         error.response?.data?.detail ||
         "Failed to create question";
+      throw new Error(message);
+    }
+  },
+
+  /** Read-only: what removing this question would touch, for the confirmation. */
+  getQuestionUsage: async (
+    questionId: number,
+    jobId?: number,
+    clientId?: string | number
+  ): Promise<JobQuestionUsage> => {
+    const cid = clientId ?? getClientId();
+    try {
+      const response = await apiClient.get<JobQuestionUsage>(
+        `/jobs-v2/api/admin/questions/${questionId}/`,
+        { params: jobId ? { client_id: cid, job_id: jobId } : { client_id: cid } }
+      );
+      return response.data;
+    } catch (err) {
+      const error = err as AxiosError<ApiErrorPayload>;
+      const message =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.response?.data?.detail ||
+        "Failed to read question usage";
+      throw new Error(message);
+    }
+  },
+
+  /**
+   * Remove a question. The backend ARCHIVES the bank row and unwires only `jobId` - it never
+   * deletes, because applicants' answers point straight at the row and other jobs share it.
+   */
+  removeQuestion: async (
+    questionId: number,
+    jobId?: number,
+    clientId?: string | number
+  ): Promise<JobQuestionUsage> => {
+    const cid = clientId ?? getClientId();
+    try {
+      const response = await apiClient.delete<JobQuestionUsage>(
+        `/jobs-v2/api/admin/questions/${questionId}/`,
+        { params: jobId ? { client_id: cid, job_id: jobId } : { client_id: cid } }
+      );
+      return response.data;
+    } catch (err) {
+      const error = err as AxiosError<ApiErrorPayload>;
+      const message =
+        error.response?.data?.error ||
+        error.response?.data?.message ||
+        error.response?.data?.detail ||
+        "Failed to remove question";
       throw new Error(message);
     }
   },

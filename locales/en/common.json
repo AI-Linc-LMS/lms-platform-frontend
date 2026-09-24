@@ -1971,6 +1971,21 @@
       "errorUrl": "Enter a valid link",
       "errorDate": "Enter a valid date"
     },
+    "questionBank": {
+      "title": "Remove this question?",
+      "body": "“{{question}}” is removed from the shared question bank.",
+      "loading": "Checking where this question is used…",
+      "confirm": "Remove question",
+      "action": "Remove “{{question}}”",
+      "tooltip": "Remove this question",
+      "retiredChip": "Retired — still asked on this job",
+      "thisJob": "This job stops asking it on the application form",
+      "otherJobs": "{{count}} other job(s) keep asking it, unchanged",
+      "answersKept": "{{answers}} answer(s) from {{applications}} application(s) are kept and stay readable",
+      "noAnswers": "Nobody has answered it, so no answer is affected",
+      "bankLine": "It leaves the shared question bank and cannot be added to another job",
+      "duplicateWarning": "The bank already has a question with this exact wording. Saving adds a second copy, and both will appear on every job form. Close this and tick the one that is already there instead."
+    },
     "error": {
       "title": "We could not load this",
       "body": "Something went wrong on our side. Your data is safe — try again in a moment.",
@@ -3195,7 +3210,9 @@
   "adaptiveVideoMode": {
     "groupLabel": "Watch mode",
     "switching": "Switching…",
-    "switchFailed": "Couldn't switch the watch mode just now. Try again."
+    "switchFailed": "Couldn't switch the watch mode just now. Try again.",
+    "practiceLabel": "Practice",
+    "practiceNote": "already passed · not scored again"
   },
   "experienceBullets": {
     "label": "Responsibilities and achievements",
@@ -3217,6 +3234,26 @@
     "questionLabel": "Question {{n}}",
     "goBack": "Go back and fix",
     "saveAnyway": "Save anyway"
+  },
+  "studentSegments": {
+    "heading": "Segments",
+    "infoAriaLabel": "How segments are calculated",
+    "popoverTitle": "How these signals are calculated",
+    "popoverFooter": "Every signal here has a chip above. They overlap on purpose, so you pick one at a time - choosing another replaces it, and choosing the selected one clears it.",
+    "popoverDerived": "All signals are derived from existing activity data - no extra tracking.",
+    "countAria": "{{count}} students",
+    "atRisk": "At risk",
+    "atRiskRule": "Enrolled and matching at least one of the server's at-risk rules. Unenrolled students are never flagged.",
+    "inactive": "Inactive 30d",
+    "inactiveRule": "Enrolled, and no activity in the last 30 days (or never active). Unenrolled students are never flagged.",
+    "lowCompletion": "Low completion",
+    "lowCompletionRule": "Overall course content completion is below 30%.",
+    "highPerformers": "High performers",
+    "highPerformersRule": "Overall content completion is 75% or higher.",
+    "neverLoggedIn": "Never logged in",
+    "neverLoggedInRule": "The account has never authenticated (no last-login).",
+    "neverActive": "Never active",
+    "neverActiveRule": "No course / content activity has ever been recorded."
   },
   "bulkEnrol": {
     "enrolButton": "Enrol to course or batch",

@@ -3,12 +3,17 @@
 import { Box, Button, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AIPill } from "@/components/adaptive-quiz/shared/AIPill";
 import type { CheckInMarker, CheckInResult } from "@/lib/services/adaptive-video.service";
 import { PHONE } from "@/components/common/mobile/phone";
 
 interface Props {
   checkIn: CheckInMarker;
+  /** This check-in has already been passed, so it is being asked again for practice and cannot be
+   *  scored twice. Said up front, before they answer: a learner who recognises the question and
+   *  sees nothing move afterwards would otherwise have to guess why. */
+  practice?: boolean;
   onAnswer: (optionLetter: string, timeMs: number) => Promise<CheckInResult>;
   onContinue: () => void;
   onRewind: (toSeconds: number) => void;
@@ -38,7 +43,8 @@ const OPTIONS: { letter: string; key: keyof CheckInMarker }[] = [
  * a pinned footer. The actions can never be scrolled or clipped out of reach, and
  * long questions scroll inside the card instead of escaping it.
  */
-export function AutoPauseCheckIn({ checkIn, onAnswer, onContinue, onRewind }: Props) {
+export function AutoPauseCheckIn({ checkIn, practice, onAnswer, onContinue, onRewind }: Props) {
+  const { t } = useTranslation();
   const [selected, setSelected] = useState<string | null>(null);
   const [result, setResult] = useState<CheckInResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -54,6 +60,9 @@ export function AutoPauseCheckIn({ checkIn, onAnswer, onContinue, onRewind }: Pr
       setSubmitting(false);
     }
   };
+  // The server has the last word on whether an answer scored; until one is given, what the page
+  // knows (this check-in is in the learner's passed list) is the same rule the server applies.
+  const isPractice = result ? Boolean(result.practice) : Boolean(practice);
 
   return (
     <Box
@@ -91,9 +100,11 @@ export function AutoPauseCheckIn({ checkIn, onAnswer, onContinue, onRewind }: Pr
         {/* Scrolling body - everything that can grow with the question's length. */}
         <Box sx={{ flex: 1, minHeight: 0, overflowY: "auto", px: 3, pt: 3.25, pb: 2, [PHONE]: { px: 2, pt: 2.5 } }}>
           <Box sx={{ display: "flex", justifyContent: "space-between", mb: 1.5 }}>
-            <AIPill icon={<Icon icon="mdi:lightning-bolt" />}>Quick check</AIPill>
+            <AIPill icon={<Icon icon="mdi:lightning-bolt" />}>
+              {isPractice ? t("adaptiveVideoMode.practiceLabel") : "Quick check"}
+            </AIPill>
             <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary" }}>
-              auto · pauses video
+              {isPractice ? t("adaptiveVideoMode.practiceNote") : "auto · pauses video"}
             </Typography>
           </Box>
           <Typography sx={{ fontWeight: 700, fontSize: "1.02rem", mb: 2 }}>

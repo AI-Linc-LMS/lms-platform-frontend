@@ -15,7 +15,7 @@ import {
 import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveSectionHero";
 import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import { useVimeoController } from "./useVimeoController";
-import { finishedBefore, restoredAnswers, resumePoint, watchedPercent } from "./progressAcrossVisits";
+import { answeredThisWatch, finishedBefore, passedBefore, resumePoint, watchedPercent } from "./progressAcrossVisits";
 import { AutoPauseCheckIn } from "./AutoPauseCheckIn";
 import { CheckpointOverlay } from "./CheckpointOverlay";
 import { ReExplainPanel } from "./ReExplainPanel";
@@ -28,6 +28,24 @@ import { toEmbedUrl } from "@/lib/utils/video-embed";
 import { PHONE } from "@/components/common/mobile/phone";
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+/**
+ * The band at the foot of the frame that the PLAYER's own control bar occupies - its bar plus the
+ * inset it is drawn with. Measured on the real Vimeo player: a 32px bar 8px clear of the bottom.
+ * Our own bar sits directly on top of that band, so the two read as one run of controls rather
+ * than a button floating in the middle of the picture.
+ */
+const PLAYER_BAR_BAND = 40;
+/** Height of our bar - enough for a 44px touch target on a phone, the player's own height above. */
+const COMPANION_BAR_H = 40;
+const COMPANION_BAR_H_PHONE = 52;
+/**
+ * How long our bar stays up after the last thing we can see the learner do, while the video runs.
+ * A cross-origin iframe swallows every pointer move over the picture, so "the learner is still
+ * there" can only be read from what reaches US: entering the frame, a press, a key. This is the
+ * same order as the player's own idle window, so the two go down together.
+ */
+const CONTROLS_IDLE_MS = 2600;
 const TABS: { label: string; icon: string }[] = [
   { label: "AI Companion", icon: "mdi:sparkles" },
   { label: "Transcript", icon: "mdi:text-box-outline" },
@@ -73,6 +91,19 @@ export function VideoCompanion({
     // keeps the overlay visible, so the button simply does nothing rather than trapping them in
     // an iframe fullscreen the check-in cannot be seen in.
     void box.requestFullscreen?.().catch(() => {});
+  }, []);
+  // Our control bar follows the player's: up whenever the video is not running, and while it runs
+  // up for a beat after the last thing we can see the learner do. See CONTROLS_IDLE_MS.
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const [activity, setActivity] = useState(0);
+  const lastActivityRef = useRef(0);
+  const noteActivity = useCallback(() => {
+    // One bump every half second is plenty to hold the bar up, and it keeps a pointer dragged
+    // across the frame from re-rendering the whole companion on every pixel.
+    const now = Date.now();
+    if (now - lastActivityRef.current < 500) return;
+    lastActivityRef.current = now;
+    setActivity((n) => n + 1);
   }, []);
   const [companion, setCompanion] = useState<CompanionData | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
@@ -129,10 +160,19 @@ export function VideoCompanion({
   const minuteCrossedRef = useRef(false);
   const lastCheckpointRef = useRef(0);
   const [activeCheckIn, setActiveCheckIn] = useState<CheckInMarker | null>(null);
-  // Reactive set of answered check-in ids - drives the counter chip + the green
+  // Reactive set of the check-ins answered in THIS watch - drives the counter chip + the green
   // timeline markers, so they update the instant an answer lands (a ref wouldn't
   // re-render). shownRef stays a ref: it only gates the auto-pause effect.
+  //
+  // THIS watch, not every visit. Seeding it from the learner's lifetime passes is what made Normal
+  // pace silent on a rewatch: on a video whose check-ins were all passed there was nothing left to
+  // ask, and two of the three modes behaved identically. See `progressAcrossVisits`.
   const [answered, setAnswered] = useState<Set<number>>(new Set());
+  // Every check-in this learner has PASSED on this video, on any visit, including just now. It is
+  // display only - the timeline marks them and the Rewatch chip counts them - and it never decides
+  // what is asked. The server knows the same list and records a repeat of one as practice, so
+  // asking again cannot pay twice.
+  const [passed, setPassed] = useState<Set<number>>(new Set());
   // Externally-hosted videos report nothing back, so the student says when they are done.
   const [markedWatched, setMarkedWatched] = useState(false);
   const shownRef = useRef<Set<number>>(new Set());
@@ -152,8 +192,21 @@ export function VideoCompanion({
   // `setRate` is deliberately not used. Every offered mode plays at the learner's own speed, and
   // re-asserting 1x on each mode change reset whatever speed they had picked in the player every
   // time they switched - a switch is not supposed to touch playback at all.
-  const { setIframe, currentTime, duration, playbackRate, rewinds, endedTick, play, pause, seekTo } =
+  const { setIframe, currentTime, duration, isPlaying, playbackRate, rewinds, endedTick, play, pause, seekTo } =
     useVimeoController();
+  // The player's own bar is up whenever the video is not running - paused, ended, not started yet -
+  // and drops out of sight a beat after the pointer goes quiet while it runs. Ours keeps the same
+  // clock, so the two are never on screen apart. An embed whose events we cannot read never reports
+  // playing, which leaves the bar up: the same thing it does today, not a control that disappears.
+  useEffect(() => {
+    if (!isPlaying) {
+      setControlsVisible(true);
+      return;
+    }
+    setControlsVisible(true);
+    const id = window.setTimeout(() => setControlsVisible(false), CONTROLS_IDLE_MS);
+    return () => window.clearTimeout(id);
+  }, [isPlaying, activity]);
   const rateRef = useRef(playbackRate);
   useEffect(() => {
     rateRef.current = playbackRate;
@@ -190,12 +243,14 @@ export function VideoCompanion({
         const loaded = res.session?.watch_mode !== "rewatch";
         setQuestions({ list: res.companion.check_ins ?? [], loaded });
         questionsRequestRef.current = loaded ? Promise.resolve() : null;
-        // The check-ins this learner has already passed, whichever visit they passed them on.
-        // Seeding BOTH the reactive set (green markers + counter) and the shown-ref (the
-        // auto-pause gate) is what stops a finished concept being re-examined on the way back.
-        const passed = restoredAnswers(res.companion.my_passed_check_in_ids);
-        setAnswered(passed);
-        passed.forEach((id) => shownRef.current.add(id));
+        // What THIS watch has already been asked. A resumed session brings its own answers back
+        // (a reload must not re-ask them); a new watch brings none, so every scheduled check-in is
+        // still due however many the learner has passed before.
+        const mine = answeredThisWatch(res.session);
+        setAnswered(mine);
+        mine.forEach((id) => shownRef.current.add(id));
+        // What they have passed, for the markers and the Rewatch chip. Never the gate.
+        setPassed(passedBefore(res.companion));
         setSaved({
           bestPct: Math.max(res.companion.my_best_completeness_pct ?? 0, res.session?.completeness_pct ?? 0),
           session: res.session ?? null,
@@ -417,6 +472,7 @@ export function VideoCompanion({
       if (!sessionId || !activeCheckIn) throw new Error("no session");
       const r = await adaptiveVideoService.answerCheckIn(sessionId, activeCheckIn.id, letter.toLowerCase(), timeMs);
       setAnswered((prev) => new Set(prev).add(activeCheckIn.id));
+      if (r.is_correct) setPassed((prev) => new Set(prev).add(activeCheckIn.id));
       return r;
     },
     [sessionId, activeCheckIn]
@@ -440,13 +496,15 @@ export function VideoCompanion({
   // The questions a rewatch session was never sent. The companion endpoint carries them (and a
   // fresh list of the ones this learner has passed, which may include some passed on this page).
   // One request however many switches are made while it is out; a failed one can be tried again.
+  //
+  // The passes update the markers and nothing else. Folding them into `answered` here is what made
+  // a switch out of Rewatch arrive at a mode with every check-in already ticked off: the rail
+  // moved, the questions armed, and nothing was ever due.
   const loadQuestions = useCallback(() => {
     questionsRequestRef.current ??= adaptiveVideoService.getCompanion(configId).then(
       (fresh) => {
         setQuestions({ list: fresh.check_ins ?? [], loaded: true });
-        const passed = restoredAnswers(fresh.my_passed_check_in_ids);
-        passed.forEach((id) => shownRef.current.add(id));
-        setAnswered((prev) => new Set([...prev, ...passed]));
+        setPassed((prev) => new Set([...prev, ...passedBefore(fresh)]));
       },
       (err: unknown) => {
         questionsRequestRef.current = null;
@@ -467,9 +525,12 @@ export function VideoCompanion({
     const loaded = res.session?.watch_mode !== "rewatch";
     setQuestions({ list: res.companion.check_ins ?? [], loaded });
     questionsRequestRef.current = loaded ? Promise.resolve() : null;
-    const passed = restoredAnswers(res.companion.my_passed_check_in_ids);
-    shownRef.current = new Set(passed);
-    setAnswered(passed);
+    // A NEW watch: nothing is spent yet, so its check-ins are all due again. The passes carry over
+    // (they are the learner's, not the watch's) and keep marking the timeline.
+    const mine = answeredThisWatch(res.session);
+    shownRef.current = new Set(mine);
+    setAnswered(mine);
+    setPassed((prev) => new Set([...prev, ...passedBefore(res.companion)]));
     watchedRef.current = new Set();
     armedPlayedRef.current = new Set();
     coverageRef.current = 0;
@@ -636,13 +697,15 @@ export function VideoCompanion({
   // what the player will actually ask.
   const liveCheckIns = armed ? questions.list : [];
   const answeredLive = liveCheckIns.filter((c) => answered.has(c.id)).length;
-  // The checks counter. Rewatch mode ships no check-ins at all, so a learner returning with four
-  // passed ones would have read "4/0"; and a video that has no check-ins has nothing to count.
+  // The checks counter. With check-ins in force it counts THIS watch, so it agrees with what the
+  // player will actually ask - it used to open at "5/5 checks" on a rewatch that then asked
+  // nothing. Rewatch ships no check-ins at all, so a learner returning with four passed ones would
+  // have read "4/0": there it reports the passes instead. No check-ins, nothing to count.
   const checksChip =
     liveCheckIns.length > 0
       ? `${answeredLive}/${liveCheckIns.length} checks`
-      : answered.size > 0
-        ? `${answered.size} check${answered.size === 1 ? "" : "s"} passed`
+      : passed.size > 0
+        ? `${passed.size} check${passed.size === 1 ? "" : "s"} passed`
         : "";
   // Completed, but this visit is still being asked the video's checks.
   //
@@ -711,6 +774,13 @@ export function VideoCompanion({
           {/* Player */}
           <Box
             ref={playerBoxRef}
+            // Everything we can see of "the learner is still here". A cross-origin iframe keeps
+            // every pointer move over the picture to itself, so these - crossing into the frame,
+            // a press, a key landing on a control - are the whole signal.
+            onPointerEnter={noteActivity}
+            onPointerMove={noteActivity}
+            onPointerDown={noteActivity}
+            onFocusCapture={noteActivity}
             sx={{
               position: "relative",
               borderRadius: isFullscreen ? 0 : 3,
@@ -738,27 +808,75 @@ export function VideoCompanion({
               style={{ width: "100%", height: "100%", border: 0 }}
               title={companion.title}
             />
-            {/* Ours, not the provider's: this fullscreens the BOX, so a check-in is painted with
-                it. Sits above the player's own control bar. */}
-            <IconButton
-              onClick={toggleFullscreen}
-              aria-label={isFullscreen ? "Exit full screen" : "Full screen"}
-              size="small"
+            {/* The companion's own control bar.
+                Fullscreen has to be ours and not the provider's: Vimeo's button fullscreens the
+                IFRAME, and a check-in painted over the player is that iframe's sibling, so the
+                browser draws the iframe alone and the question is nowhere (fullscreenCheckIn.test).
+                Ours fullscreens the BOX, which is the overlay's parent.
+
+                But it cannot live among the provider's buttons either - they are inside a
+                cross-origin iframe, and they are right-anchored flush to that bar's edge, with no
+                free slot to sit in (measured: with and without Vimeo's own fullscreen button the
+                cluster still ends at the same x). So it gets a bar of its own, laid directly on
+                top of the player's own band and sharing its clock: full width, right-aligned like
+                every player's fullscreen control, and gone the moment the player's controls go
+                rather than left floating over the picture and over the burned-in captions. */}
+            <Box
+              data-testid="companion-control-bar"
+              // Hidden, this thin band is the one place a pointer heading for the controls can
+              // still reach us through the iframe - touching it brings the bar back (the move
+              // bubbles to the box). Shown, it lets everything but the button through, so the
+              // picture stays the player's.
               sx={{
-                position: "absolute", right: 8, bottom: 52, zIndex: 15,
-                color: "#fff", bgcolor: "rgba(15,12,41,0.55)",
-                "&:hover": { bgcolor: "rgba(15,12,41,0.8)" },
-                [PHONE]: { width: 44, height: 44 },
+                position: "absolute", left: 0, right: 0, zIndex: 15,
+                // Full screen makes the frame the whole screen, and the player letterboxes a 16/9
+                // picture inside it - so its bar lifts off the bottom by the height of that black
+                // margin. Ours lifts with it; measured flush at 1440x900, and the term falls to
+                // zero on a screen wider than 16/9, where there is no margin to clear.
+                bottom: isFullscreen
+                  ? `calc(${PLAYER_BAR_BAND}px + max(0px, (100vh - 100vw * 9 / 16) / 2))`
+                  : PLAYER_BAR_BAND,
+                height: COMPANION_BAR_H,
+                display: "flex", alignItems: "center", justifyContent: "flex-end",
+                px: 1,
+                pointerEvents: controlsVisible ? "none" : "auto",
+                // No scrim across the band. A player's usual bottom gradient would sit exactly
+                // where a burned-in caption is, and dimming the subtitles to frame a button is
+                // the other half of what was reported. The control carries its own fill instead.
+                [PHONE]: { height: COMPANION_BAR_H_PHONE },
               }}
             >
-              <IconWrapper
-                icon={isFullscreen ? "mdi:fullscreen-exit" : "mdi:fullscreen"}
-                size={20}
-              />
-            </IconButton>
+              <IconButton
+                data-testid="companion-fullscreen"
+                onClick={toggleFullscreen}
+                aria-label={isFullscreen ? "Exit full screen" : "Full screen"}
+                size="small"
+                sx={{
+                  // Shaped like the player's own bar - the same dark fill, the same rounded-rect
+                  // rather than a circle - so sitting on it reads as one more control in the run
+                  // and not as a badge dropped on the picture.
+                  color: "#fff", bgcolor: "rgba(15,12,41,0.72)", borderRadius: 1.5, height: 32, width: 32,
+                  "&:hover": { bgcolor: "rgba(15,12,41,0.9)" },
+                  // Down with the player's bar: invisible and untouchable, but still in the tab
+                  // order - a keyboard user who tabs onto it brings the bar back (onFocusCapture
+                  // on the box), which is strictly more than a `visibility: hidden` control offers.
+                  opacity: controlsVisible ? 1 : 0,
+                  pointerEvents: controlsVisible ? "auto" : "none",
+                  transition: "opacity 200ms ease",
+                  "&:focus-visible": { opacity: 1, pointerEvents: "auto", outline: "2px solid #fff" },
+                  [PHONE]: { width: 44, height: 44 },
+                }}
+              >
+                <IconWrapper
+                  icon={isFullscreen ? "mdi:fullscreen-exit" : "mdi:fullscreen"}
+                  size={20}
+                />
+              </IconButton>
+            </Box>
             {activeCheckIn && (
               <AutoPauseCheckIn
                 checkIn={activeCheckIn}
+                practice={passed.has(activeCheckIn.id)}
                 onAnswer={onAnswer}
                 onContinue={() => {
                   setActiveCheckIn(null);
@@ -838,15 +956,29 @@ export function VideoCompanion({
             {duration > 0 &&
               liveCheckIns.map((c) => {
                 const isAnswered = answered.has(c.id);
+                // Passed on an earlier visit and due again in this one: an outline, not a fill.
+                // Filling it would say "answered" of a check-in the player is about to ask, which
+                // is how the markers and the questions came to disagree.
+                const passedEarlier = !isAnswered && passed.has(c.id);
                 return (
-                  <Tooltip key={c.id} title={`${fmt(c.timestamp_seconds)} · ${c.concept || "Check-in"}`} arrow>
+                  <Tooltip
+                    key={c.id}
+                    title={`${fmt(c.timestamp_seconds)} · ${c.concept || "Check-in"}${
+                      passedEarlier ? " · passed before, asked again for practice" : ""
+                    }`}
+                    arrow
+                  >
                     <Box
                       onClick={() => seekTo(Math.max(c.timestamp_seconds - 2, 0))}
                       sx={{
                         position: "absolute", top: "50%", left: `${(c.timestamp_seconds / duration) * 100}%`,
                         transform: "translate(-50%, -50%)", width: 13, height: 13, borderRadius: 999, cursor: "pointer",
-                        background: isAnswered ? "#16a34a" : "linear-gradient(135deg, #6366f1, #ec4899)",
-                        border: "2.5px solid var(--card-bg, #fff)",
+                        background: isAnswered
+                          ? "#16a34a"
+                          : passedEarlier
+                            ? "color-mix(in srgb, #16a34a 22%, var(--card-bg, #fff))"
+                            : "linear-gradient(135deg, #6366f1, #ec4899)",
+                        border: passedEarlier ? "2.5px solid #16a34a" : "2.5px solid var(--card-bg, #fff)",
                         boxShadow: isAnswered ? "0 0 0 3px color-mix(in srgb,#16a34a 25%,transparent)" : "0 0 10px color-mix(in srgb,#a855f7 70%,transparent)",
                         transition: "transform 120ms ease", "&:hover": { transform: "translate(-50%, -50%) scale(1.25)" },
                         // A 13px dot is not a target for a thumb: an invisible 44px hit area around it.
