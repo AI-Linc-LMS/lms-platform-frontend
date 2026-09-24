@@ -113,11 +113,6 @@ export function useArticleNarration(html: string, segments?: NarrationSegment[])
   /** "A run is alive", tracked outside React state so a click landing inside the
    *  async gap is never misread by a stale render. */
   const activeRef = useRef(false);
-  /** Read inside start(), never closed over: the body reports its blocks from an effect,
-   *  so a callback that baked them in would narrate the previous article's layout. */
-  const segmentsRef = useRef<NarrationSegment[] | undefined>(segments);
-  segmentsRef.current = segments;
-
   const audios = () => (liveAudioRef.current ??= new Set());
   const urls = () => (liveUrlsRef.current ??= new Set());
 
@@ -174,7 +169,11 @@ export function useArticleNarration(html: string, segments?: NarrationSegment[])
   }, []);
 
   const start = useCallback(async () => {
-    const segs = segmentsRef.current;
+    // `segments` is a dependency rather than a ref: the body reports its blocks from an
+    // effect, so a callback that had baked in an earlier value would narrate the previous
+    // article's layout. Rebuilding this callback when they change is the cheap, correct
+    // way to stay current.
+    const segs = segments;
     // Blocks are what makes following along possible. Without them (nothing has reported
     // the rendered body yet) narration still works exactly as it did before - it simply
     // cannot say where it is, which is better than pointing at the wrong paragraph.
@@ -276,7 +275,7 @@ export function useArticleNarration(html: string, segments?: NarrationSegment[])
       setLoading(false);
       setActiveId(null);
     }
-  }, [html, playWithBrowser, stop]);
+  }, [html, segments, playWithBrowser, stop]);
 
   // Reads the ref rather than render state, so a click during the synthesis wait stops
   // the run instead of starting a second one. Deliberately NOT paired with a disabled

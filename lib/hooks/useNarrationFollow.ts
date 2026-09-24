@@ -63,9 +63,26 @@ export interface NarrationFollowOptions {
 }
 
 export function useNarrationFollow({ activeId, containerRef, active }: NarrationFollowOptions) {
-  const [following, setFollowing] = useState(true);
+  /** "The learner has taken the page over." Stored as the negative because that is the
+   *  thing an event causes; `following` is derived from it. */
+  const [suspended, setSuspended] = useState(false);
+  const [wasActive, setWasActive] = useState(active);
+  if (wasActive !== active) {
+    // React's documented way to adjust state when an input changes: it re-renders this
+    // component before committing, with no extra paint and no effect. Doing it in an
+    // effect instead would be a cascading render - and doing it not at all would leave
+    // the NEXT run of the narration suspended because of a scroll during the last one.
+    setWasActive(active);
+    if (active) setSuspended(false);
+  }
+  const following = !suspended;
+  /** Mirrored so the highlight effect can read it WITHOUT listing it as a dependency:
+   *  depending on it would re-run that effect when following is switched back on and
+   *  scroll a second time. Synced from an effect, never written during render. */
   const followingRef = useRef(true);
-  followingRef.current = following;
+  useEffect(() => {
+    followingRef.current = following;
+  }, [following]);
   /** The element currently highlighted, so the class can be cleared even after the body
    *  has been re-rendered out from under us. */
   const markedRef = useRef<HTMLElement | null>(null);
@@ -108,16 +125,16 @@ export function useNarrationFollow({ activeId, containerRef, active }: Narration
     if (followingRef.current) scrollTo(el);
   }, [activeId, containerRef, scrollTo]);
 
-  // Clear the highlight when narration stops, and re-arm following for the next run.
+  // Clear the highlight when narration stops. (Re-arming following is done above, as a
+  // render-time adjustment, so it never costs an extra render.)
   useEffect(() => {
-    if (active) setFollowing(true);
-    else markedRef.current?.removeAttribute(NARRATING_ATTR);
+    if (!active) markedRef.current?.removeAttribute(NARRATING_ATTR);
   }, [active]);
 
   // Give the page back the moment the learner steers it. No timers, no `scroll` handler.
   useEffect(() => {
     if (!active) return;
-    const suspend = () => setFollowing((f) => (f ? false : f));
+    const suspend = () => setSuspended((s) => (s ? s : true));
     const onKey = (e: KeyboardEvent) => {
       if (SCROLL_KEYS.has(e.key)) suspend();
     };
@@ -144,7 +161,7 @@ export function useNarrationFollow({ activeId, containerRef, active }: Narration
   /** Turn following back on and catch up with the voice. Wired to a visible control:
    *  auto-resuming would be the "page that fights you" this hook exists to avoid. */
   const resume = useCallback(() => {
-    setFollowing(true);
+    setSuspended(false);
     const container = containerRef.current;
     if (!container || !activeId || !SAFE_ID.test(activeId)) return;
     const el = container.querySelector<HTMLElement>(`[${NARRATE_ATTR}="${activeId}"]`);
@@ -153,7 +170,7 @@ export function useNarrationFollow({ activeId, containerRef, active }: Narration
 
   /** Let the page hand over an explicit navigation (a table-of-contents jump) as the
    *  learner taking control, which it is. */
-  const suspend = useCallback(() => setFollowing(false), []);
+  const suspend = useCallback(() => setSuspended(true), []);
 
   return { following, resume, suspend };
 }
