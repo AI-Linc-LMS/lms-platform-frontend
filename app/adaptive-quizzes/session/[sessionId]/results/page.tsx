@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { Box, ButtonBase, Container, Typography } from "@mui/material";
 import { PHONE } from "@/components/common/mobile/phone";
 import { AnimatePresence, motion } from "framer-motion";
@@ -12,10 +13,11 @@ import { AdaptiveSectionHero } from "@/components/adaptive-quiz/shared/AdaptiveS
 import { SourceAttemptBreadcrumb } from "@/components/adaptive-quiz/shared/SourceAttemptBreadcrumb";
 import { useToast } from "@/components/common/Toast";
 import { NextStepCard, useNextStep } from "@/components/adaptive-course/NextStepCard";
-import { topicFromReturnHref } from "@/lib/adaptive/courseFlow";
+import { quizReturnLabel, resolveQuizReturn } from "@/lib/adaptive/quizReturn";
 import { adaptiveQuizService } from "@/lib/services/adaptive-quiz.service";
 import { useAdaptiveFeatureGuard } from "@/hooks/useAdaptiveFeatureGuard";
-import { useReturnTo } from "@/lib/hooks/useReturnTo";
+import { useQuizFrom } from "@/lib/hooks/useQuizFrom";
+import { withFrom } from "@/lib/utils/return-to";
 import { useStreamingNarration } from "@/hooks/useStreamingNarration";
 import { ResultStrip } from "@/components/adaptive-quiz/results/ResultStrip";
 import { SkillMasteryHeatmap } from "@/components/adaptive-quiz/results/SkillMasteryHeatmap";
@@ -50,25 +52,30 @@ function extractBackendMessage(e: unknown, fallback: string): string {
 export default function AdaptiveQuizResultsPage() {
   const params = useParams<{ sessionId: string }>();
   const router = useRouter();
-  // The quiz engine is shared: reached from the standalone library AND from inside an adaptive
-  // course. Hard-coding "/adaptive-quizzes" ended an in-course learner's session in a different
-  // product than the one they were working in. `?from=` is threaded through start -> session ->
-  // results by the launcher; the library stays the fallback for a direct visit.
-  const returnTo = useReturnTo({ href: "/adaptive-quizzes", label: "Back to library" });
+  const { t } = useTranslation("common");
+  // The quiz engine is shared: reached from the standalone library, a roadmap step AND from inside
+  // an adaptive course. Back goes to the page that launched it (`?from=`), else to the course topic
+  // the attempt belongs to (the server resolves a re-quiz through its original attempt), else to the
+  // library. `?from=` alone was not enough: the re-quiz hop dropped it, so a learner who started in
+  // a course finished a re-quiz on the library.
+  const from = useQuizFrom();
   const featureOn = useAdaptiveFeatureGuard();
   const { showToast } = useToast();
   const [session, setSession] = useState<AdaptiveSessionDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [startingRequiz, setStartingRequiz] = useState(false);
+  const back = resolveQuizReturn(from, session?.origin);
+  const backWords = quizReturnLabel(back);
+  const backLabel = t(backWords.key, backWords.values);
   // This results screen is shared with the standalone quiz library. It offers Next only when the
-  // quiz was launched from a course topic (its ?from= says which) and the attempt is finished; a
-  // quiz taken from the library has nowhere "next" to go. Called before the early returns below.
-  const origin = topicFromReturnHref(returnTo.href);
+  // attempt belongs to a course topic and is finished; a quiz taken from the library has nowhere
+  // "next" to go. Called before the early returns below.
+  const topic = back.kind === "topic" ? back : null;
   const { next } = useNextStep(
-    origin?.courseId ?? NaN,
-    origin?.submoduleId ?? NaN,
-    origin && session?.status === "completed" ? `quiz:${session.config.id}` : null,
+    topic?.courseId ?? NaN,
+    topic?.submoduleId ?? NaN,
+    topic && session?.status === "completed" ? `quiz:${session.config.id}` : null,
   );
 
   async function handleStartPath() {
@@ -76,7 +83,8 @@ export default function AdaptiveQuizResultsPage() {
     setStartingRequiz(true);
     try {
       const res = await adaptiveQuizService.spawnRequiz(params.sessionId);
-      router.push(`/adaptive-quizzes/session/${res.session_id}`);
+      // Carry the launch point into the re-quiz, so its results page returns there too.
+      router.push(withFrom(`/adaptive-quizzes/session/${res.session_id}`, from));
     } catch (e) {
       // Surface the backend's `detail` (e.g. "There are no MCQs tagged with X…")
       // via toast instead of a generic "Request failed 400" - the results page
@@ -236,19 +244,35 @@ export default function AdaptiveQuizResultsPage() {
             accent="pink"
             rightSlot={
               <ButtonBase
-                onClick={() => router.push(returnTo.href)}
+                data-testid="quiz-results-back"
+                onClick={() => router.push(back.href)}
+                title={backLabel}
                 sx={{
                   px: 2.25,
                   py: 1,
+                  gap: 0.5,
                   borderRadius: 999,
                   fontWeight: 700,
                   color: "text.secondary",
                   border: "1px solid color-mix(in srgb, var(--border-default) 80%, transparent)",
                   fontSize: "0.82rem",
-                  [PHONE]: { minHeight: 44 },
+                  // A topic's name can be long: one line, cut with an ellipsis, on a wide screen...
+                  maxWidth: 360,
+                  "& .quiz-back-label": { minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" },
+                  // ...and up to two lines on a phone, where the button has the whole width.
+                  [PHONE]: {
+                    minHeight: 44,
+                    maxWidth: "100%",
+                    borderRadius: 3,
+                    textAlign: "start",
+                    "& .quiz-back-label": {
+                      whiteSpace: "normal", display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical",
+                    },
+                  },
                 }}
               >
-                ← {returnTo.label}
+                <Box component="span" aria-hidden sx={{ flexShrink: 0 }}>←</Box>
+                <Box component="span" className="quiz-back-label">{backLabel}</Box>
               </ButtonBase>
             }
           />

@@ -12,6 +12,8 @@ import {
   type PracticeState,
 } from "@/lib/services/adaptive-course.service";
 import { PHONE } from "@/components/common/mobile/phone";
+import { topicHref } from "@/lib/adaptive/courseFlow";
+import { withFrom } from "@/lib/utils/return-to";
 
 const KIND_CARDS: { kind: PracticeKind; icon: string; title: string; sub: string }[] = [
   { kind: "article", icon: "mdi:file-document-outline", title: "Article", sub: "Explainer at your level" },
@@ -34,7 +36,16 @@ const KIND_META: Record<PracticeKind, { icon: string; color: string; bg: string;
   coding: { icon: "mdi:laptop", color: "#ec4899", bg: "#fdf2f8", unit: "problems" },
 };
 
-export function AdditionalPractice({ courseId, submoduleId }: { courseId: number; submoduleId: number }) {
+export function AdditionalPractice({
+  courseId,
+  submoduleId,
+  returnHref,
+}: {
+  courseId: number;
+  submoduleId: number;
+  /** Where a practice quiz's results return to: the topic page, with the origin it was reached by. */
+  returnHref?: string;
+}) {
   const router = useRouter();
   const [state, setState] = useState<PracticeState | null>(null);
   const [open, setOpen] = useState(false); // collapsed by default - optional, expand on demand
@@ -67,7 +78,9 @@ export function AdditionalPractice({ courseId, submoduleId }: { courseId: number
   const btnUnit = kind === "article" ? "explainer" : `${count} ${KIND_META[kind].unit}`;
 
   const openItem = (it: PracticeItem) => {
-    if (it.kind === "quiz" && it.config_id) router.push(`/adaptive-quizzes/start?configId=${it.config_id}`);
+    if (it.kind === "quiz" && it.config_id) {
+      router.push(withFrom(`/adaptive-quizzes/start?configId=${it.config_id}`, returnHref ?? topicHref(courseId, submoduleId)));
+    }
     else if (it.kind === "coding" && it.problem_id) router.push(`/adaptive-courses/${courseId}/submodule/${submoduleId}/coding/${it.problem_id}?configId=${it.config_id}`);
     else if (it.kind === "article" && it.article_id) router.push(`/adaptive-courses/${courseId}/submodule/${submoduleId}/article/${it.article_id}`);
   };

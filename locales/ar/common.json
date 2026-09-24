@@ -2755,5 +2755,12 @@
     "interviewSetupCta": "يجري إعداد المقابلة",
     "interviewClosedCta": "لم تعد هذه المقابلة متاحة",
     "interviewDoneClosed": "تم · لم تعد هذه المقابلة متاحة"
+  },
+  "adaptiveQuizRuntime": {
+    "back": "رجوع",
+    "backToTopic": "العودة إلى {{title}}",
+    "backToTopicUnnamed": "العودة إلى الموضوع",
+    "backToRoadmap": "العودة إلى خريطة التعلم",
+    "backToLibrary": "العودة إلى المكتبة"
   }
 }

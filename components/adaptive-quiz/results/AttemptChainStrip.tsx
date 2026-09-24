@@ -5,6 +5,8 @@ import { Icon } from "@iconify/react";
 import { useRouter } from "next/navigation";
 import type { AdaptiveSessionDetail } from "@/lib/types/adaptive-quiz";
 import { PHONE } from "@/components/common/mobile/phone";
+import { useQuizFrom } from "@/lib/hooks/useQuizFrom";
+import { withFrom } from "@/lib/utils/return-to";
 
 type Chain = NonNullable<AdaptiveSessionDetail["attempt_chain"]>;
 type Attempt = Chain["attempts"][number];
@@ -15,13 +17,15 @@ type Attempt = Chain["attempts"][number];
  */
 export function AttemptChainStrip({ chain }: { chain?: Chain }) {
   const router = useRouter();
+  // Every attempt in the chain returns to the same place as this one.
+  const from = useQuizFrom();
   if (!chain || chain.total <= 1) return null;
 
   const go = (a: Attempt) => {
     if (a.is_current) return;
     // A completed/abandoned attempt has a results page; an in-progress one resumes live.
-    if (a.status === "active") router.push(`/adaptive-quizzes/session/${a.session_id}`);
-    else router.push(`/adaptive-quizzes/session/${a.session_id}/results`);
+    if (a.status === "active") router.push(withFrom(`/adaptive-quizzes/session/${a.session_id}`, from));
+    else router.push(withFrom(`/adaptive-quizzes/session/${a.session_id}/results`, from));
   };
 
   return (

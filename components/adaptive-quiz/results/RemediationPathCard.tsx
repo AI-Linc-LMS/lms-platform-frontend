@@ -9,6 +9,8 @@ import { gridStagger, fadeRise } from "@/components/scorecard/shared/motion";
 import { AIPill } from "../shared/AIPill";
 import { adaptiveQuizService } from "@/lib/services/adaptive-quiz.service";
 import { useVisibilityRefresh } from "@/lib/hooks/useVisibilityRefresh";
+import { useQuizFrom } from "@/lib/hooks/useQuizFrom";
+import { withFrom } from "@/lib/utils/return-to";
 import type { AdaptiveAINarration, RemediationProgress } from "@/lib/types/adaptive-quiz";
 import { PHONE } from "@/components/common/mobile/phone";
 
@@ -66,6 +68,8 @@ function stepHref(step: RemediationStep): string | null {
 
 export function RemediationPathCard({ steps, sessionId, onStartPath }: RemediationPathCardProps) {
   const router = useRouter();
+  // The re-quiz returns to the same place as the results page it was opened from.
+  const from = useQuizFrom();
   const [progress, setProgress] = useState<RemediationProgress | null>(null);
 
   // Pull live completion + re-fetch when the tab regains focus, so finishing a step in another
@@ -99,7 +103,7 @@ export function RemediationPathCard({ steps, sessionId, onStartPath }: Remediati
   const firstActionable = steps.find((s) => !doneByStep[s.step] && (!isRequiz(s) || contentDone));
 
   const openRequiz = () => {
-    if (requizActive && requizSessionId) router.push(`/adaptive-quizzes/session/${requizSessionId}`);
+    if (requizActive && requizSessionId) router.push(withFrom(`/adaptive-quizzes/session/${requizSessionId}`, from));
     else onStartPath?.();
   };
   const openStep = (step: RemediationStep) => {
@@ -237,7 +241,7 @@ export function RemediationPathCard({ steps, sessionId, onStartPath }: Remediati
                   onClick={() => {
                     if (locked) return;
                     if (done && reqStep && requizSessionId) {
-                      router.push(`/adaptive-quizzes/session/${requizSessionId}/results`);
+                      router.push(withFrom(`/adaptive-quizzes/session/${requizSessionId}/results`, from));
                       return;
                     }
                     openStep(step);

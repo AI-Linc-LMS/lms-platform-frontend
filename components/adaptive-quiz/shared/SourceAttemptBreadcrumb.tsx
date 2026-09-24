@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { Box, ButtonBase, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PHONE } from "@/components/common/mobile/phone";
+import { useQuizFrom } from "@/lib/hooks/useQuizFrom";
+import { withFrom } from "@/lib/utils/return-to";
 
 interface SourceAttemptBreadcrumbProps {
   source: {
@@ -38,10 +40,12 @@ function relativeTime(iso: string | null): string {
  */
 export function SourceAttemptBreadcrumb({ source, onBeforeNavigate }: SourceAttemptBreadcrumbProps) {
   const router = useRouter();
+  // The source attempt's results keep the same way back as this page.
+  const from = useQuizFrom();
 
   function handleClick() {
     if (onBeforeNavigate && !onBeforeNavigate()) return;
-    router.push(`/adaptive-quizzes/session/${source.session_id}/results`);
+    router.push(withFrom(`/adaptive-quizzes/session/${source.session_id}/results`, from));
   }
 
   return (

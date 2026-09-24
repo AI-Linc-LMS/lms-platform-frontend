@@ -6,6 +6,8 @@ import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
 import type { AdaptiveAttemptSummary } from "@/lib/services/adaptive-quiz.service";
 import { PHONE } from "@/components/common/mobile/phone";
+import { QUIZ_LIBRARY_HREF } from "@/lib/adaptive/quizReturn";
+import { withFrom } from "@/lib/utils/return-to";
 
 interface RecentAttemptsRowProps {
   attempts: AdaptiveAttemptSummary[];
@@ -50,10 +52,12 @@ export function RecentAttemptsRow({ attempts }: RecentAttemptsRowProps) {
   if (attempts.length === 0) return null;
 
   function openAttempt(a: AdaptiveAttemptSummary) {
+    // Opened from the library, so Back returns to the library - without this the results page
+    // would fall back to the attempt's course topic, somewhere the learner did not come from.
     if (a.status === "active") {
-      router.push(`/adaptive-quizzes/session/${a.session_id}`);
+      router.push(withFrom(`/adaptive-quizzes/session/${a.session_id}`, QUIZ_LIBRARY_HREF));
     } else {
-      router.push(`/adaptive-quizzes/session/${a.session_id}/results`);
+      router.push(withFrom(`/adaptive-quizzes/session/${a.session_id}/results`, QUIZ_LIBRARY_HREF));
     }
   }
 

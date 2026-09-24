@@ -35,6 +35,14 @@ export interface AdaptiveQuestion {
   question_image_alt?: string | null;
 }
 
+/** The course topic a quiz attempt belongs to - for a re-quiz, its original attempt's topic. */
+export interface AdaptiveSessionOrigin {
+  course_id: number;
+  course_title: string;
+  submodule_id: number;
+  submodule_title: string;
+}
+
 /** Live completion of a result-page remediation path (GET .../remediation-progress/). */
 export interface RemediationProgress {
   steps: Array<{ step: number; content_type: string; done: boolean }>;
@@ -221,6 +229,9 @@ export interface AdaptiveSessionDetail {
       is_current: boolean;
     }>;
   };
+  /** The course topic this attempt belongs to, so the results screen's Back can return to it
+   *  however the page was reached. Null for a quiz in no course; absent from an older server. */
+  origin?: AdaptiveSessionOrigin | null;
 }
 
 export type ConfidenceLevel = 1 | 2 | 3 | 4;

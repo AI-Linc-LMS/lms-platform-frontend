@@ -3151,5 +3151,12 @@
     "interviewSetupCta": "Interview is being set up",
     "interviewClosedCta": "This interview is no longer open",
     "interviewDoneClosed": "Done · this interview is no longer open"
+  },
+  "adaptiveQuizRuntime": {
+    "back": "Back",
+    "backToTopic": "Back to {{title}}",
+    "backToTopicUnnamed": "Back to topic",
+    "backToRoadmap": "Back to roadmap",
+    "backToLibrary": "Back to library"
   }
 }
