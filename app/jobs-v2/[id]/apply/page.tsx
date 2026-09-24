@@ -162,7 +162,7 @@ export default function ApplyJobRoutePage() {
     );
   }
 
-  /* ---- the five gates, in the order the API resolves them -------------- */
+  /* ---- the five gates: applied, closed, external, ineligible, then the form ---- */
   if (job.has_applied) {
     const application = applicationLink.application;
     return chrome(
@@ -176,6 +176,16 @@ export default function ApplyJobRoutePage() {
     );
   }
 
+  // Closed before anything that could lead to applying. A bookmarked or emailed apply link to a
+  // role whose deadline has passed checked only the status, so it showed the whole form and
+  // failed on submit (the server refuses it, 400). `is_open` is the server's answer - published,
+  // status 'active', deadline not passed - and the status still closes a role on an older backend
+  // that omits it. Before the external gate too: a closed role is closed wherever its applications
+  // go.
+  if (job.is_open === false || job.status !== "active") {
+    return chrome(<ApplyGate variant="closed" job={job} apply={apply} />);
+  }
+
   if (job.apply_link?.trim()) {
     return chrome(
       <>
@@ -183,10 +193,6 @@ export default function ApplyJobRoutePage() {
         <ApplyDialogs apply={apply} />
       </>,
     );
-  }
-
-  if (job.status !== "active") {
-    return chrome(<ApplyGate variant="closed" job={job} apply={apply} />);
   }
 
   if (job.eligible_to_apply === false) {

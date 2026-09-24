@@ -118,6 +118,44 @@ export function eligibilityCriteria(job: JobV2 | null, t: (k: string, o?: object
   return out;
 }
 
+/**
+ * Why a role takes no applications, or null when it is open. The one sentence both the detail
+ * page's Apply button and the apply route's closed page show, so a bookmarked apply link and the
+ * job page cannot explain the same closure two ways.
+ *
+ * `is_open` is the server's one answer (jobs_v2/openness.py: published, status 'active', deadline
+ * not passed), the same rule the board lists by and apply enforces. An older backend omits it,
+ * and `undefined` deliberately changes nothing; the status still closes a role on its own.
+ */
+export function closedApplyReason(
+  job: JobV2,
+  t: (k: string, o?: object) => string,
+): string | null {
+  const closedByDeadline = job.is_open === false;
+  if (!closedByDeadline && !(job.status && job.status !== "active")) return null;
+  const closedOn = closedByDeadline ? formatDate(job.application_deadline) : null;
+  const byStatus: Record<string, string> = {
+    inactive: t("jobsV2.apply.closedInactive", {
+      defaultValue: "The employer has paused this posting, so applications are not being accepted.",
+    }),
+    on_hold: t("jobsV2.apply.closedOnHold", {
+      defaultValue: "This role is on hold. The employer has not closed it, but it is not taking applications right now.",
+    }),
+    closed: t("jobsV2.apply.closedClosed", { defaultValue: "This role has closed and is no longer taking applications." }),
+    completed: t("jobsV2.apply.closedCompleted", { defaultValue: "Hiring for this role is complete." }),
+  };
+  return (
+    (job.status ? byStatus[job.status] : undefined) ??
+    (closedOn
+      ? t("jobsV2.apply.closedOnDate", {
+          defaultValue: "This role closed on {{date}}.",
+          date: closedOn,
+        })
+      : undefined) ??
+    t("jobsV2.apply.closedGeneric", { defaultValue: "This role is not accepting applications." })
+  );
+}
+
 export function useApply(job: JobV2 | null, options: UseApplyOptions = {}): ApplyState {
   const { onChanged } = options;
   const { t } = useTranslation("common");
@@ -156,33 +194,11 @@ export function useApply(job: JobV2 | null, options: UseApplyOptions = {}): Appl
     }
     // A closed role — whether its status says so or its deadline passed — gets the button
     // disabled and a reason, never a live Apply button behind a saved row or an emailed link.
-    // `is_open` is the server's one answer (jobs_v2/openness.py: published, status 'active',
-    // deadline not passed), the same rule the board lists by and apply enforces. An older
-    // backend omits it, and `undefined` deliberately changes nothing.
-    const closedByDeadline = job.is_open === false;
-    if (closedByDeadline || (job.status && job.status !== "active")) {
-      const closedOn = closedByDeadline ? formatDate(job.application_deadline) : null;
-      const byStatus: Record<string, string> = {
-        inactive: t("jobsV2.apply.closedInactive", {
-          defaultValue: "The employer has paused this posting, so applications are not being accepted.",
-        }),
-        on_hold: t("jobsV2.apply.closedOnHold", {
-          defaultValue: "This role is on hold. The employer has not closed it, but it is not taking applications right now.",
-        }),
-        closed: t("jobsV2.apply.closedClosed", { defaultValue: "This role has closed and is no longer taking applications." }),
-        completed: t("jobsV2.apply.closedCompleted", { defaultValue: "Hiring for this role is complete." }),
-      };
+    const closed = closedApplyReason(job, t as (k: string, o?: object) => string);
+    if (closed) {
       return {
         label: t("jobsV2.apply.closedLabel", { defaultValue: "Applications closed" }),
-        reason:
-          (job.status ? byStatus[job.status] : undefined) ??
-          (closedOn
-            ? t("jobsV2.apply.closedOnDate", {
-                defaultValue: "This role closed on {{date}}.",
-                date: closedOn,
-              })
-            : undefined) ??
-          t("jobsV2.apply.closedGeneric", { defaultValue: "This role is not accepting applications." }),
+        reason: closed,
       };
     }
     return null;
