@@ -1244,7 +1244,11 @@
     "publishedWithError": "The assessment was published, but the server also reported: {{reason}}",
     "publishUnknown": "The assessment is saved, but we could not confirm whether it was published: {{reason}}",
     "publishAsConfigured": "Publish as configured",
-    "saveAsConfigured": "Save as configured"
+    "saveAsConfigured": "Save as configured",
+    "activate": "Activate assessment",
+    "deactivate": "Deactivate assessment",
+    "activationFailed": "Your changes were saved, but the assessment was not activated. {{reason}}",
+    "deactivationFailed": "Your changes were saved, but the assessment was not deactivated. {{reason}}"
   },
   "assessmentDevice": {
     "sectionTitle": "Device access",

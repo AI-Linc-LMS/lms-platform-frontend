@@ -9,6 +9,21 @@ export interface ApiErrorPayload {
   [key: string]: any;
 }
 
+/**
+ * An Error that remembers the HTTP status it came from. The message alone cannot tell "you may
+ * not change this paper" (403) from "this change is invalid" (400), and a caller that saves
+ * before it publishes has to act differently on each.
+ */
+function errorWithStatus(message: string, status: number | undefined): Error & { status: number | null } {
+  return Object.assign(new Error(message), { status: typeof status === "number" ? status : null });
+}
+
+/** The HTTP status a service call failed with, or null when it never reached the server. */
+export function apiErrorStatus(e: unknown): number | null {
+  const status = (e as { status?: unknown } | null)?.status;
+  return typeof status === "number" ? status : null;
+}
+
 export interface MCQ {
   question_text: string;
   option_a: string;
@@ -607,7 +622,41 @@ export const publishAssessment = async (
       error.response?.data?.message ||
       error.response?.data?.detail ||
       "Failed to publish assessment";
-    throw new Error(message);
+    throw errorWithStatus(message, error.response?.status);
+  }
+};
+
+/**
+ * Activate or deactivate an assessment. PATCH .../assessments/{id}/ with `{ is_active }` and
+ * NOTHING else.
+ *
+ * The body is the contract. The server authorises a PATCH that carries only `is_active` the way
+ * it authorises publish: an instructor who may publish a paper may switch it on and off. A PATCH
+ * that also carries content is an edit, which needs the right to change the paper's content. So
+ * folding the switch into a content save refused it for an instructor who can publish but not
+ * edit, and left a paper they had published as inactive with no way to activate it.
+ *
+ * Activating a paper with no questions is refused (400) with the same message publish gives.
+ */
+export const setAssessmentActive = async (
+  clientId: string | number,
+  assessmentId: number,
+  isActive: boolean,
+): Promise<Assessment> => {
+  try {
+    const response = await apiClient.patch(
+      `/admin-dashboard/api/clients/${clientId}/assessments/${assessmentId}/`,
+      { is_active: isActive },
+    );
+    return response.data;
+  } catch (err) {
+    const error = err as AxiosError<ApiErrorPayload>;
+    const message =
+      error.response?.data?.error ||
+      error.response?.data?.message ||
+      error.response?.data?.detail ||
+      (isActive ? "Failed to activate the assessment" : "Failed to deactivate the assessment");
+    throw errorWithStatus(message, error.response?.status);
   }
 };
 
@@ -651,7 +700,7 @@ export const updateAssessment = async (
           return `${key}: ${value}`;
         })
         .join("; ");
-      throw new Error(errorMessages || "Validation error");
+      throw errorWithStatus(errorMessages || "Validation error", 400);
     }
 
     const message =
@@ -659,7 +708,7 @@ export const updateAssessment = async (
       error.response?.data?.message ||
       error.response?.data?.detail ||
       "Failed to update assessment";
-    throw new Error(message);
+    throw errorWithStatus(message, error.response?.status);
   }
 };
 
@@ -1787,6 +1836,7 @@ export const adminAssessmentService = {
   grantAssessmentRetake,
   revokeAssessmentRetake,
   publishAssessment,
+  setAssessmentActive,
   updateAssessment,
   deleteAssessment,
   duplicateAssessment,

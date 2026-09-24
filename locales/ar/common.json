@@ -685,7 +685,11 @@
     "publishedWithError": "تم نشر التقييم، لكن الخادم أبلغ أيضًا عن: {{reason}}",
     "publishUnknown": "تم حفظ التقييم، لكن تعذّر التأكد من نشره: {{reason}}",
     "publishAsConfigured": "النشر كما هو مُعدّ",
-    "saveAsConfigured": "الحفظ كما هو مُعدّ"
+    "saveAsConfigured": "الحفظ كما هو مُعدّ",
+    "activate": "تفعيل التقييم",
+    "deactivate": "إلغاء تفعيل التقييم",
+    "activationFailed": "تم حفظ تغييراتك، لكن لم يتم تفعيل التقييم. {{reason}}",
+    "deactivationFailed": "تم حفظ تغييراتك، لكن لم يتم إلغاء تفعيل التقييم. {{reason}}"
   },
   "assessments": {
     "title": "التقييمات",
