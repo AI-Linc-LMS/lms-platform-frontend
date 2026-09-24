@@ -40,6 +40,10 @@ export function pointsFactors(item: PointsBreakdownItem): { factors: PointsFacto
   const afterDecay = Math.min(b.after_decay, base);
   const factors: PointsFactor[] = [{ text: `${Math.round(base)} base` }];
   if (afterDecay < base) factors.push({ text: `time −${Math.round(base - afterDecay)}`, tone: "warn" });
+  // A quiz pays harder right answers more; without this chip the factors would not multiply out
+  // to the points shown.
+  const diff = b.difficulty_mult ?? 1;
+  if (item.kind === "quiz" && diff > 1.004) factors.push({ text: `harder questions ×${diff.toFixed(2)}`, tone: "good" });
   const accLabel = KIND_CORRECTNESS[item.kind];
   if (accLabel) {
     const pct = Math.round(Math.max(0, Math.min(1, b.correctness_factor)) * 100);
