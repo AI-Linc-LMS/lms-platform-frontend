@@ -26,6 +26,7 @@ import {
   Student,
   CourseCompletionStats,
 } from "@/lib/services/admin/admin-student.service";
+import { completionStatsFor } from "@/lib/utils/student-risk";
 import { StudentCards } from "./StudentCards";
 import { useIsPhone } from "./mobile";
 import { StudentResumeDialog } from "./StudentResumeDialog";
@@ -502,7 +503,7 @@ export function StudentsTable({
               </TableRow>
             ) : (
               students.map((student) => {
-                const stats = completionStats[student.user_id] || completionStats[student.id];
+                const stats = completionStatsFor(completionStats, student);
                 // Live sessions are the answer this column should give; the roll-call activity
                 // system is what it used to give and is kept as a fallback.
                 const liveAttendance = student.live_attendance;
@@ -515,6 +516,7 @@ export function StudentsTable({
                 return (
                   <TableRow
                     key={student.id}
+                    data-testid="student-row"
                     sx={{
                       "&:nth-of-type(even)": {
                         backgroundColor:

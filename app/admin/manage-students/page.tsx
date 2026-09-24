@@ -29,15 +29,15 @@ import { QuickEnrollStudentDialog } from "../../../components/admin/manage-stude
 import { EnrollmentJobHistory } from "../../../components/admin/manage-students/EnrollmentJobHistory";
 import { BulkActionToolbar } from "../../../components/admin/manage-students/BulkActionToolbar";
 import {
+  completionStatsFor,
   matchesSegment,
+  segmentCounts,
+  STUDENT_SIGNALS,
   type SegmentKey,
 } from "@/lib/utils/student-risk";
 import { InfoButton, RiskCriteriaContent } from "@/components/common/InfoPopover";
 import { PHONE } from "@/components/common/mobile/phone";
-import {
-  PhoneStudentSegments,
-  STUDENT_SEGMENTS,
-} from "../../../components/admin/manage-students/PhoneStudentSegments";
+import { PhoneStudentSegments } from "../../../components/admin/manage-students/PhoneStudentSegments";
 import {
   ResponsiveConfirm,
   useIsPhone,
@@ -100,12 +100,10 @@ const DEFAULT_DIRECTORY_STATE: DirectoryState = {
   sortOrder: "asc",
 };
 
+/** Every documented signal is a legal `?segment=` value - the table is the only list. */
 const SEGMENT_KEYS: SegmentKey[] = [
   "all",
-  "at_risk",
-  "inactive",
-  "low_completion",
-  "high_performers",
+  ...STUDENT_SIGNALS.map((s) => s.key),
 ];
 
 function parseDirectoryState(
@@ -609,8 +607,13 @@ export default function ManageStudentsPage() {
       segment !== "all" ||
       (searchTerm && searchTerm.trim())
   );
-  const { filteredStudents, paginatedStudents, totalCount, totalPages } =
-    useMemo(() => {
+  const {
+    filteredStudents,
+    paginatedStudents,
+    totalCount,
+    totalPages,
+    chipCounts,
+  } = useMemo(() => {
       // Step 1: Filter by search term (name or email)
       let filtered = allStudents;
       if (searchTerm && searchTerm.trim()) {
@@ -636,14 +639,18 @@ export default function ManageStudentsPage() {
         filtered = filtered.filter((s) => !s.has_saved_resume);
       }
 
-      // Step 2c: Engagement-health segment (at-risk / inactive / low completion / high performers)
+      // Step 2c: the chip counts, taken BEFORE the segment is applied and from the same
+      // predicate the filter below uses. That is what makes a chip's number equal the number of
+      // rows it opens: same population, same rule, one definition.
+      const counts = segmentCounts(filtered, (s) =>
+        completionStatsFor(completionStats, s)
+      );
+
+      // Step 2d: Engagement-health segment. One segment at a time - the chips are a single
+      // choice, so there is no AND/OR across overlapping signals to get wrong.
       if (segment !== "all") {
         filtered = filtered.filter((s) =>
-          matchesSegment(
-            segment,
-            s,
-            completionStats[s.user_id] ?? completionStats[s.id]
-          )
+          matchesSegment(segment, s, completionStatsFor(completionStats, s))
         );
       }
 
@@ -678,15 +685,15 @@ export default function ManageStudentsPage() {
             bValue = b.current_streak;
             break;
           case "completion_pct": {
-            const statsA = completionStats[a.user_id] ?? completionStats[a.id];
-            const statsB = completionStats[b.user_id] ?? completionStats[b.id];
+            const statsA = completionStatsFor(completionStats, a);
+            const statsB = completionStatsFor(completionStats, b);
             aValue = statsA?.completion_percentage ?? 0;
             bValue = statsB?.completion_percentage ?? 0;
             break;
           }
           case "attendance_pct": {
-            const statsA = completionStats[a.user_id] ?? completionStats[a.id];
-            const statsB = completionStats[b.user_id] ?? completionStats[b.id];
+            const statsA = completionStatsFor(completionStats, a);
+            const statsB = completionStatsFor(completionStats, b);
             aValue = statsA?.attendance_percentage ?? 0;
             bValue = statsB?.attendance_percentage ?? 0;
             break;
@@ -716,6 +723,7 @@ export default function ManageStudentsPage() {
         paginatedStudents: paginated,
         totalCount: total,
         totalPages: totalPagesCount,
+        chipCounts: counts,
       };
     }, [
       allStudents,
@@ -881,7 +889,7 @@ export default function ManageStudentsPage() {
       t("adminManageStudents.csvHeaderSavedResume"),
     ];
     const rows = filteredStudents.map((student) => {
-      const stats = completionStats[student.user_id] ?? completionStats[student.id];
+      const stats = completionStatsFor(completionStats, student);
       return [
         escapeCsvValue(student.name ?? ""),
         escapeCsvValue(student.email ?? ""),
@@ -948,7 +956,13 @@ export default function ManageStudentsPage() {
 
         {/* Engagement-health quick segments - set the (URL-persisted) filters */}
         {isPhone ? (
-          <PhoneStudentSegments segment={segment} onSegmentChange={handleSegmentChange} />
+          <PhoneStudentSegments
+            segment={segment}
+            // No number until the data behind it is in: a chip that says 0 and then 127 is the
+            // same broken promise as a chip whose number never matched its list.
+            counts={loading || loadingStats ? undefined : chipCounts}
+            onSegmentChange={handleSegmentChange}
+          />
         ) : (
         <Box data-tour-id="students-segments" sx={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 1, mb: 2 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, mr: 0.5 }}>
@@ -961,18 +975,25 @@ export default function ManageStudentsPage() {
                 color: "var(--font-secondary)",
               }}
             >
-              Segments
+              {t("studentSegments.heading", "Segments")}
             </Typography>
-            <InfoButton ariaLabel="How segments are calculated">
+            <InfoButton
+              ariaLabel={t("studentSegments.infoAriaLabel", "How segments are calculated")}
+            >
               <RiskCriteriaContent />
             </InfoButton>
           </Box>
-          {STUDENT_SEGMENTS.map((seg) => {
+          {STUDENT_SIGNALS.map((seg) => {
             const active = segment === seg.key;
+            // See the phone row: no number until the data behind it has arrived.
+            const count = loading || loadingStats ? undefined : chipCounts[seg.key];
             return (
               <Box
                 key={seg.key}
                 component="button"
+                type="button"
+                aria-pressed={active}
+                data-testid={`segment-chip-${seg.key}`}
                 onClick={() => handleSegmentChange(seg.key)}
                 sx={{
                   display: "inline-flex",
@@ -998,7 +1019,28 @@ export default function ManageStudentsPage() {
                 }}
               >
                 <IconWrapper icon={seg.icon} size={16} />
-                {seg.label}
+                {t(seg.labelKey, seg.label)}
+                {count != null && (
+                  <Box
+                    component="span"
+                    data-testid={`segment-count-${seg.key}`}
+                    aria-label={t("studentSegments.countAria", {
+                      defaultValue: "{{count}} students",
+                      count,
+                    })}
+                    sx={{
+                      px: 0.75,
+                      borderRadius: 999,
+                      fontSize: "0.72rem",
+                      fontWeight: 800,
+                      background: active
+                        ? "rgba(255,255,255,0.24)"
+                        : "color-mix(in srgb, var(--font-secondary) 14%, transparent)",
+                    }}
+                  >
+                    {count}
+                  </Box>
+                )}
               </Box>
             );
           })}

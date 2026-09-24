@@ -2,8 +2,13 @@
 
 import { useState, type ReactNode } from "react";
 import { Box, Typography, IconButton, Popover } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { AT_RISK_ELIGIBILITY, AT_RISK_RULES } from "@/lib/utils/student-risk";
+import {
+  AT_RISK_ELIGIBILITY,
+  AT_RISK_RULES,
+  STUDENT_SIGNALS,
+} from "@/lib/utils/student-risk";
 
 const INDIGO = "#6366f1";
 
@@ -77,7 +82,11 @@ export function AtRiskCriteria({
   eligibility?: string;
 }) {
   return (
-    <Box sx={{ display: "flex", gap: 1.25, alignItems: "flex-start" }} data-testid="at-risk-criteria">
+    <Box
+      sx={{ display: "flex", gap: 1.25, alignItems: "flex-start" }}
+      data-testid="at-risk-criteria"
+      data-signal="at_risk"
+    >
       <Box sx={{ mt: 0.2, flexShrink: 0 }}>
         <IconWrapper icon="mdi:alert-circle-outline" size={18} color="#ef4444" />
       </Box>
@@ -108,43 +117,56 @@ export function AtRiskCriteria({
 }
 
 /**
- * Canonical explanation of how the directory's engagement-health signals are
- * derived. Kept in one place so the directory and detail page never drift.
- * Mirrors lib/utils/student-risk.ts.
+ * Canonical explanation of how the directory's engagement-health signals are derived.
+ *
+ * Rendered from STUDENT_SIGNALS - the same table the quick-filter chips are rendered from - so
+ * the popover and the chip row can never list different signals again, and the rule shown is the
+ * rule the filter applies.
  */
 export function RiskCriteriaContent() {
-  const rows: Array<{ icon: string; color: string; label: string; rule: string }> = [
-    { icon: "mdi:login-variant", color: "#94a3b8", label: "Never logged in", rule: "The account has never authenticated (no last-login)." },
-    { icon: "mdi:radar", color: "#f59e0b", label: "Never active", rule: "No course / content activity has ever been recorded." },
-    { icon: "mdi:sleep", color: "#f59e0b", label: "Inactive (30d)", rule: "No activity in the last 30 days (or never active)." },
-    { icon: "mdi:chart-line-variant", color: "#a855f7", label: "Low completion", rule: "Overall course content completion is below 30%." },
-    { icon: "mdi:trophy-outline", color: "#10b981", label: "High performers", rule: "Overall content completion is 75% or higher." },
-  ];
+  const { t } = useTranslation("common");
   return (
     <Box>
       <Typography sx={{ fontWeight: 800, color: "var(--font-primary)", mb: 1.25 }}>
-        How these signals are calculated
+        {t("studentSegments.popoverTitle", "How these signals are calculated")}
       </Typography>
       <Box sx={{ display: "flex", flexDirection: "column", gap: 1.25 }}>
-        {rows.map((r) => (
-          <Box key={r.label} sx={{ display: "flex", gap: 1.25, alignItems: "flex-start" }}>
-            <Box sx={{ mt: 0.2, flexShrink: 0 }}>
-              <IconWrapper icon={r.icon} size={18} color={r.color} />
+        {STUDENT_SIGNALS.map((signal) =>
+          signal.key === "at_risk" ? (
+            <AtRiskCriteria key={signal.key} />
+          ) : (
+            <Box
+              key={signal.key}
+              data-testid={`signal-criteria-${signal.key}`}
+              data-signal={signal.key}
+              sx={{ display: "flex", gap: 1.25, alignItems: "flex-start" }}
+            >
+              <Box sx={{ mt: 0.2, flexShrink: 0 }}>
+                <IconWrapper icon={signal.icon} size={18} color={signal.color} />
+              </Box>
+              <Box sx={{ minWidth: 0 }}>
+                <Typography sx={{ fontWeight: 700, fontSize: "0.82rem", color: "var(--font-primary)" }}>
+                  {t(signal.labelKey, signal.label)}
+                </Typography>
+                <Typography sx={{ fontSize: "0.78rem", color: "var(--font-secondary)", lineHeight: 1.4 }}>
+                  {t(signal.ruleKey, signal.rule)}
+                </Typography>
+              </Box>
             </Box>
-            <Box sx={{ minWidth: 0 }}>
-              <Typography sx={{ fontWeight: 700, fontSize: "0.82rem", color: "var(--font-primary)" }}>
-                {r.label}
-              </Typography>
-              <Typography sx={{ fontSize: "0.78rem", color: "var(--font-secondary)", lineHeight: 1.4 }}>
-                {r.rule}
-              </Typography>
-            </Box>
-          </Box>
-        ))}
-        <AtRiskCriteria />
+          )
+        )}
       </Box>
       <Typography sx={{ mt: 1.5, fontSize: "0.72rem", color: "var(--font-tertiary)", fontStyle: "italic" }}>
-        All signals are derived from existing activity data - no extra tracking.
+        {t(
+          "studentSegments.popoverFooter",
+          "Every signal here has a chip above. They overlap on purpose, so you pick one at a time - choosing another replaces it, and choosing the selected one clears it.",
+        )}
+      </Typography>
+      <Typography sx={{ mt: 0.5, fontSize: "0.72rem", color: "var(--font-tertiary)", fontStyle: "italic" }}>
+        {t(
+          "studentSegments.popoverDerived",
+          "All signals are derived from existing activity data - no extra tracking.",
+        )}
       </Typography>
     </Box>
   );

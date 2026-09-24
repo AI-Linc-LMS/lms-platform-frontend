@@ -1356,7 +1356,7 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
       {
         targetId: "students-segments",
         title: "Health segments",
-        narration: "Tap a segment chip to instantly surface at-risk, inactive, low-completion, or high-performing students. Use the info icon to see exactly how each segment is calculated.",
+        narration: "Tap a segment chip to instantly surface at-risk, inactive, low-completion, high-performing, never-logged-in or never-active students. Each chip carries the number of students it will show, and the info icon explains exactly how every segment is calculated.",
         placement: "bottom",
         icon: "mdi:heart-pulse",
         color: "#ec4899",
