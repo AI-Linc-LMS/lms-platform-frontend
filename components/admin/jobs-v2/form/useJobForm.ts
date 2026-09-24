@@ -325,6 +325,8 @@ export interface JobFormApi {
   removeCollege: (index: number) => void;
   toggleQuestion: (id: number) => void;
   selectQuestion: (id: number) => void;
+  /** Drop one id from the selection, leaving every other choice exactly as it was. */
+  deselectQuestion: (id: number) => void;
 
   buildPayload: () => JobCreateUpdatePayload;
   markSaved: () => void;
@@ -484,6 +486,16 @@ export function useJobForm({
     });
   }, []);
 
+  /** A removed question leaves the selection - and nothing else does. `toggleQuestion` would
+   *  ADD it back if it happened not to be selected, which is exactly the wrong answer after a
+   *  delete. */
+  const deselectQuestion = useCallback((id: number) => {
+    setData((prev) => {
+      const ids = prev.question_ids ?? [];
+      return ids.includes(id) ? { ...prev, question_ids: ids.filter((q) => q !== id) } : prev;
+    });
+  }, []);
+
   // ---- validation --------------------------------------------------------
   const errors = useMemo<FieldErrors>(() => {
     const next: FieldErrors = {};
@@ -631,6 +643,7 @@ export function useJobForm({
     removeCollege,
     toggleQuestion,
     selectQuestion,
+    deselectQuestion,
     buildPayload,
     markSaved,
   };
