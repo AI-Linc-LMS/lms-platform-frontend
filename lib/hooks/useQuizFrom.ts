@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { safeFrom } from "@/lib/adaptive/quizReturn";
+import { safeFrom } from "@/lib/utils/return-to";
 
 /**
  * The page that launched the quiz runtime (`?from=`), or null.

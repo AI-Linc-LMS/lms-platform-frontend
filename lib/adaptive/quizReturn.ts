@@ -1,5 +1,9 @@
 import { topicFromReturnHref, topicHref } from "@/lib/adaptive/courseFlow";
 import type { AdaptiveSessionOrigin } from "@/lib/types/adaptive-quiz";
+import { safeFrom } from "@/lib/utils/return-to";
+
+// The one open-redirect guard lives with `withFrom`; re-exported for the quiz runtime's callers.
+export { safeFrom };
 
 /** The standalone quiz library - where Back goes only for a quiz that belongs to no course. */
 export const QUIZ_LIBRARY_HREF = "/adaptive-quizzes";
@@ -13,18 +17,6 @@ export type QuizReturn =
   | { kind: "roadmap"; href: string }
   | { kind: "library"; href: string }
   | { kind: "other"; href: string };
-
-/**
- * A `from` value that is safe to navigate to: a same-origin absolute path, else null.
- *
- * The value comes from the URL bar, and a redirect target taken from user input is an open
- * redirect, so `https://evil.example` and `//evil.example` are refused - the same guard as
- * `useReturnTo` and `withFrom`.
- */
-export function safeFrom(raw: string | null | undefined): string | null {
-  if (!raw) return null;
-  return raw.startsWith("/") && !raw.startsWith("//") ? raw : null;
-}
 
 const LIBRARY_PATH = /^\/adaptive-quizzes\/?(?:[?#]|$)/;
 
