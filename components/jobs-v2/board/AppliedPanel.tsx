@@ -472,12 +472,26 @@ export function AppliedPanel({
                     >
                       {app.company_name}
                     </Typography>
-                    <Typography sx={{ ...TYPE.micro, mt: 0.5 }}>
-                      {t("jobsV2.applied.appliedOn", {
-                        date: formatDate(app.applied_at),
-                        defaultValue: "Applied {{date}}",
-                      })}
-                    </Typography>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                        columnGap: 1,
+                        rowGap: 0.5,
+                        mt: 0.5,
+                      }}
+                    >
+                      <Typography sx={TYPE.micro}>
+                        {t("jobsV2.applied.appliedOn", {
+                          date: formatDate(app.applied_at),
+                          defaultValue: "Applied {{date}}",
+                        })}
+                      </Typography>
+                      {/* The role has stopped taking applications since. The application itself
+                          stands, so it stays here with its status - only the role is marked. */}
+                      {app.job_is_open === false && <StatusPill kind="job" value="closed" size="sm" />}
+                    </Box>
                   </Box>
 
                   <Box

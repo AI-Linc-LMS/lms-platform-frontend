@@ -12,7 +12,13 @@ import { phoneText } from "@/components/common/mobile/phoneText";
 const GRADIENT = "linear-gradient(135deg, #10b981, #0d9488)";
 const SOON_MS = 14 * 86_400_000;
 
+/**
+ * The server's answer when it gives one (jobs_v2/openness.py: status AND deadline), which is the
+ * rule the board lists by. The status check is only for an older backend that omits `is_open`;
+ * it was a second copy of the rule that knew nothing about deadlines.
+ */
 function isOpen(j: JobV2): boolean {
+  if (typeof j.is_open === "boolean") return j.is_open;
   return j.status !== "closed" && j.status !== "completed" && j.status !== "inactive";
 }
 function deadlineMs(j: JobV2): number {

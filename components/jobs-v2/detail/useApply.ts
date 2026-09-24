@@ -154,11 +154,11 @@ export function useApply(job: JobV2 | null, options: UseApplyOptions = {}): Appl
         fixLabel: t("jobsV2.apply.updateProfile", { defaultValue: "Update your profile" }),
       };
     }
-    // A role whose deadline has passed is CLOSED IN PLACE, with the button disabled and a
-    // reason — never silently dropped from the list, and never left with a live Apply button
-    // behind an emailed link. `is_open` is the server's own answer to
-    // "status === 'active' AND the deadline has not passed"; it is absent on today's payload,
-    // and `undefined` deliberately changes nothing.
+    // A closed role — whether its status says so or its deadline passed — gets the button
+    // disabled and a reason, never a live Apply button behind a saved row or an emailed link.
+    // `is_open` is the server's one answer (jobs_v2/openness.py: published, status 'active',
+    // deadline not passed), the same rule the board lists by and apply enforces. An older
+    // backend omits it, and `undefined` deliberately changes nothing.
     const closedByDeadline = job.is_open === false;
     if (closedByDeadline || (job.status && job.status !== "active")) {
       const closedOn = closedByDeadline ? formatDate(job.application_deadline) : null;

@@ -35,11 +35,12 @@ import type { ActiveFilterChip } from "@/components/jobs-v2/ui";
  * string (spec 5.1.1) via `useJobsUrlState`, which makes the board shareable, bookmarkable and
  * back-button correct.
  *
- * **The API call is unchanged.** `getJobs` still receives exactly
- * `{ client_id, location, job_type, employment_type, search }` — no new params, no new
- * endpoint. Location, job type and employment type stay SERVER-side filters (as today) and
- * experience, skills, posted, salary and favourites stay CLIENT-side (as today), so no filter
- * is silently applied twice with two different meanings.
+ * `getJobs` receives `{ client_id, location, job_type, employment_type, search }`, twice: once
+ * for the board and once with `saved: true` for the learner's Saved list, because the board
+ * lists open roles only and a saved role that has closed must not vanish with it. Location, job
+ * type and employment type stay SERVER-side filters on both, and experience, skills, posted,
+ * salary and favourites stay CLIENT-side, so no filter is silently applied twice with two
+ * different meanings.
  */
 
 /* -------------------------------------------------------------------------
@@ -142,7 +143,8 @@ export const SALARY_VALUES = ["disclosed", "undisclosed"] as const;
  *
  * This is the only urgency we ship. A role with no stated deadline is never swept into any of
  * these buckets, and a role whose deadline has already passed is not "closing in 3 days" — it
- * is closed, and it is marked closed in place rather than filtered into a lie.
+ * is closed. The board does not list closed roles at all; one the learner saved stays on Saved,
+ * marked closed.
  */
 export const CLOSING_VALUES = ["3d", "7d", "30d"] as const;
 export const CLOSING_WINDOWS: Record<string, number> = {
@@ -428,6 +430,13 @@ export function useJobFilters(options: UseJobFiltersOptions = {}): UseJobFilters
    * choose — which is how a facet control locks itself shut.
    */
   const [facetJobs, setFacetJobs] = useState<JobV2[]>([]);
+  /**
+   * The learner's Saved list, fetched beside the board rather than filtered out of it. The board
+   * lists open roles only, so a role that has closed since it was saved is not in `allJobs` any
+   * more; filtering the board for hearts would quietly delete it from the learner's own list.
+   * Here it stays, marked `is_open: false`.
+   */
+  const [savedJobs, setSavedJobs] = useState<JobV2[]>([]);
   const [serverCount, setServerCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [refetching, setRefetching] = useState(false);
@@ -476,11 +485,19 @@ export function useJobFilters(options: UseJobFiltersOptions = {}): UseJobFilters
       !apiFilters.location && !apiFilters.job_type && !apiFilters.employment_type && !apiFilters.search;
 
     try {
-      const res = await jobsV2Service.getJobs(apiFilters);
+      // The same server filters for both, so Saved narrows under a search exactly as it did
+      // when it was a filter over the board.
+      const [res, saved] = await Promise.all([
+        jobsV2Service.getJobs(apiFilters),
+        jobsV2Service.getJobs({ ...apiFilters, saved: true }),
+      ]);
       // A newer request owns the screen. Type "eng", pause, type "ineer": without this the
       // slower first response lands last and overwrites the correct rows.
       if (!seq.isCurrent(token)) return;
       setAllJobs(res.results);
+      // An older backend ignores `saved` and answers with the board; the `fav` filter then
+      // leaves exactly what the Saved tab showed before, so the tab degrades, never breaks.
+      setSavedJobs(saved.results);
       // The endpoint's own total. It used to be fetched and thrown away, so "N jobs found"
       // reported the size of whatever the server happened to return.
       setServerCount(res.count);
@@ -492,6 +509,7 @@ export function useJobFilters(options: UseJobFiltersOptions = {}): UseJobFilters
       // what this learner may see, and ProfileLockCard replaces the list entirely.
       if (reportProfileLock(err)) {
         setAllJobs([]);
+        setSavedJobs([]);
         setServerCount(0);
         return;
       }
@@ -550,14 +568,31 @@ export function useJobFilters(options: UseJobFiltersOptions = {}): UseJobFilters
   /* ---- derived: filtering --------------------------------------------- */
 
   /**
+   * The rows the open tab is about: the board (open roles only) on Browse, the learner's own
+   * saved list on Saved. Every count, facet and hint below reads THIS, so no number on screen can
+   * describe a different list from the one under it.
+   */
+  const sourceJobs = tab === "saved" ? savedJobs : allJobs;
+
+  /**
+   * "Saved (N)" counts the Saved list it opens, closed roles included. It used to count hearts on
+   * the board, which now holds open roles only, so the two would have drifted apart the moment a
+   * saved role closed. An unsaved row stays in `savedJobs` until the next fetch; it is not saved.
+   */
+  const savedCount = useMemo(
+    () => savedJobs.reduce((n, job) => n + (job.is_favourited ? 1 : 0), 0),
+    [savedJobs],
+  );
+
+  /**
    * Do we know anything at all about this student's eligibility? The list serializer does not
    * send `eligible_to_apply` on every deployment (see the spec's open-risks appendix), and an
    * "Only jobs I'm eligible for" toggle that empties the board because a field is absent is a
    * filter blaming the student for our payload. Offered only when at least one row answers it.
    */
   const canFilterByEligibility = useMemo(
-    () => allJobs.some((job) => typeof job.eligible_to_apply === "boolean"),
-    [allJobs],
+    () => sourceJobs.some((job) => typeof job.eligible_to_apply === "boolean"),
+    [sourceJobs],
   );
   const eligibleOnly = elig && canFilterByEligibility;
 
@@ -577,8 +612,8 @@ export function useJobFilters(options: UseJobFiltersOptions = {}): UseJobFilters
   );
 
   const filteredJobs = useMemo(
-    () => applyClientFilters(allJobs, clientFilters),
-    [allJobs, clientFilters],
+    () => applyClientFilters(sourceJobs, clientFilters),
+    [sourceJobs, clientFilters],
   );
 
   /**
@@ -588,8 +623,8 @@ export function useJobFilters(options: UseJobFiltersOptions = {}): UseJobFilters
    */
   const countFor = useCallback(
     (patch: Partial<ClientFilterInput>) =>
-      applyClientFilters(allJobs, { ...clientFilters, ...patch }).length,
-    [allJobs, clientFilters],
+      applyClientFilters(sourceJobs, { ...clientFilters, ...patch }).length,
+    [sourceJobs, clientFilters],
   );
 
   const canSortByRelevance = learnerTokens.size > 0;
@@ -659,8 +694,12 @@ export function useJobFilters(options: UseJobFiltersOptions = {}): UseJobFilters
    */
   const pageIds = useMemo(() => jobs.map((job) => job.id), [jobs]);
 
-  /** The widest total we can honestly claim: the server's count, or what we hold if it is more. */
-  const totalCount = Math.max(serverCount, allJobs.length);
+  /**
+   * The widest total we can honestly claim for the list on screen: on Browse the server's count
+   * (or what we hold if it is more), on Saved the saved list itself — "3 of 137 jobs" there
+   * compared the learner's saves with a board that no longer holds the closed ones.
+   */
+  const totalCount = tab === "saved" ? savedCount : Math.max(serverCount, allJobs.length);
   const totalHint =
     matchingCount < totalCount
       ? (t("jobsV2.board.totalHint", {
@@ -711,8 +750,8 @@ export function useJobFilters(options: UseJobFiltersOptions = {}): UseJobFilters
    * does not renumber every other skill to 0.
    */
   const skillCountSource = useMemo(
-    () => applyClientFilters(allJobs, clientFilters, "skills"),
-    [allJobs, clientFilters],
+    () => applyClientFilters(sourceJobs, clientFilters, "skills"),
+    [sourceJobs, clientFilters],
   );
 
   const allSkillFacets = useMemo<SkillFacet[]>(() => {
@@ -747,11 +786,6 @@ export function useJobFilters(options: UseJobFiltersOptions = {}): UseJobFilters
 
   const skillOverflow = Math.max(0, allSkillFacets.length - skillFacets.length);
 
-  const savedCount = useMemo(
-    () => allJobs.reduce((n, job) => n + (job.is_favourited ? 1 : 0), 0),
-    [allJobs],
-  );
-
   /* ---- derived: counted facets (spec 4.2) ------------------------------ */
 
   /**
@@ -769,14 +803,14 @@ export function useJobFilters(options: UseJobFiltersOptions = {}): UseJobFilters
       label: (value: string) => string,
       matches: (job: JobV2, value: string) => boolean,
     ): CountedFacetOption[] => {
-      const source = applyClientFilters(allJobs, clientFilters, key);
+      const source = applyClientFilters(sourceJobs, clientFilters, key);
       return values.map((value) => ({
         value,
         label: label(value),
         count: source.reduce((n, job) => n + (matches(job, value) ? 1 : 0), 0),
       }));
     },
-    [allJobs, clientFilters],
+    [sourceJobs, clientFilters],
   );
 
   /**
@@ -786,24 +820,24 @@ export function useJobFilters(options: UseJobFiltersOptions = {}): UseJobFilters
    */
   const roleValues = useMemo(() => {
     const seen = new Set<string>();
-    for (const job of allJobs) {
+    for (const job of sourceJobs) {
       const value = (job.role_category ?? "").trim();
       if (value) seen.add(value);
     }
     if (role) seen.add(role);
     return [...seen].sort((a, b) => a.localeCompare(b));
-  }, [allJobs, role]);
+  }, [sourceJobs, role]);
 
   /** Only the modes the postings themselves state. Nothing here is inferred from a location. */
   const workModeValues = useMemo(() => {
     const seen = new Set<string>();
-    for (const job of allJobs) {
+    for (const job of sourceJobs) {
       const mode = workMode(job.work_mode);
       if (mode) seen.add(mode);
     }
     if (wm) seen.add(wm);
     return WORK_MODE_VALUES.filter((mode) => seen.has(mode)) as string[];
-  }, [allJobs, wm]);
+  }, [sourceJobs, wm]);
 
   const facets = useMemo<Record<FacetKey, CountedFacetOption[]>>(() => {
     const now = Date.now();
@@ -887,11 +921,11 @@ export function useJobFilters(options: UseJobFiltersOptions = {}): UseJobFilters
    */
   const eligibleCount = useMemo(() => {
     if (!canFilterByEligibility) return 0;
-    return applyClientFilters(allJobs, clientFilters, "elig").reduce(
+    return applyClientFilters(sourceJobs, clientFilters, "elig").reduce(
       (n, job) => n + (job.eligible_to_apply === true ? 1 : 0),
       0,
     );
-  }, [allJobs, clientFilters, canFilterByEligibility]);
+  }, [sourceJobs, clientFilters, canFilterByEligibility]);
 
   const setEligibleOnly = useCallback((value: boolean) => set({ elig: value }), [set]);
 
@@ -1022,7 +1056,7 @@ export function useJobFilters(options: UseJobFiltersOptions = {}): UseJobFilters
     const hints: ExcludingHint[] = [];
     for (const candidate of candidates) {
       if (!candidate.active) continue;
-      const without = applyClientFilters(allJobs, clientFilters, candidate.key).length;
+      const without = applyClientFilters(sourceJobs, clientFilters, candidate.key).length;
       if (without > matchingCount) {
         hints.push({
           key: candidate.key,
@@ -1036,15 +1070,28 @@ export function useJobFilters(options: UseJobFiltersOptions = {}): UseJobFilters
       }
     }
     return hints.sort((a, b) => b.excluded - a.excluded).slice(0, 3);
-  }, [matchingCount, allJobs, clientFilters, exp, skills, posted, salary, eligibleOnly, role, wm, close, t]);
+  }, [matchingCount, sourceJobs, clientFilters, exp, skills, posted, salary, eligibleOnly, role, wm, close, t]);
 
   /* ---- favourites ------------------------------------------------------ */
+
+  // Read through a ref so the handler keeps one identity for the memoised cards that receive it.
+  const allJobsRef = useRef(allJobs);
+  allJobsRef.current = allJobs;
 
   const onFavoriteChange = useCallback((jobId: number, favorited: boolean) => {
     const patch = (list: JobV2[]) =>
       list.map((job) => (job.id === jobId ? { ...job, is_favourited: favorited } : job));
     setAllJobs(patch);
     setFacetJobs(patch);
+    // Saving from the board puts the role on the Saved list at once, so "Saved (N)" moves with
+    // the heart. Unsaving only flips the flag: the `fav` filter drops the row, and a re-save
+    // before the next fetch finds it still there.
+    setSavedJobs((list) => {
+      if (list.some((job) => job.id === jobId)) return patch(list);
+      if (!favorited) return list;
+      const fromBoard = allJobsRef.current.find((job) => job.id === jobId);
+      return fromBoard ? [{ ...fromBoard, is_favourited: true }, ...list] : list;
+    });
   }, []);
 
   return {

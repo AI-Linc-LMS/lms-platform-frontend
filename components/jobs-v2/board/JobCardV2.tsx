@@ -202,8 +202,8 @@ export function JobSignals({
       {/* The employer's own stated deadline. This is our honest urgency; we never ship the
           other kind. */}
       <DeadlineChip value={job.application_deadline} />
-      {/* A closed role is marked closed IN PLACE — never silently dropped, and never left with
-          a live apply button behind an emailed link. */}
+      {/* Only a Saved row can be closed: the board lists open roles only. A role the learner
+          saved that has since closed stays on their list, marked, never left looking live. */}
       {closed && (
         <SignalChip
           icon="mdi:lock-outline"

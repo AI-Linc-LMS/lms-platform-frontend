@@ -219,6 +219,8 @@ export default function ApplicationDetailPage() {
       >
         <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, flexWrap: "wrap" }}>
           <StatusPill kind="application" value={application.status} />
+          {/* The role has stopped taking applications; this application still stands. */}
+          {application.job_is_open === false && <StatusPill kind="job" value="closed" />}
           <MetaRow items={meta} onDark dense unordered />
         </Box>
       </ModulePageHeader>
