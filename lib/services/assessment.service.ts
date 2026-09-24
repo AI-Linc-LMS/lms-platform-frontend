@@ -204,10 +204,17 @@ export interface AttemptedAssessment {
 }
 
 export interface TopicWiseStats {
+  /** Questions SERVED in this topic - answered and skipped alike. */
   total: number;
   correct: number;
   incorrect: number;
+  /** correct + incorrect. Optional: a backend that has not deployed yet omits it. */
+  attempted?: number;
+  /** total - attempted. Optional: a backend that has not deployed yet omits it. */
+  unattempted?: number;
+  /** correct / attempted. Zero and meaningless when `attempted` is 0. */
   accuracy_percent: number;
+  /** correct / total * 5 - the per-topic twin of `placement_readiness`. */
   rating_out_of_5: number;
 }
 

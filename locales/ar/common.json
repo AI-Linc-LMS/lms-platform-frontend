@@ -857,6 +857,17 @@
       "strictOrderNotice": "استُخدم ترتيب ثابت للأقسام في هذا التقييم. لا يمكن العودة إلى أقسام سابقة بعد الانتقال إلى قسم لاحق."
     }
   },
+  "assessmentTopicBreakdown": {
+    "title": "الأداء حسب الموضوع",
+    "subtitle": "تفصيل مفصل حسب الموضوع",
+    "correct": "{{n}} صحيحة",
+    "incorrect": "{{n}} خاطئة",
+    "notAnswered": "{{n}} بدون إجابة",
+    "questionsAsked": "{{n}} سؤالاً",
+    "accuracyOfAttempted": "الدقة في {{attempted}} إجابة",
+    "nothingAttempted": "لم تتم الإجابة على أي سؤال هنا",
+    "topicScore": "{{rating}}/5.0 من إجمالي {{total}} سؤالاً"
+  },
   "mockInterview": {
     "title": "مقابلة تجريبية",
     "subtitle": "تدرب مع مقابلات تجريبية مدعومة بالذكاء الاصطناعي",
