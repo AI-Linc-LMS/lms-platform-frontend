@@ -958,7 +958,9 @@ export default function ManageStudentsPage() {
         {isPhone ? (
           <PhoneStudentSegments
             segment={segment}
-            counts={chipCounts}
+            // No number until the data behind it is in: a chip that says 0 and then 127 is the
+            // same broken promise as a chip whose number never matched its list.
+            counts={loading || loadingStats ? undefined : chipCounts}
             onSegmentChange={handleSegmentChange}
           />
         ) : (
@@ -983,7 +985,8 @@ export default function ManageStudentsPage() {
           </Box>
           {STUDENT_SIGNALS.map((seg) => {
             const active = segment === seg.key;
-            const count = chipCounts[seg.key];
+            // See the phone row: no number until the data behind it has arrived.
+            const count = loading || loadingStats ? undefined : chipCounts[seg.key];
             return (
               <Box
                 key={seg.key}
