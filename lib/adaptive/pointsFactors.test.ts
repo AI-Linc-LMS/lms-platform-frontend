@@ -28,6 +28,15 @@ describe("quiz points card", () => {
     expect(displayEarned(item)).toBe(160);
   });
 
+  it("shows the pay for harder questions so the chips multiply out to the points", () => {
+    // 12 served, 10 right, 6 of them hard at 13: 118 paid = 120 base x 1.18 x 83% correct.
+    const item = quiz({ on_offer: 120, earned: 118, breakdown: { base: 120, after_decay: 120, difficulty_mult: 1.18, correctness_factor: 0.83 } });
+    expect(texts(item)).toEqual(["120 base", "harder questions ×1.18", "83% correct"]);
+    expect(pointsFactors(item)?.earned).toBe(118);
+    // Flat rows (and rows from before the weighting) show no such chip.
+    expect(texts(quiz({ breakdown: { difficulty_mult: 1 } }))).toEqual(["250 base", "64% correct"]);
+  });
+
   it("shows the time lost when answers were slow", () => {
     // 140 paid for 16/25: after_decay x 0.64 = 140.
     const item = quiz({ earned: 140, breakdown: { after_decay: 218.75 } });

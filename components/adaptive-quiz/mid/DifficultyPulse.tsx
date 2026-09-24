@@ -3,11 +3,13 @@
 import { Box, Typography } from "@mui/material";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
+import { useTranslation } from "react-i18next";
 import { AIBeacon } from "../shared/AIBeacon";
 import { AIPill } from "../shared/AIPill";
 import { AdaptiveInfoTip } from "../shared/AdaptiveInfoTip";
 import { certaintyBand } from "@/lib/utils/adaptive-confidence";
 import { prettySkill } from "@/lib/utils/skill-label.utils";
+import { ladderLine, type LadderLevel } from "@/lib/adaptive/difficultyLadder";
 import { PHONE } from "@/components/common/mobile/phone";
 
 interface DifficultyPulseProps {
@@ -21,9 +23,21 @@ interface DifficultyPulseProps {
   /** Current ability estimate (θ, logit) for the target skill - positions the marker by the
    *  *question's* difficulty rather than your odds of getting it right. */
   theta?: number;
+  /** The difficulty ladder, from the question payload (`wanted_level`, `streak`,
+   *  `streak_to_move`) - what the next answer does to the level. */
+  wantedLevel?: string;
+  streak?: number;
+  streakToMove?: number;
+  /** The levels the quiz can still serve after this question (`levels_left`). */
+  levelsLeft?: string[] | null;
+  /** The quiz's last question (`is_last`): no line about "the next question". */
+  isLast?: boolean;
 }
 
 const GRADIENT = "linear-gradient(90deg, #10b981 0%, #6366f1 50%, #ef4444 100%)";
+const UP = "#10b981";
+const DOWN = "#ef4444";
+const GAP = "#d97706";
 
 export function DifficultyPulse({
   predictedPCorrect,
@@ -31,15 +45,23 @@ export function DifficultyPulse({
   avgSe,
   difficultyLabel,
   theta,
+  wantedLevel,
+  streak,
+  streakToMove,
+  levelsLeft,
+  isLast,
 }: DifficultyPulseProps) {
+  const { t } = useTranslation("common");
   const certainty = certaintyBand(avgSe);
   const skillLabel = prettySkill(targetSkill, "this skill");
   const predictedPct = Math.round(predictedPCorrect * 100);
+  const line = ladderLine(difficultyLabel, wantedLevel, streak, streakToMove, levelsLeft, isLast);
+  const levelName = (level: LadderLevel) => t(`adaptiveQuizRuntime.level${level}`);
   // The track maps Easy (left) → Hard (right) and shows the *question's* difficulty, NOT your
-  // odds of getting it right. Item difficulty b = θ − logit(P): as you answer well your θ rises
-  // and the engine serves higher-b items, so the marker climbs toward Hard; a miss lowers θ and
-  // it eases toward Easy. (Positioning by P alone slid it the opposite, counterintuitive way -
-  // doing well made questions look "easier" even as they got harder.)
+  // odds of getting it right. Item difficulty b = θ − logit(P): the engine's ladder serves harder
+  // items after runs of right answers, so the marker climbs toward Hard, and easier ones after runs
+  // of misses. (Positioning by P alone slid it the opposite, counterintuitive way - doing well made
+  // questions look "easier" even as they got harder.)
   const pSafe = Math.min(0.97, Math.max(0.03, predictedPCorrect));
   const difficultyLogit = (theta ?? 0) - Math.log(pSafe / (1 - pSafe));
   const markerPct = Math.max(3, Math.min(97, ((difficultyLogit + 3) / 6) * 100));
@@ -75,9 +97,9 @@ export function DifficultyPulse({
                 <strong>Easy</strong> on the left, <strong>Hard</strong> on the right.
               </p>
               <p>
-                It adapts to you. Answer one <strong>correctly</strong> and the engine steps you
-                up, so the next question is harder and the marker slides <strong>right →</strong>.
-                Get one <strong>wrong</strong> and it eases off, sliding <strong>← left</strong>.
+                {streakToMove
+                  ? t("adaptiveQuizRuntime.ladderExplain", { n: streakToMove })
+                  : t("adaptiveQuizRuntime.ladderExplainUnknown")}
               </p>
               <p style={{ opacity: 0.7, fontSize: "0.74rem" }}>
                 The aim is to keep you at the edge of your ability - challenged, but not
@@ -198,11 +220,50 @@ export function DifficultyPulse({
           </Typography>
         </Box>
 
-        {/* Always-visible reminder of which way the bar moves and why. */}
-        <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", textAlign: "center", mt: 0.5, lineHeight: 1.45 }}>
-          Answer <Box component="span" sx={{ fontWeight: 800, color: "#10b981" }}>correctly</Box> → steps up toward Hard ·{" "}
-          <Box component="span" sx={{ fontWeight: 800, color: "#ef4444" }}>miss one</Box> → eases toward Easy
-        </Typography>
+        {/* Always-visible: what the next answer does to the level, from the engine's own ladder -
+            or, when the quiz has run out of the level the learner earned, that it has. It used to
+            promise "Answer correctly -> steps up toward Hard" even with no Hard question left. */}
+        {line && (
+          <Typography
+            data-testid="difficulty-ladder-line"
+            sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", textAlign: "center", mt: 0.5, lineHeight: 1.45 }}
+          >
+            {line.kind === "outOfLevel" ? (
+              <Box component="span" sx={{ fontWeight: 800, color: GAP }}>
+                {t("adaptiveQuizRuntime.ladderNoneLeft", {
+                  wanted: levelName(line.wanted),
+                  served: levelName(line.served),
+                })}
+              </Box>
+            ) : line.kind === "next" ? (
+              <Box component="span" sx={{ fontWeight: 800, color: line.move.dir === "up" ? UP : DOWN }}>
+                {t(line.move.dir === "up" ? "adaptiveQuizRuntime.ladderNextUp" : "adaptiveQuizRuntime.ladderNextDown", {
+                  level: levelName(line.move.level),
+                })}
+              </Box>
+            ) : (
+              [
+                line.up && (
+                  <Box key="up" component="span" sx={{ fontWeight: 800, color: UP }}>
+                    {t("adaptiveQuizRuntime.ladderUp", { n: line.n, level: levelName(line.up) })}
+                  </Box>
+                ),
+                line.down && (
+                  <Box key="down" component="span" sx={{ fontWeight: 800, color: DOWN }}>
+                    {t("adaptiveQuizRuntime.ladderDown", { n: line.n, level: levelName(line.down) })}
+                  </Box>
+                ),
+                ...line.gone.map((level) => (
+                  <Box key={`gone-${level}`} component="span" sx={{ fontWeight: 800, color: GAP }}>
+                    {t("adaptiveQuizRuntime.ladderLevelGone", { level: levelName(level) })}
+                  </Box>
+                )),
+              ]
+                .filter(Boolean)
+                .flatMap((part, i) => (i === 0 ? [part] : [" · ", part]))
+            )}
+          </Typography>
+        )}
       </Box>
     </Box>
   );

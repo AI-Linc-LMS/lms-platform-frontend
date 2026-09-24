@@ -20,6 +20,8 @@ import {
 import { RecentAttemptsRow } from "@/components/adaptive-quiz/RecentAttemptsRow";
 import { asStringList } from "@/lib/utils/as-list";
 import { PHONE } from "@/components/common/mobile/phone";
+import { QUIZ_LIBRARY_HREF } from "@/lib/adaptive/quizReturn";
+import { withFrom } from "@/lib/utils/return-to";
 
 type Filter = "all" | "personal" | "public" | "archived";
 
@@ -222,14 +224,16 @@ export default function AdaptiveQuizListPage() {
                       // Personal re-quizzes have an existing session - never go
                       // through /start which would mint a duplicate. Archived
                       // routes to its results; active routes to the live page.
+                      // Every launch from here says so (`from`), so Back returns to the
+                      // library rather than to the quiz's course topic.
                       if (item.is_personal && item.latest_session_id) {
                         const target = item.is_archived
                           ? `/adaptive-quizzes/session/${item.latest_session_id}/results`
                           : `/adaptive-quizzes/session/${item.latest_session_id}`;
-                        push(target);
+                        push(withFrom(target, QUIZ_LIBRARY_HREF));
                         return;
                       }
-                      push(`/adaptive-quizzes/start?configId=${item.config_id}`);
+                      push(withFrom(`/adaptive-quizzes/start?configId=${item.config_id}`, QUIZ_LIBRARY_HREF));
                     }}
                   />
                 </Reveal>

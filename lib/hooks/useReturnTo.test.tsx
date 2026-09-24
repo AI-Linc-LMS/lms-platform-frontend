@@ -28,6 +28,9 @@ describe("useReturnTo", () => {
     ["//evil.example/phish", "protocol-relative URL"],
     ["javascript:alert(1)", "javascript scheme"],
     ["evil.example", "bare host"],
+    // Both parse to //evil.example in a browser: "\" reads as "/", tabs are dropped.
+    ["/\\evil.example/phish", "backslash after the slash"],
+    ["/\t/evil.example", "tab after the slash"],
   ])("ignores %s (%s) rather than redirecting to it", (from) => {
     // `from` comes off the URL bar, so an unvalidated redirect target here is an open
     // redirect: a link into our own domain that bounces the learner somewhere else.

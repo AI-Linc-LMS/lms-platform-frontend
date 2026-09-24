@@ -240,6 +240,9 @@ export interface PointsBreakdownItem {
   breakdown?: {
     base: number;
     after_decay: number;
+    /** A quiz pays harder right answers more (backend quiz_marks.level_rate); this is how much
+     *  that added to the row, as a multiplier. 1 (or absent, from an older server) = none. */
+    difficulty_mult?: number;
     correctness_factor: number;
     late_penalty_mult: number;
     weight: number;

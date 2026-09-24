@@ -339,7 +339,7 @@ export default function AdaptiveCourseSubmodulePage() {
             <TopicHandouts attachments={submodule.attachments ?? []} />
 
             {/* Additional Practice - learner-generated extra content (no points) */}
-            <AdditionalPractice courseId={courseId} submoduleId={submoduleId} />
+            <AdditionalPractice courseId={courseId} submoduleId={submoduleId} returnHref={selfHref} />
           </>
         )}
       </Box>

@@ -33,6 +33,27 @@ export interface AdaptiveQuestion {
    *  the question is text only, which is most of them. */
   question_image?: string | null;
   question_image_alt?: string | null;
+  /** The difficulty ladder (backend irt/ladder.py): two answers in a row the same way move the
+   *  level one step. `wanted_level` is the level the learner had earned for THIS question - it
+   *  differs from `difficulty_label` only when the quiz's bank has run out of that level.
+   *  `streak` is the run so far (+k rights / -k misses in a row since the last move) and
+   *  `streak_to_move` how long a run moves the level. Absent / empty / 0 from a server that
+   *  predates the ladder: the screen then states no rule at all rather than a wrong one. */
+  wanted_level?: string;
+  streak?: number;
+  streak_to_move?: number;
+  /** The levels the quiz's bank can still serve after this question, easiest first. */
+  levels_left?: string[] | null;
+  /** This is the quiz's last question: nothing comes after it, so promise nothing about "next". */
+  is_last?: boolean;
+}
+
+/** The course topic a quiz attempt belongs to - for a re-quiz, its original attempt's topic. */
+export interface AdaptiveSessionOrigin {
+  course_id: number;
+  course_title: string;
+  submodule_id: number;
+  submodule_title: string;
 }
 
 /** Live completion of a result-page remediation path (GET .../remediation-progress/). */
@@ -221,6 +242,9 @@ export interface AdaptiveSessionDetail {
       is_current: boolean;
     }>;
   };
+  /** The course topic this attempt belongs to, so the results screen's Back can return to it
+   *  however the page was reached. Null for a quiz in no course; absent from an older server. */
+  origin?: AdaptiveSessionOrigin | null;
 }
 
 export type ConfidenceLevel = 1 | 2 | 3 | 4;
