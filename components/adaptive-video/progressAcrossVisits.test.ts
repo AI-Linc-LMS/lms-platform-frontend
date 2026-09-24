@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { finishedBefore, restoredAnswers, resumePoint, watchedPercent } from "./progressAcrossVisits";
+import { answeredThisWatch, finishedBefore, passedBefore, resumePoint, watchedPercent } from "./progressAcrossVisits";
 
 describe("resuming a video", () => {
   it("picks up an unfinished visit where it stopped", () => {
@@ -53,14 +53,28 @@ describe("whether the video is already done", () => {
   });
 });
 
+describe("what this watch has already been asked", () => {
+  it("is the session's own answers, so a reload is not asked them twice", () => {
+    expect(answeredThisWatch({ answered_check_in_ids: [4, 9] })).toEqual(new Set([4, 9]));
+  });
+
+  it("is empty for a new watch, however many the learner has passed before", () => {
+    // The bug: seeded from the learner's lifetime passes, a rewatch in a questioning mode opened
+    // with every check-in ticked off and asked none of them.
+    expect(answeredThisWatch({ answered_check_in_ids: [] })).toEqual(new Set());
+    expect(answeredThisWatch({})).toEqual(new Set());
+    expect(answeredThisWatch(null)).toEqual(new Set());
+  });
+});
+
 describe("the check-ins already passed", () => {
-  it("comes back as a set the player can mark off", () => {
-    expect(restoredAnswers([4, 9])).toEqual(new Set([4, 9]));
+  it("comes back as a set the timeline can mark - not a set of questions to skip", () => {
+    expect(passedBefore({ my_passed_check_in_ids: [4, 9] })).toEqual(new Set([4, 9]));
   });
 
   it("is empty for a first visit, or a server that sent nothing", () => {
-    expect(restoredAnswers([])).toEqual(new Set());
-    expect(restoredAnswers(undefined)).toEqual(new Set());
-    expect(restoredAnswers(null)).toEqual(new Set());
+    expect(passedBefore({ my_passed_check_in_ids: [] })).toEqual(new Set());
+    expect(passedBefore({})).toEqual(new Set());
+    expect(passedBefore(null)).toEqual(new Set());
   });
 });

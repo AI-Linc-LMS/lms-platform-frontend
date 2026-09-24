@@ -3195,7 +3195,9 @@
   "adaptiveVideoMode": {
     "groupLabel": "Watch mode",
     "switching": "Switching…",
-    "switchFailed": "Couldn't switch the watch mode just now. Try again."
+    "switchFailed": "Couldn't switch the watch mode just now. Try again.",
+    "practiceLabel": "Practice",
+    "practiceNote": "already passed · not scored again"
   },
   "experienceBullets": {
     "label": "Responsibilities and achievements",
