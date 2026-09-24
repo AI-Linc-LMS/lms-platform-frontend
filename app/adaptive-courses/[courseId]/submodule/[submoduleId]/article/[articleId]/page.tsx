@@ -18,6 +18,9 @@ import { AIBeacon } from "@/components/adaptive-quiz/shared/AIBeacon";
 import { AIPill } from "@/components/adaptive-quiz/shared/AIPill";
 import { AdaptiveArticleBody, type ArticleHeading } from "@/components/adaptive-quiz/article/AdaptiveArticleBody";
 import { useArticleNarration } from "@/lib/hooks/useArticleNarration";
+import { useNarrationFollow } from "@/lib/hooks/useNarrationFollow";
+import type { NarrationSegment } from "@/lib/utils/article-speech";
+import { useTranslation } from "react-i18next";
 import {
   adaptiveCourseService,
   READING_TIERS,
@@ -44,6 +47,7 @@ type ExplainState = {
 
 export default function AdaptiveArticleReaderPage() {
   const { push } = useInstantNavigation();
+  const { t } = useTranslation("common");
   const params = useParams();
   const { showToast } = useToast();
   const theme = useTheme();
@@ -78,8 +82,17 @@ export default function AdaptiveArticleReaderPage() {
   // celebration until the learner LEAVES the article - so it pops on the page they go to,
   // not the moment they open it.
   const completedRef = useRef(false);
+  // The article's narration blocks, reported by the body from the DOM it actually
+  // rendered. They are what lets Read aloud say which paragraph it is on.
+  const [segments, setSegments] = useState<NarrationSegment[]>([]);
   // Professional onyx narration (replaces robotic browser speechSynthesis).
-  const narration = useArticleNarration(html);
+  const narration = useArticleNarration(html, segments);
+  // ...and the page follows it, until the learner scrolls, at which point it stops.
+  const follow = useNarrationFollow({
+    activeId: narration.activeId,
+    containerRef: bodyWrapRef,
+    active: narration.playing,
+  });
 
   useEffect(() => {
     if (!Number.isFinite(articleId)) return;
@@ -154,6 +167,9 @@ export default function AdaptiveArticleReaderPage() {
   }, [article, html]);
 
   const goToHeading = (id: string) => {
+    // Jumping to a heading is the learner steering, so auto-follow stands down rather
+    // than dragging them back to the narrator a second later.
+    follow.suspend();
     document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" });
   };
 
@@ -249,6 +265,44 @@ export default function AdaptiveArticleReaderPage() {
         <Box sx={{ height: "100%", width: `${Math.round(progress * 100)}%`,
           background: "linear-gradient(90deg, #6366f1, #a855f7, #ec4899)", transition: "width 0.1s linear" }} />
       </Box>
+
+      {/* The way back to the narrator. Auto-follow stands down the instant the learner
+          scrolls, and it is never resumed behind their back - so the offer has to be
+          visible wherever they scrolled TO, which is why it is fixed rather than in the
+          toolbar they have just left behind. */}
+      {narration.playing && !follow.following && (
+        <ButtonBase
+          data-testid="narration-resume-follow"
+          onClick={follow.resume}
+          aria-label={t("articleNarration.resumeFollowAria", "Resume following the narration") as string}
+          sx={{
+            position: "fixed",
+            left: "50%",
+            transform: "translateX(-50%)",
+            // Clears the floating MobileNav, which is shown below `md`.
+            bottom: { xs: "calc(env(safe-area-inset-bottom) + 86px)", md: 24 },
+            zIndex: 1250,
+            display: "inline-flex",
+            alignItems: "center",
+            gap: 0.75,
+            px: 1.75,
+            py: 1,
+            minHeight: 40,
+            maxWidth: "calc(100vw - 32px)",
+            borderRadius: 999,
+            color: "white",
+            fontWeight: 800,
+            fontSize: "0.82rem",
+            whiteSpace: "nowrap",
+            background: "linear-gradient(135deg, #6366f1 0%, #a855f7 100%)",
+            boxShadow: "0 14px 32px -12px rgba(99,102,241,0.7)",
+            [PHONE]: { minHeight: 44, fontSize: "0.86rem" },
+          }}
+        >
+          <Icon icon="mdi:volume-high" width={16} />
+          {t("articleNarration.resumeFollow", "Jump to what's being read")}
+        </ButtonBase>
+      )}
       <Box sx={{ maxWidth: 1760, mx: "auto", py: { xs: 3, md: 5 } }}>
         <ButtonBase
           onClick={() => push(returnTo.href)}
@@ -349,7 +403,7 @@ export default function AdaptiveArticleReaderPage() {
                   {tierLoading ? (
                     <ConjureLoader tier={pendingTier ?? tier} />
                   ) : (
-                    <AdaptiveArticleBody html={html} explainTerms={article.explain_terms} onExplain={openExplain} onHeadings={setHeadings} reveal />
+                    <AdaptiveArticleBody html={html} explainTerms={article.explain_terms} onExplain={openExplain} onHeadings={setHeadings} onSegments={setSegments} reveal />
                   )}
                 </Box>
 

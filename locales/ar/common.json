@@ -2897,5 +2897,9 @@
     "groupRefusedFallback": "مرفوض",
     "andMore": "و{{n}} آخرين",
     "done": "تم"
+  },
+  "articleNarration": {
+    "resumeFollow": "انتقل إلى ما يُقرأ الآن",
+    "resumeFollowAria": "استئناف متابعة القراءة الصوتية"
   }
 }

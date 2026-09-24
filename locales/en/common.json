@@ -3293,5 +3293,9 @@
     "groupRefusedFallback": "Refused",
     "andMore": "and {{n}} more",
     "done": "Done"
+  },
+  "articleNarration": {
+    "resumeFollow": "Jump to what's being read",
+    "resumeFollowAria": "Resume following the narration"
   }
 }
