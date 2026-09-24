@@ -350,6 +350,10 @@ export function PublicPreviewCard({
                 setSavingHeadline(true);
                 await onEditHeadline(headlineValue.trim());
                 setHeadlineDialogOpen(false);
+              } catch {
+                // A refused save rejects now, rather than resolving as "saved locally". The page
+                // has already said what the server refused; this keeps the dialog open with the
+                // headline still in it, so the learner can fix it and try again.
               } finally {
                 setSavingHeadline(false);
               }

@@ -47,7 +47,7 @@ vi.mock("@/components/common/Toast", () => ({ useToast: () => ({ showToast: vi.f
 vi.mock("@/lib/services/mock-interview.service", () => ({ default: { startTemplateInterview: vi.fn() } }));
 vi.mock("@/lib/hooks/useInterviewerVoice", () => ({ prefetchInterviewerClip: vi.fn() }));
 // The learner id behind the storage key comes from the access token's `user_id` claim.
-vi.mock("@/lib/utils/profile-cache", () => ({ currentUserId: () => "77" }));
+vi.mock("@/lib/utils/current-user", () => ({ currentUserId: () => "77" }));
 
 import { JourneyTopCards } from "./JourneyTopCards";
 import { topCardStorageKey } from "./topCardCollapse";

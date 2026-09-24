@@ -15,11 +15,10 @@ import {
 } from "../services/accounts.service";
 import { useRouter } from "next/navigation";
 import { authUtils } from "./auth-utils";
-import { clearResumeData } from "@/components/profile/resume/utils";
 import { clearTimeTrackingSession } from "../services/activity.service";
 import { setLoggingOut } from "../services/api";
 import { invalidateCached } from "@/lib/utils/ttl-cache";
-import { clearProfileCache } from "@/lib/utils/profile-cache";
+import { purgeLearnerStorage } from "@/lib/utils/profile-cache";
 import { AuthCelebration } from "@/components/common/AuthCelebration";
 
 export type AuthLoginResult =
@@ -371,12 +370,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       /* ignore */
     } finally {
       authUtils.clearTokens();
-      clearResumeData();
       clearTimeTrackingSession();
       if (typeof window !== "undefined") {
         localStorage.removeItem("admin_mode");
-        // The profile cache is per-user, but it must not survive a logout on a shared machine.
-        clearProfileCache();
+        // Nothing writes learner data to browser storage any more, but builds that did left
+        // blobs on real devices. One sweep, for every account, so logging out on a shared machine
+        // leaves nobody's profile or resume draft recoverable.
+        purgeLearnerStorage();
         // Session data caches are per-user too: the module TTL cache and the
         // persisted React Query snapshot must never hand the NEXT user this
         // user's course list or dashboard on a shared machine.

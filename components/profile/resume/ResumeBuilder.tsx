@@ -27,10 +27,8 @@ import type { PagedResumeHandle, ResumeDocument } from "./paging/PagedResume";
 import { SectionArrangePanel } from "./SectionArrangePanel";
 import {
   EMPTY_LAYOUT,
-  loadLayout,
   normalizeLayout,
   resetLayout,
-  saveLayout,
   type DocumentSections,
   type ResumeLayout,
   type SectionId,
@@ -42,7 +40,6 @@ import {
   resumeDocumentsService,
   type ResumeDocumentSummary,
 } from "@/lib/services/resumeDocuments.service";
-import { config } from "@/lib/config";
 import { PAGE_HEIGHT_PX } from "./paging/pageStyles";
 import { ATSScoreCard } from "./ATSScoreCard";
 import { ATSQuickFixes } from "./ATSQuickFixes";
@@ -290,17 +287,17 @@ export function ResumeBuilder({
   const previewRef = useRef<PagedResumeHandle>(null);
   /**
    * The learner's section arrangement: order, hidden sections, and per-template column placement.
-   * Held here, applied to the document the preview measures, and remembered in this browser -
-   * rearranging a resume and losing it on refresh would be worse than not offering it.
+   *
+   * Held here and applied to the document the preview measures. It is SAVED with the resume, on
+   * `ResumeDocument.layout`, and restored when the resume is opened. It used to also be written
+   * to `localStorage` under a key scoped to the tenant, which meant every learner sharing a
+   * browser shared one arrangement - and it is the learner's own data, so it does not belong on
+   * a device. An unsaved draft's arrangement lives here only, exactly like the draft's text.
    */
   const [layout, setLayout] = useState<ResumeLayout>(EMPTY_LAYOUT);
   const [docSections, setDocSections] = useState<DocumentSections>({ order: [], columns: {}, hasColumns: false });
-  useEffect(() => {
-    setLayout(loadLayout(config.clientId));
-  }, []);
   const updateLayout = (next: ResumeLayout) => {
     setLayout(next);
-    saveLayout(next, config.clientId);
   };
 
   /** Page count and fit, reported by the preview, so the toolbar can say what the download will be. */
@@ -842,9 +839,6 @@ export function ResumeBuilder({
       setResumeData(restoredData);
       setSelectedTemplate(restoredTemplate);
       setLayout(restoredLayout);
-      // The arrangement is still remembered per browser, so a refresh mid-edit does not silently
-      // rearrange the resume the learner is looking at.
-      saveLayout(restoredLayout, config.clientId);
       setSource("saved");
       awaitingProfileRef.current = false;
       setOpenDoc({ id: doc.id, name: doc.name });

@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { loadProfileCache, saveProfileCache } from "@/lib/utils/profile-cache";
+import { discardStrandedProfile, readStrandedProfile } from "@/lib/utils/profile-cache";
+import { readProfileSaveError } from "@/lib/utils/profileSaveError";
+import { StrandedProfileNotice } from "@/components/profile/StrandedProfileNotice";
 import { useTranslation } from "react-i18next";
 import { Box, CircularProgress, Stack } from "@mui/material";
 import { motion } from "framer-motion";
@@ -35,29 +37,29 @@ function isEmptyValue(val: unknown): boolean {
   return false;
 }
 
-function loadLocalProfile(): Partial<UserProfile> {
-  return loadProfileCache<UserProfile>();
-}
-
-function saveLocalProfile(data: Partial<UserProfileUpdate>) {
-  saveProfileCache<UserProfileUpdate>(data);
-}
-
-function mergeWithLocalFallback(apiProfile: UserProfile): UserProfile {
-  const local = loadLocalProfile();
-  const merged = { ...apiProfile } as Record<string, unknown>;
+/** A stranded value is worth offering only where it differs from what the server holds. */
+function strandedAgainst(apiProfile: UserProfile): Partial<UserProfileUpdate> | null {
+  const local = readStrandedProfile<UserProfileUpdate>();
+  if (!local) return null;
+  const server = apiProfile as unknown as Record<string, unknown>;
+  const out: Record<string, unknown> = {};
   for (const [key, value] of Object.entries(local)) {
-    if (isEmptyValue(merged[key]) && !isEmptyValue(value)) {
-      merged[key] = value;
-    }
+    // Only plain scalars. A stranded `experience` array would have to be reconciled entry by
+    // entry against what is stored, and guessing at that is how work gets overwritten.
+    if (typeof value !== "string" && typeof value !== "number") continue;
+    if (isEmptyValue(value)) continue;
+    if (String(server[key] ?? "") === String(value)) continue;
+    out[key] = value;
   }
-  return merged as unknown as UserProfile;
+  return Object.keys(out).length ? (out as Partial<UserProfileUpdate>) : null;
 }
 
 export default function ProfilePage() {
   const { t } = useTranslation("common");
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  /** Same fields as GET user-profile; no localStorage merge - used for profile strength % to match dashboard. */
+  /** Exactly what GET user-profile last returned: what is actually ON the server, which is what
+   * the profile strength percentage is measured against. `profile` also carries edits that a
+   * failed save left on screen for the learner to retry, and those are not saved facts. */
   const [profileFromApi, setProfileFromApi] = useState<UserProfile | null>(null);
   const [heatmapData, setHeatmapData] = useState<HeatmapData>({});
   const [activeTab, setActiveTab] = useState(0);
@@ -72,6 +74,12 @@ export default function ProfilePage() {
   const [openDocumentId, setOpenDocumentId] = useState<number | null>(null);
   /** Bumped when the list changes, so the builder reloads its own copy of it. */
   const [documentsToken, setDocumentsToken] = useState(0);
+  /**
+   * Edits an older build wrote to this browser and never got onto the server.
+   *
+   * Read once, shown, never merged. See StrandedProfileNotice and lib/utils/profile-cache.ts.
+   */
+  const [stranded, setStranded] = useState<Partial<UserProfileUpdate> | null>(null);
   const [loading, setLoading] = useState(true);
   const { showToast } = useToast();
   const { clientInfo } = useClientInfo();
@@ -90,10 +98,14 @@ export default function ProfilePage() {
       if (profileResult.status === "rejected") throw profileResult.reason;
       const profileData = profileResult.value;
       setProfileFromApi(profileData);
-      setProfile(mergeWithLocalFallback(profileData));
+      // The server's answer, and nothing else. This used to be merged with a localStorage
+      // copy of the learner's edits, which made data the server had never accepted keep
+      // looking saved for as long as they stayed in this browser.
+      setProfile(profileData);
       if (heatmapResult.status === "fulfilled") {
         setHeatmapData(heatmapResult.value.heatmap_data ?? {});
       }
+      setStranded(strandedAgainst(profileData));
       // Heatmap failure is non-fatal, same as before.
     } catch {
       showToast(t("profile.failedToLoad"), "error");
@@ -140,9 +152,21 @@ export default function ProfilePage() {
     });
   }, []);
 
+  /**
+   * Save to the server. There is no second place for this to go.
+   *
+   * What it used to do: write the learner's edits to `localStorage` FIRST, unconditionally, then
+   * try the server, and on failure say "Profile saved locally" as an *info* toast and swallow the
+   * error. Nothing ever told the learner their work was not on their account, the next page load
+   * merged the local copy back over the API profile so it kept looking saved, and the section
+   * that asked for the save saw a resolved promise and closed its editor.
+   *
+   * What it does now: one destination, the truth reported either way, and the error re-thrown so
+   * the section that asked can keep its editor open and point at the field the server named. The
+   * typed values stay on screen - in React state, not persisted - so the learner can fix and
+   * retry rather than lose what they wrote.
+   */
   const handleSaveProfile = async (updatedProfile: UserProfileUpdate) => {
-    saveLocalProfile(updatedProfile);
-
     try {
       const apiResponse = await profileService.updateUserProfile(updatedProfile);
       setProfileFromApi((prev) => {
@@ -168,14 +192,22 @@ export default function ProfilePage() {
         return result as UserProfile;
       });
       showToast(t("profile.updatedSuccess"), "success");
-    } catch {
+    } catch (error) {
+      // Keep what they typed on screen. Losing a learner's text to report a failure would be a
+      // worse bug than the one being reported - but this is React state only, and `profileFromApi`
+      // still says what the server actually holds.
       setProfile((prev) => {
         if (!prev) return null;
         const merged = { ...prev, ...updatedProfile };
         merged.profile_picture = merged.profile_picture ?? "";
         return merged as UserProfile;
       });
-      showToast(t("profile.savedLocally"), "info");
+      const { message } = readProfileSaveError(error, t("profile.saveFailed"));
+      showToast(t("profile.saveFailedWithReason", { reason: message }), "error");
+      // Re-thrown: the section knows which fields it just sent, so it is the one that can keep
+      // its editor open and mark them. Swallowing it here is what made every editor close on a
+      // save that never happened.
+      throw error;
     }
   };
 
@@ -257,6 +289,30 @@ export default function ProfilePage() {
           coverPhotoUrl={profile.cover_photo_url}
           onJumpTo={jumpTo}
         />
+
+        {stranded && (
+          <StrandedProfileNotice
+            fields={Object.entries(stranded).map(([key, value]) => ({
+              key,
+              label: key.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()),
+              value: String(value),
+            }))}
+            onSave={async () => {
+              try {
+                await handleSaveProfile(stranded as UserProfileUpdate);
+                discardStrandedProfile();
+                setStranded(null);
+              } catch {
+                // handleSaveProfile has already said what the server refused. The notice stays,
+                // and so does the stored copy, so nothing is lost by a save that did not work.
+              }
+            }}
+            onDiscard={() => {
+              discardStrandedProfile();
+              setStranded(null);
+            }}
+          />
+        )}
 
         <ProfileTabs value={activeTab} onChange={setActiveTab} />
 
