@@ -857,6 +857,17 @@
       "strictOrderNotice": "استُخدم ترتيب ثابت للأقسام في هذا التقييم. لا يمكن العودة إلى أقسام سابقة بعد الانتقال إلى قسم لاحق."
     }
   },
+  "assessmentTopicBreakdown": {
+    "title": "الأداء حسب الموضوع",
+    "subtitle": "تفصيل مفصل حسب الموضوع",
+    "correct": "{{n}} صحيحة",
+    "incorrect": "{{n}} خاطئة",
+    "notAnswered": "{{n}} بدون إجابة",
+    "questionsAsked": "{{n}} سؤالاً",
+    "accuracyOfAttempted": "الدقة في {{attempted}} إجابة",
+    "nothingAttempted": "لم تتم الإجابة على أي سؤال هنا",
+    "topicScore": "{{rating}}/5.0 من إجمالي {{total}} سؤالاً"
+  },
   "mockInterview": {
     "title": "مقابلة تجريبية",
     "subtitle": "تدرب مع مقابلات تجريبية مدعومة بالذكاء الاصطناعي",
@@ -2904,12 +2915,13 @@
     "andMore": "و{{n}} آخرين",
     "done": "تم"
   },
-  "adaptiveCourseProgress": {
-    "notStarted": "لم يبدأ",
-    "inProgress": "قيد التقدم",
-    "completed": "مكتمل",
-    "steps": "تم إنجاز {{done}} من {{total}} خطوة",
-    "barAria": "تم إنجاز {{percent}}٪ من هذه الدورة"
+  "aiTutorQuiz": {
+    "imageAlt": "صورة هذا السؤال",
+    "imageFailedTitle": "تعذّر تحميل هذه الصورة",
+    "imageFailedBody": "يحتاج هذا السؤال إلى صورة تعذّر عرضها، لذلك لن يُحتسب. تخطَّه وتابع الدرس.",
+    "notCountedTitle": "غير محتسب",
+    "notCountedBody": "احتاج هذا السؤال إلى صورة تعذّر عرضها، لذلك لم يُحتسب صحيحًا ولا خطأً.",
+    "skipUnanswerable": "تخطَّ هذا السؤال"
   },
   "profileSetup": {
     "title": "أكمل إعداد حسابك",
@@ -2933,17 +2945,6 @@
     "resumeFollow": "انتقل إلى ما يُقرأ الآن",
     "resumeFollowAria": "استئناف متابعة القراءة الصوتية"
   },
-  "assessmentTopicBreakdown": {
-    "title": "الأداء حسب الموضوع",
-    "subtitle": "تفصيل مفصل حسب الموضوع",
-    "correct": "{{n}} صحيحة",
-    "incorrect": "{{n}} خاطئة",
-    "notAnswered": "{{n}} بدون إجابة",
-    "questionsAsked": "{{n}} سؤالاً",
-    "accuracyOfAttempted": "الدقة في {{attempted}} إجابة",
-    "nothingAttempted": "لم تتم الإجابة على أي سؤال هنا",
-    "topicScore": "{{rating}}/5.0 من إجمالي {{total}} سؤالاً"
-  },
   "interviewLifecycle": {
     "notScoredYet": "لم يتم تقييم أي مقابلة بعد"
   },
@@ -2952,5 +2953,12 @@
     "startLearning": "ابدأ التعلم",
     "resumeLearning": "متابعة التعلم",
     "reviewCourse": "مراجعة الدورة"
+  },
+  "adaptiveCourseProgress": {
+    "notStarted": "لم يبدأ",
+    "inProgress": "قيد التقدم",
+    "completed": "مكتمل",
+    "steps": "تم إنجاز {{done}} من {{total}} خطوة",
+    "barAria": "تم إنجاز {{percent}}٪ من هذه الدورة"
   }
 }

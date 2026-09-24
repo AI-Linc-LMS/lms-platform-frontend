@@ -1234,6 +1234,17 @@
       "strictOrderNotice": "This assessment used a fixed section order. Earlier sections cannot be revisited after you moved ahead."
     }
   },
+  "assessmentTopicBreakdown": {
+    "title": "Topic-wise Performance",
+    "subtitle": "Detailed breakdown by topic",
+    "correct": "{{n}} Correct",
+    "incorrect": "{{n}} Incorrect",
+    "notAnswered": "{{n}} Not answered",
+    "questionsAsked": "{{n}} asked",
+    "accuracyOfAttempted": "Accuracy on {{attempted}} answered",
+    "nothingAttempted": "Nothing answered here",
+    "topicScore": "{{rating}}/5.0 across all {{total}} questions"
+  },
   "assessmentPublish": {
     "publishing": "Publishing…",
     "saving": "Saving…",
@@ -3300,12 +3311,13 @@
     "andMore": "and {{n}} more",
     "done": "Done"
   },
-  "adaptiveCourseProgress": {
-    "notStarted": "Not started",
-    "inProgress": "In progress",
-    "completed": "Completed",
-    "steps": "{{done}} of {{total}} steps done",
-    "barAria": "{{percent}}% of this course complete"
+  "aiTutorQuiz": {
+    "imageAlt": "Picture for this question",
+    "imageFailedTitle": "This picture did not load",
+    "imageFailedBody": "This question needs a picture we could not show, so it will not be marked. Skip it and carry on with the lesson.",
+    "notCountedTitle": "Not counted",
+    "notCountedBody": "This question needed a picture we could not show, so it has not been marked right or wrong.",
+    "skipUnanswerable": "Skip this one"
   },
   "profileSetup": {
     "title": "Finish setting up your account",
@@ -3329,17 +3341,6 @@
     "resumeFollow": "Jump to what's being read",
     "resumeFollowAria": "Resume following the narration"
   },
-  "assessmentTopicBreakdown": {
-    "title": "Topic-wise Performance",
-    "subtitle": "Detailed breakdown by topic",
-    "correct": "{{n}} Correct",
-    "incorrect": "{{n}} Incorrect",
-    "notAnswered": "{{n}} Not answered",
-    "questionsAsked": "{{n}} asked",
-    "accuracyOfAttempted": "Accuracy on {{attempted}} answered",
-    "nothingAttempted": "Nothing answered here",
-    "topicScore": "{{rating}}/5.0 across all {{total}} questions"
-  },
   "interviewLifecycle": {
     "notScoredYet": "No interview scored yet"
   },
@@ -3348,5 +3349,12 @@
     "startLearning": "Start learning",
     "resumeLearning": "Resume learning",
     "reviewCourse": "Review the course"
+  },
+  "adaptiveCourseProgress": {
+    "notStarted": "Not started",
+    "inProgress": "In progress",
+    "completed": "Completed",
+    "steps": "{{done}} of {{total}} steps done",
+    "barAria": "{{percent}}% of this course complete"
   }
 }
