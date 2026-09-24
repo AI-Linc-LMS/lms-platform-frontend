@@ -17,8 +17,13 @@ import type { StudentDetail } from "@/lib/services/admin/admin-student.service";
 import { CourseManagementCard } from "@/components/admin/manage-students/CourseManagementCard";
 import { ADAPTIVE, formatDate } from "./shared";
 import { InfoButton, RiskCriteriaContent } from "@/components/common/InfoPopover";
+import { isNeverLoggedIn, STUDENT_SIGNALS } from "@/lib/utils/student-risk";
 import { ResetProgressCard } from "./ResetProgressCard";
 import { PHONE_FIELD, PHONE_TAP } from "../mobile";
+
+/** One label for "never logged in", shared with the directory chip and the signals popover. */
+const NEVER_LOGGED_IN_LABEL =
+  STUDENT_SIGNALS.find((s) => s.key === "never_logged_in")?.label ?? "Never logged in";
 
 interface ManageTabProps {
   student: StudentDetail;
@@ -145,6 +150,9 @@ export function ManageTab({
   onEnrollmentChange,
 }: ManageTabProps) {
   const pi = student.personal_info;
+  // The same predicate the directory's "Never logged in" chip uses, so the detail page and the
+  // chip can never disagree about one student.
+  const neverLoggedIn = isNeverLoggedIn(pi);
   const name = `${pi.first_name} ${pi.last_name}`.trim() || pi.username;
   const initials =
     `${pi.first_name?.[0] || ""}${pi.last_name?.[0] || ""}`.toUpperCase() ||
@@ -199,14 +207,16 @@ export function ManageTab({
             <MetaRow
               label="Last login"
               value={
-                pi.last_login ? (
-                  formatDate(pi.last_login)
+                neverLoggedIn ? (
+                  <Box component="span" sx={{ color: "#b45309" }}>
+                    {NEVER_LOGGED_IN_LABEL}
+                  </Box>
                 ) : (
-                  <Box component="span" sx={{ color: "#b45309" }}>Never logged in</Box>
+                  formatDate(pi.last_login)
                 )
               }
               info={
-                !pi.last_login ? (
+                neverLoggedIn ? (
                   <InfoButton ariaLabel="How activity signals work">
                     <RiskCriteriaContent />
                   </InfoButton>

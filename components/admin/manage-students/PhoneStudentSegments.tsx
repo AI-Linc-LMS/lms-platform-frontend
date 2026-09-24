@@ -1,31 +1,35 @@
 "use client";
 
 import { Box, Typography } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ScrollRow } from "@/components/common/mobile/ScrollRow";
 import { InfoButton, RiskCriteriaContent } from "@/components/common/InfoPopover";
-import type { SegmentKey } from "@/lib/utils/student-risk";
+import {
+  STUDENT_SIGNALS,
+  type SegmentKey,
+  type SignalKey,
+} from "@/lib/utils/student-risk";
 import { PHONE_INFO_TAP } from "./mobile";
-
-/** The engagement-health presets, shared by the desktop wrap row and the phone scroll row. */
-export const STUDENT_SEGMENTS: Array<{ key: SegmentKey; label: string; icon: string; color: string }> = [
-  { key: "at_risk", label: "At risk", icon: "mdi:alert-circle-outline", color: "var(--danger-500, #ef4444)" },
-  { key: "inactive", label: "Inactive 30d", icon: "mdi:sleep", color: "#f59e0b" },
-  { key: "low_completion", label: "Low completion", icon: "mdi:chart-line-variant", color: "#a855f7" },
-  { key: "high_performers", label: "High performers", icon: "mdi:trophy-outline", color: "#10b981" },
-];
 
 /**
  * The segment presets on a phone: one scrolling row of 44px pills instead of two wrapped rows
  * of 31px ones, with the "how is this calculated" button grown to a 44px target.
+ *
+ * The pills come from STUDENT_SIGNALS, the one table the popover is also built from, so the
+ * phone can never be missing a chip the popover documents.
  */
 export function PhoneStudentSegments({
   segment,
+  counts,
   onSegmentChange,
 }: {
   segment: SegmentKey;
+  /** How many students each chip returns, from the same predicate the filter uses. */
+  counts?: Record<SignalKey, number>;
   onSegmentChange: (key: SegmentKey) => void;
 }) {
+  const { t } = useTranslation("common");
   return (
     <Box data-tour-id="students-segments" data-testid="phone-student-segments" sx={{ mb: 2 }}>
       <Box sx={{ display: "flex", alignItems: "center", gap: 0.25, mb: 0.5 }}>
@@ -38,23 +42,26 @@ export function PhoneStudentSegments({
             color: "var(--font-secondary)",
           }}
         >
-          Segments
+          {t("studentSegments.heading", "Segments")}
         </Typography>
         <Box sx={PHONE_INFO_TAP}>
-          <InfoButton ariaLabel="How segments are calculated">
+          <InfoButton ariaLabel={t("studentSegments.infoAriaLabel", "How segments are calculated")}>
             <RiskCriteriaContent />
           </InfoButton>
         </Box>
       </Box>
-      <ScrollRow ariaLabel="Segments">
-        {STUDENT_SEGMENTS.map((seg) => {
+      <ScrollRow ariaLabel={t("studentSegments.heading", "Segments")}>
+        {STUDENT_SIGNALS.map((seg) => {
           const active = segment === seg.key;
+          const count = counts?.[seg.key];
+          const label = t(seg.labelKey, seg.label);
           return (
             <Box
               key={seg.key}
               component="button"
               type="button"
               aria-pressed={active}
+              data-testid={`segment-chip-${seg.key}`}
               onClick={() => onSegmentChange(seg.key)}
               sx={{
                 display: "inline-flex",
@@ -74,7 +81,26 @@ export function PhoneStudentSegments({
               }}
             >
               <IconWrapper icon={seg.icon} size={18} />
-              {seg.label}
+              {label}
+              {count != null && (
+                <Box
+                  component="span"
+                  data-testid={`segment-count-${seg.key}`}
+                  aria-label={t("studentSegments.countAria", { defaultValue: "{{count}} students", count })}
+                  sx={{
+                    ml: 0.25,
+                    px: 0.75,
+                    borderRadius: 999,
+                    fontSize: "0.75rem",
+                    fontWeight: 800,
+                    background: active
+                      ? "rgba(255,255,255,0.24)"
+                      : "color-mix(in srgb, var(--font-secondary) 14%, transparent)",
+                  }}
+                >
+                  {count}
+                </Box>
+              )}
             </Box>
           );
         })}

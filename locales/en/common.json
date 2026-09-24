@@ -3217,5 +3217,25 @@
     "questionLabel": "Question {{n}}",
     "goBack": "Go back and fix",
     "saveAnyway": "Save anyway"
+  },
+  "studentSegments": {
+    "heading": "Segments",
+    "infoAriaLabel": "How segments are calculated",
+    "popoverTitle": "How these signals are calculated",
+    "popoverFooter": "Every signal here has a chip above. They overlap on purpose, so you pick one at a time - choosing another replaces it, and choosing the selected one clears it.",
+    "popoverDerived": "All signals are derived from existing activity data - no extra tracking.",
+    "countAria": "{{count}} students",
+    "atRisk": "At risk",
+    "atRiskRule": "Enrolled and matching at least one of the server's at-risk rules. Unenrolled students are never flagged.",
+    "inactive": "Inactive 30d",
+    "inactiveRule": "Enrolled, and no activity in the last 30 days (or never active). Unenrolled students are never flagged.",
+    "lowCompletion": "Low completion",
+    "lowCompletionRule": "Overall course content completion is below 30%.",
+    "highPerformers": "High performers",
+    "highPerformersRule": "Overall content completion is 75% or higher.",
+    "neverLoggedIn": "Never logged in",
+    "neverLoggedInRule": "The account has never authenticated (no last-login).",
+    "neverActive": "Never active",
+    "neverActiveRule": "No course / content activity has ever been recorded."
   }
 }
