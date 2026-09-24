@@ -60,7 +60,10 @@ export function TodayGoalPanel({ goal }: { goal: TodayGoal }) {
         {/* Checklist */}
         <Stack spacing={1.1} sx={{ flex: 1, minWidth: 0 }}>
           {goals.map((g) => {
-            const showPractice = g.key === "practice" && !g.done && g.minutes != null && g.targetMinutes != null;
+            // Shown whether or not the goal is done. The complaint that started this was a
+            // learner seeing a ticked "15-min practice" and having no way to find out what had
+            // been measured; a bare tick is the one state where the number matters most.
+            const showPractice = g.key === "practice" && g.minutes != null && g.targetMinutes != null;
             return (
               <Stack key={g.key} direction="row" spacing={1} alignItems="center">
                 <Icon
@@ -98,10 +101,14 @@ export function TodayGoalPanel({ goal }: { goal: TodayGoal }) {
       {/* Last-5-day strip */}
       <Stack direction="row" spacing={1} sx={{ mt: 2 }}>
         {lastDays.map((d) => {
-          // Completing even one of today's goals already marks the streak for the
-          // day, so light today's flame as soon as there's any progress - don't
-          // wait for the full goal or a server refresh.
-          const litToday = d.isToday && completedCount >= 1;
+          // Completing a piece of content already marks the streak for the day, so light today's
+          // flame as soon as one lands - don't wait for a server refresh.
+          //
+          // Only the content goals do this. The streak is one live computation over UserActivity
+          // (activity/utils/streak.py), and the practice goal is minutes, not activity - so
+          // lighting the flame for it put a fire on a day the top-nav streak counted as empty.
+          // Two flames, two answers, same day.
+          const litToday = d.isToday && goals.some((g) => g.done && g.key !== "practice");
           const active = d.active || litToday;
           return (
             <Box key={d.date} sx={{ flex: 1, textAlign: "center" }}>
