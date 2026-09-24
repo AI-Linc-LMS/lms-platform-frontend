@@ -1,7 +1,8 @@
 "use client";
 
-import { Box, Typography } from "@mui/material";
+import { Box, CircularProgress, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
+import { useTranslation } from "react-i18next";
 import { CompanionCard } from "./CompanionCard";
 import type { Chapter, WatchMode } from "@/lib/services/adaptive-video.service";
 import { PHONE } from "@/components/common/mobile/phone";
@@ -31,11 +32,18 @@ export function WatchModeSelector({
   value,
   onChange,
   rewatchAvailable = false,
+  busy = false,
+  error = null,
 }: {
   value: WatchMode;
   onChange: (m: WatchMode) => void;
   rewatchAvailable?: boolean;
+  /** A switch is on its way to the server (and, out of Rewatch, fetching the questions). */
+  busy?: boolean;
+  /** Why the last switch did not happen - the selection has already gone back to the mode in force. */
+  error?: string | null;
 }) {
+  const { t } = useTranslation();
   return (
     <CompanionCard
       accent="#6366f1"
@@ -48,15 +56,27 @@ export function WatchModeSelector({
         </Box>
       }
     >
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
+      <Box role="radiogroup" aria-label={t("adaptiveVideoMode.groupLabel")} sx={{ display: "flex", flexDirection: "column", gap: 0.75 }}>
         {[...MODES, ...(rewatchAvailable ? [REWATCH_MODE] : [])].map((m) => {
           const active = value === m.key;
           return (
             <Box
               key={m.key}
+              // A radio group, so a keyboard or a screen reader can tell which mode is in force
+              // and change it - the options were bare clickable boxes.
+              role="radio"
+              aria-checked={active}
+              tabIndex={0}
               onClick={() => onChange(m.key)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  onChange(m.key);
+                }
+              }}
               sx={{
                 cursor: "pointer",
+                "&:focus-visible": { outline: "2px solid #6366f1", outlineOffset: 2 },
                 px: 1.5,
                 py: 1,
                 borderRadius: 2,
@@ -75,11 +95,21 @@ export function WatchModeSelector({
                 <Typography sx={{ fontSize: "0.84rem", fontWeight: active ? 800 : 600, lineHeight: 1.2 }}>{m.label}</Typography>
                 <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary" }}>{m.hint}</Typography>
               </Box>
-              {active && <Icon icon="mdi:check-circle" width={16} style={{ color: "#6366f1", marginLeft: "auto" }} />}
+              {active && busy ? (
+                <CircularProgress size={15} thickness={5} aria-label={t("adaptiveVideoMode.switching")} sx={{ color: "#6366f1", ml: "auto", flexShrink: 0 }} />
+              ) : active ? (
+                <Icon icon="mdi:check-circle" width={16} style={{ color: "#6366f1", marginLeft: "auto" }} />
+              ) : null}
             </Box>
           );
         })}
       </Box>
+      {error && (
+        <Box role="alert" sx={{ mt: 1.25, display: "flex", gap: 0.75, alignItems: "flex-start" }}>
+          <Icon icon="mdi:alert-circle-outline" width={15} style={{ color: "#dc2626", flexShrink: 0, marginTop: 2 }} />
+          <Typography sx={{ fontSize: "0.76rem", lineHeight: 1.45, color: "text.secondary" }}>{error}</Typography>
+        </Box>
+      )}
     </CompanionCard>
   );
 }

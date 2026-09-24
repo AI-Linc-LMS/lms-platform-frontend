@@ -3151,5 +3151,10 @@
     "interviewSetupCta": "Interview is being set up",
     "interviewClosedCta": "This interview is no longer open",
     "interviewDoneClosed": "Done · this interview is no longer open"
+  },
+  "adaptiveVideoMode": {
+    "groupLabel": "Watch mode",
+    "switching": "Switching…",
+    "switchFailed": "Couldn't switch the watch mode just now. Try again."
   }
 }
