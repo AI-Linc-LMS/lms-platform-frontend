@@ -88,7 +88,11 @@ function buildItems(
           ...base,
           chips: [
             { icon: "mdi:clock-outline", text: `~${a.reading_time_minutes} min` },
-            { icon: "mdi:tune-vertical", text: `${a.default_tier} · adapts` },
+            // `default_tier` is the BUILD tier ("Intermediate" on 4554 of 4591 live
+            // articles), so this chip told a learner the hero had just labelled ADVANCED that
+            // their module was Intermediate. The learner's calibrated tier wins when we have
+            // one; the build tier is only the fallback for someone who has not calibrated.
+            { icon: "mdi:tune-vertical", text: `${a.learner_tier || a.default_tier} · adapts` },
           ],
         };
       }
