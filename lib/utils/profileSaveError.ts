@@ -18,6 +18,14 @@ export interface ProfileSaveFailure {
   message: string;
   /** Per top-level field, for a form that can point at its own inputs. */
   fields: Record<string, string>;
+  /**
+   * The HTTP status, when the server answered at all. `null` means nothing came back - a
+   * genuine network failure, a blocked request, or a timeout.
+   *
+   * This is the difference between "your connection dropped" and "the server broke", and
+   * without it both were reported as the same sentence. See `readProfileSaveError`.
+   */
+  status: number | null;
 }
 
 /** "portfolio_website_url" -> "Portfolio website url". */
@@ -78,8 +86,21 @@ function errorBody(err: unknown): unknown {
   return data;
 }
 
+/** The status the server answered with, or null when the request never got a response. */
+function responseStatus(err: unknown): number | null {
+  const status = (err as { response?: { status?: number } })?.response?.status;
+  return typeof status === "number" ? status : null;
+}
+
+/** Axios sets this when it aborted the request itself, e.g. on the 45s client timeout. */
+function timedOut(err: unknown): boolean {
+  const code = (err as { code?: string })?.code;
+  return code === "ECONNABORTED" || code === "ETIMEDOUT";
+}
+
 export function readProfileSaveError(err: unknown, fallback: string): ProfileSaveFailure {
   const body = errorBody(err);
+  const status = responseStatus(err);
   const fields: Record<string, string> = {};
 
   // The sentence shown, per top-level field, which may name a nested one. `fields` stays keyed
@@ -99,8 +120,34 @@ export function readProfileSaveError(err: unknown, fallback: string): ProfileSav
     }
   }
 
-  if (lines.length) return { message: lines.join("; "), fields };
+  if (lines.length) return { message: lines.join("; "), fields, status };
 
   const plain = firstMessage(body);
-  return { message: plain ?? fallback, fields };
+  if (plain) return { message: plain, fields, status };
+
+  /**
+   * Nothing readable came back, and WHY matters - these need different actions and used to be
+   * reported as one sentence.
+   *
+   * `fallback` is "Could not reach the server". It was shown whenever no message could be
+   * parsed, which covers three very different situations: the request never arrived; it was
+   * aborted by our own 45-second timeout; or the server DID answer - a 502 from the load
+   * balancer, a 413, a 504 - with a body carrying no explanation. Telling someone their
+   * connection failed when the server returned 502 sends them, and whoever they report it to,
+   * looking in entirely the wrong place. That happened.
+   *
+   * The status is not localised on purpose: "502" is the same in every language and it is the
+   * one token that makes a report actionable.
+   */
+  if (timedOut(err)) {
+    return { message: "The save timed out before the server answered.", fields, status };
+  }
+  if (status !== null) {
+    return {
+      message: `The server could not complete the save (HTTP ${status}).`,
+      fields,
+      status,
+    };
+  }
+  return { message: fallback, fields, status };
 }
