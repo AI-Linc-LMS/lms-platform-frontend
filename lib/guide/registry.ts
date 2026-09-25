@@ -810,14 +810,6 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
         color: "#a78bfa",
       },
       {
-        targetId: "cohorts-stats",
-        title: "At-a-glance stats",
-        narration: "This strip gives you the pulse of your program: how many cohorts you have, how many are active, total members, and assignments mapped across them all.",
-        placement: "bottom",
-        icon: "mdi:chart-box-outline",
-        color: "#6366f1",
-      },
-      {
         targetId: "cohorts-tabs",
         title: "Filter by status",
         narration: "Use these tabs to slice cohorts by lifecycle stage - All, Active, Scheduled, Drafts, Completed, or Archived - with live counts so you can jump straight to what you need.",

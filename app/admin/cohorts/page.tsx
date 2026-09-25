@@ -32,8 +32,6 @@ import { useToast } from "@/components/common/Toast";
 import {
   AssessmentFilterBar,
   AssessmentEmptyState,
-  StatStrip,
-  type StatItem,
   SegmentedTabs,
   type SegmentedTab,
 } from "@/components/admin/assessment/shared";
@@ -97,16 +95,6 @@ export default function AdminCohortsPage() {
     for (const co of cohorts) c[co.status] = (c[co.status] ?? 0) + 1;
     return c;
   }, [cohorts]);
-
-  const stats: StatItem[] = useMemo(
-    () => [
-      { label: "Cohorts", value: cohorts.length, icon: "mdi:account-group", tone: "var(--ai-violet, #7c3aed)" },
-      { label: "Active", value: counts.active ?? 0, icon: "mdi:play-circle-outline", tone: "var(--success-500, #5fa564)" },
-      { label: "Members", value: cohorts.reduce((n, c) => n + c.member_count, 0), icon: "mdi:account-multiple", tone: "var(--ai-pink, #ec4899)" },
-      { label: "Assignments", value: cohorts.reduce((n, c) => n + c.artifact_count, 0), icon: "mdi:cube-outline", tone: "var(--accent-indigo, #6366f1)" },
-    ],
-    [cohorts, counts],
-  );
 
   const statusTabs: SegmentedTab<StatusTab>[] = [
     { value: "all", label: "All", count: counts.all },
@@ -199,12 +187,6 @@ export default function AdminCohortsPage() {
         </Box>
       ) : (
       <>
-
-        {!loading && cohorts.length > 0 && (
-          <Box data-tour-id="cohorts-stats" sx={{ mt: 3 }}>
-            <StatStrip items={stats} />
-          </Box>
-        )}
 
         {!loading && cohorts.length > 0 && (
           <Box data-tour-id="cohorts-tabs" sx={{ mt: 3, mb: 2, ...phoneTabsSx }}>
