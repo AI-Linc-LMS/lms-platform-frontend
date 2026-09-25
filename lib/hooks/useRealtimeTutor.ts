@@ -9,6 +9,21 @@ import {
   type TranscriptTurn,
 } from "@/lib/services/ai-tutor.service";
 import { getAudioConstraints } from "@/lib/utils/audio-constraints";
+import {
+  applyNoiseSuppression,
+  type NoiseSuppressionHandle,
+} from "@/lib/utils/noise-suppression";
+import {
+  ANSWER_NUDGE_MAX,
+  AUTO_CONTINUE_MAX,
+  continuationDirective,
+  decideContinuation,
+  endsWithQuestion,
+  languagePinDirective,
+  nudgeDirective,
+  waitFor,
+  type ContinuationWorld,
+} from "@/lib/hooks/tutorTurnTaking";
 import { registerMediaStream } from "@/lib/utils/media-stream-registry";
 import { authUtils } from "@/lib/auth/auth-utils";
 import { config } from "@/lib/config";
@@ -55,21 +70,11 @@ const IDLE_END_MS = 150_000;
  * property, not a prompt one. PR #761 rewrote the prompt to say "never wait to be told to
  * continue"; the model cannot obey that, because after `response.done` it has no way to speak.
  *
- * Seven seconds: long enough to be a real pause a learner can think or interject in, short
- * enough that the lesson does not feel broken. The 90s idle banner is far too late, and it is
- * labelled as an end-of-session warning rather than a way to carry on.
- *
- * COST. This does not add spend. The continuation is the same turn the learner was previously
- * forced to request; it replaces an utterance ("proceed") that itself costs input audio.
+ * The DECISION about what to do when that timer fires now lives in `tutorTurnTaking.ts`,
+ * because it turned out to be four learner reports rather than one: a turn that ended in a
+ * QUESTION must not be continued at all, only checked in on, and no continuation may be sent
+ * bare. See that file for why.
  */
-const AUTO_CONTINUE_MS = 7_000;
-
-/**
- * Consecutive self-continuations allowed before the tutor waits for a human. Any learner speech
- * resets it. Without a cap a single deadlock could become an unbounded monologue, which is both
- * a worse lesson and real money -- audio is the dominant cost in this product.
- */
-const AUTO_CONTINUE_MAX = 2;
 
 /**
  * R1 — reconnect. WebRTC calls cannot resume, so each attempt is a fresh mint; the server caps
@@ -457,6 +462,28 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   const autoContinueTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const autoContinueCountRef = useRef(0);
   const responseQueuedRef = useRef(false);
+  /**
+   * When the LEARNER last made a sound.
+   *
+   * Separate from `lastVoiceAtRef`, which the idle watchdog owns and which is ALSO written by
+   * the tutor's own `output_audio_buffer.started`. That conflation is right for "is this tab
+   * abandoned" and wrong for "did the learner take the floor": read as the latter it lets the
+   * tutor's own voice hand its monologue budget back to itself.
+   */
+  const lastLearnerVoiceAtRef = useRef(0);
+  /** Whether the turn that armed the pending continuation ended by asking the learner something. */
+  const askedQuestionRef = useRef(false);
+  /** Check-ins already spent on the current unanswered question. Reset when the learner speaks. */
+  const nudgeCountRef = useRef(0);
+  /**
+   * The language this lesson has settled into, once anything has established one.
+   *
+   * "" means nobody has said, which is NOT English - the same distinction
+   * `ai_tutor/services/language.py` draws server-side, for the same reason.
+   */
+  const lessonLanguageRef = useRef("");
+  /** The RNNoise chain sitting between the microphone and the peer connection. */
+  const noiseHandleRef = useRef<NoiseSuppressionHandle | null>(null);
   const responseWatchdogRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const reconnectAttemptRef = useRef(0);
   const reconnectingRef = useRef(false);
@@ -536,36 +563,88 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   }, []);
 
   /**
-   * The tutor finished speaking and nothing is going to prompt it again. Pick the lesson back up.
+   * Put a directive into the conversation WITHOUT asking for a spoken turn.
    *
-   * Every guard here is a case where silence is CORRECT and continuing would be worse than the
-   * deadlock:
-   *   - a quiz on screen is the model doing what `show_quiz` asks ("say one short line and then
-   *     go quiet, they are reading"). Talking over a reading learner is the opposite of a fix.
-   *   - a response already active or queued means a turn is coming anyway.
-   *   - the learner speaking at any point resets the counter, because they are driving again.
-   *   - AUTO_CONTINUE_MAX bounds it, so a deadlock can never become an unbounded monologue.
+   * `tellTutor` is the other half of this and always mints a response, because its callers are
+   * facts the learner expects a reaction to. A directive is the opposite: it changes how the
+   * NEXT turn should be produced, and making the tutor announce it is precisely the "yes, we
+   * will speak Hindi" repetition that was reported.
+   *
+   * Role "user" rather than "system": it is the only role this session's conversation is known
+   * to accept (every injection in this hook has always used it), and the "[Session ...]" prefix
+   * is what marks it as an instruction rather than the learner speaking. Injected text items do
+   * not reach the transcript panel, which is built from audio transcription events, so the
+   * learner never sees these.
    */
-  const scheduleAutoContinue = useCallback(() => {
-    cancelAutoContinue();
-    if (closedRef.current) return;
-    if (quizOpenRef.current) return;
-    if (autoContinueCountRef.current >= AUTO_CONTINUE_MAX) return;
-    const armedAt = Date.now();
-    autoContinueTimerRef.current = setTimeout(() => {
-      autoContinueTimerRef.current = null;
-      if (closedRef.current || quizOpenRef.current) return;
-      if (responseActiveRef.current || responseQueuedRef.current) return;
-      // The learner spoke while we were waiting -- they have the floor, and their utterance
-      // already created a response of its own.
-      if (lastVoiceAtRef.current > armedAt) {
-        autoContinueCountRef.current = 0;
+  const injectDirective = useCallback(
+    (text: string) =>
+      send({
+        type: "conversation.item.create",
+        item: { type: "message", role: "user", content: [{ type: "input_text", text }] },
+      }),
+    [send]
+  );
+
+  /**
+   * The tutor finished speaking. Decide what silence should mean this time.
+   *
+   * Two different silences, which the single 7-second timer here used to conflate:
+   *
+   *   - the tutor asked a QUESTION and is waiting, exactly as its persona instructs it to
+   *     ("Stop and wait only when you have asked a question you actually need answered").
+   *     Continuing here is the tutor answering itself, which is what was reported. It gets the
+   *     long wait and then ONE check-in.
+   *   - the tutor ended a turn with nothing outstanding, and under `semantic_vad` nothing will
+   *     ever ask it for another one. That is the deadlock this mechanism was built for, and it
+   *     still gets the short wait - but instructed now, never bare.
+   *
+   * The decision is in `tutorTurnTaking.decideContinuation` so it can be tested without a
+   * socket; this function is the part that owns the timer and the refs.
+   */
+  const scheduleAutoContinue = useCallback(
+    (askedQuestion: boolean) => {
+      cancelAutoContinue();
+      if (closedRef.current) return;
+      if (quizOpenRef.current) return;
+      askedQuestionRef.current = askedQuestion;
+      const armedAt = Date.now();
+      const world = (): ContinuationWorld => ({
+        closed: closedRef.current,
+        quizOpen: quizOpenRef.current,
+        responseActive: responseActiveRef.current,
+        responseQueued: responseQueuedRef.current,
+        lastLearnerVoiceAt: lastLearnerVoiceAtRef.current,
+        count: autoContinueCountRef.current,
+        askedQuestion,
+        nudges: nudgeCountRef.current,
+      });
+      // Budget already spent on whichever path this is: do not arm a timer that is certain to
+      // decide "silence". `decideContinuation` enforces both caps regardless; this is only
+      // about not leaving a pointless timeout running for the rest of the lesson.
+      if (askedQuestion) {
+        if (nudgeCountRef.current >= ANSWER_NUDGE_MAX) return;
+      } else if (autoContinueCountRef.current >= AUTO_CONTINUE_MAX) {
         return;
       }
-      autoContinueCountRef.current += 1;
-      requestResponse();
-    }, AUTO_CONTINUE_MS);
-  }, [cancelAutoContinue, requestResponse]);
+      autoContinueTimerRef.current = setTimeout(() => {
+        autoContinueTimerRef.current = null;
+        const w = world();
+        const action = decideContinuation(w, armedAt, Date.now());
+        autoContinueCountRef.current = w.count;
+        nudgeCountRef.current = w.nudges;
+        if (action === "silence") return;
+        // A continuation is never sent bare. A model handed the floor with no brief restates
+        // where it had got to, and that restatement IS the reported repetition.
+        injectDirective(
+          action === "nudge"
+            ? nudgeDirective(lessonLanguageRef.current)
+            : continuationDirective(lessonLanguageRef.current)
+        );
+        requestResponse();
+      }, waitFor({ askedQuestion }));
+    },
+    [cancelAutoContinue, requestResponse, injectDirective]
+  );
 
   /**
    * A turn finished. Let anything that queued behind it go now.
@@ -677,6 +756,39 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   // --- the language the lesson turned out to be in ---------------------------
 
   /**
+   * Make the lesson's language a standing property of the SESSION rather than a per-turn guess.
+   *
+   * The reported bug: a learner asks for Hindi, gets Hindi for four minutes, and then the tutor
+   * returns to English without being asked. The mechanism is structural, not a model whim.
+   *
+   * The realtime session's `instructions` are pinned when the ephemeral secret is minted
+   * (`ai_tutor/views.py` StartSessionView) and are never updated afterwards - there is no
+   * `session.update` anywhere in this hook. Those instructions say "Speak whatever language the
+   * learner speaks", which is self-referential on purpose and works beautifully while the
+   * learner is talking, because the model has fresh audio to mirror. It has nothing to mirror
+   * when a response is generated with NO new learner turn in front of it, and against an
+   * otherwise all-English instruction block the drift has exactly one direction.
+   *
+   * A continuation is precisely such a response, which is why this landed in the same
+   * investigation as the repetition and the question-waiting: they are one mechanism seen from
+   * three sides. Two things fix it together - this durable conversation item, and the language
+   * clause `tutorTurnTaking` puts on every continuation it sends.
+   *
+   * Injected WITHOUT minting a response on purpose. The reported transcript has the tutor
+   * saying "yes, we will speak Hindi" three times; making it announce the pin would be a fourth.
+   */
+  const pinLessonLanguage = useCallback(
+    (language: string) => {
+      const wanted = normaliseLanguage(language);
+      if (!wanted) return;
+      if (wanted.toLowerCase() === lessonLanguageRef.current.toLowerCase()) return;
+      lessonLanguageRef.current = wanted;
+      injectDirective(languagePinDirective(wanted));
+    },
+    [injectDirective]
+  );
+
+  /**
    * Make sure the question pool is in `language`, fetching a rewritten one if it is not.
    *
    * The reported bug in one sentence: the pool is built before the learner has said a word, so
@@ -697,6 +809,12 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     const wanted = normaliseLanguage(language);
     const sid = sessionIdRef.current;
     if (!wanted || !sid) return false;
+    // Pin BEFORE the pool short-circuit. "What language is this lesson in" and "what language
+    // is the question pool written in" are different facts that happen to arrive together: a
+    // session whose pool already matches still needs the conversation to carry the standing
+    // instruction, and returning early here is how the pin got skipped for the sessions that
+    // needed it most - the ones already speaking the right language.
+    pinLessonLanguage(wanted);
     if (wanted.toLowerCase() === poolLanguageRef.current.toLowerCase()) return true;
 
     const inFlight = languageRequestsRef.current.get(wanted.toLowerCase());
@@ -722,7 +840,7 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     })();
     languageRequestsRef.current.set(wanted.toLowerCase(), request);
     return request;
-  }, []);
+  }, [pinLessonLanguage]);
 
   // --- tool dispatch ---------------------------------------------------------
 
@@ -1044,11 +1162,15 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
 
         case "input_audio_buffer.speech_started":
           lastVoiceAtRef.current = Date.now();
+          lastLearnerVoiceAtRef.current = Date.now();
           // The learner is driving. Drop any pending self-continuation and forget the streak:
           // the cap exists to stop the tutor monologuing INTO silence, not to ration a lesson
           // where somebody is actually talking back.
           cancelAutoContinue();
           autoContinueCountRef.current = 0;
+          // They are answering, so the question is no longer unanswered and the next one gets
+          // its own check-in budget.
+          nudgeCountRef.current = 0;
           setIdleWarning(false);
           setPhase("student-speaking");
           // Drop audio already buffered in the browser so barge-in is immediate rather
@@ -1160,6 +1282,9 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
         case "conversation.item.input_audio_transcription.completed": {
           const text = String(event.transcript ?? "").trim();
           if (text) {
+            // A transcript is proof the learner really did speak, which `speech_started` on its
+            // own is not: that fires on whatever tripped VAD, including a door or a sibling.
+            lastLearnerVoiceAtRef.current = Date.now();
             /**
              * Start the rewrite from the learner's own words, before a quiz is asked for.
              *
@@ -1242,7 +1367,9 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           setPhase("listening");
           releaseResponseGate();
           // Nothing else will ask for another turn, so arm the continuation. Guarded inside.
-          scheduleAutoContinue();
+          // Whether this turn ended in a question is what decides between waiting for an answer
+          // and picking the lesson back up; see tutorTurnTaking.ts.
+          scheduleAutoContinue(endsWithQuestion(spoken));
           break;
         }
 
@@ -1351,6 +1478,11 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
 
     micStreamRef.current?.getTracks().forEach((t) => t.stop());
     micStreamRef.current = null;
+    // Disconnects the worklet AND stops the raw microphone tracks behind it, which the line
+    // above cannot reach: `micStreamRef` holds the worklet's output, and stopping an output
+    // track does not release the capture device.
+    noiseHandleRef.current?.teardown();
+    noiseHandleRef.current = null;
     dc?.close();
     dcRef.current = null;
     pc?.close();
@@ -1488,11 +1620,45 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           }
         };
 
-        const micStream = await navigator.mediaDevices.getUserMedia({
+        const rawStream = await navigator.mediaDevices.getUserMedia({
           audio: getAudioConstraints(),
         });
+
+        /**
+         * RNNoise, between the microphone and the peer connection.
+         *
+         * "There is no noise cancellation, even the slightest noise is captured and the tutor
+         * gets interrupted." Two layers were already in place and neither is enough on its own:
+         * the browser's own DSP via `getAudioConstraints`, and the provider's `far_field`
+         * `noise_reduction` beside `turn_detection` in ai_tutor/services/realtime.py. This is
+         * the third, and it has been sitting in the repo unused by the tutor since it was
+         * vendored - `lib/utils/noise-suppression.ts` had exactly two consumers, both of them
+         * in mock-interview, because that surface has a device-check page to hang the opt-in on
+         * and the tutor has no such page. Nobody decided the tutor should go without it.
+         *
+         * WHY THIS AND NOT A HIGHER VAD THRESHOLD. Raising the turn-detection threshold would
+         * also stop a quiet learner interrupting, and being able to cut the tutor off is the
+         * single behaviour this room must not lose. RNNoise is a speech/non-speech model: it
+         * attenuates the fan, the keyboard and the sibling in the next room while passing human
+         * speech through, so it removes the false triggers WITHOUT moving the bar for a real
+         * one. The server still sees `interrupt_response: true` and a learner who starts
+         * talking still cuts the tutor off mid-sentence.
+         *
+         * `force: true` bypasses `getNoiseSuppressionPreference`, whose sessionStorage key is
+         * `mockInterview.noiseSuppressionEnabled`. That is another surface's setting and a
+         * candidate's choice during an interview must not silently govern their tutor; the
+         * tutor has no toggle of its own, so it is simply always on. Failure is graceful by
+         * construction: `applyNoiseSuppression` returns the input stream unchanged and warns.
+         */
+        const noise = await applyNoiseSuppression(rawStream, { force: true });
+        noiseHandleRef.current = noise;
+        const micStream = noise.outputStream;
+
         micStreamRef.current = micStream;
         registerMediaStream(micStream);
+        // Register the RAW stream too. The worklet's output track does not hold the microphone
+        // device, so stopping only the clean track leaves the browser's mic indicator lit.
+        registerMediaStream(rawStream);
         micStream.getTracks().forEach((track) => pc.addTrack(track, micStream));
         try {
           audioCtx.createMediaStreamSource(micStream).connect(micAnalyser);
@@ -1666,6 +1832,12 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
         usedQuestionsRef.current = new Set();
         languageRequestsRef.current = new Map();
         scriptEvidenceRef.current = 0;
+        // A fresh lesson has established no language and owes no check-ins. These are refs, so
+        // a second session in the same mounted room would otherwise inherit the first one's.
+        lessonLanguageRef.current = "";
+        nudgeCountRef.current = 0;
+        askedQuestionRef.current = false;
+        lastLearnerVoiceAtRef.current = 0;
         startedAtRef.current = Date.now();
         setRemainingSeconds(started.max_seconds);
 
