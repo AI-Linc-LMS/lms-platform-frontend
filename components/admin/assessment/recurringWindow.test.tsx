@@ -121,3 +121,24 @@ describe("the plain-English read-back", () => {
     expect(windowSummary({ ...base, recurrence: "none", zone: "" })).toBe("");
   });
 });
+
+describe("the control says it does hours, not only days", () => {
+  it("every repeat option names the hours", async () => {
+    // The first person to use this asked whether it could do times at all. It could - the
+    // opening and closing fields sit right below - but they are revealed only AFTER a repeat is
+    // picked, so at rest nothing on screen suggested hours were part of it, and every option was
+    // worded purely in days.
+    const source = await import("fs").then((fs) =>
+      fs.readFileSync("components/admin/assessment/AssessmentSettingsSection.tsx", "utf8"),
+    );
+    for (const value of ["daily", "weekdays", "weekly"]) {
+      const option = new RegExp(`<MenuItem value="${value}">([^<]+)</MenuItem>`).exec(source);
+      expect(option, `no option for ${value}`).not.toBeNull();
+      expect(option![1].toLowerCase()).toContain("hours");
+    }
+    // And the "off" option says what is being turned off.
+    expect(/<MenuItem value="none">([^<]+)<\/MenuItem>/.exec(source)![1].toLowerCase()).toContain(
+      "hours",
+    );
+  });
+});
