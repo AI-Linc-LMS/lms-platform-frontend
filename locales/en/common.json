@@ -1863,6 +1863,10 @@
     "notEligible": "Not eligible to apply",
     "viewDetails": "View Details",
     "backToJobs": "Back to Jobs",
+    "board": {
+      "filtersAll": "Filters",
+      "filtersCount": "Filters ({{count}})"
+    },
     "jobStatus": {
       "active": "Active",
       "inactive": "Inactive",

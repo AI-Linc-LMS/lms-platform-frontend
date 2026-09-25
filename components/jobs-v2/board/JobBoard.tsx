@@ -224,6 +224,20 @@ export function JobBoard({ selection }: { selection?: JobBoardSelection } = {}) 
   const listOnlySx = selection ? { display: { xs: "none", lg: "block" } } : undefined;
 
   /**
+   * This board, carrying the posting's filters back with it.
+   *
+   * `ids` is the rail's sibling set — it belongs to a posting, not to a list — so it is the one
+   * key dropped. Everything else rides along, which is what makes the trip back land on the same
+   * filtered search rather than an unfiltered page 1.
+   */
+  const boardHref = useMemo(() => {
+    const params = new URLSearchParams(url.queryString);
+    params.delete("ids");
+    const qs = params.toString();
+    return qs ? `/jobs-v2?${qs}` : "/jobs-v2";
+  }, [url.queryString]);
+
+  /**
    * What the count is counting. `activeChips` are already "Location: Bengaluru" shaped and
    * already translated, so the summary is a join rather than a second vocabulary.
    */
@@ -438,13 +452,51 @@ export function JobBoard({ selection }: { selection?: JobBoardSelection } = {}) 
                 a filter carried in from Browse is still applied and must stay removable. */}
             {isSaved ? (
               filters.activeChips.length > 0 && (
-                <Box sx={{ mb: 2 }}>
+                // `listOnlySx` for the same reason the rail above carries it: with a posting
+                // open below lg this row is not beside the list any more, and the strip below
+                // is already saying what is applied. Without it the chips appear twice.
+                <Box sx={{ mb: 2, ...listOnlySx }}>
                   <ActiveFilters chips={filters.activeChips} onClearAll={clearFilters} />
                 </Box>
               )
             ) : (
               <Box sx={listOnlySx}>
                 <BoardFilters filters={filters} />
+              </Box>
+            )}
+
+            {/* Below `lg` the whole rail above steps aside with the list it controls, and the
+                filters went with it — reported as "when a job is selected the filters at the top
+                of the jobs page disappear, preventing users from viewing or modifying the
+                applied filters". At `lg+` they never left: the list is right there and the rail
+                stays (#1617). This is that fix at the widths where the list is NOT on screen.
+
+                What it is NOT is the eleven-filter rail moved on top of a posting. A facet whose
+                result set is behind the page you are reading controls nothing you can see, and
+                the sheet's honest "Show 84 jobs" count comes from a board fetch this route
+                deliberately never makes on a phone. So the strip says exactly what IS applied —
+                each chip still removes its own filter — and one tap reaches the board where the
+                full set lives, with every filter still applied. */}
+            {selection && (
+              <Box
+                data-testid="jobs-posting-filters"
+                sx={{
+                  display: { xs: "flex", lg: "none" },
+                  alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: 1,
+                  mb: 2,
+                }}
+              >
+                <JButton variant="secondary" size="sm" href={boardHref} startIcon="mdi:filter-variant">
+                  {filters.activeFilterCount > 0
+                    ? (t("jobsV2.board.filtersCount", {
+                        count: filters.activeFilterCount,
+                        defaultValue: "Filters ({{count}})",
+                      }) as string)
+                    : (t("jobsV2.board.filtersAll", { defaultValue: "Filters" }) as string)}
+                </JButton>
+                <ActiveFilters chips={filters.activeChips} onClearAll={clearFilters} />
               </Box>
             )}
 

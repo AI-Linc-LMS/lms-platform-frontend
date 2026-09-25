@@ -616,9 +616,46 @@ export function groupNavigation(items: NavigationItem[], effectiveAdminMode: boo
   return { top, sections, bottom: [...bottom, ...leftovers] };
 }
 
-/** Is `path` the active route for `pathname`? Exact for the dashboards, prefix elsewhere. */
-export function isNavItemActive(pathname: string | null, path: string): boolean {
-  if (!pathname) return false;
+/**
+ * Does `path` cover `pathname` at all? Exact for the dashboards, prefix elsewhere — and the
+ * prefix always stops at a segment boundary, so `/interview` never claims `/interview-setup`.
+ *
+ * This is the CANDIDATE test, not the answer: several entries can cover one route at once.
+ * `resolveActiveNavPath` picks between them.
+ */
+function navPathCovers(pathname: string, path: string): boolean {
   if (path === "/dashboard" || path === "/admin/dashboard") return pathname === path;
   return pathname === path || pathname.startsWith(`${path}/`);
 }
+
+/**
+ * Which ONE of `paths` owns `pathname` — the longest match, never every prefix of it.
+ *
+ * The sidebar used to ask each entry "are you a prefix of the current route?" independently, so
+ * a nested entry lit its parent too: on `/admin/admin-mock-interview/templates` both "Interview"
+ * (`/admin/admin-mock-interview`) and "Interview Setup" (`.../templates`) were highlighted, and
+ * the nav stopped saying where you are. The same held for "Interview Attempts"
+ * (`.../sessions`) on the tenants that have it.
+ *
+ * Longest-match is what fixes it WITHOUT blanking deep routes: `/admin/admin-mock-interview/
+ * interviews/12` still resolves to "Interview", because no more specific entry covers it.
+ */
+export function resolveActiveNavPath(
+  pathname: string | null,
+  paths: Iterable<string>,
+): string | null {
+  if (!pathname) return null;
+  let best: string | null = null;
+  for (const path of paths) {
+    if (!navPathCovers(pathname, path)) continue;
+    if (best === null || path.length > best.length) best = path;
+  }
+  return best;
+}
+
+/**
+ * There is deliberately no per-item `isNavItemActive(pathname, path)` any more. That signature
+ * can only answer "does this entry COVER the route", which every surface then took for "is this
+ * entry the active one" - and a nested entry covers its parent's route as well as its own. The
+ * question has to be asked once, against the whole list, which is what the resolver above does.
+ */

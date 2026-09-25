@@ -1357,6 +1357,10 @@
     "notEligible": "غير مؤهل للتقديم",
     "viewDetails": "عرض التفاصيل",
     "backToJobs": "العودة للوظائف",
+    "board": {
+      "filtersAll": "عوامل التصفية",
+      "filtersCount": "عوامل التصفية ({{count}})"
+    },
     "jobStatus": {
       "active": "نشطة",
       "inactive": "غير نشطة",
