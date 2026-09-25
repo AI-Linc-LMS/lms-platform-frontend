@@ -39,7 +39,7 @@ import {
 } from "@/components/admin/manage-students/detail/shared";
 import { PHONE } from "@/components/common/mobile/phone";
 import { PHONE_TAP } from "@/components/admin/manage-students/mobile";
-import { StudentResumeDialog } from "@/components/admin/manage-students/StudentResumeDialog";
+import { StudentResumeButton } from "@/components/admin/manage-students/StudentResumeButton";
 
 type TabKey =
   | "overview"
@@ -62,7 +62,6 @@ export default function StudentDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [journeyLoading, setJourneyLoading] = useState(true);
   const [tab, setTab] = useState<TabKey>("overview");
-  const [resumeOpen, setResumeOpen] = useState(false);
 
   // Manage-tab edit state
   const [editing, setEditing] = useState(false);
@@ -298,15 +297,13 @@ export default function StudentDetailsPage() {
                     : "color-mix(in srgb, #94a3b8 16%, transparent)",
                 }}
               />
-              <Button
-                variant="outlined"
-                size="small"
-                startIcon={<IconWrapper icon="mdi:file-account-outline" size={18} />}
-                onClick={() => setResumeOpen(true)}
-                sx={{ borderColor: ADAPTIVE.indigo, color: ADAPTIVE.indigo, fontWeight: 700, ...PHONE_TAP }}
-              >
-                {t("adminManageStudents.resumeViewer.view", "View resume")}
-              </Button>
+              {/* Offered only when there is one to view: the same fact the Manage Students
+                  column shows, so the profile can never disagree with the row it came from. */}
+              <StudentResumeButton
+                studentId={studentId}
+                studentName={name}
+                hasSavedResume={student.has_saved_resume}
+              />
               <Button
                 variant="outlined"
                 size="small"
@@ -402,12 +399,6 @@ export default function StudentDetailsPage() {
           )}
         </SectionShell>
 
-        <StudentResumeDialog
-          open={resumeOpen}
-          onClose={() => setResumeOpen(false)}
-          studentId={studentId}
-          studentName={name}
-        />
       </Box>
     </MainLayout>
   );
