@@ -149,3 +149,48 @@ function withVimeoOptions(url: string): string {
 export function supportsCheckIns(source?: string): boolean {
   return source === "catalog";
 }
+
+/**
+ * Does the Video Companion replace the provider's own full-screen control with its own?
+ *
+ * Ours exists for exactly one reason, and it is not taste: Vimeo's button fullscreens the IFRAME,
+ * and a check-in painted over the player is that iframe's SIBLING - so the browser draws the iframe
+ * alone and the question is nowhere. Ours fullscreens the player BOX, the overlay's parent
+ * (fullscreenCheckIn.test.tsx).
+ *
+ * That reason holds on exactly one kind of video, and taking it over anywhere else costs twice:
+ *
+ * - There has to be an overlay to protect. Overlays - the check-ins and the 60s checkpoint - are
+ *   built from a transcript, and only a CATALOG video has one (`supportsCheckIns`). Nothing is ever
+ *   painted over an externally-hosted video, so the provider fullscreening its own iframe hides
+ *   nothing.
+ * - We have to be able to take the provider's button AWAY, or the learner is offered two. `?
+ *   fullscreen=0` is a Vimeo parameter; YouTube, Drive, SharePoint, Dropbox, Loom and a bare .mp4
+ *   each keep their own control whatever we append, and appending a Vimeo-only parameter to
+ *   someone else's player is how you break the video that was working.
+ * - Ours has to be able to GO DOWN with the player's bar, and the only play/pause signal this page
+ *   has is Vimeo's postMessage protocol (useVimeoController). On every other provider nothing ever
+ *   arrives, so a bar tied to it can never hide - reported as "the full-screen button remains
+ *   visible even when the control bar is hidden".
+ *
+ * All three land on the same answer, so it is one rule: ours on a Vimeo player carrying overlays,
+ * the provider's own everywhere else.
+ */
+export function companionOwnsFullscreen(embedUrl: string, opts: { canOverlay: boolean }): boolean {
+  // `player.vimeo.com/...` is what a catalog video's embed_url is, and what a pasted vimeo.com link
+  // is rewritten to above; the bare host is matched too so a catalog record holding a watch URL is
+  // still recognised as the Vimeo player it is meant to be.
+  return opts.canOverlay && /(?:\/\/|\.)vimeo\.com\//.test(embedUrl || "");
+}
+
+/**
+ * The embed URL the companion actually hands to the iframe.
+ *
+ * The same URL as `toEmbedUrl`, with the provider's own full-screen button taken away where - and
+ * only where - the companion is putting its own in its place.
+ */
+export function toCompanionEmbedUrl(playUrl: string, source: string | undefined, opts: { canOverlay: boolean }): string {
+  const raw = toEmbedUrl(playUrl, source);
+  if (!companionOwnsFullscreen(raw, opts)) return raw;
+  return `${raw}${raw.includes("?") ? "&" : "?"}fullscreen=0`;
+}

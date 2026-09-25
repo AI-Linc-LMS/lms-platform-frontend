@@ -9,6 +9,23 @@ import { PHONE } from "@/components/common/mobile/phone";
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
 
+/**
+ * How tall the chapter index may grow in the rail before it scrolls inside its card.
+ *
+ * The rail is the column that outgrows the lesson, and the chapter index is the panel that makes
+ * it do so: a row is ~44px, so every extra chapter pushes the rail another 44px past a lesson
+ * whose own height is fixed by the player's 16/9 box. Measured headlessly, going from 7 chapters
+ * to 12 added 218px to the rail and put it 746px past the lesson at 1536px wide.
+ *
+ * 320px is a shade over seven rows, so the companion in the report - seven chapters - is not
+ * touched, and a longer index stops making the page longer instead. A list you scan for a moment
+ * to jump is the right thing to bound; the transcript card in VideoCompanion is already bounded
+ * the same way, for the same reason. Two-column widths only: in the one-column stack the rail is
+ * simply the next thing down the page, and a scroll box inside a scrolling page on a phone is a
+ * trap, not a fix.
+ */
+export const CHAPTERS_MAX_H = 320;
+
 // --- Watch mode selector (spec §3.4a) ---------------------------------------
 
 // `plain_english` is deliberately not offered. It read "Re-explain in plain English / Slower, with
@@ -134,7 +151,15 @@ export function AutoChapters({
       icon="mdi:format-list-bulleted"
       right={<Typography sx={{ fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", fontWeight: 700 }}>{chapters.length} detected</Typography>}
     >
-      <Box sx={{ display: "flex", flexDirection: "column", gap: 0.25 }}>
+      <Box
+        data-testid="auto-chapters-list"
+        sx={{
+          display: "flex", flexDirection: "column", gap: 0.25,
+          // See CHAPTERS_MAX_H: the index stops lengthening the page once the rail has as much of
+          // it as the lesson beside it can carry.
+          maxHeight: { lg: CHAPTERS_MAX_H }, overflowY: { lg: "auto" }, pr: { lg: 0.5 },
+        }}
+      >
         {chapters.map((c, i) => {
           const done = i < activeIdx;
           const active = i === activeIdx;

@@ -24,7 +24,7 @@ import { TimestampQA } from "./TimestampQA";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { CompanionCard } from "./CompanionCard";
 import { WatchModeSelector, AutoChapters, LiveTakeaways } from "./RailPanels";
-import { toEmbedUrl } from "@/lib/utils/video-embed";
+import { companionOwnsFullscreen, supportsCheckIns, toCompanionEmbedUrl } from "@/lib/utils/video-embed";
 import { PHONE } from "@/components/common/mobile/phone";
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
@@ -46,6 +46,18 @@ const COMPANION_BAR_H_PHONE = 52;
  * same order as the player's own idle window, so the two go down together.
  */
 const CONTROLS_IDLE_MS = 2600;
+/**
+ * How long after the playhead last moved we still call the video "running".
+ *
+ * `isPlaying` is the player's own word for it, and it is the better signal - but it arrives only
+ * on a `play` event, and an event can be missed: we subscribe from the iframe's `load`/`ready`
+ * handshake, and a bfcached frame can already have been playing by then. When that happens the
+ * clock still ticks (playProgress, or the controller's local fallback ticker) while `isPlaying`
+ * stays false, and a bar tied to `isPlaying` alone is pinned over the picture for the whole video -
+ * the reported defect, by a second route. A moving playhead is the same fact, so it counts too.
+ * Longer than a tick (250ms) and shorter than the idle window, so it can only ever ADD "running".
+ */
+const PLAYHEAD_QUIET_MS = 1200;
 const TABS: { label: string; icon: string }[] = [
   { label: "AI Companion", icon: "mdi:sparkles" },
   { label: "Transcript", icon: "mdi:text-box-outline" },
@@ -194,19 +206,41 @@ export function VideoCompanion({
   // time they switched - a switch is not supposed to touch playback at all.
   const { setIframe, currentTime, duration, isPlaying, playbackRate, rewinds, endedTick, play, pause, seekTo } =
     useVimeoController();
+  // "Running", as far as this page can tell it, and it is deliberately not `isPlaying` alone.
+  //
+  // `isPlaying` flips on a `play` event, and a `play` event can be missed - we subscribe from the
+  // iframe handshake, which a frame restored from the back/forward cache is already past. After
+  // that miss the clock still ticks while `isPlaying` stays false, so a bar keyed on `isPlaying`
+  // is pinned over the picture for the rest of the video. The playhead moving is the same fact
+  // arriving by the other route, so it counts as running too.
+  //
+  // Only a PLAYBACK-sized forward step counts. A seek moves the playhead by minutes, and a learner
+  // who has just clicked a chapter on a paused video has not started it - taking their bar away
+  // 2.6s later would be the bug turned round.
+  const [playheadRunning, setPlayheadRunning] = useState(false);
+  const lastSeenTimeRef = useRef(0);
+  useEffect(() => {
+    const delta = currentTime - lastSeenTimeRef.current;
+    lastSeenTimeRef.current = currentTime;
+    if (delta <= 0 || delta > 2) return;
+    setPlayheadRunning(true);
+    const id = window.setTimeout(() => setPlayheadRunning(false), PLAYHEAD_QUIET_MS);
+    return () => window.clearTimeout(id);
+  }, [currentTime]);
+  const running = isPlaying || playheadRunning;
   // The player's own bar is up whenever the video is not running - paused, ended, not started yet -
   // and drops out of sight a beat after the pointer goes quiet while it runs. Ours keeps the same
-  // clock, so the two are never on screen apart. An embed whose events we cannot read never reports
-  // playing, which leaves the bar up: the same thing it does today, not a control that disappears.
+  // clock, so the two are never on screen apart. A provider whose play/pause we cannot read at all
+  // does not get a bar of ours in the first place - see `ownsFullscreen` below.
   useEffect(() => {
-    if (!isPlaying) {
+    if (!running) {
       setControlsVisible(true);
       return;
     }
     setControlsVisible(true);
     const id = window.setTimeout(() => setControlsVisible(false), CONTROLS_IDLE_MS);
     return () => window.clearTimeout(id);
-  }, [isPlaying, activity]);
+  }, [running, activity]);
   const rateRef = useRef(playbackRate);
   useEffect(() => {
     rateRef.current = playbackRate;
@@ -665,15 +699,24 @@ export function VideoCompanion({
       </CompanionCard>
     );
 
-  // A watch URL cannot be framed; the id has to be moved into the provider's embed form.
-  const rawEmbed = toEmbedUrl(playUrl, companion.source);
-  // Vimeo's own fullscreen button fullscreens the IFRAME, and a check-in painted over the player
-  // is the iframe's SIBLING - so the browser never draws it and the learner has to leave
-  // fullscreen to answer, which resumes the video under them. Hiding that button and offering our
-  // own, which fullscreens the container, keeps the check-in inside the fullscreen subtree.
-  const embed = /player\.vimeo\.com\//.test(rawEmbed)
-    ? `${rawEmbed}${rawEmbed.includes("?") ? "&" : "?"}fullscreen=0`
-    : rawEmbed;
+  // Can anything of ours ever be painted OVER this player? The check-ins and the 60s checkpoint are
+  // built from a transcript, and only a catalog video has one - an externally-hosted video is a
+  // bare iframe with nothing above it (the banner below sits outside the player box). This is the
+  // whole reason the companion has a full-screen button of its own, so it is what decides whether
+  // it has one here.
+  //
+  // Three ways to be sure, because getting this wrong the OTHER way puts the check-in back behind
+  // a fullscreen iframe, which is the bug #1699 and fullscreenCheckIn.test.tsx exist for: the
+  // server's own word for "this video has a transcript", the Vimeo record that word is derived
+  // from, and questions actually in hand. A payload that ever stops sending one of them still
+  // keeps the control the check-ins need.
+  const canOverlay =
+    supportsCheckIns(companion.source) || !isExternal || (companion.check_ins?.length ?? 0) > 0;
+  // A watch URL cannot be framed; the id has to be moved into the provider's embed form. Where we
+  // are taking fullscreen over, the provider's own button goes with it, so the learner is never
+  // offered two - see companionOwnsFullscreen for the rule and why it is one rule and not three.
+  const embed = toCompanionEmbedUrl(playUrl, companion.source, { canOverlay });
+  const ownsFullscreen = companionOwnsFullscreen(embed, { canOverlay });
   // Video/module names often arrive snake_cased (e.g. "Module_01_Java_Fundamentals…"); show them humanized.
   // Falls back to the companion's own title, which is all a pasted link has.
   const displayTitle = (companion.video?.title || companion.title || "").replace(/_/g, " ").trim();
@@ -749,19 +792,23 @@ export function VideoCompanion({
           // use, and the player keeps its place in the tree at every width.
           //
           // - One column: unchanged - they close the stack, after the chapters.
-          // - lg (1200-1535px): the main column is at its narrowest, so the player is small, and the
-          //   four rail panels ran 130-460px past the lesson. Without the takeaways the rail (mode,
-          //   re-explain, chapters) comes out within ~20-170px of the lesson, so the takeaways - the
-          //   one panel that keeps growing as the video plays - go below both columns, full width.
-          //   Moving them under the lesson instead only turned the gap round (the lesson then ran
-          //   280-530px past the rail). Not for a video with no chapters: that rail would be short
-          //   of the lesson by the whole of the chapters card, so the takeaways stay in it.
-          // - xl and up: the player is big enough that the old stack comes out even; it stays.
+          // - Two columns (lg and up): the takeaways - the one panel that keeps growing as the
+          //   video plays - go below both columns, full width, so the rail ends at the chapters.
+          //   Not for a video with no chapters: that rail would be short of the lesson by the whole
+          //   of the chapters card, so the takeaways stay in it.
+          //
+          //   This used to stop at 1535px, on the reading that "xl and up, the player is big enough
+          //   that the old stack comes out even". It is not, and that is this report: measured
+          //   headlessly with the companion from the screenshot (an empty concept map, 7 chapters,
+          //   every takeaway revealed), the right column ran past the lesson by 324px at 1536,
+          //   288px at 1600, 216px at 1728 and 108px at 1920 - the reported empty area under the
+          //   Ask box, at every laptop and desktop width above the one that was fixed. With twelve
+          //   chapters it was 746px at 1536 and still 170px at 2560. Carrying the same rule up
+          //   turns all of those negative (the rail alone ends 66-282px SHORT of the lesson).
           ...(hasTakeaways && {
             gridTemplateAreas: {
               xs: '"main" "rail" "takeaways"',
               lg: takeawaysAcross ? '"main rail" "takeaways takeaways"' : '"main rail" "main takeaways"',
-              xl: '"main rail" "main takeaways"',
             },
             // Where the takeaways stay in the rail, the lesson spans both rows, so a longer lesson
             // puts its spare height under the takeaways rather than between them and the chapters.
@@ -777,10 +824,12 @@ export function VideoCompanion({
             // Everything we can see of "the learner is still here". A cross-origin iframe keeps
             // every pointer move over the picture to itself, so these - crossing into the frame,
             // a press, a key landing on a control - are the whole signal.
-            onPointerEnter={noteActivity}
-            onPointerMove={noteActivity}
-            onPointerDown={noteActivity}
-            onFocusCapture={noteActivity}
+            // Nothing to hold up where the provider keeps its own controls, so nothing is listened
+            // for either: these fire on every pointer move over a 16/9 box.
+            onPointerEnter={ownsFullscreen ? noteActivity : undefined}
+            onPointerMove={ownsFullscreen ? noteActivity : undefined}
+            onPointerDown={ownsFullscreen ? noteActivity : undefined}
+            onFocusCapture={ownsFullscreen ? noteActivity : undefined}
             sx={{
               position: "relative",
               borderRadius: isFullscreen ? 0 : 3,
@@ -808,7 +857,7 @@ export function VideoCompanion({
               style={{ width: "100%", height: "100%", border: 0 }}
               title={companion.title}
             />
-            {/* The companion's own control bar.
+            {/* The companion's own control bar - rendered only where fullscreen is OURS.
                 Fullscreen has to be ours and not the provider's: Vimeo's button fullscreens the
                 IFRAME, and a check-in painted over the player is that iframe's sibling, so the
                 browser draws the iframe alone and the question is nowhere (fullscreenCheckIn.test).
@@ -820,7 +869,15 @@ export function VideoCompanion({
                 cluster still ends at the same x). So it gets a bar of its own, laid directly on
                 top of the player's own band and sharing its clock: full width, right-aligned like
                 every player's fullscreen control, and gone the moment the player's controls go
-                rather than left floating over the picture and over the burned-in captions. */}
+                rather than left floating over the picture and over the burned-in captions.
+
+                Where fullscreen is the PROVIDER's - every non-Vimeo embed, and any video with no
+                overlay of ours to protect - there is no bar at all. Two reasons, and either alone
+                settles it: the provider's own button is still there, so ours would be a second
+                one; and nothing on those players ever tells this page that the video is playing,
+                so a bar on the player's clock would have no clock and would sit over the picture
+                for the whole video. That is the report. */}
+            {ownsFullscreen && (
             <Box
               data-testid="companion-control-bar"
               // Hidden, this thin band is the one place a pointer heading for the controls can
@@ -873,6 +930,7 @@ export function VideoCompanion({
                 />
               </IconButton>
             </Box>
+            )}
             {activeCheckIn && (
               <AutoPauseCheckIn
                 checkIn={activeCheckIn}
@@ -1124,7 +1182,7 @@ export function VideoCompanion({
           // own 16px, so they sit exactly where they did as the rail's last card.
           <Box
             data-testid="takeaways-slot"
-            sx={{ gridArea: "takeaways", minWidth: 0, alignSelf: "start", mt: { xs: -0.5, lg: takeawaysAcross ? 0 : -0.5, xl: -0.5 } }}
+            sx={{ gridArea: "takeaways", minWidth: 0, alignSelf: "start", mt: { xs: -0.5, lg: takeawaysAcross ? 0 : -0.5 } }}
           >
             <LiveTakeaways takeaways={companion.takeaways} currentTime={currentTime} chapters={companion.chapters} />
           </Box>
