@@ -2,8 +2,11 @@
 
 import { useState } from "react";
 import { useParams } from "next/navigation";
+import { useTranslation } from "react-i18next";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { usePayment } from "@/hooks/usePayment";
+import { PaymentType } from "@/lib/services/payment.service";
 import { Box, Container, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
@@ -36,8 +39,19 @@ export default function RoadmapDetailPage() {
   const slug = String(params?.slug ?? "");
   const { push } = useInstantNavigation();
   const queryClient = useQueryClient();
+  const { t } = useTranslation();
+  const { handlePayment, busyKey } = usePayment();
   const [job, setJob] = useState<ForgeJob | null>(null);
-  const [forgeError, setForgeError] = useState<string | null>(null);
+  /**
+   * The refusal itself, not a sentence about it.
+   *
+   * It used to be a string rendered at the bottom of this page — underneath the build drawer,
+   * which stays open when a build is refused. A learner past their free build pressed the
+   * button and saw nothing happen at all. The drawer shows this now, and a refusal carrying a
+   * price shows the checkout beside it.
+   */
+  const [refusal, setRefusal] = useState<ForgeUnavailableError | null>(null);
+  const [notice, setNotice] = useState<string | null>(null);
   // The node the learner is CONSIDERING. Clicking opens the drawer to read about it; building is
   // a second, explicit action, because one click on a map you are still reading should not start
   // writing rows.
@@ -53,7 +67,8 @@ export default function RoadmapDetailPage() {
    */
   const buildFromNode = async (node: RoadmapNode) => {
     if (!node.isTrackable) return;
-    setForgeError(null);
+    setRefusal(null);
+    setNotice(null);
     setBuilding(true);
     try {
       const created = await forgeService.create({ nodeId: node.id });
@@ -64,14 +79,43 @@ export default function RoadmapDetailPage() {
       // the same build again - which is the bug this whole change is about, one reload later.
       queryClient.invalidateQueries({ queryKey: roadmapKeys.owned(slug) });
     } catch (err) {
-      setForgeError(
+      setRefusal(
         err instanceof ForgeUnavailableError
-          ? err.message
-          : "Something went wrong starting that build."
+          ? err
+          : new ForgeUnavailableError(t("roadmapPaywall.unknown"), "unknown", { status: 0 })
       );
     } finally {
       setBuilding(false);
     }
+  };
+
+  /**
+   * Buy one course build, then build the thing they asked for.
+   *
+   * `type_id` is the QUANTITY for this payment type — a build credit floats until it is spent on
+   * a topic, so there is no row to point at. The webhook is the source of truth; when our own
+   * verify call disagrees with it we say the payment is settling rather than failed, and leave
+   * the learner to press build again once it lands.
+   */
+  const payForABuild = (node: RoadmapNode) => {
+    setNotice(null);
+    void handlePayment({
+      typeId: "1",
+      paymentType: PaymentType.ROADMAP,
+      description: t("roadmapPaywall.orderDescription"),
+      busyKey: `roadmap-build-${node.id}`,
+      onOutcome: (outcome) => {
+        if (outcome.kind === "verified") {
+          setRefusal(null);
+          void buildFromNode(node);
+        } else if (outcome.kind === "settling") {
+          setRefusal(null);
+          setNotice(outcome.message);
+        } else if (outcome.kind === "failed") {
+          setNotice(outcome.message);
+        }
+      },
+    });
   };
 
   const graphQuery = useQuery({
@@ -180,14 +224,6 @@ export default function RoadmapDetailPage() {
           />
         )}
 
-        {forgeError && (
-          <Typography
-            sx={{ mt: 2, fontSize: "0.88rem", color: "var(--accent-red)", textAlign: "center" }}
-          >
-            {forgeError}
-          </Typography>
-        )}
-
         {graph?.faqs && graph.faqs.length > 0 && <RoadmapFaqs faqs={graph.faqs} />}
       </Container>
 
@@ -195,7 +231,15 @@ export default function RoadmapDetailPage() {
         slug={slug}
         node={pending}
         busy={building}
-        onClose={() => setPending(null)}
+        refusal={refusal}
+        notice={notice}
+        paying={busyKey === `roadmap-build-${pending?.id ?? 0}`}
+        onPay={pending ? () => payForABuild(pending) : undefined}
+        onClose={() => {
+          setPending(null);
+          setRefusal(null);
+          setNotice(null);
+        }}
         onBuild={buildFromNode}
       />
 
