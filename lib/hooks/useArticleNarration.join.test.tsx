@@ -43,8 +43,13 @@ const starts: Start[] = [];
 
 class FakeAudioContext {
   state = "running";
-  currentTime = 0;
   destination = {};
+  /** A real clock, so the scheduling loop actually reaches the end of the article
+   *  instead of parking forever on a currentTime that never moves. */
+  private readonly t0 = performance.now();
+  get currentTime() {
+    return (performance.now() - this.t0) / 1000;
+  }
   createBufferSource() {
     return {
       buffer: null as unknown,
@@ -103,6 +108,20 @@ describe("the join between two narration chunks", () => {
     // ...and that beat is a fraction of the 373ms the element handoff cost.
     expect(BLOCK_PAUSE).toBeLessThan(0.2);
     act(() => result.current.stop());
+  });
+
+  it("puts the highlight out when the article ends, and leaves no timer behind", async () => {
+    // Reaching the end is not a stop, so nothing else clears the loop that drives the
+    // highlight - and a loop still running would put the last block back the moment the
+    // hook cleared it.
+    const { result } = renderHook(() => useArticleNarration("<p>x</p>", SEGMENTS));
+    act(() => result.current.toggle());
+    await waitFor(() => expect(starts.length).toBe(2));
+    await waitFor(() => expect(result.current.playing).toBe(false), { timeout: 5000 });
+    expect(result.current.activeId).toBeNull();
+    // Give the loop several ticks to contradict that, if it were still alive.
+    await new Promise((r) => setTimeout(r, 250));
+    expect(result.current.activeId).toBeNull();
   });
 
   it("plays from before the first word and past the last one, so the trim cannot clip", async () => {

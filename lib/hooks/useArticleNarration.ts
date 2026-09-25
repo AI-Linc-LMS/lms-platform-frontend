@@ -286,6 +286,11 @@ export function useArticleNarration(html: string, segments?: NarrationSegment[])
     };
     const finished = () => {
       if (stale()) return;
+      // Reaching the end is not a stop, so nothing else clears the highlight loop. Left
+      // running it would tick every 60ms for the rest of the page's life AND put the last
+      // block's highlight straight back after the setActiveId(null) below.
+      if (followTimerRef.current) clearInterval(followTimerRef.current);
+      followTimerRef.current = null;
       // Terminal path: clear activeRef too, or the next click would be read as a stop
       // and the button would look dead.
       activeRef.current = false;
