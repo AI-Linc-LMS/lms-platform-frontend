@@ -2,6 +2,7 @@
 
 import { Box, Stack, Typography } from "@mui/material";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import { Icon } from "@iconify/react";
 import { CountUp } from "@/components/scorecard/shared/CountUp";
 import { prettySkill } from "@/lib/utils/skill-label.utils";
@@ -37,9 +38,18 @@ export function evidenceLine(row: SkillRow): string {
   return `Mastery grows with more questions: ${n} so far`;
 }
 
-function isPerfectBelowFull(row: SkillRow): boolean {
+/**
+ * True when this row's estimate sits BELOW what the learner actually scored on the skill this
+ * attempt - the exact shape of the reported mismatch ("100% in the quiz, 92% mastery").
+ *
+ * It was previously only the perfect case (5/5 under 100%), which left the same contradiction
+ * unexplained one rung down: 4/5 is 80% on the card and the estimate can read 74%.
+ */
+export function estimateBelowAttempt(row: SkillRow): boolean {
   const total = row.attempt_total ?? 0;
-  return total > 0 && row.attempt_correct === total && row.mastery_pct < 100;
+  if (total <= 0) return false;
+  const correct = Math.max(0, Math.min(total, row.attempt_correct ?? 0));
+  return row.mastery_pct < Math.round((correct / total) * 100);
 }
 
 const BAND_LABEL: Record<string, string> = {
@@ -74,6 +84,7 @@ function BandPill({ band }: { band: string }) {
 }
 
 export function SkillMasteryHeatmap({ skills }: SkillMasteryHeatmapProps) {
+  const { t } = useTranslation("common");
   if (!skills.length) return null;
   return (
     <Box
@@ -141,9 +152,20 @@ export function SkillMasteryHeatmap({ skills }: SkillMasteryHeatmapProps) {
                       New
                     </Box>
                   ) : null}
-                  <Typography sx={{ fontSize: "1.05rem", fontWeight: 900, color, fontVariantNumeric: "tabular-nums", minWidth: 44, textAlign: "right" }}>
-                    <CountUp value={row.mastery_pct} duration={1.2} suffix="%" />
-                  </Typography>
+                  {/* The number is an estimate, and it is read next to a score that does reach 100%.
+                      Marking it on the number itself - not only in the footnote - is what stops it
+                      being read as a mark the attempt failed to match. */}
+                  <Stack alignItems="flex-end" sx={{ minWidth: 44 }} title={t("adaptiveQuizMastery.estimateHint")}>
+                    <Typography sx={{ fontSize: "1.05rem", fontWeight: 900, color, fontVariantNumeric: "tabular-nums", lineHeight: 1.05 }}>
+                      <CountUp value={row.mastery_pct} duration={1.2} suffix="%" />
+                    </Typography>
+                    <Typography
+                      data-testid="skill-estimate-tag"
+                      sx={{ fontSize: "0.55rem", [PHONE]: { fontSize: "0.65rem" }, fontWeight: 800, letterSpacing: "0.08em", textTransform: "uppercase", color: "text.secondary" }}
+                    >
+                      {t("adaptiveQuizMastery.estimateTag")}
+                    </Typography>
+                  </Stack>
                 </Stack>
               </Stack>
 
@@ -177,11 +199,14 @@ export function SkillMasteryHeatmap({ skills }: SkillMasteryHeatmapProps) {
           );
         })}
       </Box>
-      {skills.some(isPerfectBelowFull) && (
+      {/* The old wording said the estimate "only reaches the top after many correct answers".
+          It does not: the posterior is computed on a bounded ability grid, so the displayed
+          percent asymptotes short of 100 - the best any learner has ever reached in production is
+          98% (25 straight correct answers on one skill). Promising a top that cannot be reached is
+          what keeps this coming back as a bug report. */}
+      {skills.some(estimateBelowAttempt) && (
         <Typography data-testid="skill-mastery-explainer" sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.8rem" }, color: "text.secondary", lineHeight: 1.5 }}>
-          A perfect attempt can still read below 100%. Mastery is an estimate built from every
-          question on a skill and only reaches the top after many correct answers, so one short
-          quiz cannot claim full mastery on its own.
+          {t("adaptiveQuizMastery.explainer")}
         </Typography>
       )}
     </Box>
