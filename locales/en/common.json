@@ -3229,6 +3229,11 @@
     "ladderExplain": "It adapts to you. Get {{n}} right in a row and the next question is one level harder; miss {{n}} in a row and it is one level easier. A single answer never changes the level, so one lucky guess can't move you up, and mixed answers keep it where it is. If the quiz has run out of questions at a level, you get the nearest level it still has - sometimes that skips a level - and it says so here.",
     "ladderExplainUnknown": "It adapts to you as you answer."
   },
+  "adaptiveQuizMastery": {
+    "estimateTag": "est.",
+    "estimateHint": "A confidence-adjusted estimate of the skill, not your score for this attempt.",
+    "explainer": "Mastery is an estimate of the skill, not your score for this attempt. It starts at 50% and every correct answer moves it up, so even a flawless short quiz reads below 100%. Keep answering questions on a skill and it keeps climbing - but it never quite reaches 100%, because no quiz can prove you would get every future question right."
+  },
   "adaptiveVideoMode": {
     "groupLabel": "Watch mode",
     "switching": "Switching…",

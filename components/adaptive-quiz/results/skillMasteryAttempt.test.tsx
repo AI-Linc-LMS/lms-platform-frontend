@@ -6,6 +6,14 @@
  * but the card never said so and looked like it contradicted the score. It now shows this
  * attempt's raw result next to the estimate and says how many questions the estimate rests on.
  * Checked at phone and desktop widths: the new lines' phone sizes sit inside the phone block only.
+ *
+ * It came back anyway ("3 questions, no history, all correct, still 92%"), because the card still
+ * presented the estimate exactly like a score - a big percent on a progress bar - and the footnote
+ * promised a top the estimate cannot reach. The estimate is a posterior on a bounded ability grid:
+ * production's highest value across every learner is 98%, from 25 straight correct answers on one
+ * skill. So the number now carries an "est." marker, and the footnote says plainly that it never
+ * quite reaches 100% and fires whenever an estimate sits below that row's own attempt score - not
+ * only on a perfect row, which left 4/5 (80% on the card, 74% estimated) unexplained.
  */
 import { render, screen, within } from "@testing-library/react";
 import type { ReactNode } from "react";
@@ -19,7 +27,20 @@ vi.mock("framer-motion", () => ({
   motion: { div: ({ children }: { children?: ReactNode }) => <div>{children}</div> },
 }));
 
-import { SkillMasteryHeatmap, attemptLine, evidenceLine } from "./SkillMasteryHeatmap";
+// The REAL English bundle, resolved by key, so a missing or renamed key fails here rather than
+// shipping the raw key to a learner.
+import enCommon from "@/locales/en/common.json";
+const translate = (key: string) => {
+  const value = key.split(".").reduce<unknown>(
+    (node, part) => (node as Record<string, unknown> | undefined)?.[part],
+    enCommon as unknown,
+  );
+  if (typeof value !== "string") throw new Error(`missing locale key: ${key}`);
+  return value;
+};
+vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: translate }) }));
+
+import { SkillMasteryHeatmap, attemptLine, evidenceLine, estimateBelowAttempt } from "./SkillMasteryHeatmap";
 
 type Row = AdaptiveAINarration["skill_mastery"][number];
 const row = (over: Partial<Row>): Row => ({
@@ -52,6 +73,18 @@ describe("skill mastery card text", () => {
     expect(evidenceLine(row({}))).toBe("Mastery grows with more questions: 5 so far");
     expect(evidenceLine(row({ se: 0.4, evidence_count: 14 }))).toBe("Based on 14 questions");
     expect(evidenceLine(row({ se: 0.4, evidence_count: 1 }))).toBe("Based on 1 question");
+  });
+
+  it("flags every row whose estimate sits below that row's own attempt score", () => {
+    // Perfect and short: the reported case.
+    expect(estimateBelowAttempt(row({}))).toBe(true);
+    expect(estimateBelowAttempt(row({ attempt_correct: 3, attempt_total: 3, mastery_pct: 92 }))).toBe(true);
+    // Not perfect, same contradiction: 4/5 reads 80% on the card next to a 74% estimate.
+    expect(estimateBelowAttempt(row({ attempt_correct: 4, attempt_total: 5, mastery_pct: 74 }))).toBe(true);
+    // The estimate is at or above the attempt - nothing to explain.
+    expect(estimateBelowAttempt(row({ attempt_correct: 2, attempt_total: 3, mastery_pct: 70 }))).toBe(false);
+    expect(estimateBelowAttempt(row({ attempt_correct: 0, attempt_total: 0, mastery_pct: 50 }))).toBe(false);
+    expect(estimateBelowAttempt(row({ attempt_total: undefined, attempt_correct: undefined }))).toBe(false);
   });
 
   it("keeps the old wording for a narration cached before the counts existed", () => {
@@ -87,7 +120,10 @@ describe.each([
     ]);
     expect(screen.queryByText(/confidence early/)).toBeNull();
     const explainer = screen.getByTestId("skill-mastery-explainer");
-    expect(explainer).toHaveTextContent(/perfect attempt can still read below 100%/);
+    // The number must not promise a top it cannot reach, and must say what it is.
+    expect(explainer).toHaveTextContent(/never quite reaches 100%/);
+    expect(explainer).toHaveTextContent(/not your score for this attempt/);
+    expect(screen.getAllByTestId("skill-estimate-tag").map((n) => n.textContent)).toEqual(["est.", "est.", "est."]);
 
     // Phone sizes live in the phone block only; the desktop card keeps its own sizes.
     const line = screen.getAllByTestId("skill-attempt")[0];
@@ -100,6 +136,17 @@ describe.each([
     // The score and the estimate sit on the same card.
     const card = line.parentElement as HTMLElement;
     expect(within(card).getByText("92%")).toBeInTheDocument();
+  });
+
+  it("explains an imperfect attempt whose estimate still trails the card's own score", () => {
+    setWidth(width);
+    render(
+      <SkillMasteryHeatmap
+        skills={[row({ skill: "join operations", attempt_correct: 4, attempt_total: 5, evidence_count: 5, mastery_pct: 74, band: "proficient" })]}
+      />,
+    );
+    expect(screen.getByTestId("skill-attempt")).toHaveTextContent("This attempt: 80% (4/5)");
+    expect(screen.getByTestId("skill-mastery-explainer")).toHaveTextContent(/never quite reaches 100%/);
   });
 
   it("renders a legacy row without the new lines", () => {
