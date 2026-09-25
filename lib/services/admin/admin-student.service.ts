@@ -8,12 +8,32 @@ export interface ManagedStudentResume {
   created_at: string;
 }
 
-/** A student's saved resumes, newest first. `has_saved_resume: false` is an empty answer, not an error. */
+/**
+ * One resume a student is still editing in the builder. It has no file to open: the templates
+ * that turn it into a page live in the learner's builder, not on the server, so this is shown as
+ * a fact about the student rather than as a button that would fail.
+ */
+export interface ManagedStudentResumeDocument {
+  id: number;
+  display_name: string;
+  template?: string;
+  updated_at: string;
+}
+
+/**
+ * A student's saved resumes, newest first. `has_saved_resume: false` is an empty answer, not an
+ * error, and it always equals `resumes.length + documents.length > 0` - the server computes the
+ * flag and the lists together (see `accounts/resume_presence.py`) so the Manage Students column
+ * and this dialog can never contradict each other.
+ *
+ * `documents` is absent on an older server; treat that as "no documents", not as an error.
+ */
 export interface ManagedStudentResumes {
   student_id: number;
   student_name: string;
   has_saved_resume: boolean;
   resumes: ManagedStudentResume[];
+  documents?: ManagedStudentResumeDocument[];
 }
 
 export interface Student {
@@ -123,6 +143,12 @@ export interface ManageStudentsResponse {
 export interface StudentDetail {
   id: number;
   user_id: number;
+  /**
+   * The Manage Students column's own answer for this student, so the profile header offers
+   * "View resume" only when there is one. Absent on an older server, which reads as "unknown" -
+   * the button stays available rather than hiding a resume that is there.
+   */
+  has_saved_resume?: boolean;
   personal_info: {
     first_name: string;
     last_name: string;

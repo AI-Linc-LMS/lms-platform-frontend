@@ -63,6 +63,7 @@ vi.mock("@/lib/services/admin/admin-student.service", () => ({
 }));
 
 import { StudentResumeDialog } from "./StudentResumeDialog";
+import { StudentResumeButton } from "./StudentResumeButton";
 import { StudentsTable } from "./StudentsTable";
 
 const TWO_RESUMES = {
@@ -74,7 +75,33 @@ const TWO_RESUMES = {
     { id: 41, display_name: "Old CV", created_at: "2026-08-01T10:00:00Z" },
   ],
 };
-const NO_RESUMES = { student_id: 9, student_name: "Omar Khan", has_saved_resume: false, resumes: [] };
+const NO_RESUMES = {
+  student_id: 9,
+  student_name: "Omar Khan",
+  has_saved_resume: false,
+  resumes: [],
+  documents: [],
+};
+
+/** A learner whose resume lives only in the builder: nothing to open, but they DO have one. */
+const DOCUMENT_ONLY = {
+  student_id: 11,
+  student_name: "Dara Doc",
+  has_saved_resume: true,
+  resumes: [],
+  documents: [
+    { id: 3, display_name: "Dara Doc - Data Analyst", template: "modern", updated_at: "2026-09-24T09:00:00Z" },
+  ],
+};
+
+/** A learner with a PDF only: the case the dialog was built for, held here so it cannot regress. */
+const PDF_ONLY = {
+  student_id: 7,
+  student_name: "Asha Rao",
+  has_saved_resume: true,
+  resumes: [{ id: 52, display_name: "Asha_Rao_Resume.pdf", created_at: "2026-09-20T10:00:00Z" }],
+  documents: [],
+};
 
 const createObjectURL = vi.fn(() => "blob:resume-52");
 const revokeObjectURL = vi.fn();
@@ -260,5 +287,70 @@ describe("opening a resume from Manage Students", () => {
     renderTable();
     fireEvent.click(screen.getByRole("button", { name: "Actions for Omar Khan" }));
     expect(within(screen.getByRole("menu")).queryByRole("menuitem", { name: /View resume/ })).toBeNull();
+  });
+});
+
+
+// ---- the column and this dialog must answer the same question -----------------------------------
+//
+// They did not: the column counted SavedResume rows and the dialog listed the ones with a file,
+// and neither of them counted the documents the builder's Save writes. The server now computes
+// both from one definition (accounts/resume_presence.py); these hold the screen to it.
+
+describe("the indicator and the dialog agree", () => {
+  it("a learner with only a PDF: the dialog lists it and never says they have none", async () => {
+    mocks.getStudentResumes.mockResolvedValue(PDF_ONLY);
+    renderDialog(7);
+    const items = await screen.findAllByTestId("student-resume-item");
+    expect(items).toHaveLength(1);
+    expect(screen.queryByText(/has not saved a resume yet/)).toBeNull();
+    expect(screen.queryByTestId("student-resume-document")).toBeNull();
+  });
+
+  it("a learner with only a builder document: the dialog says they have one, with no dead button", async () => {
+    mocks.getStudentResumes.mockResolvedValue(DOCUMENT_ONLY);
+    renderDialog(11);
+    const docs = await screen.findAllByTestId("student-resume-document");
+    expect(docs).toHaveLength(1);
+    expect(within(docs[0]).getByText("Dara Doc - Data Analyst")).toBeTruthy();
+    // The flag said yes, so the dialog must not say no.
+    expect(screen.queryByText(/has not saved a resume yet/)).toBeNull();
+    // And it must not offer an action that cannot work: there is no file behind a document.
+    expect(screen.queryByRole("button", { name: /Open PDF/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Download/ })).toBeNull();
+    expect(screen.getByText("No PDF yet")).toBeTruthy();
+  });
+
+  it("still says plainly when a learner has neither", async () => {
+    mocks.getStudentResumes.mockResolvedValue(NO_RESUMES);
+    renderDialog(9);
+    expect(await screen.findByText("Omar Khan has not saved a resume yet.")).toBeTruthy();
+    expect(screen.queryByTestId("student-resume-document")).toBeNull();
+  });
+});
+
+describe("the profile's View resume button", () => {
+  it("is offered, and opens the dialog, when the student has a resume", async () => {
+    mocks.getStudentResumes.mockResolvedValue(PDF_ONLY);
+    render(<StudentResumeButton studentId={7} studentName="Asha Rao" hasSavedResume />);
+    const button = screen.getByTestId("view-resume-button");
+    expect((button as HTMLButtonElement).disabled).toBe(false);
+    fireEvent.click(button);
+    expect(await screen.findAllByTestId("student-resume-item")).toHaveLength(1);
+    expect(mocks.getStudentResumes).toHaveBeenCalledWith(7);
+  });
+
+  it("is not a dead action when the student has none", () => {
+    render(<StudentResumeButton studentId={9} studentName="Omar Khan" hasSavedResume={false} />);
+    const button = screen.getByTestId("view-resume-button") as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    fireEvent.click(button);
+    expect(mocks.getStudentResumes).not.toHaveBeenCalled();
+    expect(screen.queryByText(/has not saved a resume yet/)).toBeNull();
+  });
+
+  it("stays available when an older server does not say", () => {
+    render(<StudentResumeButton studentId={7} studentName="Asha Rao" />);
+    expect((screen.getByTestId("view-resume-button") as HTMLButtonElement).disabled).toBe(false);
   });
 });

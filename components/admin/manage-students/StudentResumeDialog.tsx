@@ -9,6 +9,7 @@ import { PHONE } from "@/components/common/mobile/phone";
 import {
   adminStudentService,
   type ManagedStudentResume,
+  type ManagedStudentResumeDocument,
   type ManagedStudentResumes,
 } from "@/lib/services/admin/admin-student.service";
 
@@ -16,6 +17,12 @@ import {
  * A student's saved resumes, opened from Manage Students. Read-only.
  *
  * Manage Students said "Saved resume: Yes" and nothing on the screen could open it.
+ *
+ * A resume comes in two halves and this shows both, because the column above counts both (see
+ * `accounts/resume_presence.py`, which computes the flag and these lists together). A PDF is a
+ * file: it opens. A builder document is structured content whose templates live in the learner's
+ * builder, so there is nothing for the server to render and nothing here to open - it is listed
+ * as a fact about the student, with no button that would fail.
  *
  * A saved resume is the PDF the learner exported from the resume builder (the builder's template
  * is baked into it) or a PDF they uploaded, so the faithful view IS that file. It opens in a new
@@ -168,7 +175,7 @@ export function StudentResumeDialog({ open, onClose, studentId, studentName }: S
         </Button>
       </Box>
     );
-  } else if (state.data.resumes.length === 0) {
+  } else if (state.data.resumes.length === 0 && (state.data.documents ?? []).length === 0) {
     body = (
       <Box sx={{ py: 5, display: "flex", flexDirection: "column", alignItems: "center", gap: 1, textAlign: "center" }}>
         <IconWrapper icon="mdi:file-document-outline" size={40} color="var(--font-tertiary, #94a3b8)" />
@@ -252,14 +259,66 @@ export function StudentResumeDialog({ open, onClose, studentId, studentName }: S
             </Box>
           );
         })}
+        {(state.data.documents ?? []).map((doc: ManagedStudentResumeDocument) => {
+          const edited = formatSavedDate(doc.updated_at, i18n?.language);
+          return (
+            <Box
+              key={`doc-${doc.id}`}
+              data-testid="student-resume-document"
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1.5,
+                p: 1.5,
+                borderRadius: 2,
+                border: "1px dashed var(--border-default, #e5e7eb)",
+                backgroundColor: "var(--card-bg)",
+                [PHONE]: { flexWrap: "wrap" },
+              }}
+            >
+              <IconWrapper icon="mdi:file-document-edit-outline" size={32} color="var(--font-tertiary, #94a3b8)" />
+              <Box sx={{ flex: 1, minWidth: 0 }}>
+                <Typography
+                  sx={{ fontWeight: 700, fontSize: "0.9rem", color: "var(--font-primary)", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                  title={doc.display_name}
+                >
+                  {doc.display_name}
+                </Typography>
+                <Typography variant="caption" sx={{ color: "var(--font-secondary)", display: "block" }}>
+                  {edited
+                    ? t("adminManageStudents.resumeViewer.editedOn", {
+                        date: edited,
+                        defaultValue: "In the resume builder \u00b7 last edited {{date}}",
+                      })
+                    : t("adminManageStudents.resumeViewer.inBuilder", "In the resume builder")}
+                </Typography>
+              </Box>
+              <Chip
+                size="small"
+                label={t("adminManageStudents.resumeViewer.noPdfYet", "No PDF yet")}
+                sx={{ height: 22, fontSize: "0.7rem", fontWeight: 700, flexShrink: 0 }}
+              />
+            </Box>
+          );
+        })}
         {actionError && (
           <Typography role="alert" variant="caption" sx={{ color: "var(--error-500, #dc2626)", fontWeight: 600 }}>
             {t("adminManageStudents.resumeViewer.actionFailed", "Couldn't open this resume. Try again.")}
           </Typography>
         )}
-        <Typography variant="caption" sx={{ color: "var(--font-tertiary, #94a3b8)" }}>
-          {t("adminManageStudents.resumeViewer.opensInTab", "Opens in a new tab, exactly as the student saved it.")}
-        </Typography>
+        {state.data.resumes.length > 0 && (
+          <Typography variant="caption" sx={{ color: "var(--font-tertiary, #94a3b8)" }}>
+            {t("adminManageStudents.resumeViewer.opensInTab", "Opens in a new tab, exactly as the student saved it.")}
+          </Typography>
+        )}
+        {(state.data.documents ?? []).length > 0 && (
+          <Typography variant="caption" sx={{ color: "var(--font-tertiary, #94a3b8)" }}>
+            {t(
+              "adminManageStudents.resumeViewer.documentHint",
+              "A resume still in the builder has no file to open. It becomes readable here once the student saves a PDF copy.",
+            )}
+          </Typography>
+        )}
       </Box>
     );
   }
