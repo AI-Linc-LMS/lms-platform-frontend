@@ -97,17 +97,49 @@ export function htmlToText(html: string): string {
 
   // textContent concatenates without regard for block boundaries, so "<h2>Loops</h2><p>A loop"
   // came out as "LoopsA loop" and was narrated as one run-on word. Separate the blocks.
-  tmp.querySelectorAll("h1, h2, h3, h4, h5, h6, p, li, div, tr, blockquote, section")
-    .forEach((el) => el.after(document.createTextNode(" ")));
+  // `td`/`th` are in the list because a two-cell row read as "RateFive percent" - one
+  // invented word nobody wrote - which is the same defect one level down.
+  // Separated on BOTH sides: `after` alone left loose text that sits in front of a block
+  // glued to it - "<p>First.</p>Loose words here.<p>Second.</p>" read "here.Second".
+  tmp.querySelectorAll("h1, h2, h3, h4, h5, h6, p, li, div, tr, td, th, dt, dd, blockquote, section, aside")
+    .forEach((el) => {
+      el.before(document.createTextNode(" "));
+      el.after(document.createTextNode(" "));
+    });
 
   return tidySpeech(tmp.textContent || "");
+}
+
+/**
+ * Cut `text` after each sentence end, keeping EVERY character.
+ *
+ * This used to be `text.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g)`, and a `match` keeps
+ * only what it matches: any run the expression could not fit was silently deleted. The
+ * expression required whitespace after the full stop, so every full stop that has none
+ * threw away the words in front of it - "Save it in hello.py and run it." was narrated as
+ * "py and run it.", and "Version 3.5 is out." as "5 is out.". A split cannot lose text;
+ * a match can, which is why this is a split.
+ */
+function splitSentences(text: string): string[] {
+  const out: string[] = [];
+  // Sentence-ending punctuation, any closing quote or bracket after it, then whitespace.
+  // Anything else (a decimal point, a file extension, a domain) is not a sentence end.
+  const re = /[.!?]+["')\]’”]*\s+/g;
+  let start = 0;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(text))) {
+    out.push(text.slice(start, m.index + m[0].length));
+    start = re.lastIndex;
+  }
+  if (start < text.length) out.push(text.slice(start));
+  return out.length ? out : [text];
 }
 
 /** Split into synthesis chunks. The FIRST chunk is deliberately short: the learner
  *  waits for it in silence, and a 3500-character first chunk is what made Read aloud
  *  feel like it had not responded (which is what got it clicked again). Exported for tests. */
 export function chunkText(text: string, first = 400, rest = 3500): string[] {
-  const sentences = text.match(/[^.!?]+[.!?]+(?:\s|$)|[^.!?]+$/g) || [text];
+  const sentences = splitSentences(text);
   const chunks: string[] = [];
   let cur = "";
   const max = () => (chunks.length === 0 ? first : rest);
@@ -116,7 +148,19 @@ export function chunkText(text: string, first = 400, rest = 3500): string[] {
       if (cur.trim()) chunks.push(cur.trim());
       if (s.length > max()) {
         const size = max();
-        for (let i = 0; i < s.length; i += size) chunks.push(s.slice(i, i + size).trim());
+        let i = 0;
+        while (i < s.length) {
+          // Break at the last space that fits rather than at the character: the old
+          // `s.slice(i, i + size)` cut mid-word, and half a word is a word the learner
+          // never hears.
+          let end = Math.min(i + size, s.length);
+          if (end < s.length) {
+            const space = s.lastIndexOf(" ", end);
+            if (space > i) end = space;
+          }
+          chunks.push(s.slice(i, end).trim());
+          i = end;
+        }
         cur = "";
       } else {
         cur = s;
@@ -136,7 +180,7 @@ export type NarrationSegment = { id: string; text: string };
 /** Elements that can stand alone on the page. A leaf one - no block inside it - is a
  *  unit of speech; a container is descended into instead. */
 const BLOCK_SELECTOR =
-  "p,h1,h2,h3,h4,h5,h6,li,pre,blockquote,figure,tr,dd,dt,div,section,article,aside,ul,ol,table,tbody,thead,tfoot";
+  "p,h1,h2,h3,h4,h5,h6,li,pre,blockquote,figure,td,th,tr,dd,dt,div,section,article,aside,ul,ol,table,tbody,thead,tfoot";
 
 export const NARRATE_ATTR = "data-narrate-id";
 export const NARRATING_ATTR = "data-narrating";
@@ -172,7 +216,19 @@ export function buildNarrationSegments(root: HTMLElement): NarrationSegment[] {
   let node: Node | null;
   while ((node = walker.nextNode())) {
     const raw = node.nodeValue;
-    if (!raw || !raw.trim()) continue;
+    if (!raw) continue;
+    if (!raw.trim()) {
+      // A whitespace-only node is not nothing: it is the space BETWEEN two inline runs -
+      // "<strong>Read</strong> <em>aloud</em>", two links side by side, or the space
+      // rewriteForSpeech puts where a <br> was. Skipping it (which this loop used to do)
+      // glued the two words into one the learner never hears said: "Readaloud",
+      // "Line oneline two". The flat narration this replaced got that right, which is
+      // exactly why the regression was invisible to the test that compares the two on
+      // markup where every block holds a single text node.
+      if (segments.length) segments[segments.length - 1].text += " ";
+      else if (pending) pending += " ";
+      continue;
+    }
     const owner = (node.parentElement as HTMLElement | null)?.closest<HTMLElement>(`[${NARRATE_ATTR}]`);
     const id = owner?.getAttribute(NARRATE_ATTR) ?? null;
     if (!id) {

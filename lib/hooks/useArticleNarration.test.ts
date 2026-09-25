@@ -88,6 +88,32 @@ describe("how long the learner waits before the first sound", () => {
     expect(chunkText(text, 8, 8).join(" ").replace(/\s+/g, " ")).toBe(text);
   });
 
+  it("loses no text when a full stop is not followed by a space", () => {
+    // The splitter used to be a `match`, and a match keeps only what it matches. Its
+    // expression required whitespace after the ".", so every full stop without one took
+    // the words in FRONT of it down with it: "py and run it." is what the learner heard.
+    // The test above could never have caught this - every full stop in
+    // "One. Two. Three. Four." is followed by a space.
+    for (const text of [
+      "Save it in hello.py and run it from a terminal.",
+      "Version 3.5 is out. See example.com for details.",
+      "The U.S. economy grew by 2.5 percent.",
+      "Call range() then print(x). That is all.",
+    ]) {
+      expect(chunkText(text, 400, 3500).join(" ").replace(/\s+/g, " "), `for ${text}`).toBe(text);
+      expect(chunkText(text, 24, 24).join(" ").replace(/\s+/g, " "), `split small, for ${text}`).toBe(text);
+    }
+  });
+
+  it("breaks a sentence too long for one request at a space, never mid-word", () => {
+    const text = "alpha bravo charlie delta echo foxtrot golf hotel india juliet kilo lima";
+    const chunks = chunkText(text, 20, 20);
+    expect(chunks.length).toBeGreaterThan(1);
+    // Every piece is a run of whole words that appears verbatim in the original.
+    for (const c of chunks) expect(text).toContain(c);
+    expect(chunks.join(" ")).toBe(text);
+  });
+
   it("returns a single chunk for a short article", () => {
     expect(chunkText("Short article.")).toEqual(["Short article."]);
   });
