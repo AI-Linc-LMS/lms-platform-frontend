@@ -1,11 +1,13 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { useTranslation } from "react-i18next";
 import { Box, Drawer, Skeleton, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import {
   roadmapKeys,
   roadmapsService,
+  type ForgeUnavailableError,
   type RoadmapNode,
 } from "@/lib/services/roadmaps.service";
 import { PHONE } from "@/components/common/mobile/phone";
@@ -29,6 +31,12 @@ import { PHONE } from "@/components/common/mobile/phone";
  *
  * 3. **It asks a question.** "Build this course" as a bare button is an instruction. The learner
  *    is making a choice, so the footer poses it and offers both answers.
+ *
+ * 4. **It answers.** A refused build used to be reported by the page BEHIND this drawer, which
+ *    stays open on failure — so a learner past their free build pressed the button, watched the
+ *    spinner come and go, and saw nothing at all. Every refusal is now shown here, next to the
+ *    button that caused it, and a refusal the learner can pay their way out of carries the price
+ *    and the checkout rather than a dead end.
  */
 
 /** Cap the covers-list so a 20-child parent does not turn the drawer into a scroll. */
@@ -40,13 +48,25 @@ export function BuildCourseDrawer({
   onClose,
   onBuild,
   busy = false,
+  refusal = null,
+  notice = null,
+  onPay,
+  paying = false,
 }: {
   slug: string;
   node: RoadmapNode | null;
   onClose: () => void;
   onBuild: (node: RoadmapNode) => void;
   busy?: boolean;
+  /** Why the last build attempt was refused, or null. Shown here, never behind the drawer. */
+  refusal?: ForgeUnavailableError | null;
+  /** A non-refusal message — a payment still settling, say. */
+  notice?: string | null;
+  /** Open checkout for one build credit. Only ever called when `refusal.paymentRequired`. */
+  onPay?: () => void;
+  paying?: boolean;
 }) {
+  const { t } = useTranslation();
   const { data: detail, isLoading } = useQuery({
     queryKey: roadmapKeys.node(slug, node?.id ?? 0),
     queryFn: () => roadmapsService.node(slug, node!.id),
@@ -351,6 +371,88 @@ export function BuildCourseDrawer({
               We will assemble it from the verified question bank, not generate it with AI. It is
               yours alone, and you will find it in Courses.
             </Typography>
+
+            {/* The outcome of the last attempt, IN the drawer. This is the whole of the reported
+                bug: the page rendered it underneath, where nothing is visible. */}
+            {(refusal || notice) && (
+              <Stack
+                direction="row"
+                spacing={1}
+                role="alert"
+                data-testid="forge-refusal"
+                sx={{
+                  mb: 1.75,
+                  p: 1.25,
+                  borderRadius: 2,
+                  borderWidth: "1px",
+                  borderStyle: "solid",
+                  borderColor: refusal ? "var(--accent-red)" : "var(--border-default)",
+                  bgcolor: "var(--surface)",
+                }}
+              >
+                <Box sx={{ display: "flex", pt: "2px", color: refusal ? "var(--accent-red)" : "var(--font-secondary)" }}>
+                  <Icon
+                    icon={
+                      refusal?.paymentRequired
+                        ? "solar:lock-keyhole-minimalistic-linear"
+                        : refusal
+                          ? "solar:danger-triangle-linear"
+                          : "solar:info-circle-linear"
+                    }
+                    width={16}
+                  />
+                </Box>
+                <Typography
+                  sx={{ fontSize: "0.85rem", color: "var(--font-primary)", lineHeight: 1.55 }}
+                >
+                  {refusal?.message || notice}
+                </Typography>
+              </Stack>
+            )}
+
+            {/* Paying is offered only when the server quoted an amount. A tenant that has priced
+                nothing answers `not_for_sale`, and a checkout over a null price is the dead end
+                this whole screen exists to remove. */}
+            {refusal?.paymentRequired && onPay && (
+              <Box
+                component="button"
+                onClick={onPay}
+                disabled={paying}
+                data-testid="forge-pay"
+                sx={{
+                  appearance: "none",
+                  border: "none",
+                  cursor: paying ? "default" : "pointer",
+                  font: "inherit",
+                  width: "100%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 1,
+                  px: 2.5,
+                  py: 1.25,
+                  mb: 1.25,
+                  borderRadius: 999,
+                  bgcolor: paying
+                    ? "color-mix(in srgb, var(--accent-purple) 30%, #1e1b4b)"
+                    : "color-mix(in srgb, var(--accent-purple) 65%, #1e1b4b)",
+                  color: "#fff",
+                  fontSize: "0.95rem",
+                  fontWeight: 600,
+                  [PHONE]: { minHeight: 44 },
+                }}
+              >
+                <Icon
+                  icon={paying ? "svg-spinners:180-ring-with-bg" : "solar:card-linear"}
+                  width={17}
+                />
+                {paying
+                  ? t("roadmapPaywall.opening")
+                  : t("roadmapPaywall.payCta", {
+                      price: `${refusal.currency} ${refusal.price}`,
+                    })}
+              </Box>
+            )}
 
             <Stack direction="row" spacing={1.25}>
               <Box

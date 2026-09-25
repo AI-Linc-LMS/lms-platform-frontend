@@ -29,6 +29,15 @@ vi.mock("@/components/common/PageShell", () => ({
   PageShell: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
 vi.mock("@/components/common/ModulePageHeader", () => ({ ModulePageHeader: () => null }));
+// The page offers checkout for a refused build, and `usePayment` reads the auth context. This
+// file renders the page bare, so the hook is stubbed rather than the whole provider tree stood
+// up: nothing here is about paying for anything.
+vi.mock("@/hooks/usePayment", () => ({
+  usePayment: () => ({ handlePayment: vi.fn(), busyKey: null }),
+}));
+vi.mock("react-i18next", () => ({
+  useTranslation: () => ({ t: (key: string) => `t:${key}` }),
+}));
 
 const graphFn = vi.fn();
 const ownedFn = vi.fn();

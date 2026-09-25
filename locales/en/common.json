@@ -3138,6 +3138,12 @@
   "roadmapsMobile": {
     "mapHint": "Tap a step to open it. Press and hold to mark it done, in progress or skipped."
   },
+  "roadmapPaywall": {
+    "payCta": "Pay {{price}} and build it",
+    "opening": "Opening checkout",
+    "orderDescription": "One roadmap course build",
+    "unknown": "We could not start that build. Please try again."
+  },
   "mobileChrome": {
     "more": "More",
     "platformGuide": "Platform guide"

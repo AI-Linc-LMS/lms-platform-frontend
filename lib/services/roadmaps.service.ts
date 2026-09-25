@@ -360,16 +360,77 @@ export interface ForgeJob {
   errors: { at: string; where: string; message: string }[];
   /** Set when the learner already had this course: nothing was rebuilt. */
   alreadyBuilt?: boolean;
+  /**
+   * Set when a build that had stopped was picked up again instead of a new one starting.
+   * The job this describes is the OLD one, so the title may not be the topic just clicked.
+   */
+  resumed?: boolean;
 }
 
-/** Raised for a 422: the server has no material, and the message is learner-facing. */
+/**
+ * A refusal the learner can be told about.
+ *
+ * Every refusal the build endpoint documents arrives here, not only the 422 this used to
+ * translate. That gap WAS the reported bug: a 402 (free build spent), a 429 (another build
+ * running, or the daily ceiling) and a 404 all fell through as bare axios errors, and the
+ * roadmap page turned them into one generic sentence which it then rendered *behind* the
+ * still-open build drawer. The learner pressed "Yes, build it" and nothing happened at all --
+ * no course, and no offer to pay either.
+ *
+ * `paymentRequired` is deliberately narrower than "the server said 402". It is true only when
+ * there is an amount that can actually be charged; a tenant that has priced nothing answers
+ * `not_for_sale`, and offering checkout over a null price is how a paywall becomes a dead end.
+ */
 export class ForgeUnavailableError extends Error {
   code: string;
-  constructor(message: string, code: string) {
+  status: number;
+  paymentRequired: boolean;
+  /** Major units, exactly as the server wrote it. Null when nothing is on sale. */
+  price: string | null;
+  currency: string;
+
+  constructor(
+    message: string,
+    code: string,
+    extra: {
+      status?: number;
+      paymentRequired?: boolean;
+      price?: string | null;
+      currency?: string;
+    } = {}
+  ) {
     super(message);
     this.code = code;
+    this.status = extra.status ?? 422;
+    this.paymentRequired = Boolean(extra.paymentRequired);
+    this.price = extra.price ?? null;
+    this.currency = extra.currency || "INR";
   }
 }
+
+/** The refusal bodies the build endpoint emits, all of which carry a learner-facing `detail`. */
+interface ForgeRefusalBody {
+  detail?: string;
+  code?: string;
+  payment_required?: boolean;
+  price?: string | null;
+  currency?: string;
+}
+
+/**
+ * Statuses this endpoint refuses with, and what to say when the body carries no `detail`.
+ *
+ * 401 and 403 are deliberately absent: those are the auth interceptor's, and dressing an expired
+ * session up as a build problem would send the learner looking for the wrong fix.
+ */
+const FORGE_REFUSALS: Record<number, { code: string; fallback: string }> = {
+  400: { code: "bad_request", fallback: "We could not read that request." },
+  402: { code: "payment_required", fallback: "Your free course build has been used." },
+  404: { code: "not_found", fallback: "We could not find that topic." },
+  409: { code: "conflict", fallback: "We could not start the build. Please try again." },
+  422: { code: "no_material", fallback: "We do not have material for that yet." },
+  429: { code: "rate_limited", fallback: "Too many builds just now. Try again shortly." },
+};
 
 export const forgeService = {
   /** Ask for a course. Pass a roadmap node id OR free text, never both. */
@@ -378,13 +439,19 @@ export const forgeService = {
       const { data } = await apiClient.post(`${BASE_ADAPTIVE}/forge/`, body);
       return data;
     } catch (err) {
-      const res = (err as { response?: { status?: number; data?: Record<string, string> } })
-        .response;
-      if (res?.status === 422) {
-        throw new ForgeUnavailableError(
-          res.data?.detail || "We do not have material for that yet.",
-          res.data?.code || "no_material"
-        );
+      const res = (err as { response?: { status?: number; data?: ForgeRefusalBody } }).response;
+      const status = res?.status ?? 0;
+      const known = FORGE_REFUSALS[status];
+      if (known) {
+        const data = res?.data ?? {};
+        throw new ForgeUnavailableError(data.detail || known.fallback, data.code || known.code, {
+          status,
+          // The server decides whether money can change hands. `payment_required` is false on a
+          // 402 from a tenant that has put nothing on sale.
+          paymentRequired: status === 402 && Boolean(data.payment_required) && Boolean(data.price),
+          price: data.price ?? null,
+          currency: data.currency,
+        });
       }
       throw err;
     }

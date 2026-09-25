@@ -5,6 +5,15 @@ export enum PaymentType {
   COURSE = "COURSE",
   ADAPTIVE_COURSE = "ADAPTIVE_COURSE",
   ASSESSMENT = "ASSESSMENT",
+  /**
+   * Roadmap course builds. `type_id` carries the QUANTITY, not a row id — a build credit floats
+   * until the learner spends it on a topic, exactly like a mock-interview top-up.
+   *
+   * The server has accepted this since the roadmap paywall shipped (`payment_gateway/views.py`
+   * creates the order, `signals.py` mints the credits on the webhook). It was missing here, so
+   * nothing in the app could ever open checkout for one: the gate shipped without its route.
+   */
+  ROADMAP = "ROADMAP",
 }
 
 export interface CreateOrderRequest {
