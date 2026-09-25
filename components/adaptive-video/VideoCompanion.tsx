@@ -785,19 +785,23 @@ export function VideoCompanion({
           // use, and the player keeps its place in the tree at every width.
           //
           // - One column: unchanged - they close the stack, after the chapters.
-          // - lg (1200-1535px): the main column is at its narrowest, so the player is small, and the
-          //   four rail panels ran 130-460px past the lesson. Without the takeaways the rail (mode,
-          //   re-explain, chapters) comes out within ~20-170px of the lesson, so the takeaways - the
-          //   one panel that keeps growing as the video plays - go below both columns, full width.
-          //   Moving them under the lesson instead only turned the gap round (the lesson then ran
-          //   280-530px past the rail). Not for a video with no chapters: that rail would be short
-          //   of the lesson by the whole of the chapters card, so the takeaways stay in it.
-          // - xl and up: the player is big enough that the old stack comes out even; it stays.
+          // - Two columns (lg and up): the takeaways - the one panel that keeps growing as the
+          //   video plays - go below both columns, full width, so the rail ends at the chapters.
+          //   Not for a video with no chapters: that rail would be short of the lesson by the whole
+          //   of the chapters card, so the takeaways stay in it.
+          //
+          //   This used to stop at 1535px, on the reading that "xl and up, the player is big enough
+          //   that the old stack comes out even". It is not, and that is this report: measured
+          //   headlessly with the companion from the screenshot (an empty concept map, 7 chapters,
+          //   every takeaway revealed), the right column ran past the lesson by 324px at 1536,
+          //   288px at 1600, 216px at 1728 and 108px at 1920 - the reported empty area under the
+          //   Ask box, at every laptop and desktop width above the one that was fixed. With twelve
+          //   chapters it was 746px at 1536 and still 170px at 2560. Carrying the same rule up
+          //   turns all of those negative (the rail alone ends 66-282px SHORT of the lesson).
           ...(hasTakeaways && {
             gridTemplateAreas: {
               xs: '"main" "rail" "takeaways"',
               lg: takeawaysAcross ? '"main rail" "takeaways takeaways"' : '"main rail" "main takeaways"',
-              xl: '"main rail" "main takeaways"',
             },
             // Where the takeaways stay in the rail, the lesson spans both rows, so a longer lesson
             // puts its spare height under the takeaways rather than between them and the chapters.
@@ -1171,7 +1175,7 @@ export function VideoCompanion({
           // own 16px, so they sit exactly where they did as the rail's last card.
           <Box
             data-testid="takeaways-slot"
-            sx={{ gridArea: "takeaways", minWidth: 0, alignSelf: "start", mt: { xs: -0.5, lg: takeawaysAcross ? 0 : -0.5, xl: -0.5 } }}
+            sx={{ gridArea: "takeaways", minWidth: 0, alignSelf: "start", mt: { xs: -0.5, lg: takeawaysAcross ? 0 : -0.5 } }}
           >
             <LiveTakeaways takeaways={companion.takeaways} currentTime={currentTime} chapters={companion.chapters} />
           </Box>
