@@ -259,7 +259,9 @@ export function AdminQuizCard({ quiz, onAfterToggle, onRequestDelete }: AdminQui
           <Box sx={{ display: "inline-flex", alignItems: "center", gap: 0.5 }}>
             <Icon icon="mdi:format-list-numbered" width={14} style={{ color: accentStart, flexShrink: 0 }} />
             <Typography sx={{ fontSize: "0.78rem", fontWeight: 700, color: "text.primary" }}>
-              {quiz.min_questions}–{quiz.max_questions} Qs
+              {quiz.min_questions === quiz.max_questions
+                ? `${quiz.max_questions} Qs`
+                : `${quiz.min_questions}–${quiz.max_questions} Qs`}
             </Typography>
           </Box>
           <Box
