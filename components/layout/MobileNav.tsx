@@ -8,7 +8,7 @@ import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { useTenantShellTheme } from "@/lib/theme/useTenantShellTheme";
 import { useNavigation } from "@/lib/navigation/useNavigation";
-import { isNavItemActive, type NavigationItem } from "@/lib/navigation/navModel";
+import { resolveActiveNavPath, type NavigationItem } from "@/lib/navigation/navModel";
 import { useMobileMenu } from "./MobileMenu";
 
 /* ==========================================================================
@@ -74,8 +74,14 @@ export function MobileNav() {
   const pathname = usePathname();
   const { t } = useTranslation("common");
   const shell = useTenantShellTheme();
-  const { resolving } = useNavigation();
+  const { items, resolving } = useNavigation();
   const { bar, rest } = useBarItems();
+  /**
+   * Resolved once against the WHOLE nav, not per tab: a nested entry and its parent both
+   * matching the route is what lit two rows at once in the sidebar, and the dock reads the
+   * same model. Membership in `bar` or `rest` is then a plain comparison.
+   */
+  const activePath = resolveActiveNavPath(pathname, items.map((i) => i.path));
   const menu = useMobileMenu();
 
   if (resolving || bar.length === 0) return null;
@@ -83,7 +89,7 @@ export function MobileNav() {
   const fullLabel = (item: NavigationItem) => t(item.labelKey, item.label) as string;
   const dockLabel = (item: NavigationItem) =>
     item.dockLabelKey ? (t(item.dockLabelKey, item.dockLabel ?? item.label) as string) : fullLabel(item);
-  const menuActive = menu.isOpen || rest.some((i) => isNavItemActive(pathname, i.path));
+  const menuActive = menu.isOpen || rest.some((i) => i.path === activePath);
 
   return (
     <Box
@@ -112,7 +118,7 @@ export function MobileNav() {
       }}
     >
       {bar.map((item) => {
-        const active = isNavItemActive(pathname, item.path);
+        const active = item.path === activePath;
         return (
           <ButtonBase
             key={item.path}

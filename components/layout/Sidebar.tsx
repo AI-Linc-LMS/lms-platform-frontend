@@ -40,6 +40,7 @@ import {
   STUDENT_SECTIONS,
   STUDENT_STANDALONE_BOTTOM,
   STUDENT_STANDALONE_TOP,
+  resolveActiveNavPath,
   type NavigationItem,
 } from "@/lib/navigation/navModel";
 import { Button } from "@mui/material";
@@ -547,6 +548,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
     return { top, sections, bottom: [...bottom, ...leftovers] };
   }, [navigationItems, activeSections, activeStandaloneTop, activeStandaloneBottom]);
 
+  /**
+   * ONE active entry for the whole sidebar, resolved against every path it is rendering.
+   *
+   * Asking each row "am I a prefix of the route?" lit a parent and its child at the same time -
+   * "Interview" stayed highlighted while you were on "Interview Setup" - so the nav no longer
+   * said where you were. The longest match wins instead, which keeps a deep route
+   * (`/admin/admin-mock-interview/interviews/12`) on its correct parent.
+   */
+  const activePath = useMemo(
+    () => resolveActiveNavPath(pathname, navigationItems.map((i) => i.path)),
+    [pathname, navigationItems],
+  );
+
   // Open the section containing the current route - but ONLY when the route
   // actually changes. The filtered nav list is rebuilt on every render (the
   // feature-name Set is recreated each time), so groupedNav.sections changes
@@ -558,17 +572,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
     if (autoOpenedForPathRef.current === pathname) return;
     autoOpenedForPathRef.current = pathname ?? null;
     const activeSection = groupedNav.sections.find((s) =>
-      s.items.some(
-        (it) => pathname === it.path || pathname?.startsWith(it.path + "/")
-      )
+      s.items.some((it) => it.path === activePath)
     );
     if (activeSection) {
       setOpenSections((prev) =>
         prev.has(activeSection.id) ? prev : new Set(prev).add(activeSection.id)
       );
     }
+    // `groupedNav.sections` is intentionally absent: it is rebuilt on every render, and listing
+    // it is what re-opened a section the moment the user collapsed it.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pathname, groupedNav.sections]);
+  }, [pathname, activePath]);
 
   const { lockedModules } = useProfileGate();
 
@@ -580,8 +594,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     Boolean(item.gateKey && lockedModules.includes(item.gateKey));
 
   const renderNavRow = (item: NavigationItem, indent: boolean) => {
-    const isActive =
-      pathname === item.path || pathname?.startsWith(item.path + "/");
+    const isActive = item.path === activePath;
     const desc = item.descKey ? t(item.descKey, "") : "";
     return (
       <ListItem key={item.path} component="div" disablePadding sx={{ mb: 0.25 }}>
@@ -595,6 +608,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <Link
             href={item.path}
             prefetch={true}
+            // The active row says so, rather than leaving a screen reader to infer it from a
+            // background colour - and it is what the regression test counts.
+            aria-current={isActive ? "page" : undefined}
             style={{ textDecoration: "none", color: "inherit", width: "100%", display: "block" }}
             onClick={() => handleNavigation(item)}
           >
@@ -790,8 +806,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               {groupedNav.sections.map((section) => {
                 const expanded = openSections.has(section.id);
                 const sectionActive = section.items.some(
-                  (it) =>
-                    pathname === it.path || pathname?.startsWith(it.path + "/")
+                  (it) => it.path === activePath
                 );
                 return (
                   <Box key={section.id} sx={{ mt: 0.5 }}>

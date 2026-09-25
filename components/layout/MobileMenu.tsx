@@ -11,7 +11,7 @@ import { useAdminMode } from "@/lib/contexts/AdminModeContext";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { isClientOrgAdminRole } from "@/lib/auth/role-utils";
 import { useNavigation } from "@/lib/navigation/useNavigation";
-import { isNavItemActive, type NavigationItem } from "@/lib/navigation/navModel";
+import { resolveActiveNavPath, type NavigationItem } from "@/lib/navigation/navModel";
 import { PHONE } from "@/components/common/mobile/phone";
 
 /* ==========================================================================
@@ -77,8 +77,18 @@ export function MobileMenu({ open, onClose }: { open: boolean; onClose: () => vo
   const { user, logout } = useAuth();
   const { clientInfo } = useClientInfo();
   const { isAdminMode, toggleAdminMode } = useAdminMode();
-  const { grouped, effectiveAdminMode } = useNavigation();
+  const { items, grouped, effectiveAdminMode } = useNavigation();
   const [query, setQuery] = useState("");
+
+  /**
+   * One tile is current, never a parent and its child together. Resolved against every module
+   * the tenant has (not just the ones a search has left on screen), so filtering the launcher
+   * cannot move the highlight.
+   */
+  const activePath = useMemo(
+    () => resolveActiveNavPath(pathname, items.map((i) => i.path)),
+    [pathname, items],
+  );
 
   const label = useCallback((item: NavigationItem) => t(item.labelKey, item.label) as string, [t]);
   const q = query.trim().toLowerCase();
@@ -219,7 +229,7 @@ export function MobileMenu({ open, onClose }: { open: boolean; onClose: () => vo
               </Typography>
               <Box sx={{ display: "grid", gridTemplateColumns: "repeat(3, minmax(0, 1fr))", gap: 1.25 }}>
                 {g.items.map((item) => {
-                  const active = isNavItemActive(pathname, item.path);
+                  const active = item.path === activePath;
                   return (
                     <ButtonBase
                       key={item.path}
