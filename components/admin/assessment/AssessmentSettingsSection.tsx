@@ -66,6 +66,88 @@ function zoneLabelFor(tz: string): string {
   return `In ${zone.replace(/_/g, " ")}`;
 }
 
+const WEEKDAY_LABELS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+
+/** "HH:MM" -> minutes past midnight, or null when unparseable. */
+function hhmmToMinutes(value: string): number | null {
+  const m = /^(\d{1,2}):(\d{2})$/.exec((value || "").trim());
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h > 23 || min > 59) return null;
+  return h * 60 + min;
+}
+
+/**
+ * How long one occurrence lasts, in minutes. A closing time at or before the opening time is an
+ * overnight window (22:00 to 06:00), not an error - the same rule the server applies.
+ */
+export function occurrenceMinutes(start: string, end: string): number | null {
+  const s = hhmmToMinutes(start);
+  const e = hhmmToMinutes(end);
+  if (s === null || e === null) return null;
+  if (e === s) return 0;
+  return e > s ? e - s : e + 24 * 60 - s;
+}
+
+/**
+ * The warning an admin needs BEFORE saving, not as a 400 afterwards.
+ *
+ * A window shorter than the paper cannot be finished inside it, and it is the one mistake a daily
+ * window makes easy to make and impossible to see: "10:00 to 11:00" reads fine next to a
+ * 90-minute duration, and every learner hits the wall at 11:00, every day. The server refuses it
+ * too; this is so the admin finds out while they are still looking at the field.
+ */
+export function windowWarning(args: {
+  recurrence: AssessmentRecurrence;
+  start: string;
+  end: string;
+  weekdays: number[];
+  durationMinutes: number;
+  closesAttempt: boolean;
+}): string | null {
+  if (args.recurrence === "none") return null;
+  if (!args.start || !args.end) return "Set both an opening and a closing time.";
+  const minutes = occurrenceMinutes(args.start, args.end);
+  if (minutes === null) return "Use 24-hour times, such as 10:00 and 22:00.";
+  if (minutes === 0) {
+    return "The opening and closing times are the same. For an overnight window, set the closing time earlier (22:00 to 06:00).";
+  }
+  if (args.recurrence === "weekly" && args.weekdays.length === 0) {
+    return "Choose at least one day, or this assessment never opens.";
+  }
+  if (args.closesAttempt && args.durationMinutes > 0 && minutes < args.durationMinutes) {
+    return `The daily window is ${minutes} minutes but the assessment runs for ${args.durationMinutes}. Lengthen the window, shorten the assessment, or turn off "closes the attempt".`;
+  }
+  return null;
+}
+
+/** A plain-English read-back, so the admin sees the rule rather than the fields. */
+export function windowSummary(args: {
+  recurrence: AssessmentRecurrence;
+  start: string;
+  end: string;
+  weekdays: number[];
+  zone: string;
+}): string {
+  if (args.recurrence === "none" || !args.start || !args.end) return "";
+  const overnight = (occurrenceMinutes(args.start, args.end) ?? 0) > 0
+    && (hhmmToMinutes(args.end) ?? 0) <= (hhmmToMinutes(args.start) ?? 0);
+  const when =
+    args.recurrence === "daily"
+      ? "every day"
+      : args.recurrence === "weekdays"
+        ? "Monday to Friday"
+        : args.weekdays.length
+          ? args.weekdays.slice().sort((a, b) => a - b).map((d) => WEEKDAY_LABELS[d]).join(", ")
+          : "no days chosen";
+  const zone = args.zone ? ` ${args.zone.replace(/_/g, " ")}` : " your institution's time";
+  const tail = overnight ? " the next morning" : "";
+  return `Open ${when} from ${args.start} to ${args.end}${tail},${zone}.`;
+}
+
+export type AssessmentRecurrence = "none" | "daily" | "weekdays" | "weekly";
+
 interface AssessmentSettingsSectionProps {
   durationMinutes: number;
   startTime: string;
@@ -73,6 +155,25 @@ interface AssessmentSettingsSectionProps {
   /** IANA zone the window is expressed in. Blank means "use the institution's zone". */
   timezone?: string;
   onTimezoneChange?: (value: string) => void;
+  /**
+   * The repeating daily window inside start/end. "none" is the platform's original behaviour:
+   * open continuously for the whole span.
+   */
+  recurrence?: AssessmentRecurrence;
+  onRecurrenceChange?: (value: AssessmentRecurrence) => void;
+  /** "HH:MM" wall-clock, in the zone above. */
+  windowStartLocal?: string;
+  windowEndLocal?: string;
+  onWindowStartLocalChange?: (value: string) => void;
+  onWindowEndLocalChange?: (value: string) => void;
+  /** Monday=0 .. Sunday=6, for recurrence="weekly". */
+  recurrenceWeekdays?: number[];
+  onRecurrenceWeekdaysChange?: (value: number[]) => void;
+  windowClosesAttempt?: boolean;
+  onWindowClosesAttemptChange?: (value: boolean) => void;
+  /** Minutes that must remain to be let in. Empty string means "the full duration". */
+  lastAdmissionMinutes?: string;
+  onLastAdmissionMinutesChange?: (value: string) => void;
   /** Omitted or undefined is normalized via default params so MUI Switch stays controlled. */
   isPaid?: boolean;
   price: string;
@@ -631,6 +732,18 @@ export function AssessmentSettingsSection({
   onPriceChange,
   onCurrencyChange,
   timezone = "",
+  recurrence = "none",
+  onRecurrenceChange,
+  windowStartLocal = "",
+  windowEndLocal = "",
+  onWindowStartLocalChange,
+  onWindowEndLocalChange,
+  recurrenceWeekdays = [],
+  onRecurrenceWeekdaysChange,
+  windowClosesAttempt = true,
+  onWindowClosesAttemptChange,
+  lastAdmissionMinutes = "",
+  onLastAdmissionMinutesChange,
   onTimezoneChange,
   onActiveChange,
   onProctoringEnabledChange,
@@ -1014,7 +1127,7 @@ export function AssessmentSettingsSection({
 
           <FieldGroup
             title="Availability window (optional)"
-            hint="When set, learners only see start/end boundaries you define here. All times are interpreted in IST."
+            hint="When set, learners only see start/end boundaries you define here, in the timezone chosen below."
           >
             <Box
               sx={{
@@ -1060,6 +1173,160 @@ export function AssessmentSettingsSection({
                 </MenuItem>
               ))}
             </TextField>
+
+            {/* ---- The repeating daily window ------------------------------------------
+                Without this, "available from the 1st to the 14th" means 336 unbroken hours.
+                An invigilated paper is open 10:00-22:00 and shut overnight, which the platform
+                had no way to say. */}
+            <TextField
+              select
+              fullWidth
+              label="Repeats"
+              value={recurrence}
+              onChange={(e) =>
+                onRecurrenceChange?.(e.target.value as AssessmentRecurrence)
+              }
+              disabled={readOnly || !onRecurrenceChange}
+              helperText="A daily window inside the dates above. Without one the paper is open continuously for the whole span."
+              sx={{ mt: 2 }}
+            >
+              <MenuItem value="none">Open continuously (no daily window)</MenuItem>
+              <MenuItem value="daily">Every day</MenuItem>
+              <MenuItem value="weekdays">Monday to Friday</MenuItem>
+              <MenuItem value="weekly">Chosen days</MenuItem>
+            </TextField>
+
+            {recurrence !== "none" ? (
+              <Box sx={{ mt: 2 }}>
+                <Box
+                  sx={{
+                    display: "grid",
+                    gridTemplateColumns: { xs: "1fr", sm: "1fr 1fr" },
+                    gap: 2,
+                  }}
+                >
+                  <TextField
+                    label="Opens at"
+                    type="time"
+                    value={windowStartLocal}
+                    onChange={(e) => onWindowStartLocalChange?.(e.target.value)}
+                    disabled={readOnly}
+                    InputLabelProps={{ shrink: true }}
+                    inputProps={{ step: 300 }}
+                    helperText={zoneHelper}
+                  />
+                  <TextField
+                    label="Closes at"
+                    type="time"
+                    value={windowEndLocal}
+                    onChange={(e) => onWindowEndLocalChange?.(e.target.value)}
+                    disabled={readOnly}
+                    InputLabelProps={{ shrink: true }}
+                    inputProps={{ step: 300 }}
+                    helperText="Earlier than the opening time means overnight (22:00 to 06:00)."
+                  />
+                </Box>
+
+                {recurrence === "weekly" ? (
+                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mt: 2 }}>
+                    {WEEKDAY_LABELS.map((label, index) => {
+                      const on = recurrenceWeekdays.includes(index);
+                      return (
+                        <Chip
+                          key={label}
+                          label={label}
+                          color={on ? "primary" : "default"}
+                          variant={on ? "filled" : "outlined"}
+                          disabled={readOnly}
+                          onClick={() => {
+                            if (readOnly) return;
+                            const next = on
+                              ? recurrenceWeekdays.filter((d) => d !== index)
+                              : [...recurrenceWeekdays, index];
+                            onRecurrenceWeekdaysChange?.(next.sort((a, b) => a - b));
+                          }}
+                        />
+                      );
+                    })}
+                  </Box>
+                ) : null}
+
+                {windowSummary({
+                  recurrence,
+                  start: windowStartLocal,
+                  end: windowEndLocal,
+                  weekdays: recurrenceWeekdays,
+                  zone: timezone,
+                }) ? (
+                  <Typography
+                    data-testid="window-summary"
+                    sx={{ mt: 2, fontSize: "0.85rem", color: "text.secondary" }}
+                  >
+                    {windowSummary({
+                      recurrence,
+                      start: windowStartLocal,
+                      end: windowEndLocal,
+                      weekdays: recurrenceWeekdays,
+                      zone: timezone,
+                    })}
+                  </Typography>
+                ) : null}
+
+                {windowWarning({
+                  recurrence,
+                  start: windowStartLocal,
+                  end: windowEndLocal,
+                  weekdays: recurrenceWeekdays,
+                  durationMinutes,
+                  closesAttempt: windowClosesAttempt,
+                }) ? (
+                  <Alert severity="warning" data-testid="window-warning" sx={{ mt: 2 }}>
+                    {windowWarning({
+                      recurrence,
+                      start: windowStartLocal,
+                      end: windowEndLocal,
+                      weekdays: recurrenceWeekdays,
+                      durationMinutes,
+                      closesAttempt: windowClosesAttempt,
+                    })}
+                  </Alert>
+                ) : null}
+
+                <FormControlLabel
+                  sx={{ mt: 1 }}
+                  control={
+                    <Switch
+                      checked={windowClosesAttempt}
+                      onChange={(e) => onWindowClosesAttemptChange?.(e.target.checked)}
+                      disabled={readOnly || !onWindowClosesAttemptChange}
+                    />
+                  }
+                  label="Closing time ends an attempt in progress"
+                />
+                <Typography sx={{ fontSize: "0.8rem", color: "text.secondary", mb: 1 }}>
+                  On, the closing time is real: a learner still working is submitted at it. Off, a
+                  learner who started in time may finish afterwards.
+                </Typography>
+
+                {windowClosesAttempt ? (
+                  <TextField
+                    fullWidth
+                    label="Last admission (minutes before closing)"
+                    type="number"
+                    value={lastAdmissionMinutes}
+                    onChange={(e) => onLastAdmissionMinutesChange?.(e.target.value)}
+                    disabled={readOnly || !onLastAdmissionMinutesChange}
+                    inputProps={{ min: 0 }}
+                    helperText={
+                      lastAdmissionMinutes === ""
+                        ? `Empty means the full ${durationMinutes || 0} minutes, so nobody is let in who cannot finish.`
+                        : "0 lets learners in at any time, for a deliberately shortened attempt."
+                    }
+                    sx={{ mt: 1 }}
+                  />
+                ) : null}
+              </Box>
+            ) : null}
           </FieldGroup>
         </Box>
       </SettingsGroupCard>

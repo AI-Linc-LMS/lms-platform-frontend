@@ -236,9 +236,10 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
     const hasStart = start !== null;
     const hasEnd = end !== null;
 
-    if (!hasStart && !hasEnd) {
-      return { canStartNow: true, availabilityLabel: "", isExpired: false };
-    }
+    // No early return for "no campaign dates". A repeating paper is legitimately open
+    // 10:00-22:00 every day with no start or end date at all, and returning here skipped the
+    // window check entirely - the card offered Start at 08:00 on exactly the configuration this
+    // feature exists for.
     if (hasStart && now < start.getTime()) {
       return {
         canStartNow: false,
@@ -253,8 +254,35 @@ export const AssessmentCard: React.FC<AssessmentCardProps> = ({
         isExpired: true,
       };
     }
+
+    // Inside the campaign, but a repeating paper may still be shut right now. Without this the
+    // card offered Start at 08:00 on a paper open 10:00-22:00, and the click returned 403 - the
+    // learner is told no by an error toast instead of by the card, and is given no idea when to
+    // come back. The server has already resolved the zone and the next occurrence; re-deriving
+    // either here would be a second implementation of the rule, drifting from the one enforced.
+    const window = assessment.window;
+    if (window && !window.can_start_now) {
+      const opens = parseDateTime(window.opens_at);
+      if (window.reason === "past_last_admission") {
+        return {
+          canStartNow: false,
+          // Deliberately not "Ended": the paper is fine, there is simply no longer time to
+          // finish it today, and it reopens.
+          availabilityLabel: opens
+            ? `Too late today - opens ${formatDateTimeDisplay(opens)}`
+            : "Too late to finish today",
+          isExpired: false,
+        };
+      }
+      return {
+        canStartNow: false,
+        availabilityLabel: opens ? `Opens ${formatDateTimeDisplay(opens)}` : "Not open right now",
+        isExpired: false,
+      };
+    }
+
     return { canStartNow: true, availabilityLabel: "", isExpired: false };
-  }, [assessment.start_time, assessment.end_time]);
+  }, [assessment.start_time, assessment.end_time, assessment.window]);
 
   const { buttonLabel, isClickable } = useMemo(() => {
     // Price first, ahead of every availability rule. A learner who has not bought this cannot

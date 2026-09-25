@@ -71,6 +71,7 @@ import {
 } from "@/components/admin/assessment/shared";
 import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
 import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
+import type { AssessmentRecurrence } from "@/components/admin/assessment/AssessmentSettingsSection";
 import { PaginationControls } from "@/components/admin/assessment/PaginationControls";
 import { ProblemDescription } from "@/components/coding/ProblemDescription";
 import { useAuth } from "@/lib/auth/auth-context";
@@ -459,6 +460,15 @@ export default function AssessmentEditPage() {
   const [currency, setCurrency] = useState<string>("INR");
   // Blank means "use the institution's timezone" — the same default the backend resolves to.
   const [timezone, setTimezone] = useState<string>("");
+  // The repeating daily window inside start/end. "none" reproduces the platform's original
+  // behaviour: open continuously for the whole span.
+  const [recurrence, setRecurrence] = useState<AssessmentRecurrence>("none");
+  const [windowStartLocal, setWindowStartLocal] = useState<string>("");
+  const [windowEndLocal, setWindowEndLocal] = useState<string>("");
+  const [recurrenceWeekdays, setRecurrenceWeekdays] = useState<number[]>([]);
+  const [windowClosesAttempt, setWindowClosesAttempt] = useState<boolean>(true);
+  const [lastAdmissionMinutes, setLastAdmissionMinutes] = useState<string>("");
+
   const [isActive, setIsActive] = useState(true);
   const [retiredCourseTitles, setRetiredCourseTitles] = useState<string[]>([]);
   const [cohortIds, setCohortIds] = useState<number[]>([]);
@@ -624,6 +634,19 @@ export default function AssessmentEditPage() {
       );
       setCurrency(anyData.currency ?? "INR");
       setTimezone(anyData.timezone ?? "");
+      // Load the window back, or an edit that does not touch it would clear it on save.
+      setRecurrence((anyData.recurrence as AssessmentRecurrence) ?? "none");
+      setWindowStartLocal(String(anyData.window_start_local ?? "").slice(0, 5));
+      setWindowEndLocal(String(anyData.window_end_local ?? "").slice(0, 5));
+      setRecurrenceWeekdays(
+        Array.isArray(anyData.recurrence_weekdays) ? anyData.recurrence_weekdays : [],
+      );
+      setWindowClosesAttempt(anyData.window_closes_attempt !== false);
+      setLastAdmissionMinutes(
+        anyData.last_admission_minutes === null || anyData.last_admission_minutes === undefined
+          ? ""
+          : String(anyData.last_admission_minutes),
+      );
       setIsActive(data.is_active ?? true);
       // The paper's retired course tags, for the note on the settings card. They are not loaded
       // into an editable field: since BE-A3a the tag gives nobody access, and sending it back
@@ -928,6 +951,17 @@ export default function AssessmentEditPage() {
         // Sent even when blank: clearing it back to the institution's zone is a real
         // edit, and omitting the key would silently keep the old override.
         timezone,
+      // The repeating window. Sent as null when there is no recurrence so that turning it OFF
+      // is a real edit rather than a key the server never sees.
+      recurrence,
+      window_start_local: recurrence === "none" ? null : (windowStartLocal || null),
+      window_end_local: recurrence === "none" ? null : (windowEndLocal || null),
+      recurrence_weekdays: recurrence === "weekly" ? recurrenceWeekdays : [],
+      window_closes_attempt: windowClosesAttempt,
+      last_admission_minutes:
+        recurrence === "none" || lastAdmissionMinutes === ""
+          ? null
+          : Number(lastAdmissionMinutes),
         // No `is_active` here. Switching the paper on or off is its own request (below), which
         // the server authorises like publish; inside this edit it was refused for an
         // instructor who may publish but not edit, leaving an inactive paper stuck inactive.
@@ -2031,6 +2065,18 @@ export default function AssessmentEditPage() {
                   onPriceChange={setPrice}
                   onCurrencyChange={setCurrency}
                   timezone={timezone}
+                  recurrence={recurrence}
+                  onRecurrenceChange={setRecurrence}
+                  windowStartLocal={windowStartLocal}
+                  onWindowStartLocalChange={setWindowStartLocal}
+                  windowEndLocal={windowEndLocal}
+                  onWindowEndLocalChange={setWindowEndLocal}
+                  recurrenceWeekdays={recurrenceWeekdays}
+                  onRecurrenceWeekdaysChange={setRecurrenceWeekdays}
+                  windowClosesAttempt={windowClosesAttempt}
+                  onWindowClosesAttemptChange={setWindowClosesAttempt}
+                  lastAdmissionMinutes={lastAdmissionMinutes}
+                  onLastAdmissionMinutesChange={setLastAdmissionMinutes}
                   onTimezoneChange={setTimezone}
                   onActiveChange={setIsActive}
                       onCollegesChange={setColleges}

@@ -271,6 +271,21 @@ export interface CreateAssessmentPayload {
   currency?: string;
   /** IANA zone the start/end window is expressed in. Blank uses the institution's zone. */
   timezone?: string;
+  /**
+   * The repeating daily window inside start_time/end_time. "none" means the paper is open
+   * continuously for the whole span, which is how every paper behaved before this existed.
+   */
+  recurrence?: "none" | "daily" | "weekdays" | "weekly";
+  /** "HH:MM" wall-clock in the assessment's timezone. */
+  window_start_local?: string | null;
+  /** Earlier than the start means the window runs overnight. */
+  window_end_local?: string | null;
+  /** Monday=0 .. Sunday=6, for recurrence="weekly". */
+  recurrence_weekdays?: number[];
+  /** When true the closing time submits an attempt still in progress. */
+  window_closes_attempt?: boolean;
+  /** Minutes that must remain to be admitted. null means the full duration. */
+  last_admission_minutes?: number | null;
   is_active?: boolean;
   /** When true, server keeps assessment inactive and hidden from learners until published. */
   is_draft?: boolean;
