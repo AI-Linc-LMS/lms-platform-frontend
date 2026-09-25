@@ -1127,7 +1127,7 @@ export function AssessmentSettingsSection({
 
           <FieldGroup
             title="Availability window (optional)"
-            hint="When set, learners only see start/end boundaries you define here, in the timezone chosen below."
+            hint="The dates the assessment runs between, and optionally the hours it is open each day - for example 10:00 to 22:00, every day."
           >
             <Box
               sx={{
@@ -1181,19 +1181,28 @@ export function AssessmentSettingsSection({
             <TextField
               select
               fullWidth
-              label="Repeats"
+              label="Repeats between set hours"
               value={recurrence}
               onChange={(e) =>
                 onRecurrenceChange?.(e.target.value as AssessmentRecurrence)
               }
               disabled={readOnly || !onRecurrenceChange}
-              helperText="A daily window inside the dates above. Without one the paper is open continuously for the whole span."
+              helperText={
+                recurrence === "none"
+                  ? "Choose how often, then set the opening and closing times below - for example every day from 10:00 to 22:00."
+                  : "Set the opening and closing times below."
+              }
               sx={{ mt: 2 }}
             >
-              <MenuItem value="none">Open continuously (no daily window)</MenuItem>
-              <MenuItem value="daily">Every day</MenuItem>
-              <MenuItem value="weekdays">Monday to Friday</MenuItem>
-              <MenuItem value="weekly">Chosen days</MenuItem>
+              {/* Every option names the HOURS, not just the days.
+                  Worded as "Every day" / "Monday to Friday" / "Chosen days", the control reads as
+                  day-granularity only - and the times are revealed just below it, but only AFTER
+                  something is picked, so at rest there is nothing on screen to suggest hours are
+                  part of this at all. The first person to use it asked whether it could do times. */}
+              <MenuItem value="none">Open continuously (no daily hours)</MenuItem>
+              <MenuItem value="daily">Every day, between set hours</MenuItem>
+              <MenuItem value="weekdays">Monday to Friday, between set hours</MenuItem>
+              <MenuItem value="weekly">Chosen days, between set hours</MenuItem>
             </TextField>
 
             {recurrence !== "none" ? (
