@@ -189,3 +189,79 @@ describe("where inside a chunk the voice is", () => {
     expect(chunkBlockAt(chunk, 0.05)).toBe("ns-0");
   });
 });
+
+/**
+ * Report: "[Adaptive Course] The read aloud feature is skipping some words when there is
+ * a sentence or paragraph change."
+ *
+ * Two different things were losing words, and only one of them was audible as silence.
+ * These are the ones where words genuinely stopped being said.
+ */
+describe("words that stopped being said at a break", () => {
+  it("says both words either side of a line break, not one invented one", () => {
+    // rewriteForSpeech puts a space where the <br> was - and the walker then threw it
+    // away, because it threw away every whitespace-only node. "Line oneline two" is not
+    // a word, so the learner heard neither of the two that were written.
+    const root = render("<p>Line one<br>line two</p>");
+    expect(buildNarrationSegments(root)[0].text).toBe("Line one line two");
+  });
+
+  it("keeps the space between two inline runs", () => {
+    const root = render("<p><strong>Read</strong> <em>aloud</em> works.</p>");
+    expect(buildNarrationSegments(root)[0].text).toBe("Read aloud works.");
+  });
+
+  it("keeps the space between two links", () => {
+    const root = render('<p>See <a href="/a">the docs</a> <a href="/b">and this</a> too.</p>');
+    expect(buildNarrationSegments(root)[0].text).toBe("See the docs and this too.");
+  });
+
+  it("does not run two table cells into one word", () => {
+    const root = render("<table><tbody><tr><td>Rate</td><td>Five percent</td></tr></tbody></table>");
+    expect(buildNarrationSegments(root).map((s) => s.text).join(" ")).toBe("Rate Five percent");
+  });
+
+  it("does not glue loose text onto the block that follows it", () => {
+    const html = "<div><p>First.</p>Loose words here.<p>Second.</p></div>";
+    expect(htmlToText(html)).toBe("First. Loose words here. Second.");
+  });
+
+  /**
+   * The invariant that was supposed to catch all of the above. It held - on ARTICLE, where
+   * every block contains exactly one text node, which is the one shape in which a dropped
+   * whitespace node cannot matter. It is the corpus that was weak, not the assertion.
+   */
+  it("says everything the flat narration says, across markup that actually has breaks in it", () => {
+    const CORPUS = [
+      "<h2>Loops</h2><p>A loop repeats.</p>",
+      "<div><p>First.</p>Loose words here.<p>Second.</p></div>",
+      "<ul><li>One</li><li>Two</li></ul>",
+      "<table><tbody><tr><td>a</td><td>b</td></tr></tbody></table>",
+      "<p>Use <code>range()</code> in a <code>for</code> loop.</p>",
+      "<pre data-lang='python'><code>print(1)</code></pre>",
+      "<blockquote>Quoted text.</blockquote><p>After.</p>",
+      "<div>Text before<h3>Heading</h3>Text after<p>Para</p>Trailing text</div>",
+      "<figure><img src='x'><figcaption>A caption.</figcaption></figure>",
+      "<p>Line one<br>line two</p>",
+      "<section><aside>Aside text</aside><p>Body</p></section>",
+      "<dl><dt>Term</dt><dd>Definition</dd></dl>",
+      "<p>Nested <strong>bold <em>and italic</em></strong> text.</p>",
+      "<p><strong>Read</strong> <em>aloud</em> works.</p>",
+      "<ol><li><p>Para in list</p></li><li>Plain row</li></ol>",
+      "<h2>H</h2><h3>I</h3><h4>J</h4><p>short</p><p>also short</p>",
+    ];
+    for (const html of CORPUS) {
+      document.body.innerHTML = "";
+      const spoken = buildNarrationSegments(render(html)).map((s) => s.text).join(" ");
+      expect(spoken, `for ${html}`).toBe(htmlToText(html));
+    }
+  });
+
+  it("loses no words while chunking, across that same corpus", () => {
+    for (const html of ["<p>Line one<br>line two</p>", "<p><strong>a</strong> <em>b</em></p>", "<ul><li>One</li><li>Two</li></ul>"]) {
+      document.body.innerHTML = "";
+      const segments = buildNarrationSegments(render(html));
+      expect(chunkSegments(segments).map((c) => c.text).join(" ")).toBe(segments.map((s) => s.text).join(" "));
+    }
+  });
+});
