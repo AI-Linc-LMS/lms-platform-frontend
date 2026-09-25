@@ -2851,6 +2851,11 @@
     "practiceLabel": "تدريب",
     "practiceNote": "سبق أن اجتزته · لا يُحتسب مرة أخرى"
   },
+  "videoReExplain": {
+    "modePlain": "بلغة مبسطة",
+    "modeAnalogy": "تشبيهات",
+    "modeCode": "شيفرة برمجية"
+  },
   "experienceBullets": {
     "label": "المسؤوليات والإنجازات",
     "placeholder": "مثال: خفّضت زمن تحميل التقرير من 5 ثوانٍ إلى 1.2 ثانية",

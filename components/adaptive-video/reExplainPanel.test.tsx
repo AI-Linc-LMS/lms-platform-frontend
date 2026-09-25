@@ -1,6 +1,9 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
+// The mode pills are translated now, so the panel needs the English bundle loaded or every
+// label renders as its key and every assertion below is vacuous.
+import "@/lib/i18n";
 
 import { ReExplainPanel } from "./ReExplainPanel";
 import type { ReExplainResult } from "@/lib/services/adaptive-video.service";
@@ -83,5 +86,61 @@ describe("the re-explain panel", () => {
     // The fence's info string is a language tag, not a line of the snippet.
     expect(block.textContent).not.toContain("java\n");
     expect(document.body.textContent).not.toContain("```");
+  });
+});
+
+/**
+ * Report 42, second half: "remove plain english and formal and keep 1 as they both are not
+ * adding much value". Formal is the one removed — it and Plain English are the two ends of one
+ * register axis, and Formal sits on the end the lecture already tried.
+ *
+ * Deleting a button is the easy half. The half that breaks learners is the one mid-session with
+ * the removed mode selected, or a tab opened before the deploy: the server answers those in
+ * "plain", and the panel must show that answer rather than an empty box or a dead badge.
+ */
+describe("the retired Formal mode", () => {
+  it("is not offered any more", () => {
+    render(<ReExplainPanel onReExplain={vi.fn()} />);
+    expect(screen.queryByRole("button", { name: /^Formal$/ })).not.toBeInTheDocument();
+    for (const label of ["Plain English", "Analogies", "Code"]) {
+      expect(screen.getByRole("button", { name: new RegExp(`^${label}$`) })).toBeInTheDocument();
+    }
+  });
+
+  it("shows the answer the server substituted, never an empty panel", async () => {
+    // The server remaps style=formal to style=plain and says so in the response. The panel
+    // must render that content and badge it with a mode it still has.
+    const onReExplain = vi.fn().mockResolvedValue(
+      result({ style: "plain", content: "A reference is just the address of the object." }),
+    );
+    render(<ReExplainPanel onReExplain={onReExplain} />);
+    await userEvent.click(screen.getByRole("button", { name: /Re-explain this clip/i }));
+    await waitFor(() =>
+      expect(
+        screen.getByText("A reference is just the address of the object."),
+      ).toBeInTheDocument(),
+    );
+    // The badge used to print the raw server token. Assert on the badge, not on
+    // document.body.textContent: MUI concatenates adjacent labels ("CodeFormal"), so a
+    // \b-anchored search over the whole body silently matches nothing and proves nothing.
+    expect(screen.queryByText("plain")).not.toBeInTheDocument();
+    expect(screen.getAllByText("Plain English").length).toBeGreaterThan(0);
+  });
+
+  it("does not print a raw style token when the server names a mode this build dropped", async () => {
+    // Belt and braces for a rolling deploy in the other direction: an old server answering a
+    // new bundle. An unknown style must degrade to a real label, not to "formal" on screen.
+    const stale = result({ content: "Same material, simpler words." }) as unknown as Record<
+      string,
+      unknown
+    >;
+    stale.style = "formal";
+    render(<ReExplainPanel onReExplain={vi.fn().mockResolvedValue(stale)} />);
+    await userEvent.click(screen.getByRole("button", { name: /Re-explain this clip/i }));
+    await waitFor(() =>
+      expect(screen.getByText("Same material, simpler words.")).toBeInTheDocument(),
+    );
+    // Nothing on screen — badge or pill — may say "Formal" any more.
+    expect(screen.queryByText(/^formal$/i)).not.toBeInTheDocument();
   });
 });
