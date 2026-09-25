@@ -81,3 +81,43 @@ describe("readProfileSaveError", () => {
     expect(readProfileSaveError(err, "fallback").message).toBe("Authentication credentials were not provided.");
   });
 });
+
+describe("a failed save says WHICH kind of failure it was", () => {
+  /**
+   * A learner reported "Not saved: Could not reach the server" on a profile save. Every
+   * server-side check came back healthy - CORS preflight 200, the endpoint answering 401 in
+   * 180ms, the token refresh returning 401 not 500, her exact payload validating, and the
+   * response builder taking 323ms. The message had sent the investigation at the network, and
+   * the network was not the only thing it could mean.
+   *
+   * It is the FALLBACK, returned whenever no message can be parsed - which includes a 502 from
+   * the load balancer or a 504, where the server answered and simply said nothing useful.
+   */
+  it("names the status when the server answered but explained nothing", () => {
+    const err = { response: { status: 502, data: "" } };
+    const out = readProfileSaveError(err, "Could not reach the server");
+    expect(out.message).toContain("502");
+    expect(out.message).not.toContain("Could not reach");
+    expect(out.status).toBe(502);
+  });
+
+  it("says a timeout was a timeout", () => {
+    const err = { code: "ECONNABORTED", message: "timeout of 45000ms exceeded" };
+    const out = readProfileSaveError(err, "Could not reach the server");
+    expect(out.message).toContain("timed out");
+    expect(out.status).toBeNull();
+  });
+
+  it("still says 'could not reach' when nothing came back at all", () => {
+    const out = readProfileSaveError(new Error("Network Error"), "Could not reach the server");
+    expect(out.message).toBe("Could not reach the server");
+    expect(out.status).toBeNull();
+  });
+
+  it("a real validation message still wins over any of this", () => {
+    const err = { response: { status: 400, data: { error: { skills: ["This field is required."] } } } };
+    const out = readProfileSaveError(err, "Could not reach the server");
+    expect(out.message).toBe("Skills: This field is required.");
+    expect(out.status).toBe(400);
+  });
+});
