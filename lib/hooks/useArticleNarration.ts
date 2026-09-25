@@ -100,6 +100,16 @@ async function fetchChunkBytes(text: string, signal: AbortSignal): Promise<Array
   return (await fetchChunk(text, signal)).arrayBuffer();
 }
 
+/** Safari's decodeAudioData is old enough to predate the promise form, where it returns
+ *  undefined and answers through callbacks. Awaiting that gives `undefined` rather than a
+ *  buffer, which would silently drop the chunk into the robotic fallback voice. */
+function decode(context: AudioContext, bytes: ArrayBuffer): Promise<AudioBuffer> {
+  return new Promise<AudioBuffer>((resolve, reject) => {
+    const maybe = context.decodeAudioData(bytes, resolve, reject) as Promise<AudioBuffer> | undefined;
+    if (maybe?.then) maybe.then(resolve, reject);
+  });
+}
+
 /** Safari still only has the prefixed constructor. Absent entirely under jsdom, which is
  *  why the element path below is the one the unit tests exercise. */
 function audioContextCtor(): typeof AudioContext | null {
@@ -304,7 +314,7 @@ export function useArticleNarration(html: string, segments?: NarrationSegment[])
       const decoded: Array<Promise<AudioBuffer> | null> = new Array(chunks.length).fill(null);
       const ensure = (i: number) => {
         if (i >= chunks.length || decoded[i]) return;
-        const p = fetchChunkBytes(chunks[i].text, ac.signal).then((bytes) => context.decodeAudioData(bytes));
+        const p = fetchChunkBytes(chunks[i].text, ac.signal).then((bytes) => decode(context, bytes));
         // Attach a catch at creation: a prefetch we later abandon must not surface as an
         // unhandled rejection when stop() aborts it.
         p.catch(() => {});
