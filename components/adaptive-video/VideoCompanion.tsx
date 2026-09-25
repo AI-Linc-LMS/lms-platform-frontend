@@ -24,7 +24,7 @@ import { TimestampQA } from "./TimestampQA";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { CompanionCard } from "./CompanionCard";
 import { WatchModeSelector, AutoChapters, LiveTakeaways } from "./RailPanels";
-import { companionOwnsFullscreen, toCompanionEmbedUrl } from "@/lib/utils/video-embed";
+import { companionOwnsFullscreen, supportsCheckIns, toCompanionEmbedUrl } from "@/lib/utils/video-embed";
 import { PHONE } from "@/components/common/mobile/phone";
 
 const fmt = (s: number) => `${Math.floor(s / 60)}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
@@ -703,8 +703,15 @@ export function VideoCompanion({
   // built from a transcript, and only a catalog video has one - an externally-hosted video is a
   // bare iframe with nothing above it (the banner below sits outside the player box). This is the
   // whole reason the companion has a full-screen button of its own, so it is what decides whether
-  // it has one here. `check_ins` is the belt: a config that somehow ships questions keeps ours.
-  const canOverlay = !isExternal || (companion.check_ins?.length ?? 0) > 0;
+  // it has one here.
+  //
+  // Three ways to be sure, because getting this wrong the OTHER way puts the check-in back behind
+  // a fullscreen iframe, which is the bug #1699 and fullscreenCheckIn.test.tsx exist for: the
+  // server's own word for "this video has a transcript", the Vimeo record that word is derived
+  // from, and questions actually in hand. A payload that ever stops sending one of them still
+  // keeps the control the check-ins need.
+  const canOverlay =
+    supportsCheckIns(companion.source) || !isExternal || (companion.check_ins?.length ?? 0) > 0;
   // A watch URL cannot be framed; the id has to be moved into the provider's embed form. Where we
   // are taking fullscreen over, the provider's own button goes with it, so the learner is never
   // offered two - see companionOwnsFullscreen for the rule and why it is one rule and not three.
