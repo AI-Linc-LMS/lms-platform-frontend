@@ -41,6 +41,7 @@ import { config } from "@/lib/config";
 import { AssessmentSectionHero, AssessmentBreadcrumb, StatusChip, DifficultyBalanceMeter } from "@/components/admin/assessment/shared";
 import { BasicInfoSection } from "@/components/admin/assessment/BasicInfoSection";
 import { AssessmentSettingsSection } from "@/components/admin/assessment/AssessmentSettingsSection";
+import type { AssessmentRecurrence } from "@/components/admin/assessment/AssessmentSettingsSection";
 import type { EmailNotificationEditorHandle } from "@/components/admin/assessment/EmailNotificationEditor";
 import {
   MultipleSectionsSection,
@@ -275,6 +276,15 @@ function CreateAssessmentPageContent() {
   const [currency, setCurrency] = useState<string>("INR");
   // Blank means "use the institution's timezone" — the same default the backend resolves to.
   const [timezone, setTimezone] = useState<string>("");
+  // The repeating daily window inside start/end. "none" reproduces the platform's original
+  // behaviour: open continuously for the whole span.
+  const [recurrence, setRecurrence] = useState<AssessmentRecurrence>("none");
+  const [windowStartLocal, setWindowStartLocal] = useState<string>("");
+  const [windowEndLocal, setWindowEndLocal] = useState<string>("");
+  const [recurrenceWeekdays, setRecurrenceWeekdays] = useState<number[]>([]);
+  const [windowClosesAttempt, setWindowClosesAttempt] = useState<boolean>(true);
+  const [lastAdmissionMinutes, setLastAdmissionMinutes] = useState<string>("");
+
   const [isActive, setIsActive] = useState(true);
   const [cohortIds, setCohortIds] = useState<number[]>([]);
   const [retiredCourseTitles, setRetiredCourseTitles] = useState<string[]>([]);
@@ -572,6 +582,19 @@ function CreateAssessmentPageContent() {
         // sends back what the paper holds instead of clearing it: the timezone override went
         // out blank and the reminder schedule went out empty.
         setTimezone(typeof draftAny.timezone === "string" ? draftAny.timezone : "");
+      // Load the window back, or an edit that does not touch it would clear it on save.
+      setRecurrence((draftAny.recurrence as AssessmentRecurrence) ?? "none");
+      setWindowStartLocal(String(draftAny.window_start_local ?? "").slice(0, 5));
+      setWindowEndLocal(String(draftAny.window_end_local ?? "").slice(0, 5));
+      setRecurrenceWeekdays(
+        Array.isArray(draftAny.recurrence_weekdays) ? draftAny.recurrence_weekdays : [],
+      );
+      setWindowClosesAttempt(draftAny.window_closes_attempt !== false);
+      setLastAdmissionMinutes(
+        draftAny.last_admission_minutes === null || draftAny.last_admission_minutes === undefined
+          ? ""
+          : String(draftAny.last_admission_minutes),
+      );
         setEmailRemindersEnabled(draftAny.email_reminders_enabled === true);
         setEmailReminderOffsets(
           Array.isArray(draftAny.email_reminder_offsets)
@@ -1328,6 +1351,17 @@ function CreateAssessmentPageContent() {
       // Sent even when blank: clearing it back to the institution's zone is a real
       // edit, and omitting the key would silently keep the old override.
       timezone,
+      // The repeating window. Sent as null when there is no recurrence so that turning it OFF
+      // is a real edit rather than a key the server never sees.
+      recurrence,
+      window_start_local: recurrence === "none" ? null : (windowStartLocal || null),
+      window_end_local: recurrence === "none" ? null : (windowEndLocal || null),
+      recurrence_weekdays: recurrence === "weekly" ? recurrenceWeekdays : [],
+      window_closes_attempt: windowClosesAttempt,
+      last_admission_minutes:
+        recurrence === "none" || lastAdmissionMinutes === ""
+          ? null
+          : Number(lastAdmissionMinutes),
       is_active: isActive,
       proctoring_enabled: proctoringEnabled,
       live_streaming: canConfigureLiveStreaming ? liveStreaming : false,
@@ -2465,6 +2499,18 @@ function CreateAssessmentPageContent() {
               onPriceChange={setPrice}
               onCurrencyChange={setCurrency}
               timezone={timezone}
+                  recurrence={recurrence}
+                  onRecurrenceChange={setRecurrence}
+                  windowStartLocal={windowStartLocal}
+                  onWindowStartLocalChange={setWindowStartLocal}
+                  windowEndLocal={windowEndLocal}
+                  onWindowEndLocalChange={setWindowEndLocal}
+                  recurrenceWeekdays={recurrenceWeekdays}
+                  onRecurrenceWeekdaysChange={setRecurrenceWeekdays}
+                  windowClosesAttempt={windowClosesAttempt}
+                  onWindowClosesAttemptChange={setWindowClosesAttempt}
+                  lastAdmissionMinutes={lastAdmissionMinutes}
+                  onLastAdmissionMinutesChange={setLastAdmissionMinutes}
               onTimezoneChange={setTimezone}
               onActiveChange={setIsActive}
               onCollegesChange={setColleges}

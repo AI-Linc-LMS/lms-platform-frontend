@@ -37,6 +37,31 @@ export interface Assessment {
   is_attempted: boolean;
   start_time?: string | null;
   end_time?: string | null;
+  /**
+   * The repeating daily window, resolved by the server to instants, or null when the paper has
+   * none. Present because start_time/end_time alone cannot answer "is it open right now" once a
+   * paper is only open 10:00-22:00: a learner inside the campaign but outside today's window
+   * would be shown Start and get a 403 on the click.
+   */
+  window?: {
+    recurrence: "none" | "daily" | "weekdays" | "weekly";
+    start_local: string;
+    end_local: string;
+    weekdays: number[];
+    timezone: string;
+    timezone_source: string;
+    crosses_midnight: boolean;
+    window_minutes: number;
+    closes_attempt: boolean;
+    last_admission_minutes: number | null;
+    is_open_now: boolean;
+    opens_at: string | null;
+    closes_at: string | null;
+    minutes_left: number | null;
+    can_start_now: boolean;
+    /** "outside_window" | "past_last_admission" | "not_started" | "expired" | null */
+    reason: string | null;
+  } | null;
   has_attempted?: boolean; // For backward compatibility
   proctoring_enabled?: boolean;
   /** A project-only paper: worked on over days, no countdown, no proctoring. */
