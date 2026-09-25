@@ -257,7 +257,9 @@ export function AdaptiveQuizCard({ data, onStart }: AdaptiveQuizCardProps) {
               style={{ color: accentStart, flexShrink: 0 }}
             />
             <Typography sx={{ fontSize: "0.78rem", fontWeight: 700, color: "text.primary" }}>
-              {data.min_questions}–{data.max_questions} Qs
+              {data.min_questions === data.max_questions
+                ? `${data.max_questions} Qs`
+                : `${data.min_questions}–${data.max_questions} Qs`}
             </Typography>
           </Box>
           <Box
