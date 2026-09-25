@@ -3236,6 +3236,11 @@
     "practiceLabel": "Practice",
     "practiceNote": "already passed · not scored again"
   },
+  "videoReExplain": {
+    "modePlain": "Plain English",
+    "modeAnalogy": "Analogies",
+    "modeCode": "Code"
+  },
   "experienceBullets": {
     "label": "Responsibilities and achievements",
     "placeholder": "e.g. Cut report load time from 5s to 1.2s",

@@ -3,6 +3,7 @@
 import { Box, Button, Typography, CircularProgress } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { AIPill } from "@/components/adaptive-quiz/shared/AIPill";
 import { CompanionCard } from "./CompanionCard";
 import type { ReExplainResult, ReExplainStyle } from "@/lib/services/adaptive-video.service";
@@ -13,12 +14,24 @@ interface Props {
   onReExplain: (style: ReExplainStyle) => Promise<ReExplainResult>;
 }
 
-const STYLES: { key: ReExplainStyle; label: string; icon: string }[] = [
-  { key: "plain", label: "Plain English", icon: "mdi:translate" },
-  { key: "analogy", label: "Analogies", icon: "mdi:lightbulb-on-outline" },
-  { key: "code", label: "Code", icon: "mdi:code-tags" },
-  { key: "formal", label: "Formal", icon: "mdi:script-text-outline" },
+/**
+ * The three surviving modes. "Formal" was removed: it and Plain English were the two ends of
+ * one register axis, and Formal sat on the end the lecture had already tried — a learner
+ * presses this button because the precise technical statement did not land. What is left
+ * changes one thing each: Plain English the register, Analogies the domain, Code the medium.
+ *
+ * The server still accepts "formal" from a tab opened before the deploy and answers in
+ * "plain", so nobody mid-session gets an error panel or an empty one.
+ */
+const STYLES: { key: ReExplainStyle; labelKey: string; icon: string }[] = [
+  { key: "plain", labelKey: "videoReExplain.modePlain", icon: "mdi:translate" },
+  { key: "analogy", labelKey: "videoReExplain.modeAnalogy", icon: "mdi:lightbulb-on-outline" },
+  { key: "code", labelKey: "videoReExplain.modeCode", icon: "mdi:code-tags" },
 ];
+
+const LABEL_KEYS: Record<string, string> = Object.fromEntries(
+  STYLES.map((s) => [s.key, s.labelKey]),
+);
 
 /**
  * Render a re-explanation, giving the Code mode's fenced block a real code box.
@@ -63,11 +76,13 @@ function renderParts(content: string) {
  *    to a dead button. Errors are now shown.
  *  - the headline button was hardcoded to `run("formal")` while the copy underneath promised
  *    "your chosen style". The pills now SELECT the style and the headline button runs it.
- *  - the four style pills were `flex: 1` in a single row, so "Plain English" wrapped to two lines
+ *  - the style pills were `flex: 1` in a single row, so "Plain English" wrapped to two lines
  *    while its neighbours stayed on one and its icon sat off-centre against the taller label.
- *    They are a 2-up grid now, which gives every label a single line at rail width.
+ *    They are a 2-up grid now, which gives every label a single line at rail width. With
+ *    "Formal" retired the grid holds three pills: two on the first row, one on the second.
  */
 export function ReExplainPanel({ onReExplain }: Props) {
+  const { t } = useTranslation();
   const [loading, setLoading] = useState<ReExplainStyle | null>(null);
   const [style, setStyle] = useState<ReExplainStyle>("plain");
   const [result, setResult] = useState<ReExplainResult | null>(null);
@@ -134,7 +149,7 @@ export function ReExplainPanel({ onReExplain }: Props) {
                 "&:hover": { borderColor: "#a855f7", background: "color-mix(in srgb, #a855f7 8%, transparent)" },
               }}
             >
-              {s.label}
+              {t(s.labelKey)}
             </Button>
           );
         })}
@@ -152,7 +167,12 @@ export function ReExplainPanel({ onReExplain }: Props) {
           background: "color-mix(in srgb, #a855f7 8%, transparent)",
           border: "1px solid color-mix(in srgb, #a855f7 20%, transparent)" }}>
           <Box sx={{ display: "flex", gap: 1, mb: 0.75, alignItems: "center" }}>
-            <AIPill icon={<Icon icon="mdi:sparkles" />}>{result.style}</AIPill>
+            <AIPill icon={<Icon icon="mdi:sparkles" />}>
+              {/* The raw server token ("plain") used to be printed here. A response can also
+                  name a style this build no longer offers, and a dead word in the badge is
+                  how a removed mode looks like a bug. Fall back to the mode's own name. */}
+              {LABEL_KEYS[result.style] ? t(LABEL_KEYS[result.style]) : t("videoReExplain.modePlain")}
+            </AIPill>
             {result.cached && (
               <Typography sx={{ fontSize: "0.64rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary", alignSelf: "center" }}>instant · cached</Typography>
             )}

@@ -97,7 +97,16 @@ export interface VideoCompanion {
  * watch scores from coverage alone, which is worth MORE than answering badly.
  */
 export type WatchMode = "normal" | "pause_60s" | "plain_english" | "rewatch";
-export type ReExplainStyle = "analogy" | "code" | "formal" | "plain";
+/**
+ * The re-explain modes a learner can choose.
+ *
+ * "formal" was RETIRED: it and "plain" were the two ends of one register axis, and a learner
+ * presses this button because the precise technical register already failed them. The server
+ * still ACCEPTS "formal" from a tab opened before the deploy and answers in "plain" — which is
+ * why `ReExplainResult.style` is typed as the surviving set: the response reports the style
+ * that actually answered, never the retired one that was asked for.
+ */
+export type ReExplainStyle = "analogy" | "code" | "plain";
 
 export interface VideoSession {
   id: string;
