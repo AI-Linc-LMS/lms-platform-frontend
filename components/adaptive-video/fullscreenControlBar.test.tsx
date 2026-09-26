@@ -72,13 +72,20 @@ describe("the video's full-screen control", () => {
     expect(bar()).toContainElement(control());
 
     // And that bar is the bottom band of the player, the full width of it - the run of controls,
-    // not a badge pinned somewhere over the video. `bottom` is the height of the band the
-    // player's own bar occupies, so ours lands directly on top of it.
+    // not a badge pinned somewhere over the video.
+    //
+    // `bottom` is ZERO: our band sits ON the player's own control row, not one bar-height above
+    // it. It used to be 40px - clear of the player's bar - because removing Vimeo's fullscreen
+    // button left no gap in its right-hand cluster to sit in. The embed now asks for `pip=0` as
+    // well, which frees the last slot in that run, so ours stands in the row itself where a
+    // player's fullscreen control belongs. Reported twice as a button outside the bar; this
+    // assertion is what let it stay that way while reading as though it had not.
     const barStyle = getComputedStyle(bar());
     expect(barStyle.position).toBe("absolute");
     expect(barStyle.left).toBe("0px");
     expect(barStyle.right).toBe("0px");
-    expect(barStyle.bottom).toBe("40px");
+    expect(barStyle.bottom).toBe("0px");
+    expect(barStyle.height).toBe("40px");
 
     // The control is no longer positioned in its own right - the bar places it.
     expect(getComputedStyle(control()).position).not.toBe("absolute");

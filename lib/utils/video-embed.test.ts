@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { embedCaveat, supportsCheckIns, toEmbedUrl } from "./video-embed";
+import { embedCaveat, supportsCheckIns, toCompanionEmbedUrl, toEmbedUrl } from "./video-embed";
 
 describe("pasted YouTube links", () => {
   it("converts a watch URL, which cannot be framed", () => {
@@ -141,5 +141,41 @@ describe("other common paste sources", () => {
   it("says nothing about a link with no known caveat", () => {
     expect(embedCaveat("https://www.youtube.com/watch?v=X")).toBeNull();
     expect(embedCaveat("")).toBeNull();
+  });
+});
+
+describe("the fullscreen button has a slot in the player's own bar", () => {
+  /**
+   * "Can we have the full screen button inside the control bar?" - reported twice, because ours
+   * sat on a band ABOVE the player's bar and read as a badge dropped on the picture.
+   *
+   * It could not sit in the bar before: removing Vimeo's own fullscreen button leaves no gap, the
+   * right-hand cluster re-flows and still ends flush against the edge. `pip=0` frees the last
+   * control in that run, which is the slot a player's fullscreen button normally occupies.
+   */
+  it("asks Vimeo to drop BOTH its fullscreen and its picture-in-picture button", () => {
+    const url = toCompanionEmbedUrl("https://vimeo.com/1164028722", "catalog", { canOverlay: true });
+    expect(url).toContain("fullscreen=0");
+    expect(url).toContain("pip=0");
+  });
+
+  it("keeps them on a player whose fullscreen is not ours to take", () => {
+    // A provider we do not own fullscreen for keeps every one of its own controls: we render no
+    // bar there, so removing its buttons would leave the learner with none.
+    const url = toCompanionEmbedUrl("https://www.youtube.com/watch?v=abc123", "external", {
+      canOverlay: false,
+    });
+    expect(url).not.toContain("pip=0");
+    expect(url).not.toContain("fullscreen=0");
+  });
+
+  it("does not break a url that already carries query parameters", () => {
+    const url = toCompanionEmbedUrl("https://player.vimeo.com/video/1?h=deadbeef", "catalog", {
+      canOverlay: true,
+    });
+    expect(url).toContain("h=deadbeef");
+    expect(url).toContain("fullscreen=0");
+    expect(url).toContain("pip=0");
+    expect(url.match(/\?/g) ?? []).toHaveLength(1);
   });
 });
