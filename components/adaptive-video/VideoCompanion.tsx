@@ -410,6 +410,50 @@ export function VideoCompanion({
     }
   }, [currentTime, companion, activeCheckIn, pause, answered, watchMode, armed, pausing, questions, checkpoint]);
 
+  /**
+   * While a quick check is on screen, the video stays stopped - whoever asks it to play.
+   *
+   * Pausing once, at the moment the question appears, was the whole of the guard. But the player
+   * is an iframe with its own keyboard shortcuts, and it keeps focus: pressing space told VIMEO
+   * to play, not us, so the lecture carried on underneath an unanswered question. Clicking the
+   * player, or the media keys, did the same. The learner then answered a question about
+   * something they were no longer watching, and the answer was scored.
+   *
+   * This is deliberately a reaction to `isPlaying` rather than another `pause()` next to the
+   * first: it does not matter how playback started, only that it did. `isPlaying` is the
+   * player's own report, so the lock holds against inputs this component never sees.
+   *
+   * `checkpoint` is included because the 60-second checkpoint overlay stops the video for the
+   * same reason and was equally easy to play out from under.
+   */
+  const locked = activeCheckIn !== null || checkpoint !== null;
+  useEffect(() => {
+    if (locked && isPlaying) pause();
+  }, [locked, isPlaying, pause]);
+
+  /**
+   * Swallow the space bar while the video is locked.
+   *
+   * The reaction above is what actually holds the line, because a key pressed with focus inside
+   * the iframe never reaches this document. This handles the case where focus is on the page -
+   * having answered a question, a learner's focus is on our overlay, not the player - and it
+   * stops space scrolling the page out from under the question as well. "k" is the other play
+   * shortcut players bind.
+   */
+  useEffect(() => {
+    if (!locked) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== " " && e.code !== "Space" && e.key !== "k") return;
+      const target = e.target as HTMLElement | null;
+      // Never steal a space from something a learner is typing or from a real button.
+      const tag = (target?.tagName || "").toLowerCase();
+      if (tag === "input" || tag === "textarea" || tag === "button" || target?.isContentEditable) return;
+      e.preventDefault();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [locked]);
+
   // --- Periodic sync of watch signals ---------------------------------------
   const completeness = useMemo(
     () => (duration > 0 ? Math.min((currentTime / duration) * 100, 100) : 0),
