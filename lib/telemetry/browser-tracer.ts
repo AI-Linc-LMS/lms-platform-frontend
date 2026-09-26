@@ -104,8 +104,43 @@ async function sendFailureAlert(payload: FailureAlertPayload): Promise<void> {
   }
 }
 
+/**
+ * Whether there is anywhere for a span to go. Exported so the rule can be tested without
+ * standing up the whole OpenTelemetry stack.
+ *
+ * A browser is not a machine with a collector on localhost. The endpoint falls back to
+ * `http://localhost:4318/v1/traces`, which is right for a developer running one beside the dev
+ * server and wrong for every learner - no tenant site sets the variable, so the tracer started
+ * on all of them and fired export after export at a port on the LEARNER's own machine.
+ */
+export function shouldStartBrowserTracer(endpoint: string | undefined, hostname: string): boolean {
+  const url = (endpoint || "").trim();
+  if (!url) return false;
+  const isLocalCollector = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/i.test(url);
+  return !isLocalCollector || hostname === "localhost" || hostname === "127.0.0.1";
+}
+
 export async function initBrowserTracer() {
   if (typeof window === "undefined") return;
+
+  /**
+   * No collector configured means no tracer. A browser is not a machine that has one on
+   * localhost.
+   *
+   * `config.otelTracesEndpoint` falls back to `http://localhost:4318/v1/traces`, which is right
+   * for a developer running a collector beside the dev server and wrong for every learner: no
+   * tenant site sets NEXT_PUBLIC_OTEL_EXPORTER_OTLP_TRACES_ENDPOINT, so the tracer started on all
+   * of them and fired export after export at a port on the LEARNER's own machine, each one a
+   * red ERR_CONNECTION_REFUSED in their network tab.
+   *
+   * That noise was the smaller half. Starting the tracer also installs fetch instrumentation
+   * that propagates `traceparent` onto this API (`propagateTraceHeaderCorsUrls` below), and a
+   * header the API does not allow makes the BROWSER refuse the preflight - so an API call fails
+   * before it is sent, with no server-side trace of it at all. That is what a learner reported
+   * as a profile that would not save. The API now allows the header (ai-linc-backend), and this
+   * stops us asking to send it on installations that were never going to export a span anyway.
+   */
+  if (!shouldStartBrowserTracer(config.otelTracesEndpoint, window.location.hostname)) return;
 
   const { WebTracerProvider } = await import(
     "@opentelemetry/sdk-trace-web"
