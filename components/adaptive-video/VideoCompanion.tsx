@@ -934,10 +934,18 @@ export function VideoCompanion({
                 // picture inside it - so its bar lifts off the bottom by the height of that black
                 // margin. Ours lifts with it; measured flush at 1440x900, and the term falls to
                 // zero on a screen wider than 16/9, where there is no margin to clear.
+                // ON the player's bar, not above it.
+                //
+                // This band used to sit at `PLAYER_BAR_BAND` - one bar-height up - because with
+                // Vimeo's own fullscreen button removed its cluster simply re-flowed and still
+                // ended flush against the edge, leaving no slot. The embed now also asks for
+                // `pip=0` (see toCompanionEmbedUrl), which frees the last slot in that run, so
+                // ours sits in the row itself, at the right, where a player's fullscreen control
+                // belongs. Reported twice as a button floating outside the bar.
                 bottom: isFullscreen
-                  ? `calc(${PLAYER_BAR_BAND}px + max(0px, (100vh - 100vw * 9 / 16) / 2))`
-                  : PLAYER_BAR_BAND,
-                height: COMPANION_BAR_H,
+                  ? `calc(max(0px, (100vh - 100vw * 9 / 16) / 2))`
+                  : 0,
+                height: PLAYER_BAR_BAND,
                 display: "flex", alignItems: "center", justifyContent: "flex-end",
                 px: 1,
                 pointerEvents: controlsVisible ? "none" : "auto",

@@ -192,5 +192,19 @@ export function companionOwnsFullscreen(embedUrl: string, opts: { canOverlay: bo
 export function toCompanionEmbedUrl(playUrl: string, source: string | undefined, opts: { canOverlay: boolean }): string {
   const raw = toEmbedUrl(playUrl, source);
   if (!companionOwnsFullscreen(raw, opts)) return raw;
-  return `${raw}${raw.includes("?") ? "&" : "?"}fullscreen=0`;
+  // `pip=0` is here to make room, not to remove a feature for its own sake.
+  //
+  // Taking Vimeo's fullscreen button away leaves no gap: its right-hand cluster re-flows and
+  // still ends flush against the bar's edge, so a button of ours had nowhere to sit IN the bar
+  // and had to live on a band of its own above it - which reads as a badge dropped on the
+  // picture, and is what was reported twice. Picture-in-picture is the last control in that run;
+  // without it the slot a player's fullscreen button normally occupies is free, and ours can
+  // stand exactly there.
+  //
+  // The trade is deliberate: a learner loses Vimeo's PiP button on a lesson video (the browser's
+  // own PiP, via the right-click menu, is untouched) and gains a fullscreen control that is where
+  // every player puts it. A lesson with a check-in painted over it is not a video to pop out of
+  // the page anyway - the question would be left behind.
+  const sep = raw.includes("?") ? "&" : "?";
+  return `${raw}${sep}fullscreen=0&pip=0`;
 }
