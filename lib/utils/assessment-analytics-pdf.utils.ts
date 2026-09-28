@@ -75,6 +75,34 @@ function truncatePdfCell(s: string, maxLen: number): string {
   return `${t.slice(0, Math.max(0, maxLen - 1))}…`;
 }
 
+/**
+ * Trim a cell to the width it is actually allowed, measured in the current font.
+ *
+ * `truncatePdfCell` counts characters, which is only a guess at width: 26 characters of
+ * "WWWWW@WWWWWW.WWW" are half again as wide as 26 of "iiiii@iiiiii.iii". A table whose
+ * columns are laid out in millimetres needs the millimetres.
+ */
+/** Breathing room kept between a table cell's text and the column after it, in mm. */
+const CELL_GAP = 2;
+
+function fitPdfCell(
+  pdf: jsPDF,
+  raw: string | null | undefined,
+  maxWidth: number,
+): string {
+  const text = String(raw ?? "")
+    .replace(/\r|\n/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  if (!text) return text;
+  if (pdf.getTextWidth(text) <= maxWidth) return text;
+  let cut = text;
+  while (cut.length > 1 && pdf.getTextWidth(`${cut}\u2026`) > maxWidth) {
+    cut = cut.slice(0, -1);
+  }
+  return `${cut}\u2026`;
+}
+
 function humanizeStatusPdf(raw: string | null | undefined): string {
   if (raw == null || !String(raw).trim()) return "-";
   return String(raw)
@@ -901,11 +929,14 @@ export async function generateAssessmentAnalyticsPdfVector(
       x += cw.name;
       pdf.text("Email", x, y + 4);
       x += cw.email;
-      pdf.text("Score", x, y + 4, { align: "right" });
+      // A right-aligned cell anchors at the RIGHT edge of its own column. Anchoring at
+      // x -- where the column starts -- drew the number backwards across the column
+      // before it, which is how a long email ended up underneath the score.
+      pdf.text("Score", x + cw.sc, y + 4, { align: "right" });
       x += cw.sc;
-      pdf.text("%", x, y + 4, { align: "right" });
+      pdf.text("%", x + cw.pct, y + 4, { align: "right" });
       x += cw.pct;
-      pdf.text("Mins", x, y + 4, { align: "right" });
+      pdf.text("Mins", x + cw.tm, y + 4, { align: "right" });
       x += cw.tm;
       pdf.text("Submitted", x, y + 4);
       y += 9;
@@ -918,32 +949,32 @@ export async function generateAssessmentAnalyticsPdfVector(
       let x = margin + 2;
       pdf.text(String(row.rank), x, y);
       x += cw.r;
-      pdf.text(truncatePdfCell(row.name, 22), x, y);
+      pdf.text(fitPdfCell(pdf, row.name, cw.name - CELL_GAP), x, y);
       x += cw.name;
-      pdf.text(truncatePdfCell(row.email, 28), x, y);
+      pdf.text(fitPdfCell(pdf, row.email, cw.email - CELL_GAP), x, y);
       x += cw.email;
       pdf.text(
         row.score != null ? row.score.toFixed(1) : "-",
-        x,
+        x + cw.sc,
         y,
         { align: "right" },
       );
       x += cw.sc;
       pdf.text(
         row.percentage != null ? row.percentage.toFixed(1) : "-",
-        x,
+        x + cw.pct,
         y,
         { align: "right" },
       );
       x += cw.pct;
       pdf.text(
         row.time_taken_minutes != null ? String(row.time_taken_minutes) : "-",
-        x,
+        x + cw.tm,
         y,
         { align: "right" },
       );
       x += cw.tm;
-      pdf.text(truncatePdfCell(formatShortDate(row.submitted_at), 30), x, y);
+      pdf.text(fitPdfCell(pdf, formatShortDate(row.submitted_at), cw.dt - CELL_GAP), x, y);
       y += 5;
     }
     y += 10;
@@ -989,11 +1020,11 @@ export async function generateAssessmentAnalyticsPdfVector(
       x += c.em;
       pdf.text("Status", x, y + 4);
       x += c.st;
-      pdf.text("Scr", x, y + 4, { align: "right" });
+      pdf.text("Scr", x + c.sc, y + 4, { align: "right" });
       x += c.sc;
-      pdf.text("%", x, y + 4, { align: "right" });
+      pdf.text("%", x + c.pc, y + 4, { align: "right" });
       x += c.pc;
-      pdf.text("Mins", x, y + 4, { align: "right" });
+      pdf.text("Mins", x + c.tm, y + 4, { align: "right" });
       x += c.tm;
       pdf.text("Submitted", x, y + 4);
       y += 9;
@@ -1009,34 +1040,34 @@ export async function generateAssessmentAnalyticsPdfVector(
         pdf.setFontSize(7);
       }
       let x = margin + 1.5;
-      pdf.text(truncatePdfCell(row.name, 18), x, y);
+      pdf.text(fitPdfCell(pdf, row.name, c.name - CELL_GAP), x, y);
       x += c.name;
-      pdf.text(truncatePdfCell(row.email, 26), x, y);
+      pdf.text(fitPdfCell(pdf, row.email, c.em - CELL_GAP), x, y);
       x += c.em;
-      pdf.text(truncatePdfCell(humanizeStatusPdf(row.status), 14), x, y);
+      pdf.text(fitPdfCell(pdf, humanizeStatusPdf(row.status), c.st - CELL_GAP), x, y);
       x += c.st;
       pdf.text(
         row.score != null ? row.score.toFixed(1) : "-",
-        x,
+        x + c.sc,
         y,
         { align: "right" },
       );
       x += c.sc;
       pdf.text(
         row.percentage != null ? row.percentage.toFixed(0) : "-",
-        x,
+        x + c.pc,
         y,
         { align: "right" },
       );
       x += c.pc;
       pdf.text(
         row.time_taken_minutes != null ? String(row.time_taken_minutes) : "-",
-        x,
+        x + c.tm,
         y,
         { align: "right" },
       );
       x += c.tm;
-      pdf.text(truncatePdfCell(formatShortDate(row.submitted_at), 26), x, y);
+      pdf.text(fitPdfCell(pdf, formatShortDate(row.submitted_at), c.sub - CELL_GAP), x, y);
       y += 4.8;
     }
     y += 10;
