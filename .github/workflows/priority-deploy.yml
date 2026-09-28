@@ -44,8 +44,24 @@ jobs:
                 | select((.build_settings.repo_branch // "") == "main")
                 | select(.build_settings.stop_builds == true)
                 | [.id, .name, (.custom_domain // .default_domain)] | @tsv' <<<"$sites")
-          echo "${#rows[@]} opted-in site(s)"
-          [ "${#rows[@]}" -eq 0 ] && exit 0
+          # How many sites build this repo at all, so "0 opted-in" can be read against it.
+          total="$(jq -r '
+            [ .[] | select((.build_settings.repo_url // "") | endswith("lms-platform-frontend"))
+                  | select((.build_settings.repo_branch // "") == "main") ] | length' <<<"$sites")"
+          echo "${#rows[@]} opted-in site(s) of $total building this repo from main"
+
+          if [ "${#rows[@]}" -eq 0 ]; then
+            # Nothing opted in is a legitimate state - the rollout is per site - but a job that
+            # prints one line and exits 0 reads as "tenants deployed" on every push, which is
+            # exactly how it was read for months while 19 sites sat on builds from April to June.
+            # A deploy job that deployed nothing has to say so where the run list shows it.
+            echo "::warning title=No tenant deploys fired::$total site(s) build main; 0 have opted in (stop_builds=true), so this workflow fired nothing. Those sites rely on Netlify auto-build - check they are actually current."
+            echo "### Priority tenant deploys: nothing fired" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "**0 of $total** sites building \`main\` are opted in (\`stop_builds=true\`)." >> "$GITHUB_STEP_SUMMARY"
+            echo "This job deployed **no tenants**. Opt a site in by enabling \"Stop builds\" in Netlify." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
 
           # ---- 2. Priority order (advisory) ----
           domains="$(curl -sf --max-time 20 -H "Authorization: Bearer $PRIORITY_JWT" "$PRIORITY_URL" \
@@ -71,6 +87,7 @@ jobs:
 
           # ---- 3. Fire hooks in order; the trap guarantees nobody is left unfired ----
           declare -A fired
+          failed=0
           fire() {
             local id="$1" name="$2"
             hook="$(curl -sf "${auth[@]}" "$NAPI/sites/$id/build_hooks" \
@@ -84,7 +101,10 @@ jobs:
               echo "fired: $name"
               fired["$id"]=1
             else
+              # Counted as well as warned: a run where every fire failed still ends green, and
+              # `::warning::` alone does not show up in the run list.
               echo "::warning::could not fire build hook for $name"
+              failed=$((failed+1))
             fi
           }
 
@@ -99,3 +119,15 @@ jobs:
             fire "$id" "$name ($domain)"
             sleep 5   # keep arrival order unambiguous for the build queue
           done <<<"$ordered"
+
+          echo "fired ${#fired[@]} of ${#rows[@]} site(s); $failed failed"
+          {
+            echo "### Priority tenant deploys"
+            echo ""
+            echo "Fired **${#fired[@]} of ${#rows[@]}** opted-in site(s); **$failed** failed."
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "${#fired[@]}" -eq 0 ]; then
+            # Every hook failing is indistinguishable from a healthy run unless it fails here.
+            echo "::error::no build hook could be fired for any opted-in site"
+            exit 1
+          fi
