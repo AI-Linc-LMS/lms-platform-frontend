@@ -20,6 +20,8 @@ import { usePhoneSheet } from "@/components/mock-interview/usePhoneSheet";
 export type CodingProblemPayload = CodingProblemData & {
   starter_code: string;
   language: string;
+  /** Every starter the problem ships, keyed by lowercased language. */
+  starters?: Record<string, string>;
 };
 
 interface CodingQuestionModalProps {
@@ -78,12 +80,32 @@ function CodingQuestionModalComponent({
   );
   const { isPhone } = usePhoneSheet();
   const [language, setLanguage] = useState<string>(initialLang);
-  const [code, setCode] = useState<string>(problem?.starter_code || "");
+
+  // The starter the problem ships for each language. Switching the picker used to move
+  // the label and leave Python in the editor, so a candidate who picked C++ was asked to
+  // write C++ underneath a Python signature.
+  const starters = useMemo(() => {
+    const byLanguage: Record<string, string> = {};
+    for (const [key, value] of Object.entries(problem?.starters || {})) {
+      byLanguage[key.toLowerCase()] = value;
+    }
+    if (problem && byLanguage[initialLang] === undefined) {
+      byLanguage[initialLang] = problem.starter_code || "";
+    }
+    return byLanguage;
+  }, [problem, initialLang]);
+
+  // One draft per language, so switching back and forth never costs the candidate what
+  // they already wrote. A language they have not touched reads its own starter.
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const code = drafts[language] ?? starters[language] ?? "";
+  const setCode = (next: string) =>
+    setDrafts((prev) => ({ ...prev, [language]: next }));
 
   useEffect(() => {
     setLanguage(initialLang);
-    setCode(problem?.starter_code || "");
-  }, [problem?.starter_code, initialLang]);
+    setDrafts({});
+  }, [problem?.starter_code, problem?.title, initialLang]);
 
   const [secondsLeft, setSecondsLeft] = useState<number>(budgetSeconds);
   useEffect(() => {

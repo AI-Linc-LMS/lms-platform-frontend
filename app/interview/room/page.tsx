@@ -82,6 +82,7 @@ function toModalProblem(question: NextQuestion): CodingProblemPayload | null {
       ? coding.constraints.split(/\n+/).map((line) => line.trim()).filter(Boolean)
       : undefined,
     starter_code: starters[language] ?? "",
+    starters,
     language,
   };
 }
