@@ -36,6 +36,20 @@ interface CodingQuestionModalProps {
    * out from their result page, which said no code had been submitted at all.
    */
   submitError?: string;
+  /**
+   * Whether the candidate's microphone is currently off, and how to change it.
+   *
+   * The room mutes the mic while this modal is up so that thinking aloud over the editor is
+   * not transcribed as the answer to a question nobody asked - a real problem, and the reason
+   * the mute exists. But the modal covers the room's own mic button, so a candidate who wanted
+   * to ASK the interviewer something during a coding question had no way to be heard at all:
+   * they spoke, nothing reached the model, and it appeared to ignore them.
+   *
+   * Passing these puts the control where the candidate is looking. Omit them and the modal
+   * renders no mic affordance, which is the old behaviour.
+   */
+  micMuted?: boolean;
+  onToggleMic?: () => void;
   onSubmit: (payload: { code: string; language: string }) => void;
 }
 
@@ -54,6 +68,8 @@ function CodingQuestionModalComponent({
   budgetSeconds = 0,
   allowClipboard = false,
   submitError = "",
+  micMuted,
+  onToggleMic,
   onSubmit,
 }: CodingQuestionModalProps) {
   const initialLang = useMemo(
@@ -305,6 +321,23 @@ function CodingQuestionModalComponent({
                   </MenuItem>
                 ))}
               </Select>
+
+              {/* Ask the interviewer. Deliberately a toggle rather than an always-live mic:
+                  the default stays muted, so nothing said while thinking is transcribed, and
+                  speaking becomes an explicit act. */}
+              {onToggleMic ? (
+                <Button
+                  size="small"
+                  variant={micMuted ? "outlined" : "contained"}
+                  color={micMuted ? "inherit" : "primary"}
+                  onClick={onToggleMic}
+                  data-testid="coding-ask-mic"
+                  aria-pressed={!micMuted}
+                  sx={{ ml: 1, textTransform: "none", fontSize: "0.8rem", whiteSpace: "nowrap" }}
+                >
+                  {micMuted ? "Ask a question" : "Listening - tap to stop"}
+                </Button>
+              ) : null}
             </Box>
             <Box sx={{ flex: 1, minHeight: 0, p: 1.5 }}>
               <CodeEditor

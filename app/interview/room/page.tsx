@@ -272,9 +272,26 @@ function InterviewRoom() {
   const structuredOpen =
     structuredKind !== null && currentQuestion?.question_id !== submittedId;
 
+  // Opening a structured question mutes by DEFAULT, and the candidate may deliberately
+  // unmute to ask something. It used to force the track muted for as long as the modal was
+  // up, which is not the same thing: the modal covers the room's mic button, so a candidate
+  // asking the interviewer to clarify a coding question was never heard at all - they spoke,
+  // nothing reached the model, and it looked like the AI was ignoring them.
+  //
+  // The original reason for the mute is kept, because it is a real one: thinking aloud over an
+  // editor should not be transcribed as the answer to a question nobody asked. Defaulting to
+  // muted preserves that. What changes is that speaking becomes possible, and explicit.
+  // Which question the candidate has deliberately opened the mic for. Holding the QUESTION ID
+  // rather than a boolean means moving to the next question invalidates it on its own - no
+  // effect resets it, and the mic cannot stay open across a question boundary.
+  const [askForQuestionId, setAskForQuestionId] = useState<number | null>(null);
+  const askingNow =
+    structuredOpen && askForQuestionId !== null &&
+    askForQuestionId === (currentQuestion?.question_id ?? null);
+
   useEffect(() => {
-    setMicMuted(structuredOpen ? true : muted);
-  }, [muted, setMicMuted, structuredOpen]);
+    setMicMuted(structuredOpen ? !askingNow : muted);
+  }, [askingNow, muted, setMicMuted, structuredOpen]);
 
   const currentQuestionId = currentQuestion?.question_id ?? null;
   const closeStructured = useCallback(() => {
@@ -538,6 +555,10 @@ function InterviewRoom() {
       )}
 
       <CodingQuestionModal
+        micMuted={!askingNow}
+        onToggleMic={() =>
+          setAskForQuestionId(askingNow ? null : (currentQuestion?.question_id ?? null))
+        }
         open={structuredOpen && structuredKind === "coding"}
         problem={currentQuestion ? toModalProblem(currentQuestion) : null}
         spokenIntro={currentQuestion?.question}
