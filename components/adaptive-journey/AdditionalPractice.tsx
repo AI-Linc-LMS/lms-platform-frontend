@@ -96,8 +96,17 @@ export function AdditionalPractice({
       setState({ usage: res.usage, items: res.items });
       setFocus("");
     } catch (e: unknown) {
-      const detail = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail;
-      setError(detail || "Couldn't generate practice right now. Please try again.");
+      const err = e as { code?: string; response?: { data?: { detail?: string } } };
+      const detail = err?.response?.data?.detail;
+      // A timeout carries no response, so there is no `detail` to show and the generic line
+      // reads as though the platform refused. It did not: the work may well have finished.
+      const timedOut = !err?.response && err?.code === "ECONNABORTED";
+      setError(
+        detail ||
+          (timedOut
+            ? "That took longer than we can wait for. Anything that finished has been saved - reopen this panel to see it before generating again."
+            : "Couldn't generate practice right now. Please try again."),
+      );
     } finally {
       setGenerating(false);
     }

@@ -375,6 +375,16 @@ export const adaptiveCourseService = {
     const { data } = await apiClient.post<GeneratePracticeResult>(
       `${BASE}/courses/${courseId}/submodules/${submoduleId}/practice/generate/`,
       body,
+      // This one call is slow by nature: a model writes the content, then every coding
+      // problem is run against its own test cases on Judge0 before any of it is saved.
+      // Measured on production at 48-57 seconds. The client default is 45s, so the browser
+      // was giving up BEFORE the server answered - and a generation that had succeeded and
+      // saved its problems was reported to the learner as a failure.
+      //
+      // 55s, not more: the backend ALB's idle timeout is 60 seconds, so past that the
+      // request is killed upstream and a longer client timeout would only wait for a
+      // reply that is never coming.
+      { timeout: 55_000 },
     );
     return data;
   },
