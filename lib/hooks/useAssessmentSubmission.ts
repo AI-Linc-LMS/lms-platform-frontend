@@ -1,4 +1,5 @@
 import { useCallback, useRef, type MutableRefObject } from "react";
+import { withFrom } from "@/lib/utils/return-to";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/components/common/Toast";
 import { assessmentService } from "@/lib/services/assessment.service";
@@ -45,11 +46,21 @@ interface UseAssessmentSubmissionOptions {
   timedSectionsCompleteRef?: MutableRefObject<Set<string>>;
   autoSubmitReasonRef?: MutableRefObject<string | null>;
   autoSubmitMetaRef?: MutableRefObject<Record<string, any> | null>;
+  /**
+   * Same-origin path to hand on to the success page as `?from=`, or null.
+   *
+   * The navigation below is the ONE place a submitted learner is moved, and it was unconditional:
+   * everybody landed in the standalone assessment section. For a paper sat inside a course that is a
+   * dead end, because the learner assessment list excludes journey types - the success page's "Back
+   * to assessments" cannot contain the paper they just finished.
+   */
+  returnTo?: string | null;
 }
 
 export function useAssessmentSubmission({
   assessment,
   slug,
+  returnTo,
   responses,
   sections,
   metadata,
@@ -374,7 +385,9 @@ export function useAssessmentSubmission({
       if (hasNavigatedRef.current) {
         // Use requestAnimationFrame for smooth, non-blocking navigation
         requestAnimationFrame(() => {
-          window.location.replace(`/assessments/${slug}/submission-success`);
+          window.location.replace(
+            withFrom(`/assessments/${slug}/submission-success`, returnTo),
+          );
         });
       }
     } catch (error: any) {

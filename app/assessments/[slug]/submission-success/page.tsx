@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
+
+import { useReturnTo } from "@/lib/hooks/useReturnTo";
+import { withFrom } from "@/lib/utils/return-to";
 import { useTranslation } from "react-i18next";
 import {
   Container,
@@ -37,6 +40,17 @@ export default function SubmissionSuccessPage() {
   const { t } = useTranslation("common");
   const params = useParams();
   const router = useRouter();
+  /**
+   * Where "back" goes.
+   *
+   * This page used to send everyone to /assessments. For a paper sat inside a course that is
+   * worse than a dead end: the learner assessment list EXCLUDES journey types on the server, so
+   * the list it returns to cannot contain the paper they just sat. `from` comes from the journey
+   * card and is carried through every hop; the standalone list stays the fallback.
+   */
+  const back = useReturnTo({ href: "/assessments", label: "Back to assessments" });
+  // Passed on to the result page so it can offer the same way back.
+  const fromParam = back.href === "/assessments" ? null : back.href;
   const slug = params.slug as string;
   const [assessment, setAssessment] = useState<AssessmentDetail | null>(null);
   const [scholarshipStatus, setScholarshipStatus] =
@@ -259,7 +273,7 @@ export default function SubmissionSuccessPage() {
           >
             <Button
               variant="outlined"
-              onClick={() => router.push("/assessments")}
+              onClick={() => router.push(back.href)}
               startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
               sx={{
                 textTransform: "none",
@@ -272,12 +286,14 @@ export default function SubmissionSuccessPage() {
                 "&:hover": { borderColor: "var(--font-tertiary)", bgcolor: "var(--surface)" },
               }}
             >
-              {t("assessments.backToAssessments")}
+              {back.href === "/assessments"
+                ? t("assessments.backToAssessments")
+                : t("assessments.backToCourse", "Back to course")}
             </Button>
             {assessment.show_result !== false && (
               <Button
                 variant="contained"
-                onClick={() => router.push(`/assessments/result/${slug}`)}
+                onClick={() => router.push(withFrom(`/assessments/result/${slug}`, fromParam))}
                 startIcon={<IconWrapper icon="mdi:file-document-edit" size={18} />}
                 sx={{
                   textTransform: "none",

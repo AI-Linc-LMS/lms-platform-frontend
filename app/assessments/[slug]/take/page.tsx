@@ -15,7 +15,9 @@ import {
 } from "react";
 import type { RefObject, Dispatch, SetStateAction } from "react";
 import { flushSync } from "react-dom";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+
+import { safeFrom } from "@/lib/utils/return-to";
 import {
   Alert,
   Box,
@@ -1352,9 +1354,13 @@ export default function TakeAssessmentPage({
   });
 
   // Submission handler
+  // Handed to the submit hook so the success page knows where the learner came from. Submitting is
+  // the one hop that always navigated into the standalone assessment section.
+  const returnTo = safeFrom(useSearchParams()?.get("from"));
   const { handleFinalSubmit } = useAssessmentSubmission({
     assessment,
     slug,
+    returnTo,
     responses,
     sections,
     metadata: metadata as any, // Type compatibility - both types have same structure

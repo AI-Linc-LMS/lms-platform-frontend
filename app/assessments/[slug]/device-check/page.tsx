@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState, useRef, use, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+
+import { safeFrom, withFrom } from "@/lib/utils/return-to";
 import { useTranslation } from "react-i18next";
 import {
   Container,
@@ -53,6 +55,9 @@ export default function DeviceCheckPage({
   const { t } = useTranslation("common");
   const { slug } = use(params);
   const router = useRouter();
+  // Carried on to the player, and back to the detail page: the device check sits in the middle of
+  // the chain, so dropping `from` here strands the learner at the end of it just the same.
+  const returnTo = safeFrom(useSearchParams()?.get("from"));
   const [, setLoading] = useState(false); // Start with false - don't block initial render
   const [checking, setChecking] = useState(false);
   const [deviceAccessDenied, setDeviceAccessDenied] = useState(false);
@@ -507,13 +512,13 @@ export default function DeviceCheckPage({
           showToast("This assessment has already been submitted", "warning");
           // replace, not push: don't leave device-check in history so
           // back-navigation can't return here.
-          router.replace(`/assessments/${slug}`);
+          router.replace(withFrom(`/assessments/${slug}`, returnTo));
           return;
         }
 
         // Redirect to take page if proctoring is disabled
         if (data.proctoring_enabled === false) {
-          router.push(`/assessments/${slug}/take`);
+          router.push(withFrom(`/assessments/${slug}/take`, returnTo));
           return;
         }
       } catch (error: any) {
@@ -569,7 +574,7 @@ export default function DeviceCheckPage({
     stopFaceDetection({ preserveMediaStream: true });
 
     // Navigate to take assessment page immediately
-    router.push(`/assessments/${slug}/take`);
+    router.push(withFrom(`/assessments/${slug}/take`, returnTo));
   };
 
   const networkAllowsProceed = !(networkSpeed !== null && networkSpeed < 0.1);
@@ -679,7 +684,7 @@ export default function DeviceCheckPage({
               variant="contained"
               size="large"
               startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
-              onClick={() => router.push(`/assessments/${slug}`)}
+              onClick={() => router.push(withFrom(`/assessments/${slug}`, returnTo))}
               sx={{
                 textTransform: "none",
                 fontWeight: 600,
@@ -1406,7 +1411,7 @@ export default function DeviceCheckPage({
 
             <Button
               variant="text"
-              onClick={() => router.push(`/assessments/${slug}`)}
+              onClick={() => router.push(withFrom(`/assessments/${slug}`, returnTo))}
               startIcon={
                 <IconWrapper
                   icon="mdi:arrow-left"
