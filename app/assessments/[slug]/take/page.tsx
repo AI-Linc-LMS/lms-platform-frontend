@@ -337,6 +337,33 @@ export default function TakeAssessmentPage({
     timeUpCallbackRef.current?.();
   }, []);
 
+  /**
+   * Start the clock once the bar is actually on screen.
+   *
+   * The bar renders inside `{assessmentStarted && (...)}` with `autoStart={false}`, and
+   * `useAssessmentTimer` initialises `isRunning` from that flag, so nothing counts down until
+   * someone calls `start()` through the ref. `handleStart` used to make that call on the line right
+   * after it set `assessmentStarted` — which only worked on the PROCTORED path, because that branch
+   * does `flushSync(() => setAssessmentStarted(true))` and then awaits a frame loop attaching the
+   * camera, so the bar had mounted and the ref was attached by the time `start()` ran.
+   *
+   * The non-proctored branch is a plain `setAssessmentStarted(true)`. React batches it, so the bar
+   * had not rendered yet, `timerControlRef.current` was still null, and `?.start()` quietly did
+   * nothing: the learner saw a clock sitting at its full duration and never moving. Every journey
+   * assessment generated with `proctoring_enabled=false` behaved that way.
+   *
+   * An effect runs after the commit, so the ref is attached whenever this fires. Both paths now
+   * start the same way and neither depends on render ordering.
+   */
+  const timerStartedRef = useRef(false);
+  useEffect(() => {
+    if (!assessmentStarted || timerStartedRef.current) return;
+    const control = timerControlRef.current;
+    if (!control) return; // not yet committed; this re-runs when it is
+    timerStartedRef.current = true;
+    control.start();
+  }, [assessmentStarted]);
+
   // Sections - memoized to prevent unnecessary recalculations
   // Calculate immediately but use startTransition for updates to prevent blocking
   const sections = useMemo(() => {
@@ -1525,7 +1552,8 @@ export default function TakeAssessmentPage({
         setAssessmentStarted(true);
       }
 
-      timerControlRef.current?.start();
+      // The clock is started by the effect that watches `assessmentStarted`, not here: on this
+      // branch the bar holding the ref has not rendered yet, so a call here reaches a null ref.
 
       void enterFullscreen()
         .then(() => {
