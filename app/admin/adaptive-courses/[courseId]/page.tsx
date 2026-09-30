@@ -26,6 +26,8 @@ import {
   useTheme,
 } from "@mui/material";
 import { Icon } from "@iconify/react";
+
+import { WeekAssessments } from "@/components/admin/adaptive-course/WeekAssessments";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { AdminAdaptiveCourseDetailSkeleton } from "@/components/courses/CourseSkeletons";
 import { useToast } from "@/components/common/Toast";
@@ -955,6 +957,10 @@ export default function AdminAdaptiveCourseDetailPage() {
                           />
                         </Box>
                       </Box>
+
+                      {/* Above the topics: a week's paper is the week's gate, not one of its
+                          topics, and it was not shown here at all. */}
+                      <WeekAssessments assessments={mod.assessments} />
 
                       <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
                         {mod.submodules.map((sub) => (

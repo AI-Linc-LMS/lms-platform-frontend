@@ -299,11 +299,31 @@ export interface AdminAdaptiveCourseSubModule {
   attachments?: AdminAdaptiveCourseAttachment[];
 }
 
+/** A checkpoint or final paper attached to a week, as the course tree reports it. */
+export interface AdminAdaptiveCourseWeekAssessment {
+  node_id: number;
+  assessment_id: number;
+  /** What opens the paper. An id alone cannot build the link. */
+  slug: string;
+  title: string;
+  type: "checkpoint" | "week_final" | "calibration";
+  is_active: boolean;
+  duration_minutes: number | null;
+  question_count: number;
+  proctoring_enabled: boolean;
+  /** Points on offer: base x weight, from the same resolver the learner's board states. */
+  points: number;
+  /** Learners who have FINISHED it. Papers merely opened are not counted. */
+  submission_count: number;
+}
+
 export interface AdminAdaptiveCourseModule {
   id: number;
   weekno: number;
   title: string;
   submodules: AdminAdaptiveCourseSubModule[];
+  /** Absent on an older backend; treat as empty rather than assuming the week has no paper. */
+  assessments?: AdminAdaptiveCourseWeekAssessment[];
 }
 
 export interface AdminAdaptiveCourseListItem {
