@@ -1626,8 +1626,17 @@ export default function TakeAssessmentPage({
           // Only reset if difference is significant (more than 10 seconds) or not initialized
           if (!timerInitializedRef.current || timeDifference > 10) {
             timerInitializedRef.current = true;
+            // reset() stops the clock (useAssessmentTimer sets isRunning false), so whether it is
+            // restarted decides whether the learner has a running timer at all.
             timerControlRef.current?.reset(newTimeSeconds);
-            if (assessmentStarted) {
+            // `assessmentStartedRef`, NOT the captured `assessmentStarted`. This callback is
+            // deferred by up to a second through requestIdleCallback, and the only one ever
+            // scheduled is the one from the first run of this effect — `lastRemainingTimeRef` is
+            // already set by the time `assessmentStarted` flips, so the re-run schedules nothing.
+            // Its closure therefore still says "not started". A learner who pressed Start before
+            // the idle callback fired had the clock reset out from under them and never restarted:
+            // it froze at the full duration about a second in. The ref is updated on every render.
+            if (assessmentStartedRef.current) {
               timerControlRef.current?.start();
             }
           }
