@@ -13,6 +13,12 @@ export function useAssessmentTimer(options: UseAssessmentTimerOptions) {
   const [remainingSeconds, setRemainingSeconds] = useState(initialTimeSeconds);
   const [isRunning, setIsRunning] = useState(autoStart);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Bumped by reset(). The interval below is owned by an effect keyed on `isRunning`, but reset()
+  // ALSO clears the interval imperatively - so a reset() and a start() batched into one tick left
+  // `isRunning` at the same `true` it already had, the effect never re-ran, and the interval it had
+  // just cleared was never re-created. The clock then reported itself as running while standing
+  // still. Any resume that reset and restarted in the same tick did this.
+  const [timerEpoch, setTimerEpoch] = useState(0);
   const onTimeUpRef = useRef(onTimeUp);
   const remainingSecondsRef = useRef(initialTimeSeconds);
   // Wallclock target - Date.now() ms when timer should hit zero.
@@ -84,7 +90,8 @@ export function useAssessmentTimer(options: UseAssessmentTimerOptions) {
         intervalRef.current = null;
       }
     };
-  }, [isRunning, tick]);
+    // `timerEpoch` so a reset() that does not change `isRunning` still rebuilds the interval.
+  }, [isRunning, tick, timerEpoch]);
 
   // When the tab becomes visible after being hidden, browsers may have
   // throttled the 1s interval. Recompute immediately from the wallclock
@@ -128,6 +135,7 @@ export function useAssessmentTimer(options: UseAssessmentTimerOptions) {
     deadlineMsRef.current = null;
     timeUpFiredRef.current = false;
     hasInitializedRef.current = true;
+    setTimerEpoch((e) => e + 1);
   }, []);
 
   const formatTime = useCallback((seconds: number): string => {

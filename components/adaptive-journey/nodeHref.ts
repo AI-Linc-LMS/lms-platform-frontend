@@ -1,4 +1,5 @@
 import type { JourneyNodeView } from "@/lib/types/adaptive-journey";
+import { withFrom } from "@/lib/utils/return-to";
 
 /**
  * Where a journey step goes when the learner clicks it, or null when it goes nowhere.
@@ -20,7 +21,20 @@ export function nodeHref(node: JourneyNodeView, courseId: number): string | null
   if (node.type === "interview") return "/mock-interview/courses";
   if (node.type === "checkpoint" || node.type === "week_final") {
     const slug = node.ref.assessmentSlug;
-    return slug ? `/assessments/${slug}?courseId=${courseId}` : null;
+    if (!slug) return null;
+    // `from` is the course, threaded the way the adaptive quiz threads it (lib/utils/return-to).
+    // Without it the assessment runtime has no idea a course exists: a learner who submitted was
+    // dropped on a standalone success page whose "Back to assessments" leads to a list that
+    // EXCLUDES journey papers, so there was no way back to the course they came from at all.
+    // `courseId` stays for the calibration route, which reads it to fetch the calibration result.
+    const back = `/adaptive-courses/${courseId}`;
+    // A finished paper goes to its result rather than to a detail page that would bounce the
+    // learner onward with an "already submitted" toast.
+    const href =
+      node.status === "done"
+        ? `/assessments/result/${slug}?courseId=${courseId}`
+        : `/assessments/${slug}?courseId=${courseId}`;
+    return withFrom(href, back);
   }
   return null;
 }

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+
+import { useReturnTo } from "@/lib/hooks/useReturnTo";
 import { useTranslation } from "react-i18next";
 import { Box, Button, Paper, Alert, Typography, CircularProgress } from "@mui/material";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -104,6 +106,10 @@ function formatResultMinutes(minutes: number): string {
 export default function AssessmentResultPage() {
   const params = useParams();
   const router = useRouter();
+  // "Back" was hard-coded to the standalone assessment list, which excludes journey papers - so a
+  // learner reading the result of a course assessment had no route back into the course. `from` is
+  // carried here from the journey card, through the paper and through the success page.
+  const back = useReturnTo({ href: "/assessments", label: "Back" });
   const searchParams = useSearchParams();
   const slug = params.slug as string;
 
@@ -397,9 +403,9 @@ export default function AssessmentResultPage() {
         >
           <Button
             startIcon={<IconWrapper icon="mdi:arrow-left" size={20} />}
-            onClick={() => router.push("/assessments")}
+            onClick={() => router.push(back.href)}
           >
-            Back
+            {back.href === "/assessments" ? "Back" : "Back to course"}
           </Button>
 
           <Button

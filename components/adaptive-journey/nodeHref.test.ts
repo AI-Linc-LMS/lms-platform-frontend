@@ -8,6 +8,12 @@
  * excludes every journey type. Platform-wide there had never been a single submission against
  * any of the 130 checkpoint or 138 week_final papers. 112 more shipped for Impacteers before
  * anyone noticed.
+ *
+ * Once they WERE reachable the next gap showed: the assessment runtime has no idea a course exists.
+ * A learner who submitted landed on a standalone success page whose "Back to assessments" leads to a
+ * list that EXCLUDES journey papers, so there was no route back to the course at all. So the link
+ * now carries `?from=` the way the adaptive quiz does (lib/utils/return-to), and a finished paper
+ * goes straight to its result instead of to a detail page that bounces it onward.
  */
 import { describe, expect, it } from "vitest";
 import { nodeHref } from "./nodeHref";
@@ -23,14 +29,31 @@ const node = (over: Partial<JourneyNodeView> = {}) => ({
 } as unknown as JourneyNodeView);
 
 describe("nodeHref", () => {
-  it("routes a week_final to its assessment by slug", () => {
-    expect(nodeHref(node(), 19)).toBe("/assessments/imp-19-wk01-final?courseId=19");
+  it("routes a week_final to its assessment by slug, carrying the way back", () => {
+    expect(nodeHref(node(), 19)).toBe(
+      "/assessments/imp-19-wk01-final?courseId=19&from=%2Fadaptive-courses%2F19",
+    );
   });
 
   it("routes a checkpoint the same way", () => {
     expect(nodeHref(node({ type: "checkpoint",
       ref: { assessmentId: 5, assessmentSlug: "calib-29-19" } } as Partial<JourneyNodeView>), 19))
-      .toBe("/assessments/calib-29-19?courseId=19");
+      .toBe("/assessments/calib-29-19?courseId=19&from=%2Fadaptive-courses%2F19");
+  });
+
+  it("sends a FINISHED paper to its result, not back through the detail page", () => {
+    // The detail page answers an already-submitted paper with a toast and a redirect, so a learner
+    // tapping their completed checkpoint was ejected from the course for no reason.
+    expect(nodeHref(node({ status: "done" } as Partial<JourneyNodeView>), 19)).toBe(
+      "/assessments/result/imp-19-wk01-final?courseId=19&from=%2Fadaptive-courses%2F19",
+    );
+  });
+
+  it("puts the course in `from` so it survives being read back", async () => {
+    const { safeFrom } = await import("@/lib/utils/return-to");
+    const href = nodeHref(node(), 19)!;
+    const from = new URLSearchParams(href.split("?")[1]).get("from");
+    expect(safeFrom(from)).toBe("/adaptive-courses/19");
   });
 
   it("never builds a link from the id alone", () => {

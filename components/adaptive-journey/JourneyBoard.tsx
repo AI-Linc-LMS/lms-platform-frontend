@@ -62,7 +62,7 @@ function daysLeft(iso: string | null | undefined): number | null {
   return Math.ceil(d / 86_400_000);
 }
 
-function contentSummary(n: JourneyNodeView): string {
+export function contentSummary(n: JourneyNodeView): string {
   if (n.type === "topic" && n.content) {
     const c = n.content;
     const p: string[] = [];
@@ -73,7 +73,11 @@ function contentSummary(n: JourneyNodeView): string {
     return p.join(" · ");
   }
   if (n.type === "checkpoint" || n.type === "week_final") {
-    const p = ["Proctored"];
+    // `n.proctored`, not an assumption. This line asserted "Proctored" unconditionally while
+    // `nodeLabel` twelve lines down read the real flag, so a non-proctored paper carried the word
+    // with no PROCTORED tag above it - true of all 112 Impacteers papers and every other paper
+    // generated with proctoring off.
+    const p = n.proctored ? ["Proctored"] : [];
     if (n.questionCount) p.push(`${n.questionCount} Qs`);
     p.push(n.weight > 1 ? `counts ${n.weight}×` : "same for all");
     return p.join(" · ");

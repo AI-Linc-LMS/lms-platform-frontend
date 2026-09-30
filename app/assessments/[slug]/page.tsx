@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState, use, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+
+import { safeFrom, withFrom } from "@/lib/utils/return-to";
 import { useTranslation } from "react-i18next";
 import {
   Container,
@@ -61,6 +63,15 @@ export default function AssessmentDetailPage({
   const { t } = useTranslation("common");
   const { slug } = use(params);
   const router = useRouter();
+  /**
+   * Where the learner came from, carried on to every hop below.
+   *
+   * This page is the one place the journey board's `?from=` landed, and it used to read neither
+   * `from` nor `courseId` and forward neither. So the course context died here, one hop before the
+   * paper even opened, and a learner who finished a course assessment was left in the standalone
+   * assessment section with no way back - its "Back to assessments" list excludes journey papers.
+   */
+  const returnTo = safeFrom(useSearchParams()?.get("from"));
   const [assessment, setAssessment] = useState<AssessmentDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [desktopOnlyOpen, setDesktopOnlyOpen] = useState(false);
@@ -201,11 +212,11 @@ export default function AssessmentDetailPage({
       // A submitted project keeps its workspace readable — the learner should be able to look at
       // what they built, which is not true of an exam paper.
       if (assessment.is_take_home) {
-        router.push(`/assessments/${slug}/project`);
+        router.push(withFrom(`/assessments/${slug}/project`, returnTo));
         return;
       }
       showToast("This assessment has already been submitted", "warning");
-      router.replace(`/assessments/${slug}/submission-success`);
+      router.replace(withFrom(`/assessments/${slug}/submission-success`, returnTo));
       return;
     }
 
@@ -221,14 +232,14 @@ export default function AssessmentDetailPage({
     // proctoring, and the learner leaves and comes back. Sending them through the player would
     // start a timer the server does not enforce and a device check the section disables anyway.
     if (assessment.is_take_home) {
-      router.push(`/assessments/${slug}/project`);
+      router.push(withFrom(`/assessments/${slug}/project`, returnTo));
       return;
     }
 
     if (assessment.proctoring_enabled === false) {
-      router.push(`/assessments/${slug}/take`);
+      router.push(withFrom(`/assessments/${slug}/take`, returnTo));
     } else {
-      router.push(`/assessments/${slug}/device-check`);
+      router.push(withFrom(`/assessments/${slug}/device-check`, returnTo));
     }
   };
 

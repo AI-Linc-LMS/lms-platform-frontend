@@ -15,7 +15,9 @@ import {
 } from "react";
 import type { RefObject, Dispatch, SetStateAction } from "react";
 import { flushSync } from "react-dom";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+
+import { safeFrom } from "@/lib/utils/return-to";
 import {
   Alert,
   Box,
@@ -336,6 +338,33 @@ export default function TakeAssessmentPage({
   const handleTimerTimeUp = useCallback(() => {
     timeUpCallbackRef.current?.();
   }, []);
+
+  /**
+   * Start the clock once the bar is actually on screen.
+   *
+   * The bar renders inside `{assessmentStarted && (...)}` with `autoStart={false}`, and
+   * `useAssessmentTimer` initialises `isRunning` from that flag, so nothing counts down until
+   * someone calls `start()` through the ref. `handleStart` used to make that call on the line right
+   * after it set `assessmentStarted` — which only worked on the PROCTORED path, because that branch
+   * does `flushSync(() => setAssessmentStarted(true))` and then awaits a frame loop attaching the
+   * camera, so the bar had mounted and the ref was attached by the time `start()` ran.
+   *
+   * The non-proctored branch is a plain `setAssessmentStarted(true)`. React batches it, so the bar
+   * had not rendered yet, `timerControlRef.current` was still null, and `?.start()` quietly did
+   * nothing: the learner saw a clock sitting at its full duration and never moving. Every journey
+   * assessment generated with `proctoring_enabled=false` behaved that way.
+   *
+   * An effect runs after the commit, so the ref is attached whenever this fires. Both paths now
+   * start the same way and neither depends on render ordering.
+   */
+  const timerStartedRef = useRef(false);
+  useEffect(() => {
+    if (!assessmentStarted || timerStartedRef.current) return;
+    const control = timerControlRef.current;
+    if (!control) return; // not yet committed; this re-runs when it is
+    timerStartedRef.current = true;
+    control.start();
+  }, [assessmentStarted]);
 
   // Sections - memoized to prevent unnecessary recalculations
   // Calculate immediately but use startTransition for updates to prevent blocking
@@ -1325,9 +1354,13 @@ export default function TakeAssessmentPage({
   });
 
   // Submission handler
+  // Handed to the submit hook so the success page knows where the learner came from. Submitting is
+  // the one hop that always navigated into the standalone assessment section.
+  const returnTo = safeFrom(useSearchParams()?.get("from"));
   const { handleFinalSubmit } = useAssessmentSubmission({
     assessment,
     slug,
+    returnTo,
     responses,
     sections,
     metadata: metadata as any, // Type compatibility - both types have same structure
@@ -1525,7 +1558,8 @@ export default function TakeAssessmentPage({
         setAssessmentStarted(true);
       }
 
-      timerControlRef.current?.start();
+      // The clock is started by the effect that watches `assessmentStarted`, not here: on this
+      // branch the bar holding the ref has not rendered yet, so a call here reaches a null ref.
 
       void enterFullscreen()
         .then(() => {
@@ -1598,8 +1632,17 @@ export default function TakeAssessmentPage({
           // Only reset if difference is significant (more than 10 seconds) or not initialized
           if (!timerInitializedRef.current || timeDifference > 10) {
             timerInitializedRef.current = true;
+            // reset() stops the clock (useAssessmentTimer sets isRunning false), so whether it is
+            // restarted decides whether the learner has a running timer at all.
             timerControlRef.current?.reset(newTimeSeconds);
-            if (assessmentStarted) {
+            // `assessmentStartedRef`, NOT the captured `assessmentStarted`. This callback is
+            // deferred by up to a second through requestIdleCallback, and the only one ever
+            // scheduled is the one from the first run of this effect — `lastRemainingTimeRef` is
+            // already set by the time `assessmentStarted` flips, so the re-run schedules nothing.
+            // Its closure therefore still says "not started". A learner who pressed Start before
+            // the idle callback fired had the clock reset out from under them and never restarted:
+            // it froze at the full duration about a second in. The ref is updated on every render.
+            if (assessmentStartedRef.current) {
               timerControlRef.current?.start();
             }
           }
