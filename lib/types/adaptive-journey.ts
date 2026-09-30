@@ -13,6 +13,8 @@ export type FieldTier = "beginner" | "intermediate" | "advanced";
 export interface JourneyNodeRef {
   submoduleId?: number | null;
   assessmentId?: number | null;
+  /** Every learner assessment route is keyed on the slug, so the id alone opens nothing. */
+  assessmentSlug?: string | null;
   interviewTemplateId?: number | null;
 }
 
