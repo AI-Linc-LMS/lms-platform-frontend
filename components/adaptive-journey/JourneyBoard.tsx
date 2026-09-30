@@ -6,6 +6,7 @@ import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, Chip, LinearProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
+import { nodeHref } from "./nodeHref";
 import type {
   JourneyBoard as JourneyBoardData,
   JourneyNodeView,
@@ -104,12 +105,7 @@ function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; cou
   const done = node.status === "done";
   const current = node.status === "current";
   const locked = node.status === "locked";
-  const navHref =
-    node.type === "topic" && node.ref.submoduleId
-      ? `/adaptive-courses/${courseId}/submodule/${node.ref.submoduleId}`
-      : node.type === "interview"
-        ? "/mock-interview/courses"
-        : null;
+  const navHref = nodeHref(node, courseId);
   const navigable = !locked && !!navHref;
 
   const go = () => { if (navigable && navHref) push(navHref); };
