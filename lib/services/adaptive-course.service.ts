@@ -113,6 +113,16 @@ export interface AdaptiveCourseCodingProblemSummary {
   difficulty_level: "Easy" | "Medium" | "Hard";
   target_skills: string[];
   completed?: boolean;
+  /**
+   * Techniques this problem needs that the course has not taught yet.
+   *
+   * The backend has emitted this since #940 decided to SERVE a problem that runs ahead of the
+   * syllabus and label it, rather than hide it - hiding it made the course's own counters and points
+   * disagree with what the learner could see. Nothing on the client read the label, so 361 problems
+   * across ~15 courses were served with no hint of what they required. Optional because an older
+   * backend does not send it.
+   */
+  requires_upcoming?: string[];
 }
 
 export interface AdaptiveCourseCodingSet {

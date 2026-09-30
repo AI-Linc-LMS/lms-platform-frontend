@@ -19,6 +19,7 @@ import { AdaptiveSubmoduleSkeleton } from "@/components/courses/CourseSkeletons"
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { useReturnTo } from "@/lib/hooks/useReturnTo";
 import { withFrom } from "@/lib/utils/return-to";
+import { codingChips, type FlowChip } from "@/lib/adaptive/codingChips";
 import { flowSteps } from "@/lib/adaptive/courseFlow";
 import { asStringList } from "@/lib/utils/as-list";
 import { attachmentLook, formatFileSize } from "@/lib/utils/attachment-display";
@@ -33,7 +34,7 @@ interface FlowItem {
   /** Matches the points-breakdown content_key (`kind:id`) so each row can show its points. */
   contentKey: string;
   title: string;
-  chips: { icon: string; text: string }[];
+  chips: FlowChip[];
   onClick: () => void;
   /** Destination URL - used to prefetch the route on hover for instant open. */
   href: string;
@@ -113,14 +114,9 @@ function buildItems(
         };
       }
       case "coding": {
-        const p = step.source;
-        return {
-          ...base,
-          chips: [
-            { icon: "mdi:speedometer", text: p.difficulty_level },
-            ...asStringList(p.target_skills).slice(0, 2).map((t) => ({ icon: "mdi:tag-outline", text: t })),
-          ],
-        };
+        // Including the "needs X - not taught yet" warning the backend has been sending since #940
+        // and nothing rendered.
+        return { ...base, chips: codingChips(step.source) };
       }
     }
   });
@@ -524,7 +520,7 @@ function PathRow({ item, step, last, status, points, onPrefetch }: { item: FlowI
             {item.chips.length > 0 && (
               <Stack direction="row" flexWrap="wrap" sx={{ gap: 0.75, mt: 0.75 }}>
                 {item.chips.map((c, i) => (
-                  <Stack key={i} direction="row" spacing={0.4} alignItems="center" sx={{ px: 1, py: 0.35, borderRadius: 999, fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 600, color: "#475569", bgcolor: "#f1f5f9", border: "1px solid #e2e8f0" }}>
+                  <Stack key={i} direction="row" spacing={0.4} alignItems="center" sx={{ px: 1, py: 0.35, borderRadius: 999, fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: c.tone === "warn" ? 700 : 600, ...(c.tone === "warn" ? { color: "#92400e", bgcolor: "#fef3c7", border: "1px solid #fcd34d" } : { color: "#475569", bgcolor: "#f1f5f9", border: "1px solid #e2e8f0" }) }}>
                     <Icon icon={c.icon} width={13} />
                     {c.text}
                   </Stack>
