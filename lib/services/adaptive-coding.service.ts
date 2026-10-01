@@ -80,6 +80,14 @@ export interface CodingSubmissionRecord {
 }
 
 /** Time-decay params for the live coding points HUD (mirrors the engine's coding decay). */
+/** How much a retry is worth, straight from the server's ladder - so the rule a learner reads is
+ *  the rule that pays them. `full_through` is the last attempt worth its full value. */
+export interface RetryLadder {
+  full_through: number;
+  steps: number[];
+  floor: number;
+}
+
 export interface CodingPointsDecay {
   base: number;
   grace: number;
@@ -88,6 +96,7 @@ export interface CodingPointsDecay {
   floor: number;
   /** Fraction shaved per hint taken (so the HUD matches the awarded points). */
   hint_penalty?: number;
+  retry?: RetryLadder;
 }
 
 export interface CodingSession {
@@ -180,8 +189,13 @@ export interface SubmitResult {
   diagnosis: MentorDiagnosis | null;
   optimization_challenge: OptimizationChallenge | null;
   mastery_delta: MasteryDelta;
-  /** Points awarded for this submit (time-decayed from the session's started_at). */
+  /** What this submit ADDED to the learner's points (time-decayed from the session's started_at).
+   *  0 on a passing submit means a stronger attempt already paid for the problem. */
   points_earned?: number;
+  /** What the learner holds for this problem in total, after this submit. */
+  points_held?: number;
+  /** Which attempt this submit was (1 = first). */
+  points_attempt?: number;
   /** Set when the submit couldn't be graded (no test cases / runner outage). */
   detail?: string;
 }

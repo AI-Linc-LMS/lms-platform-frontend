@@ -116,6 +116,10 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
   const [started, setStarted] = useState(false);   // false on a fresh problem → "ready to begin" gate
   const [starting, setStarting] = useState(false);
   const [pointsEarned, setPointsEarned] = useState<number | null>(null);
+  // What the learner HOLDS for this problem, and which attempt they are on. A passing submit worth
+  // +0 is not an error: a stronger attempt already paid, and the HUD says so instead of going quiet.
+  const [pointsHeld, setPointsHeld] = useState<number | null>(null);
+  const [pointsAttempt, setPointsAttempt] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -387,7 +391,15 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
       } else if (res.grade.all_passed) {
         setSolvedAlready(true);
         setPointsEarned(res.points_earned ?? 0);  // freezes the timer HUD on the earned points
-        const pts = res.points_earned ? ` · +${res.points_earned} pts` : "";
+        setPointsHeld(res.points_held ?? null);
+        setPointsAttempt(res.points_attempt ?? 0);
+        const held = res.points_held ?? 0;
+        const pts = res.points_earned
+          ? ` · +${res.points_earned} pts`
+          : held > 0
+            // Never silently drop the points line here: the learner just watched every test pass.
+            ? ` · no new points, you already hold ${held}`
+            : "";
         showToast(`Passed - clean & correct${pts}`, "success");
       } else {
         const pts = res.points_earned ? ` (+${res.points_earned} pts)` : "";
@@ -529,6 +541,8 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
       serverNow={sessionData.server_now}
       running={!solvedAlready}
       earned={solvedAlready ? pointsEarned : null}
+      held={pointsHeld}
+      attemptNo={pointsAttempt}
       hints={hintsRevealed}
     />
   );

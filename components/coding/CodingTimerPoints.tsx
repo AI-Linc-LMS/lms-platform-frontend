@@ -30,12 +30,34 @@ function fmtElapsed(totalSec: number): string {
  * across reloads and even days away (clock-skew corrected via server_now). Holds full points through
  * the grace window, then ticks down to the floor; once submitted it freezes on the earned points.
  */
+/** The retry rule in one line, written from the server's ladder so the two can never disagree. */
+function retryRule(decay: CodingPointsDecay): string | null {
+  const r = decay.retry;
+  if (!r || !r.steps?.length) return null;
+  const pct = (m: number) => `${Math.round(m * 100)}%`;
+  const after = [...r.steps.map(pct), pct(r.floor)].join(" → ");
+  const through =
+    r.full_through <= 1 ? "Your first attempt" : `Attempts 1-${r.full_through}`;
+  return `${through} pay in full, then ${after}. Your best attempt always stands.`;
+}
+
+/** What the server's ladder charges for `attemptNo` - null when it did not send one. */
+function attemptCharge(decay: CodingPointsDecay, attemptNo: number): number | null {
+  const r = decay.retry;
+  if (!r) return null;
+  if (attemptNo <= r.full_through) return 1;
+  const step = r.steps[attemptNo - r.full_through - 1];
+  return step ?? r.floor;
+}
+
 export function CodingTimerPoints({
   decay,
   startedAt,
   serverNow,
   running = true,
   earned = null,
+  held = null,
+  attemptNo = 0,
   hints = 0,
 }: {
   decay: CodingPointsDecay;
@@ -43,6 +65,9 @@ export function CodingTimerPoints({
   serverNow: string;
   running?: boolean;
   earned?: number | null;
+  /** What the learner holds for this problem after the submit (server-side standing). */
+  held?: number | null;
+  attemptNo?: number;
   hints?: number;
 }) {
   // Server-elapsed at fetch + a local anchor captured once → live elapsed without trusting the
@@ -79,6 +104,16 @@ export function CodingTimerPoints({
   const pct = decay.base > 0 ? Math.max(0, Math.min(100, (pts / decay.base) * 100)) : 0;
   const color = submitted ? "#7c3aed" : inGrace ? "#10b981" : atFloor ? "#ef4444" : "#f59e0b";
   const graceLeft = Math.max(0, Math.ceil(decay.grace - elapsedSec));
+  const heldPts = held ?? 0;
+  const noNewPoints = submitted && (earned as number) <= 0;
+  const rule = retryRule(decay);
+  // On a retry, name the attempt AND what the ladder charged for it, so a smaller award explains
+  // itself instead of looking like the bug this replaced.
+  const attemptMult = attemptNo > 1 ? attemptCharge(decay, attemptNo) : null;
+  const attemptLabel =
+    attemptNo > 1
+      ? ` · attempt ${attemptNo}${attemptMult !== null && attemptMult < 1 ? ` at ${Math.round(attemptMult * 100)}%` : ""}`
+      : "";
 
   return (
     <Box
@@ -128,9 +163,15 @@ export function CodingTimerPoints({
             "& .MuiLinearProgress-bar": { bgcolor: color, borderRadius: 4, transition: "transform .4s ease, background-color .3s" } }}
         />
         <Typography sx={{ fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 700, mt: 0.5,
-          color: submitted ? "#6d28d9" : inGrace ? "#15803d" : atFloor ? "#b91c1c" : "#b45309" }}>
+          color: submitted ? (noNewPoints ? "#b45309" : "#6d28d9") : inGrace ? "#15803d" : atFloor ? "#b91c1c" : "#b45309" }}>
           {submitted
-            ? "Locked in on submit"
+            ? noNewPoints
+              ? heldPts > 0
+                // A passing submit that adds nothing is the moment a learner decides whether to
+                // trust the number. Say which attempt already paid, and how much it is holding.
+                ? `No new points - you already hold ${heldPts}/${decay.base} here from a stronger attempt`
+                : "No points left on this one"
+              : `Locked in on submit${attemptLabel}`
             : inGrace
               ? `Full points for ${graceLeft}s more`
               : atFloor
@@ -140,6 +181,12 @@ export function CodingTimerPoints({
             ? ` · −${Math.round((decay.hint_penalty ?? 0) * 100 * hints)}% from ${hints} hint${hints > 1 ? "s" : ""}`
             : ""}
         </Typography>
+        {rule && (
+          <Typography sx={{ fontSize: "0.64rem", [PHONE]: { fontSize: "0.72rem" }, fontWeight: 600,
+            mt: 0.35, color: "text.secondary" }}>
+            {rule}
+          </Typography>
+        )}
       </Box>
     </Box>
   );
