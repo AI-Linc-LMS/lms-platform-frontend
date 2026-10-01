@@ -6,6 +6,8 @@ import interviewService, {
   type InterviewTurnPayload,
   type NextQuestion,
 } from "@/lib/services/interview.service";
+import { authUtils } from "@/lib/auth/auth-utils";
+import { config } from "@/lib/config";
 import { getAudioConstraints } from "@/lib/utils/audio-constraints";
 import { registerMediaStream } from "@/lib/utils/media-stream-registry";
 
@@ -615,8 +617,13 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
       let started;
       try {
         started = await interviewService.start(target);
-      } catch {
-        fail("Could not start the interview. Please try again.");
+      } catch (err) {
+        // The server's reason, when it gave one. A bare catch turned a specific 409 - "You
+        // already have an interview open" - into "Please try again", and Try again could not
+        // succeed while that sitting was still open. The candidate retried a message that was
+        // never going to change.
+        const detail = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+        fail(detail || "Could not start the interview. Please try again.");
         return;
       }
       sessionIdRef.current = started.session_id;
@@ -871,9 +878,49 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
 
   endRef.current = end;
 
-  // A candidate who closes the tab must not leave a live call running and billing.
+  /**
+   * Tell the SERVER the sitting is over, from a context that cannot await.
+   *
+   * The cleanup below closed the peer connection and the timers, which ends the call locally and
+   * nothing else: the server still held the sitting open. `StartInterviewView` refuses a new
+   * interview while the candidate holds one, so a candidate who closed the window got
+   * "Could not connect" on their next attempt and had to wait out the sweep.
+   *
+   * `fetch` with `keepalive` rather than `navigator.sendBeacon`, the same choice the tutor makes:
+   * a beacon cannot set an Authorization header, and inventing a second way to authenticate for
+   * one call is not a trade worth making. Fire-and-forget by construction - there is no response
+   * to read and nothing to retry.
+   */
+  const keepaliveEnd = useCallback((reason = "closed") => {
+    const sid = sessionIdRef.current;
+    if (!sid || closedRef.current) return;
+    closedRef.current = true;
+    try {
+      const token = authUtils.getAccessToken();
+      if (!token) return;
+      void fetch(`${config.apiBaseUrl}/interview/api/sessions/${sid}/end/`, {
+        method: "POST",
+        keepalive: true,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ reason }),
+      }).catch(() => undefined);
+    } catch {
+      /* the sweep settles it regardless */
+    }
+  }, []);
+
+  // A candidate who closes the tab must not leave a live call running and billing - nor a sitting
+  // the server still counts as open, which is what blocks their next interview.
   useEffect(() => {
+    const endOnExit = () => keepaliveEnd("closed");
+    window.addEventListener("beforeunload", endOnExit);
+    window.addEventListener("pagehide", endOnExit);
     return () => {
+      window.removeEventListener("beforeunload", endOnExit);
+      window.removeEventListener("pagehide", endOnExit);
       if (!closedRef.current) {
         try {
           micStreamRef.current?.getTracks().forEach((t) => t.stop());
@@ -882,12 +929,17 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
         } catch {
           /* nothing useful to do while unmounting */
         }
+        // Local teardown is not an ending. Every in-app route change - the browser's Back
+        // button, the sidebar, any Link - reaches here and nowhere else, and without this the
+        // server never learned the candidate had gone.
+        endOnExit();
       }
       if (flushTimerRef.current) clearInterval(flushTimerRef.current);
       if (responseWatchdogRef.current) clearTimeout(responseWatchdogRef.current);
       if (closingTimerRef.current) clearTimeout(closingTimerRef.current);
       if (openingTimerRef.current) clearTimeout(openingTimerRef.current);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return {
