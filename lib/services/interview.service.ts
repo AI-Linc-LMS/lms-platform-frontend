@@ -356,6 +356,17 @@ export const interviewService = {
   },
 
   /**
+   * Re-issue a credential for a sitting already in progress, after a reload.
+   *
+   * Creates no new sitting, authors no new paper, takes no new quota and does not extend the
+   * deadline. The questions already released stay released and the answers already given stay
+   * given - which is what makes it safe for an assessment: a reconnect is not a way to re-roll a
+   * paper somebody disliked.
+   */
+  reconnect: async (sessionId: string): Promise<StartedInterview & { resumed: true }> =>
+    (await apiClient.post(`${BASE}/sessions/${sessionId}/reconnect/`, {})).data,
+
+  /**
    * Record what the device check could NOT verify.
    *
    * The valuable distinction is not "did the camera see anything" but "did the check run at

@@ -6,6 +6,43 @@ import interviewService, {
   type InterviewTurnPayload,
   type NextQuestion,
 } from "@/lib/services/interview.service";
+/**
+ * Where a sitting in progress is remembered across a RELOAD.
+ *
+ * The room is reached as `/interview/room?template=...`, so the sitting id lives only in this page's
+ * memory. A refresh destroyed it, the room tried to START a new interview, and
+ * `StartInterviewView` refused - the candidate still held this one - so they got "Could not connect"
+ * and a Try again that could not work while that sitting was open.
+ *
+ * sessionStorage rather than localStorage: per TAB, which is exactly the scope of "this tab was
+ * reloaded". A second tab is a different context and must not adopt a sitting it never started.
+ */
+const LIVE_INTERVIEW_KEY = "ailinc:interview:live-session";
+
+export function rememberLiveInterview(id: string): void {
+  try {
+    window.sessionStorage.setItem(LIVE_INTERVIEW_KEY, id);
+  } catch {
+    /* private mode or blocked storage: resuming is a convenience, never a requirement */
+  }
+}
+
+export function forgetLiveInterview(): void {
+  try {
+    window.sessionStorage.removeItem(LIVE_INTERVIEW_KEY);
+  } catch {
+    /* as above */
+  }
+}
+
+export function recallLiveInterview(): string | null {
+  try {
+    return window.sessionStorage.getItem(LIVE_INTERVIEW_KEY);
+  } catch {
+    return null;
+  }
+}
+
 import { authUtils } from "@/lib/auth/auth-utils";
 import { config } from "@/lib/config";
 import { getAudioConstraints } from "@/lib/utils/audio-constraints";
@@ -614,19 +651,40 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
       setTranscript([]);
       setPhaseSafe("starting");
 
+      // REJOIN before starting. The room is `/interview/room?template=...`, so a reload arrives
+      // with no sitting id and used to try to START one - which the server refuses while the
+      // candidate still holds this one, giving "Could not connect" and a Try again that could not
+      // work. Rejoining creates no new paper, takes no new quota and does not extend the deadline,
+      // so the questions already released stay released and the answers already given stay given.
+      //
+      // It sets `started` and falls through to the same connection path below: a resumed sitting
+      // and a new one need identical WebRTC setup, and duplicating it is how the two drift.
       let started;
-      try {
-        started = await interviewService.start(target);
-      } catch (err) {
-        // The server's reason, when it gave one. A bare catch turned a specific 409 - "You
-        // already have an interview open" - into "Please try again", and Try again could not
-        // succeed while that sitting was still open. The candidate retried a message that was
-        // never going to change.
-        const detail = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-        fail(detail || "Could not start the interview. Please try again.");
-        return;
+      const existing = recallLiveInterview();
+      if (existing) {
+        try {
+          started = await interviewService.reconnect(existing);
+        } catch {
+          // Finished, or the server could not mint. Nothing to rejoin either way.
+          forgetLiveInterview();
+        }
+      }
+
+      if (!started) {
+        try {
+          started = await interviewService.start(target);
+        } catch (err) {
+          // The server's reason, when it gave one. A bare catch turned a specific 409 - "You
+          // already have an interview open" - into "Please try again", and Try again could not
+          // succeed while that sitting was still open. The candidate retried a message that was
+          // never going to change.
+          const detail = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
+          fail(detail || "Could not start the interview. Please try again.");
+          return;
+        }
       }
       sessionIdRef.current = started.session_id;
+      rememberLiveInterview(started.session_id);
       setQuestionCount(started.question_count);
       setPlannedMinutes(started.planned_minutes || 0);
       setPhaseSafe("connecting");
@@ -841,6 +899,8 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
   const end = useCallback(async () => {
     if (closedRef.current) return;
     closedRef.current = true;
+    // A deliberate ending must not leave an id a later reload would try to rejoin.
+    forgetLiveInterview();
     setPhaseSafe("ending");
 
     if (flushTimerRef.current) {
@@ -895,6 +955,7 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
     const sid = sessionIdRef.current;
     if (!sid || closedRef.current) return;
     closedRef.current = true;
+    forgetLiveInterview();
     try {
       const token = authUtils.getAccessToken();
       if (!token) return;
