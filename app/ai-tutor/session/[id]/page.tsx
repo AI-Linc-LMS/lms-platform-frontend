@@ -195,15 +195,36 @@ export default function TutorSessionPage() {
     if (phase === "ending" || phase === "ended") setQuiz(null);
   }, [phase]);
 
-  // R3 — `end()` is async and beforeunload does not await, so closing the tab never settled the
-  // session and the recap waited on the sweep. keepaliveEnd survives the unload.
+  /**
+   * R3 — `end()` is async and beforeunload does not await, so closing the tab never settled the
+   * session and the recap waited on the sweep. keepaliveEnd survives the unload.
+   *
+   * The cleanup now ends the session too, which is the part that was missing. `beforeunload` and
+   * `pagehide` only fire for a real page unload; an in-app route change fires neither. The header
+   * arrow was fine because it calls `leave()`, but the BROWSER back button, the sidebar, and every
+   * other in-app link just unmounted this page — and the hook's own cleanup, `teardown()`, is
+   * local: it drops the transport and the timers and never tells the server.
+   *
+   * So the learner walked out of a lesson the server still considered open, and the next start was
+   * refused: "You already have a tutor session open. Close it first." — on a screen whose only
+   * control was "Back to AI Tutor", which closed nothing.
+   *
+   * `keepaliveEnd` is the right call here rather than `end()`: a cleanup cannot await, and it is
+   * idempotent — it no-ops once `closedRef` is set, so a normal `leave()` does not double-end.
+   *
+   * Safe under `reactStrictMode`, which re-runs effects as mount → cleanup → mount in dev. That
+   * cleanup fires before `start()` has resolved, so `sessionIdRef` is still null and
+   * `keepaliveEnd` returns without doing anything; the remount does not start a second session
+   * either, because `launchedRef` is a ref on the same component instance and is already set.
+   */
   useEffect(() => {
-    const onBeforeUnload = () => tutor.keepaliveEnd("learner");
-    window.addEventListener("beforeunload", onBeforeUnload);
-    window.addEventListener("pagehide", onBeforeUnload);
+    const endOnExit = () => tutor.keepaliveEnd("learner");
+    window.addEventListener("beforeunload", endOnExit);
+    window.addEventListener("pagehide", endOnExit);
     return () => {
-      window.removeEventListener("beforeunload", onBeforeUnload);
-      window.removeEventListener("pagehide", onBeforeUnload);
+      window.removeEventListener("beforeunload", endOnExit);
+      window.removeEventListener("pagehide", endOnExit);
+      endOnExit();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
