@@ -392,10 +392,23 @@ export function TestResults({
               </>
             )}
 
-            {/* Show message if no test results but no error either */}
-            {!hasCompilationError && totalCount === 0 && testResults && (
+            {/* A run that produced no CASES.
+                `custom_input` is excluded deliberately. A custom-input run shares this
+                `testResults` state (AssessmentCodingLayout sets it with `custom_input: true`) and
+                by its nature carries no per-case results, so this panel read "Waiting for test
+                results..." and sat there for ever - while the Custom Input tab beside it had
+                already shown the output. Running the built-in tests replaced the state and the
+                message vanished, which is what made it look intermittent. There is nothing to wait
+                for: the custom run is finished and its output lives in the other tab. */}
+            {!hasCompilationError && totalCount === 0 && testResults && !testResults.custom_input && (
               <Alert severity="info" sx={{ width: "100%" }}>
                 Code executed. Waiting for test results...
+              </Alert>
+            )}
+            {!hasCompilationError && totalCount === 0 && testResults?.custom_input && (
+              <Alert severity="info" sx={{ width: "100%" }}>
+                That was a custom-input run - its output is in the Custom Input tab. Press Run to
+                check your code against the test cases.
               </Alert>
             )}
 

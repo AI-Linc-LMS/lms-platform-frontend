@@ -904,6 +904,33 @@ export default function AssessmentDetailPage({
             )}
           </Box>
 
+          {/* A submitted paper is a dead end without this.
+              The CTA beside it reads "Already submitted" and is disabled, which is correct - the
+              paper is over - but it left the learner nothing to do. They came back to look at how
+              they did. `show_result === false` is an admin withholding the result, so it stays
+              withheld here too. */}
+          {isAlreadySubmitted && !canReattempt && assessment?.show_result !== false && (
+            <LoadingButton
+              variant="outlined"
+              size="large"
+              startIcon={<IconWrapper icon="mdi:clipboard-text-search-outline" size={22} />}
+              onClick={() => router.push(withFrom(`/assessments/result/${slug}`, returnTo))}
+              sx={{
+                flexShrink: 0,
+                width: { xs: "100%", md: "auto" },
+                fontWeight: 800,
+                py: 1.5,
+                px: 3,
+                borderRadius: 2.5,
+                textTransform: "none",
+                fontSize: "1.02rem",
+                fontFamily: "var(--font-jakarta)",
+              }}
+            >
+              View result
+            </LoadingButton>
+          )}
+
           <LoadingButton
             variant="contained"
             size="large"

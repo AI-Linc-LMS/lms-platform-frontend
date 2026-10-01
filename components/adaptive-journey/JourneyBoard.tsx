@@ -62,6 +62,12 @@ function daysLeft(iso: string | null | undefined): number | null {
   return Math.ceil(d / 86_400_000);
 }
 
+/** Nodes whose completion has a result worth re-reading. */
+export function isAssessmentNode(n: JourneyNodeView): boolean {
+  return n.type === "checkpoint" || n.type === "week_final";
+}
+
+
 export function contentSummary(n: JourneyNodeView): string {
   if (n.type === "topic" && n.content) {
     const c = n.content;
@@ -213,6 +219,27 @@ function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; cou
                 Continue →
               </ButtonBase>
             )}
+          </Stack>
+        )}
+        {/* A finished assessment keeps an explicit way back to its result.
+            The card has always been clickable, but only the CURRENT step rendered a button, so a
+            learner who had submitted saw a completed row with no affordance at all - and the
+            assessment's own page answers an already-submitted paper with "Already submitted" and a
+            disabled button. `nodeHref` routes a done assessment straight to its result. */}
+        {done && isAssessmentNode(node) && navigable && (
+          <Stack direction="row" justifyContent="flex-end" sx={{ mt: 1.5 }}>
+            <ButtonBase
+              onClick={go}
+              sx={{
+                flexShrink: 0, px: 2, py: 0.85, borderRadius: 2, fontWeight: 800,
+                fontSize: "0.8rem", color: "#15803d", border: "1px solid #86efac",
+                bgcolor: "#f0fdf4", gap: 0.5,
+                [PHONE]: { minHeight: 44, fontSize: "0.9rem", borderRadius: 2.5 },
+              }}
+            >
+              <Icon icon="mdi:clipboard-text-search-outline" width={16} />
+              View result
+            </ButtonBase>
           </Stack>
         )}
         {locked && node.lockReason && (
