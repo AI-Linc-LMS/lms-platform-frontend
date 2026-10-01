@@ -142,7 +142,9 @@ export default function TutorSessionPage() {
       // resetting the clock and teaching the same concepts over again while billing both. If this
       // tab already had a lesson, rejoin it; `resumeIfPossible` returns false when the server says
       // there is nothing to rejoin, and then this starts a new one exactly as before.
-      if (await resumeIfPossible()) return;
+      // Optional-called: this page is rendered against a mocked hook in tests, and an older or
+      // partial hook must degrade to "start a new lesson" rather than crash the room.
+      if (await resumeIfPossible?.()) return;
       const started = await start({
         topic,
         level,
