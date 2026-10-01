@@ -119,7 +119,7 @@ export default function TutorSessionPage() {
     onError: (message) => showToast(message, "error"),
   });
 
-  const { start, end, phase, sessionId, cards } = tutor;
+  const { start, end, phase, sessionId, cards, resumeIfPossible } = tutor;
 
   // A quiz is deliberately silent - the tutor says one line and waits while the learner reads -
   // so the idle watchdog must not read that as an abandoned tab and hang up mid-question. The
@@ -137,6 +137,14 @@ export default function TutorSessionPage() {
     if (launchedRef.current || !topic) return;
     launchedRef.current = true;
     void (async () => {
+      // REJOIN first. This URL is `/ai-tutor/session/new?topic=...` for the whole lesson, so a
+      // refresh lands back here with nothing but the topic - and used to buy a second lesson,
+      // resetting the clock and teaching the same concepts over again while billing both. If this
+      // tab already had a lesson, rejoin it; `resumeIfPossible` returns false when the server says
+      // there is nothing to rejoin, and then this starts a new one exactly as before.
+      // Optional-called: this page is rendered against a mocked hook in tests, and an older or
+      // partial hook must degrade to "start a new lesson" rather than crash the room.
+      if (await resumeIfPossible?.()) return;
       const started = await start({
         topic,
         level,
@@ -146,7 +154,7 @@ export default function TutorSessionPage() {
       });
       if (started) setPlan(started.session.lesson_plan ?? []);
     })();
-  }, [level, minutes, slug, source, start, topic]);
+  }, [level, minutes, resumeIfPossible, slug, source, start, topic]);
 
   /** The dock holds one panel, so each toggle both selects and deselects. */
   const openEditor = useCallback(() => {

@@ -44,6 +44,9 @@ const tutor = vi.hoisted(() => ({
   start: vi.fn(async () => null),
   end: vi.fn(async () => undefined),
   keepaliveEnd: vi.fn(),
+  // The room asks to REJOIN before it starts anything. A mock without this crashes the page
+  // outright, which is how the resume work broke this file.
+  resumeIfPossible: vi.fn(async () => false),
   phase: "listening",
   sessionId: "s-1",
   cards: [],

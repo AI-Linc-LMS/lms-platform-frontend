@@ -25,6 +25,47 @@ import {
   type ContinuationWorld,
 } from "@/lib/hooks/tutorTurnTaking";
 import { registerMediaStream } from "@/lib/utils/media-stream-registry";
+/**
+ * Where a lesson in progress is remembered across a REFRESH.
+ *
+ * The room's URL is `/ai-tutor/session/new?topic=...` for the entire lesson - deliberately, because
+ * the global camera route guard tears media down on a pathname change, so rewriting it to the real
+ * session id mid-call would kill the microphone and the tutor's voice. The consequence is that a
+ * refresh has nothing to resume FROM: the page remounts, sees a topic, and starts a brand new
+ * lesson. The learner gets their timer reset and the same concepts taught again, and the tenant is
+ * billed for both. Production, in four minutes on one topic: five sessions, 73s + 19s + 21s + 59s +
+ * 43s, each billed separately.
+ *
+ * sessionStorage rather than localStorage: it is per TAB and dies with it, which is exactly the
+ * scope of "this tab was refreshed". A second tab is a different context and must not adopt a
+ * lesson it never started.
+ */
+const LIVE_SESSION_KEY = "ailinc:tutor:live-session";
+
+export function rememberLiveSession(id: string): void {
+  try {
+    window.sessionStorage.setItem(LIVE_SESSION_KEY, id);
+  } catch {
+    /* private mode, blocked storage: resume is a convenience, never a requirement */
+  }
+}
+
+export function forgetLiveSession(): void {
+  try {
+    window.sessionStorage.removeItem(LIVE_SESSION_KEY);
+  } catch {
+    /* as above */
+  }
+}
+
+export function recallLiveSession(): string | null {
+  try {
+    return window.sessionStorage.getItem(LIVE_SESSION_KEY);
+  } catch {
+    return null;
+  }
+}
+
 import { authUtils } from "@/lib/auth/auth-utils";
 import { config } from "@/lib/config";
 
@@ -1538,6 +1579,7 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     const sid = sessionIdRef.current;
     if (!sid || closedRef.current) return;
     closedRef.current = true;
+    forgetLiveSession();
     try {
       const token = authUtils.getAccessToken();
       if (!token) return;
@@ -1559,6 +1601,7 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     async (reason = "learner") => {
       if (closedRef.current) return;
       closedRef.current = true;
+      forgetLiveSession();
       setPhase("ending");
       const sid = sessionIdRef.current;
       teardown();
@@ -1810,6 +1853,53 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
   }, []);
 
   /**
+   * Rejoin the lesson this tab was already in, after a REFRESH.
+   *
+   * Returns true when the lesson was resumed, false when there was nothing to resume or the server
+   * says it is over - in which case the caller starts a new one as before.
+   *
+   * This is the whole fix for "refresh restarts the timer and teaches the concepts again". The
+   * reconnect endpoint already does exactly the right thing - it re-mints a credential for the SAME
+   * session, takes no new reservation, does not extend the deadline, and primes the model with where
+   * the lesson had reached. Nothing could call it after a refresh because the session id lived only
+   * in a ref, which the refresh destroyed.
+   *
+   * Like `start`, it must run from a user gesture: it opens a microphone and plays audio.
+   */
+  const resumeIfPossible = useCallback(async (): Promise<boolean> => {
+    const sid = recallLiveSession();
+    if (!sid) return false;
+
+    setError(null);
+    setPhase("starting");
+    closedRef.current = false;
+    try {
+      const again = await aiTutorService.reconnect(sid);
+      sessionIdRef.current = sid;
+      setSessionId(sid);
+      setPhase("connecting");
+      await connectRef.current?.(again.client_secret, again.realtime.calls_url);
+      setRemainingSeconds(again.max_seconds);
+      return true;
+    } catch (err) {
+      // Closed, out of reconnects, or past its deadline: there is nothing to rejoin, and the
+      // learner should simply get a fresh lesson rather than an error about the old one.
+      forgetLiveSession();
+      sessionIdRef.current = null;
+      setSessionId(null);
+      setPhase("idle");
+      const code = (err as { response?: { data?: { code?: string } } })?.response?.data?.code;
+      if (code && code !== "session_closed" && code !== "deadline_passed"
+          && code !== "reconnect_limit") {
+        // An unexpected failure is worth knowing about, but must not block the new lesson.
+        console.warn("[tutor] could not resume", code);
+      }
+      return false;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
    * Must be called from a real user gesture. iOS requires one to start audio playback,
    * and browsers require one for `getUserMedia`; doing both in the same handler is what
    * avoids the "permission granted but silent" failure.
@@ -1824,6 +1914,8 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
         const started = await aiTutorService.startSession(input);
         sessionIdRef.current = started.session.id;
         setSessionId(started.session.id);
+        // So a refresh rejoins this lesson instead of buying another one.
+        rememberLiveSession(started.session.id);
         questionPoolRef.current = started.question_pool ?? [];
         // What the server wrote that pool in. Older backends do not send it; English is what
         // they always meant, and it is what the shared question bank is written in.
@@ -1955,6 +2047,7 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
     idleWarning,
     confirmPresence,
     keepaliveEnd,
+    resumeIfPossible,
     start,
     end,
     getLevels,
