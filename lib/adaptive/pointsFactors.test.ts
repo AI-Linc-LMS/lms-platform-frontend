@@ -57,6 +57,20 @@ describe("quiz points card", () => {
     expect(displayTopicEarned(rows)).toBe(275);
   });
 
+  it("says which attempt a retried item is paid on", () => {
+    // The learner got it wrong, came back, and got it right. The points are their BEST attempt and
+    // the chips belong to the attempt that set them, so the card has to name that attempt - or it
+    // reads as the bug it replaced: full marks beside a figure that looks like the first try's.
+    const item = quiz({ earned: 250, breakdown: { correctness_factor: 1, attempt_no: 2 } });
+    expect(texts(item)).toEqual(["250 base", "100% correct", "best of 2 attempts"]);
+    expect(pointsFactors(item)?.earned).toBe(250);
+  });
+
+  it("says nothing about attempts on a first-attempt item", () => {
+    expect(texts(quiz({ breakdown: { attempt_no: 1 } }))).toEqual(["250 base", "64% correct"]);
+    expect(texts(quiz({}))).toEqual(["250 base", "64% correct"]);
+  });
+
   it("an unearned item has no chips", () => {
     expect(pointsFactors({ ...quiz({}), breakdown: undefined, status: "available", earned: 0 })).toBeNull();
   });

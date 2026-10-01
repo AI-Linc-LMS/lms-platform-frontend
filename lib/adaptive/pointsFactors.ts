@@ -51,5 +51,9 @@ export function pointsFactors(item: PointsBreakdownItem): { factors: PointsFacto
   }
   if (b.late_penalty_mult < 1) factors.push({ text: `late −${Math.round((1 - b.late_penalty_mult) * 100)}%`, tone: "warn" });
   if (b.weight > 1) factors.push({ text: `×${b.weight} weight` });
+  // A retried item shows which attempt it is paid on, so the trail explains itself: the factors
+  // belong to the attempt that set the points, and the points are the learner's best.
+  const attempt = b.attempt_no ?? 1;
+  if (attempt > 1) factors.push({ text: `best of ${attempt} attempts`, tone: "good" });
   return { factors, earned: displayEarned(item) };
 }

@@ -305,6 +305,9 @@ export interface PointsBreakdownItem {
     late_penalty_mult: number;
     weight: number;
     earned_at: string | null;
+    /** Which attempt set this item's points. Above 1 means the learner came back and did better -
+     *  they hold their BEST attempt, which is what `earned` is. Absent from an older server. */
+    attempt_no?: number;
   };
 }
 

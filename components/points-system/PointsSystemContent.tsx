@@ -98,6 +98,14 @@ const DIFF_STYLE: Record<string, { color: string; bg: string }> = {
   Medium: { color: "#b45309", bg: "#fffbeb" },
   Hard: { color: "#b91c1c", bg: "#fef2f2" },
 };
+/** Full-credit bands first, then each step down - the last style repeats for the floor. */
+const RETRY_STYLE = [
+  { color: "#15803d", bg: "#f0fdf4", border: "#bbf7d0" },
+  { color: "#0369a1", bg: "#f0f9ff", border: "#bae6fd" },
+  { color: "#b45309", bg: "#fffbeb", border: "#fde68a" },
+  { color: "#be123c", bg: "#fff1f2", border: "#fecdd3" },
+];
+
 const LATE_STYLE = [
   { color: "#15803d", bg: "#f0fdf4", border: "#bbf7d0" },
   { color: "#b45309", bg: "#fffbeb", border: "#fde68a" },
@@ -251,6 +259,40 @@ export function PointsSystemContent() {
           </Box>
         </Box>
       </Reveal>
+
+      {/* What a retry is worth. The learner complaint this answers: a wrong first attempt used to
+          pin the item at zero however many times they came back and got it right. */}
+      {data.retry && (
+        <Reveal>
+          <Box sx={{ ...CARD, p: 2.25, mb: 4, "&:hover": undefined }}>
+            <SectionHeader
+              icon="mdi:refresh"
+              title="Retry an item"
+              subtitle="You keep your best attempt - always."
+              gradient="linear-gradient(135deg, #0ea5e9, #6366f1)"
+            />
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+              {data.retry.bands.map((b, i) => {
+                const s = RETRY_STYLE[i] ?? RETRY_STYLE[RETRY_STYLE.length - 1];
+                return (
+                  <Box key={b.label} sx={{ flex: 1, p: 1.5, borderRadius: 2.5, bgcolor: s.bg, border: `1px solid ${s.border}` }}>
+                    <Typography sx={{ fontWeight: 800, fontSize: "0.82rem", color: "#0f172a" }}>{b.label}</Typography>
+                    <Typography sx={{ fontSize: phoneText(0.66), color: "#94a3b8" }}>{b.note || "\u00a0"}</Typography>
+                    <Typography sx={{ fontWeight: 900, fontSize: "1.4rem", color: s.color, mt: 0.5 }}>×{b.mult.toFixed(1)}</Typography>
+                    <Typography sx={{ fontSize: phoneText(0.7), color: s.color, fontWeight: 700 }}>{b.caption}</Typography>
+                  </Box>
+                );
+              })}
+            </Stack>
+            <Box sx={{ mt: 1.5, p: 1.25, borderRadius: 2, bgcolor: "#f8fafc" }}>
+              <Typography sx={{ fontSize: phoneText(0.74), color: "#475569", lineHeight: 1.5 }}>
+                <b>Your best attempt counts.</b> {data.retry.note} Applies to{" "}
+                {data.retry.activities.join(" and ")}.
+              </Typography>
+            </Box>
+          </Box>
+        </Reveal>
+      )}
 
       {/* Worked example */}
       <Reveal>

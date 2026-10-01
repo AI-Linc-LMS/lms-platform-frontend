@@ -40,6 +40,16 @@ export interface LateBand {
   caption: string;
 }
 
+/** What a retry is worth, and the rule that a learner keeps their best attempt. */
+export interface PointsRetry {
+  /** The last attempt still worth full value. */
+  fullThrough: number;
+  /** Which activities the ladder applies to (coding, quiz). */
+  activities: string[];
+  bands: LateBand[];
+  note: string;
+}
+
 export interface PointsLate {
   windowDays: number;
   halfWindowDays: number;
@@ -70,5 +80,7 @@ export interface PointsSystem {
   decay: { quizEasy: DecaySpec; codingHard: DecaySpec };
   difficulty: DifficultyRow[];
   late: PointsLate;
+  /** Absent from an older server - render nothing rather than inventing a rule. */
+  retry?: PointsRetry;
   workedExample: WorkedExample;
 }
