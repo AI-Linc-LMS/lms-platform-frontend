@@ -422,6 +422,12 @@ describe("the 10-second save", () => {
         signals.watch_mode === "normal" && signals.current_timestamp === undefined ? held.promise : Promise.resolve(session("rewatch")));
       render(<VideoCompanion configId={800} />);
       await screen.findByText(/^0:00 \//);
+      // Wait for the 10s interval to actually be REGISTERED, not merely for the first paint.
+      // The component registers it from an effect that runs after an awaited call, so on a loaded
+      // machine the paint can land first and `ticks` is still empty - and `ticks[-1]()` is
+      // `undefined()`, which threw "ticks[(ticks.length - 1)] is not a function" in CI on two
+      // separate days while passing locally every time.
+      await waitFor(() => expect(ticks.length).toBeGreaterThan(0));
       const tick = () => {
         ticks[ticks.length - 1]();
         return api.sync.mock.calls[api.sync.mock.calls.length - 1][1] as Record<string, unknown>;
