@@ -50,6 +50,10 @@ export function PointsInfo({ size = 15, color = "#94a3b8" }: { size?: number; co
             Every activity awards points - harder + faster earns more, and late submissions are
             penalised. It all rolls up to the leaderboard.
           </Typography>
+          <Typography sx={{ mt: 0.75, fontSize: "0.78rem", color: "#64748b", lineHeight: 1.55 }}>
+            Got something wrong? Come back and get it right - a second attempt still pays in full,
+            and <b>your best attempt is always what counts</b>.
+          </Typography>
           <ButtonBase
             onClick={() => { close(); router.push("/points-system"); }}
             sx={{ mt: 1.25, fontWeight: 800, fontSize: "0.8rem", color: "#7c3aed", gap: 0.4 }}
