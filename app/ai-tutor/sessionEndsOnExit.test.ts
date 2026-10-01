@@ -64,11 +64,23 @@ describe("the tutor room", () => {
     expect(fn).toMatch(/closedRef\.current = true;/);
   });
 
-  it("sets the session id only once a session has actually started", () => {
+  it("sets the session id only where a session has actually been obtained", () => {
     // What makes the unmount ender safe under reactStrictMode: at the simulated cleanup there is
     // no session id yet, so it no-ops.
+    //
+    // There are two such places now - `start` mints a new lesson and `resumeIfPossible` rejoins
+    // one after a refresh - and the property is NOT "there is exactly one" (this test used to say
+    // that, and the resume work rightly broke it). It is that every assignment happens AFTER a
+    // server round-trip, so none of them can run during a mount.
     const src = read(HOOK);
-    expect(src.match(/sessionIdRef\.current = /g) ?? []).toHaveLength(1);
-    expect(src).toMatch(/sessionIdRef\.current = started\.session\.id;/);
+    const sites = src.match(/sessionIdRef\.current = (?!null)[^;]+;/g) ?? [];
+    expect(sites.length).toBeGreaterThan(0);
+    expect([...sites].sort()).toEqual([
+      "sessionIdRef.current = sid;",
+      "sessionIdRef.current = started.session.id;",
+    ]);
+    // Each one sits directly after the call that produced its id.
+    expect(src).toMatch(/await aiTutorService\.startSession\(input\);\s*\n\s*sessionIdRef\.current = started\.session\.id;/);
+    expect(src).toMatch(/await aiTutorService\.reconnect\(sid\);\s*\n\s*sessionIdRef\.current = sid;/);
   });
 });
