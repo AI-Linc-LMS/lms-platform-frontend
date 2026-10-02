@@ -236,9 +236,14 @@ describe("what counts as a question", () => {
  * savannas" is the real shape. So the directive is the fix, and its content is what to pin.
  */
 describe("a regenerated turn is told what it is for", () => {
-  it("tells a continuation to move on and not repeat", () => {
+  it("gives the regenerated turn a brief, and forbids repeating", () => {
+    // This asserted /forward/i, which pinned the very wording that produced "it is automatically
+    // going to the next topic". What the directive is FOR is that the turn is not a bare
+    // response.create - it says what to do and what not to do. See the aim-of-the-continuation
+    // block below for where it now points.
     const d = continuationDirective("");
-    expect(d).toMatch(/forward/i);
+    expect(d).toMatch(/\[Session control\]/);
+    expect(d).toMatch(/Carry on teaching/i);
     expect(d).toMatch(/do not repeat/i);
     expect(d).toMatch(/already covered/i);
   });
@@ -301,5 +306,105 @@ describe("the language survives a regenerated response", () => {
     // follows, so the pin has to name that case explicitly.
     const pin = languagePinDirective("Hindi");
     expect(pin).toMatch(/tool|diagram|slide|show|picture/i);
+  });
+});
+
+/**
+ * The reported bug: "it is automatically going to the next topic while the previous topic is
+ * still being discussed".
+ *
+ * Measured on production before the fix: 104 turns across 50 sessions where the tutor asked
+ * something and then spoke again with no answer, median gap ten seconds - and nine where it said
+ * in so many words that it was waiting, then moved on nine to twelve seconds later.
+ *
+ * The mechanism was not the timer length. It was that `askedQuestion` is read off the text of
+ * the turn that armed the timer, and the nudge turn ("I am waiting for your answer, take your
+ * time") does not end in a question mark. So the question was forgotten, the wait dropped to the
+ * seven-second deadlock timer, and `continuationDirective` - which opens "you have not asked
+ * them anything" and says "Move FORWARD to the next part of your plan" - took the lesson onward.
+ */
+describe("a question stays unanswered until the learner answers it", () => {
+  const ARMED = 1_000_000;
+
+  function world(over: Partial<ContinuationWorld> = {}): ContinuationWorld {
+    return {
+      closed: false,
+      quizOpen: false,
+      responseActive: false,
+      responseQueued: false,
+      lastLearnerVoiceAt: 0,
+      count: 0,
+      askedQuestion: false,
+      nudges: 0,
+      ...over,
+    };
+  }
+
+  it("nudges once when the question goes unanswered", () => {
+    const w = world({ askedQuestion: true });
+    expect(decideContinuation(w, ARMED, ARMED + ANSWER_WAIT_MS)).toBe("nudge");
+    expect(w.nudges).toBe(1);
+  });
+
+  it("does NOT move the lesson on after the nudge", () => {
+    // The nudge turn has no question mark, so the caller may hand back askedQuestion: false.
+    // The outstanding question is what counts, and `nudges` is the record of it.
+    const w = world({ askedQuestion: false, nudges: 1 });
+    expect(decideContinuation(w, ARMED, ARMED + ANSWER_WAIT_MS)).toBe("silence");
+  });
+
+  it("keeps the long wait for a question it has already nudged about", () => {
+    expect(waitFor({ askedQuestion: false, nudges: 1 })).toBe(ANSWER_WAIT_MS);
+    expect(waitFor({ askedQuestion: false, nudges: 0 })).toBe(AUTO_CONTINUE_MS);
+  });
+
+  it("gives the floor back the moment the learner speaks", () => {
+    const w = world({ askedQuestion: false, nudges: 1, lastLearnerVoiceAt: ARMED + 500 });
+    expect(decideContinuation(w, ARMED, ARMED + ANSWER_WAIT_MS)).toBe("silence");
+    expect(w.nudges).toBe(0);
+    // And a later pause with no question is a deadlock again, which SHOULD be broken.
+    const after = world({ askedQuestion: false, nudges: 0 });
+    expect(decideContinuation(after, ARMED, ARMED + AUTO_CONTINUE_MS)).toBe("continue");
+  });
+
+  it("still breaks a genuine deadlock, where nothing was asked", () => {
+    const w = world();
+    expect(decideContinuation(w, ARMED, ARMED + AUTO_CONTINUE_MS)).toBe("continue");
+    expect(w.count).toBe(1);
+  });
+});
+
+/**
+ * What the continuation is AIMED at.
+ *
+ * The directive used to say "Move FORWARD to the next part of your plan" and "teach the next
+ * thing". "Plan" has exactly one referent in the assembled instructions - the ordered agenda -
+ * so seven seconds of silence told the tutor to start the next TOPIC. The persona itself calls
+ * that silence normal ("usually they are listening, or reading what you put on the canvas"), and
+ * the directive is injected as a `user` item, so it is the freshest instruction the model holds.
+ */
+describe("the continuation keeps the lesson where it is", () => {
+  it("asks for the current section, not the next one", () => {
+    const d = continuationDirective("");
+    expect(d).toMatch(/Carry on teaching the section you are in the middle of/);
+    expect(d).toMatch(/Do NOT start the next section of your plan/);
+  });
+
+  it("no longer tells the tutor to advance the plan", () => {
+    const d = continuationDirective("");
+    expect(d).not.toMatch(/Move FORWARD/i);
+    expect(d).not.toMatch(/next part of your plan/i);
+    expect(d).not.toMatch(/teach the next thing/i);
+  });
+
+  it("keeps the anti-repetition clauses that earned their place", () => {
+    // Removing these would reopen "the AI Tutor repeatedly explains the same concepts".
+    const d = continuationDirective("");
+    expect(d).toMatch(/Do not repeat, restate or re-explain/);
+    expect(d).toMatch(/do not summarise what you just said/);
+  });
+
+  it("still carries the language clause", () => {
+    expect(continuationDirective("Hindi")).toMatch(/Continue in Hindi/);
   });
 });

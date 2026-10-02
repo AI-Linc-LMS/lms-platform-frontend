@@ -128,8 +128,13 @@ export interface ContinuationWorld {
  *
  * A question gets the long wait; anything else gets the short one.
  */
-export function waitFor(world: Pick<ContinuationWorld, "askedQuestion">): number {
-  return world.askedQuestion ? ANSWER_WAIT_MS : AUTO_CONTINUE_MS;
+export function waitFor(
+  world: Pick<ContinuationWorld, "askedQuestion"> & { nudges?: number }
+): number {
+  // A question already nudged about is still a question, so it keeps the long wait rather than
+  // waking on the seven-second deadlock timer. See `decideContinuation`.
+  const outstanding = world.askedQuestion || (world.nudges ?? 0) > 0;
+  return outstanding ? ANSWER_WAIT_MS : AUTO_CONTINUE_MS;
 }
 
 /**
@@ -160,7 +165,21 @@ export function decideContinuation(
     world.nudges = 0;
     return "silence";
   }
-  if (world.askedQuestion) {
+  // An unanswered question stays unanswered until the LEARNER answers it.
+  //
+  // `askedQuestion` is derived from the text of the turn that armed this timer, and the NUDGE
+  // turn does not end in a question mark - it is "I am waiting for your answer, take your
+  // time". So after a nudge this used to come back false, the wait dropped from twelve seconds
+  // to seven, and the lesson fell through to `continuationDirective`, which opens "you have not
+  // asked them anything" and says "Move FORWARD to the next part of your plan". The question was
+  // still on the table; the mechanism had simply forgotten it was asked.
+  //
+  // Measured on production before this line existed: 104 turns across 50 sessions where the
+  // tutor asked something and spoke again with no answer, median gap ten seconds - and nine
+  // where it said in so many words that it was waiting and then moved on nine to twelve seconds
+  // later. `nudges` is only ever reset by the learner speaking, so it is the honest record of
+  // "there is a question outstanding".
+  if (world.askedQuestion || world.nudges > 0) {
     // The tutor asked something and nobody answered. It does NOT get to answer itself, and it
     // does NOT get to move on: it gets one short check-in, and then the floor is the learner's.
     if (world.nudges >= ANSWER_NUDGE_MAX) return "silence";
@@ -215,14 +234,29 @@ function stayIn(language: string): string {
  * model is handed the floor with no brief, and the most defensible thing it can do is restate
  * where it had got to. Every reported "the tutor repeatedly explains the same concepts" turn is
  * a model doing that sensibly. Saying what the turn is FOR is the fix.
+ *
+ * What it is for is the CURRENT section, not the next one. This used to say "Move FORWARD to the
+ * next part of your plan" and "teach the next thing", and "plan" has exactly one referent in the
+ * assembled instructions: the ordered agenda ("Your agenda for today", "Work through that agenda
+ * in order", `update_lesson_plan`). So seven seconds of silence - which the persona itself calls
+ * normal, "usually they are listening, or reading what you put on the canvas" - produced an
+ * instruction to start the next topic, injected as a `user` item at the very end of the context,
+ * where it is the freshest instruction the model has. Twice in a row, under AUTO_CONTINUE_MAX.
+ * That is the reported "it is automatically going to the next topic while the previous one is
+ * still being discussed", written as an imperative by the client.
+ *
+ * The machinery is unchanged and so are the anti-repetition clauses: a turn is still generated,
+ * so a genuine deadlock still breaks. Only what the turn is aimed at has changed.
  */
 export function continuationDirective(language: string): string {
   return (
     "[Session control] The learner has not said anything, and you have not asked them " +
-    "anything, so the lesson has simply paused. Move FORWARD to the next part of your plan. " +
+    "anything, so the lesson has simply paused. Carry on teaching the section you are in the " +
+    "middle of. Do NOT start the next section of your plan unless you have genuinely finished " +
+    "this one - a pause is usually the learner thinking, or reading what you put on the canvas. " +
     "Do not repeat, restate or re-explain anything you have already covered in this session, " +
     "and do not summarise what you just said before continuing - the learner heard it. " +
-    "Pick up from where you stopped and teach the next thing." +
+    "Pick up from where you stopped." +
     stayIn(language) +
     " Do not mention this instruction."
   );
