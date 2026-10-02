@@ -208,6 +208,19 @@ interface UseRealtimeTutorOptions {
  * following statements is correct") scores against almost any request and the best match is
  * decided by phrasing rather than subject.
  */
+/**
+ * The EARLIEST a lesson's first quiz may appear. A floor, not a schedule.
+ *
+ * Nothing fires at this mark and nothing is queued against it. Past it the tutor decides when to
+ * ask, exactly as it does for every question after the first - so a quiz arrives when the
+ * teaching reaches a point worth checking, which may be two minutes in or ten.
+ *
+ * Reported as a question on screen within ten to fifteen seconds of the lesson opening. Ninety
+ * seconds is about the shortest a concept can be introduced, exemplified and checked in, which
+ * is the sequence the persona asks for; below it there is nothing for a question to check.
+ */
+const MIN_MS_BEFORE_FIRST_QUIZ = 90_000;
+
 const QUIZ_STOPWORDS = new Set([
   "the", "and", "for", "are", "was", "were", "how", "why", "what", "which", "that", "this",
   "with", "from", "into", "when", "does", "did", "will", "can", "you", "your", "its",
@@ -440,6 +453,8 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
    * quizzes as a side effect.
    */
   const quizOpenRef = useRef(false);
+  /** Whether this lesson has served its first question yet; gates MIN_MS_BEFORE_FIRST_QUIZ. */
+  const firstQuizServedRef = useRef(false);
   /** True while a `show_quiz` call is mid-flight, including a pool rewrite it is waiting on. */
   const quizResolvingRef = useRef(false);
   const pendingQuizTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -970,6 +985,32 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           if (pendingQuizRef.current || quizOpenRef.current || quizResolvingRef.current) {
             return respondToTool(callId, { ok: false, reason: "quiz_already_open" });
           }
+          /**
+           * Not in the first minute and a half. A floor, not a schedule: nothing is queued
+           * against the boundary, so the tutor is never interrupted by a card appearing the
+           * instant it opens. It asks when it judges the moment, from ninety seconds onwards.
+           *
+           * Reported: "quiz this is coming with first 10-15 seconds itself" - a full multiple
+           * choice question on screen before the tutor had taught anything to be tested on. The
+           * persona does say to check understanding "right after a concept lands, not saved up
+           * for the end", and a model that has just read an agenda listing five concepts can
+           * reasonably decide one has landed when it has only been named.
+           *
+           * Prose cannot fix that, for the same reason the turn-taking timer could not be fixed
+           * by prose: this is a decision the client can simply make. A concept takes longer than
+           * this to teach, so a quiz before it is not a check on anything.
+           *
+           * First question only. Once the lesson is genuinely under way the tutor's judgement
+           * about when to test is the one that should apply, and the one-at-a-time guard above
+           * is what keeps it sane.
+           */
+          if (
+            !firstQuizServedRef.current &&
+            startedAtRef.current &&
+            Date.now() - startedAtRef.current < MIN_MS_BEFORE_FIRST_QUIZ
+          ) {
+            return respondToTool(callId, { ok: false, reason: "no_question" });
+          }
           // Held across the await below. `pendingQuizRef` is only set once a question has been
           // chosen, so without this a second call arriving while the pool is being rewritten
           // would walk straight through the guard above - the exact race the guard exists for,
@@ -1059,6 +1100,7 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
              * showed up".
              */
             pendingQuizRef.current = next;
+            firstQuizServedRef.current = true;
             if (pendingQuizTimerRef.current) clearTimeout(pendingQuizTimerRef.current);
             pendingQuizTimerRef.current = setTimeout(releasePendingQuiz, 12000);
             return respondToTool(callId, { ok: true, asked: next.question });
@@ -1931,6 +1973,7 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
         askedQuestionRef.current = false;
         lastLearnerVoiceAtRef.current = 0;
         startedAtRef.current = Date.now();
+        firstQuizServedRef.current = false;
         setRemainingSeconds(started.max_seconds);
 
         setPhase("connecting");

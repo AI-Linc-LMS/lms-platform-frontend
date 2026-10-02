@@ -87,6 +87,18 @@ function fakeAnalyser() {
   };
 }
 
+/** Move Date.now past the first-quiz window, leaving every real timer alone. */
+let nowSpy: ReturnType<typeof vi.spyOn> | null = null;
+function skipAhead(ms = 120_000) {
+  const real = Date.now();
+  nowSpy?.mockRestore();
+  nowSpy = vi.spyOn(Date, "now").mockImplementation(() => real + ms);
+}
+function restoreClock() {
+  nowSpy?.mockRestore();
+  nowSpy = null;
+}
+
 describe("show_quiz never replaces a question the learner is still on", () => {
   beforeEach(() => {
     sent = [];
@@ -118,7 +130,10 @@ describe("show_quiz never replaces a question the learner is still on", () => {
     });
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    restoreClock();
+  });
 
   /** Bring the hook up to a live data channel with a loaded question pool.
    *  `start` resolves before the SDP exchange finishes, so wait for the hook's own opening
@@ -135,6 +150,15 @@ describe("show_quiz never replaces a question the learner is still on", () => {
       await Promise.resolve();
     });
     await waitFor(() => expect(hook.result.current.phase).toBe("listening"));
+    // A lesson has to have been running before its first question may appear
+    // (MIN_MS_BEFORE_FIRST_QUIZ): a quiz in the opening seconds has nothing to check, and was
+    // reported as "quiz this is coming with first 10-15 seconds itself". These tests are about
+    // which question is chosen and in what language, so they run their lesson past that point,
+    // the way a real one does.
+    //
+    // Done by moving the CLOCK rather than with fake timers: the hook stamped its start from the
+    // real Date.now a moment ago, and faking timers wholesale disturbs vitest's own worker RPC.
+    skipAhead();
     return hook;
   }
 
