@@ -139,9 +139,20 @@ function fakeAnalyser() {
   };
 }
 
+/** Move Date.now past the first-quiz window, leaving every real timer alone. */
+let nowSpy: ReturnType<typeof vi.spyOn> | null = null;
+function skipAhead(ms = 120_000) {
+  const real = Date.now();
+  nowSpy?.mockRestore();
+  nowSpy = vi.spyOn(Date, "now").mockImplementation(() => real + ms);
+}
+function restoreClock() {
+  nowSpy?.mockRestore();
+  nowSpy = null;
+}
+
 describe("the quiz follows the language the lesson is actually in", () => {
   beforeEach(() => {
-    vi.useFakeTimers({ shouldAdvanceTime: true });
     sent = [];
     startSession.mockResolvedValue({
       session: { id: "sess-1", planned_seconds: 1200 },
@@ -194,7 +205,7 @@ describe("the quiz follows the language the lesson is actually in", () => {
 
   afterEach(() => {
     vi.unstubAllGlobals();
-    vi.useRealTimers();
+    restoreClock();
   });
 
   async function connected(onQuiz = vi.fn()) {
@@ -216,7 +227,10 @@ describe("the quiz follows the language the lesson is actually in", () => {
     // reported as "quiz this is coming with first 10-15 seconds itself". These tests are about
     // which question is chosen and in what language, so they run their lesson past that point,
     // the way a real one does.
-    vi.setSystemTime(Date.now() + 120_000);
+    //
+    // Done by moving the CLOCK rather than with fake timers: the hook stamped its start from the
+    // real Date.now a moment ago, and faking timers wholesale disturbs vitest's own worker RPC.
+    skipAhead();
     return hook;
   }
 

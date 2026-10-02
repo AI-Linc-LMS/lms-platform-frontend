@@ -209,7 +209,11 @@ interface UseRealtimeTutorOptions {
  * decided by phrasing rather than subject.
  */
 /**
- * How long a lesson must have been running before its FIRST quiz may appear.
+ * The EARLIEST a lesson's first quiz may appear. A floor, not a schedule.
+ *
+ * Nothing fires at this mark and nothing is queued against it. Past it the tutor decides when to
+ * ask, exactly as it does for every question after the first - so a quiz arrives when the
+ * teaching reaches a point worth checking, which may be two minutes in or ten.
  *
  * Reported as a question on screen within ten to fifteen seconds of the lesson opening. Ninety
  * seconds is about the shortest a concept can be introduced, exemplified and checked in, which
@@ -982,7 +986,9 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
             return respondToTool(callId, { ok: false, reason: "quiz_already_open" });
           }
           /**
-           * Not in the first minute and a half.
+           * Not in the first minute and a half. A floor, not a schedule: nothing is queued
+           * against the boundary, so the tutor is never interrupted by a card appearing the
+           * instant it opens. It asks when it judges the moment, from ninety seconds onwards.
            *
            * Reported: "quiz this is coming with first 10-15 seconds itself" - a full multiple
            * choice question on screen before the tutor had taught anything to be tested on. The

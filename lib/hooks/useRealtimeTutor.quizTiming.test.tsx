@@ -113,6 +113,8 @@ function fakeAnalyser() {
 }
 
 describe("the first question waits until there is something to check", () => {
+  // A FLOOR, not a schedule. These assert that nothing is served before it and that the tutor's
+  // own request is honoured after it - never that a question appears AT the boundary.
   const T0 = 1_760_000_000_000;
 
   beforeEach(() => {
