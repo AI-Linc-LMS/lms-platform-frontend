@@ -14,10 +14,17 @@ export function ReportIssueFAB() {
   const { isAuthenticated, user } = useAuth();
   const [showReportDialog, setShowReportDialog] = useState(false);
 
-  // Exclude routes: assessments/[slug]/take and mock-interview/[id]/take
+  // Routes where a floating support button is in the way rather than available: the ones a
+  // learner is IN the middle of something on, with their own controls at the bottom of the
+  // screen. A live tutor lesson is one of those - it ends up beside "End session", which is the
+  // last button anybody wants to miss by a few pixels.
+  //
+  // `new` is deliberately still covered: that is the setup form, where somebody who cannot get a
+  // lesson started is exactly who needs support. The recap is a normal page and keeps it too.
   const excludedRoutes = [
     /^\/assessments\/[^/]+\/take$/,
     /^\/mock-interview\/[^/]+\/take$/,
+    /^\/ai-tutor\/session\/(?!new$)[^/]+$/,
   ];
 
   const shouldHide = excludedRoutes.some((pattern) =>
