@@ -20,11 +20,14 @@ function stamp(ms: number): string {
  * indented rows under a role label - which is a log, not a conversation. Sides and avatars cost
  * nothing and make it legible at a glance: who said the long thing, who said "ok".
  *
- * Collapsed by default. It is the longest thing on the page and the least often wanted; the
- * search is here because when somebody does want it, they want one sentence out of it.
+ * Open by default. It was collapsed on the reasoning that it is the longest thing on the page
+ * and the least often wanted - but a lesson you cannot see is not an argument for hiding the one
+ * record of what was said in it, and a learner who has to press a button to find out whether
+ * their transcript survived has already been given a reason to doubt it. The search is here
+ * because once it is open, what somebody usually wants is one sentence out of it.
  */
 export function TranscriptStream({ turns }: { turns: Turn[] }) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [query, setQuery] = useState("");
 
   const filtered = useMemo(() => {
