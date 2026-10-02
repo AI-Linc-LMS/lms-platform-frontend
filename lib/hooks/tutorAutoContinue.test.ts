@@ -303,3 +303,68 @@ describe("the language survives a regenerated response", () => {
     expect(pin).toMatch(/tool|diagram|slide|show|picture/i);
   });
 });
+
+/**
+ * The reported bug: "it is automatically going to the next topic while the previous topic is
+ * still being discussed".
+ *
+ * Measured on production before the fix: 104 turns across 50 sessions where the tutor asked
+ * something and then spoke again with no answer, median gap ten seconds - and nine where it said
+ * in so many words that it was waiting, then moved on nine to twelve seconds later.
+ *
+ * The mechanism was not the timer length. It was that `askedQuestion` is read off the text of
+ * the turn that armed the timer, and the nudge turn ("I am waiting for your answer, take your
+ * time") does not end in a question mark. So the question was forgotten, the wait dropped to the
+ * seven-second deadlock timer, and `continuationDirective` - which opens "you have not asked
+ * them anything" and says "Move FORWARD to the next part of your plan" - took the lesson onward.
+ */
+describe("a question stays unanswered until the learner answers it", () => {
+  const ARMED = 1_000_000;
+
+  function world(over: Partial<ContinuationWorld> = {}): ContinuationWorld {
+    return {
+      closed: false,
+      quizOpen: false,
+      responseActive: false,
+      responseQueued: false,
+      lastLearnerVoiceAt: 0,
+      count: 0,
+      askedQuestion: false,
+      nudges: 0,
+      ...over,
+    };
+  }
+
+  it("nudges once when the question goes unanswered", () => {
+    const w = world({ askedQuestion: true });
+    expect(decideContinuation(w, ARMED, ARMED + ANSWER_WAIT_MS)).toBe("nudge");
+    expect(w.nudges).toBe(1);
+  });
+
+  it("does NOT move the lesson on after the nudge", () => {
+    // The nudge turn has no question mark, so the caller may hand back askedQuestion: false.
+    // The outstanding question is what counts, and `nudges` is the record of it.
+    const w = world({ askedQuestion: false, nudges: 1 });
+    expect(decideContinuation(w, ARMED, ARMED + ANSWER_WAIT_MS)).toBe("silence");
+  });
+
+  it("keeps the long wait for a question it has already nudged about", () => {
+    expect(waitFor({ askedQuestion: false, nudges: 1 })).toBe(ANSWER_WAIT_MS);
+    expect(waitFor({ askedQuestion: false, nudges: 0 })).toBe(AUTO_CONTINUE_MS);
+  });
+
+  it("gives the floor back the moment the learner speaks", () => {
+    const w = world({ askedQuestion: false, nudges: 1, lastLearnerVoiceAt: ARMED + 500 });
+    expect(decideContinuation(w, ARMED, ARMED + ANSWER_WAIT_MS)).toBe("silence");
+    expect(w.nudges).toBe(0);
+    // And a later pause with no question is a deadlock again, which SHOULD be broken.
+    const after = world({ askedQuestion: false, nudges: 0 });
+    expect(decideContinuation(after, ARMED, ARMED + AUTO_CONTINUE_MS)).toBe("continue");
+  });
+
+  it("still breaks a genuine deadlock, where nothing was asked", () => {
+    const w = world();
+    expect(decideContinuation(w, ARMED, ARMED + AUTO_CONTINUE_MS)).toBe("continue");
+    expect(w.count).toBe(1);
+  });
+});

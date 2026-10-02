@@ -128,8 +128,13 @@ export interface ContinuationWorld {
  *
  * A question gets the long wait; anything else gets the short one.
  */
-export function waitFor(world: Pick<ContinuationWorld, "askedQuestion">): number {
-  return world.askedQuestion ? ANSWER_WAIT_MS : AUTO_CONTINUE_MS;
+export function waitFor(
+  world: Pick<ContinuationWorld, "askedQuestion"> & { nudges?: number }
+): number {
+  // A question already nudged about is still a question, so it keeps the long wait rather than
+  // waking on the seven-second deadlock timer. See `decideContinuation`.
+  const outstanding = world.askedQuestion || (world.nudges ?? 0) > 0;
+  return outstanding ? ANSWER_WAIT_MS : AUTO_CONTINUE_MS;
 }
 
 /**
@@ -160,7 +165,21 @@ export function decideContinuation(
     world.nudges = 0;
     return "silence";
   }
-  if (world.askedQuestion) {
+  // An unanswered question stays unanswered until the LEARNER answers it.
+  //
+  // `askedQuestion` is derived from the text of the turn that armed this timer, and the NUDGE
+  // turn does not end in a question mark - it is "I am waiting for your answer, take your
+  // time". So after a nudge this used to come back false, the wait dropped from twelve seconds
+  // to seven, and the lesson fell through to `continuationDirective`, which opens "you have not
+  // asked them anything" and says "Move FORWARD to the next part of your plan". The question was
+  // still on the table; the mechanism had simply forgotten it was asked.
+  //
+  // Measured on production before this line existed: 104 turns across 50 sessions where the
+  // tutor asked something and spoke again with no answer, median gap ten seconds - and nine
+  // where it said in so many words that it was waiting and then moved on nine to twelve seconds
+  // later. `nudges` is only ever reset by the learner speaking, so it is the honest record of
+  // "there is a question outstanding".
+  if (world.askedQuestion || world.nudges > 0) {
     // The tutor asked something and nobody answered. It does NOT get to answer itself, and it
     // does NOT get to move on: it gets one short check-in, and then the floor is the learner's.
     if (world.nudges >= ANSWER_NUDGE_MAX) return "silence";

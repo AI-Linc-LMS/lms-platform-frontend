@@ -1450,9 +1450,15 @@ export function useRealtimeTutor(options: UseRealtimeTutorOptions = {}) {
           setPhase("listening");
           releaseResponseGate();
           // Nothing else will ask for another turn, so arm the continuation. Guarded inside.
-          // Whether this turn ended in a question is what decides between waiting for an answer
-          // and picking the lesson back up; see tutorTurnTaking.ts.
-          scheduleAutoContinue(endsWithQuestion(spoken));
+          // Whether a question is OUTSTANDING is what decides between waiting for an answer and
+          // picking the lesson back up; see tutorTurnTaking.ts.
+          //
+          // Outstanding, not "did this turn end in a question mark". The nudge turn is "I am
+          // waiting for your answer, take your time" - no question mark - so reading this off
+          // the last turn alone forgot a question the learner had still not answered, and the
+          // lesson moved on seven seconds later. `nudgeCountRef` is reset only when the learner
+          // actually speaks.
+          scheduleAutoContinue(endsWithQuestion(spoken) || nudgeCountRef.current > 0);
           break;
         }
 
