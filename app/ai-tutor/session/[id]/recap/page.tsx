@@ -7,14 +7,13 @@ import { Box, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader } from "@/components/common/ModulePageHeader";
-import {
-  TutorSectionHeading,
-  TutorSurface,
-  TutorTintSurface,
-} from "@/components/ai-tutor/shared/surfaces";
+import { TutorSurface, TutorTintSurface } from "@/components/ai-tutor/shared/surfaces";
 import { RecapFlashcards } from "@/components/ai-tutor/recap/RecapFlashcards";
-import { RecapArtifacts } from "@/components/ai-tutor/recap/RecapArtifacts";
-import { RecapTranscript } from "@/components/ai-tutor/recap/RecapTranscript";
+import { ChallengeLog } from "@/components/ai-tutor/recap/ChallengeLog";
+import { ConceptConstellation } from "@/components/ai-tutor/recap/ConceptConstellation";
+import { ConceptStream } from "@/components/ai-tutor/recap/ConceptStream";
+import { TranscriptStream } from "@/components/ai-tutor/recap/TranscriptStream";
+import { RecapGround, StreamLabel } from "@/components/ai-tutor/recap/atmosphere";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { aiTutorKeys, aiTutorService } from "@/lib/services/ai-tutor.service";
 import { PHONE } from "@/components/common/mobile/phone";
@@ -23,27 +22,25 @@ import { PHONE } from "@/components/common/mobile/phone";
  * What the learner keeps.
  *
  * A voice lesson is ephemeral in a way a written one is not: there is nothing to scroll back
- * through and nothing on the dashboard tomorrow. This page is the artifact, which is why the
- * recap is generated on the standard model tier rather than the cheap one.
+ * through and nothing on the dashboard tomorrow. This page is the artifact.
  *
- * The layout follows the order somebody actually wants after a lesson ends: how it went, what
- * to test yourself on, what was on screen, and only then the raw transcript. The first version
- * inverted that - the transcript rendered open and unbounded and dominated everything, the
- * flashcards the session had just generated were not shown at all, and there was no way back
- * to the module except the browser button.
+ * It used to be a column of white bordered boxes - the summary, five concept cards, a flashcard
+ * card, a thumbnail grid, a quiz list, a transcript - every section the same weight, so nothing
+ * led and a lesson read as a form somebody had filled in about you.
  *
- * The recap is produced by a background task, so this page has to render usefully while that
- * is still running rather than showing a spinner over the whole thing.
+ * It is built around the STREAM now: the lesson had a shape, and the recap shows that shape.
+ * What went on screen runs along a rail in the order it happened, one open at a time on a dark
+ * stage, with the questions beside it. Everything else arranges around that, and nothing is a
+ * card. The order still follows what somebody wants after a lesson ends: how it went, what was
+ * on screen, what you were asked, what you should test yourself on, and only then the raw
+ * transcript.
+ *
+ * The recap is produced by a background task, so this page has to render usefully while that is
+ * still running rather than showing a spinner over the whole thing.
  */
 
 /** How many times to poll for a recap that is still being written before giving up. */
 const POLL_LIMIT = 40;
-
-const STATUS_TONE: Record<string, { icon: string; colour: string; label: string }> = {
-  solid: { icon: "solar:check-circle-bold", colour: "#16a34a", label: "Solid" },
-  shaky: { icon: "solar:minus-circle-bold", colour: "#d97706", label: "Needs another pass" },
-  new: { icon: "solar:star-bold", colour: "var(--ai-violet)", label: "New today" },
-};
 
 export default function TutorRecapPage() {
   const params = useParams();
@@ -64,8 +61,7 @@ export default function TutorRecapPage() {
      * a backend served from four gunicorn slots, for a page nobody is watching any more.
      */
     refetchInterval: (query) =>
-      query.state.data?.recap_status === "pending" &&
-      query.state.dataUpdateCount < POLL_LIMIT
+      query.state.data?.recap_status === "pending" && query.state.dataUpdateCount < POLL_LIMIT
         ? 4000
         : false,
   });
@@ -113,6 +109,7 @@ export default function TutorRecapPage() {
   const notes = data?.notes ?? [];
   const artifacts = data?.artifacts ?? [];
   const quiz = data?.quiz ?? [];
+  const transcript = data?.transcript ?? [];
   const pending = data?.recap_status === "pending";
   const skipped = data?.recap_status === "skipped";
   // Anything that is not pending, skipped or a written recap. Previously this rendered a tinted
@@ -186,216 +183,104 @@ export default function TutorRecapPage() {
       </ModulePageHeader>
 
       <Box sx={{ display: "flex", flexDirection: "column", gap: 3, pb: 4 }}>
-        {/* ---------- How it went ----------
-            Tinted, because it is the answer to "how did that go" and was previously
-            indistinguishable from the five neutral cards under it. */}
-        <TutorTintSurface tint="violet" sx={{ p: { xs: 2.5, md: 3 } }}>
-          {isLoading ? (
-            <Box sx={{ display: "grid", gap: 1 }}>
-              {[0, 1, 2].map((i) => (
-                <Box
-                  key={i}
+        <RecapGround>
+          <Box sx={{ display: "flex", flexDirection: "column", gap: { xs: 3, md: 4 } }}>
+            {/* ---------- How it went ----------
+                The first thing said, said plainly. Not boxed: it is the voice of the page, and
+                a border around it made it one more panel among seven. */}
+            <Box sx={{ maxWidth: "74ch" }}>
+              {isLoading ? (
+                <Box sx={{ display: "grid", gap: 1 }}>
+                  {[0, 1, 2].map((i) => (
+                    <Box
+                      key={i}
+                      sx={{
+                        height: 16,
+                        width: i === 2 ? "58%" : "100%",
+                        borderRadius: 9999,
+                        bgcolor: "color-mix(in srgb, var(--ai-violet) 12%, transparent)",
+                      }}
+                    />
+                  ))}
+                </Box>
+              ) : pending ? (
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
+                  <Icon
+                    icon="solar:refresh-bold-duotone"
+                    width={18}
+                    style={{ color: "var(--ai-violet)" }}
+                  />
+                  <Typography sx={{ fontSize: "0.95rem", color: "var(--font-secondary)" }}>
+                    Writing up what you covered. This takes a few seconds.
+                  </Typography>
+                </Box>
+              ) : skipped ? (
+                <Typography sx={{ fontSize: "0.95rem", color: "var(--font-secondary)" }}>
+                  That session was too short to write up. Start another and talk for a few
+                  minutes to get a recap.
+                </Typography>
+              ) : unwritten ? (
+                <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
+                  <Icon
+                    icon="solar:danger-triangle-bold-duotone"
+                    width={18}
+                    style={{ color: "#d97706", marginTop: 2, flexShrink: 0 }}
+                  />
+                  <Typography
+                    sx={{ fontSize: "0.95rem", color: "var(--font-secondary)", lineHeight: 1.6 }}
+                  >
+                    We could not write up this session. Everything below is still yours: the
+                    transcript, anything that went on the canvas, and any flashcards it saved.
+                  </Typography>
+                </Box>
+              ) : (
+                <Typography
                   sx={{
-                    height: 14,
-                    width: i === 2 ? "58%" : "100%",
-                    borderRadius: 9999,
-                    bgcolor: "var(--border-default)",
-                    opacity: 0.7,
+                    fontSize: { xs: "1.05rem", md: "1.2rem" },
+                    lineHeight: 1.75,
+                    fontWeight: 400,
                   }}
-                />
-              ))}
+                >
+                  {recap.summary}
+                </Typography>
+              )}
             </Box>
-          ) : pending ? (
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1.5 }}>
-              <Icon
-                icon="solar:refresh-bold-duotone"
-                width={18}
-                style={{ color: "var(--ai-violet)" }}
-              />
-              <Typography sx={{ fontSize: "0.95rem", color: "var(--font-secondary)" }}>
-                Writing up what you covered. This takes a few seconds.
-              </Typography>
-            </Box>
-          ) : skipped ? (
-            <Typography sx={{ fontSize: "0.95rem", color: "var(--font-secondary)" }}>
-              That session was too short to write up. Start another and talk for a few minutes
-              to get a recap.
-            </Typography>
-          ) : unwritten ? (
-            <Box sx={{ display: "flex", alignItems: "flex-start", gap: 1.5 }}>
-              <Icon
-                icon="solar:danger-triangle-bold-duotone"
-                width={18}
-                style={{ color: "#d97706", marginTop: 2, flexShrink: 0 }}
-              />
-              <Typography sx={{ fontSize: "0.95rem", color: "var(--font-secondary)", lineHeight: 1.6 }}>
-                We could not write up this session. Everything below is still yours: the
-                transcript, anything that went on the canvas, and any flashcards it saved.
-              </Typography>
-            </Box>
-          ) : (
-            <Typography sx={{ fontSize: { xs: "1rem", md: "1.05rem" }, lineHeight: 1.7 }}>
-              {recap.summary}
-            </Typography>
-          )}
-        </TutorTintSurface>
 
-        {/* ---------- Concepts ---------- */}
-        {concepts.length > 0 ? (
-          <Box>
-            <TutorSectionHeading
-              icon="solar:lightbulb-bold-duotone"
-              title="What you worked on"
-            />
-            <Box
-              sx={{
-                display: "grid",
-                // auto-fit, not a fixed three columns. Four concepts in a 3-wide grid left a
-                // conspicuous hole in the second row; this fills the width at any count.
-                gridTemplateColumns: {
-                  xs: "1fr",
-                  sm: "repeat(auto-fit, minmax(248px, 1fr))",
-                },
-                gap: 1.5,
-              }}
-            >
-              {concepts.map((concept) => {
-                const tone = STATUS_TONE[concept.status] ?? STATUS_TONE.new;
-                return (
-                  <TutorSurface key={concept.name}>
-                    <Box sx={{ display: "flex", gap: 0.85, alignItems: "center", mb: 0.85 }}>
-                      <Icon icon={tone.icon} width={15} style={{ color: tone.colour }} />
-                      <Typography
-                        sx={{
-                          fontSize: "0.72rem",
-                          [PHONE]: { fontSize: "0.75rem" },
-                          fontWeight: 600,
-                          letterSpacing: "0.06em",
-                          textTransform: "uppercase",
-                          color: tone.colour,
-                          '[dir="rtl"] &': {
-                            letterSpacing: "normal",
-                            textTransform: "none",
-                          },
-                        }}
-                      >
-                        {tone.label}
-                      </Typography>
-                    </Box>
-                    <Typography sx={{ fontSize: "0.96rem", fontWeight: 500, mb: 0.35 }}>
-                      {concept.name}
-                    </Typography>
-                    {concept.note ? (
-                      <Typography
-                        sx={{
-                          fontSize: "0.87rem",
-                          color: "var(--font-secondary)",
-                          lineHeight: 1.5,
-                        }}
-                      >
-                        {concept.note}
-                      </Typography>
-                    ) : null}
-                  </TutorSurface>
-                );
-              })}
-            </Box>
+            {/* ---------- The lesson's shape, with the questions beside it ---------- */}
+            {artifacts.length ? (
+              <ConceptStream
+                artifacts={artifacts}
+                aside={quiz.length ? <ChallengeLog attempts={quiz} /> : undefined}
+              />
+            ) : quiz.length ? (
+              <ChallengeLog attempts={quiz} />
+            ) : null}
+
+            <ConceptConstellation concepts={concepts} />
           </Box>
-        ) : null}
+        </RecapGround>
 
-        {/* ---------- Test yourself ---------- */}
+        {/* ---------- Test yourself ----------
+            Outside the ground: it is the one thing here you DO rather than read. */}
         {cardCount > 0 ? (
           <Box>
-            <TutorSectionHeading
+            <StreamLabel
               icon="solar:cards-bold-duotone"
-              title="Test yourself"
+              text="Test yourself"
               meta="From this lesson"
             />
             <RecapFlashcards notes={notes} />
           </Box>
         ) : null}
 
-        {/* ---------- What was on screen ---------- */}
-        {artifacts.length > 0 ? (
-          <Box>
-            <TutorSectionHeading
-              icon="solar:presentation-graph-bold-duotone"
-              title="From the canvas"
-              meta={`${artifacts.length} ${artifacts.length === 1 ? "card" : "cards"}`}
-            />
-            <RecapArtifacts artifacts={artifacts} />
-          </Box>
-        ) : null}
+        <TranscriptStream turns={transcript} />
 
-        {/* ---------- Quiz ---------- */}
-        {quiz.length > 0 ? (
-          <Box>
-            <TutorSectionHeading
-              icon="solar:question-square-bold-duotone"
-              title="Questions you answered"
-              meta={`${quizRight} of ${quiz.length} right`}
-            />
-            <TutorSurface padded={false}>
-              {quiz.map((attempt, i) => (
-                <Box
-                  key={i}
-                  sx={{
-                    px: { xs: 2, md: 2.5 },
-                    py: 1.5,
-                    borderTop: i === 0 ? "none" : "1px solid var(--border-default)",
-                    display: "flex",
-                    gap: 1.25,
-                    alignItems: "flex-start",
-                  }}
-                >
-                  <Icon
-                    icon={
-                      attempt.is_correct
-                        ? "solar:check-circle-bold"
-                        : "solar:close-circle-bold"
-                    }
-                    width={17}
-                    style={{
-                      color: attempt.is_correct ? "#16a34a" : "#dc2626",
-                      marginTop: 2,
-                      flexShrink: 0,
-                    }}
-                  />
-                  <Box sx={{ minWidth: 0 }}>
-                    <Typography sx={{ fontSize: "0.92rem", lineHeight: 1.5 }}>
-                      {attempt.question?.question}
-                    </Typography>
-                    {/* What they picked. Without it, "wrong" is a score rather than
-                        something you can learn from. */}
-                    {attempt.selected?.length ? (
-                      <Typography
-                        sx={{
-                          fontSize: "0.82rem",
-                          color: "var(--font-secondary)",
-                          mt: 0.35,
-                        }}
-                      >
-                        You picked {describePicked(attempt)}
-                      </Typography>
-                    ) : null}
-                  </Box>
-                </Box>
-              ))}
-            </TutorSurface>
-          </Box>
-        ) : null}
-
-        {/* ---------- Transcript ---------- */}
-        <RecapTranscript turns={data?.transcript ?? []} />
-
-        {/* ---------- Next ---------- */}
+        {/* ---------- What to do next ---------- */}
         {recap.next_topic?.title ? (
           <TutorTintSurface
             tint="deep"
             sx={{
               p: { xs: 2.5, md: 3 },
-              // The strongest surface on the page, because it is the only one that asks for
-              // an action. Deep tint means white text, so the copy below is on-dark.
               display: "flex",
               flexDirection: { xs: "column", md: "row" },
               alignItems: { xs: "stretch", md: "center" },
@@ -422,11 +307,7 @@ export default function TutorRecapPage() {
               </Typography>
               {recap.next_topic.why ? (
                 <Typography
-                  sx={{
-                    fontSize: "0.9rem",
-                    color: "rgba(255,255,255,0.7)",
-                    lineHeight: 1.55,
-                  }}
+                  sx={{ fontSize: "0.9rem", color: "rgba(255,255,255,0.7)", lineHeight: 1.55 }}
                 >
                   {recap.next_topic.why}
                 </Typography>
@@ -452,24 +333,6 @@ export default function TutorRecapPage() {
       </Box>
     </PageShell>
   );
-}
-
-/**
- * What the learner actually chose, in words.
- *
- * A bare "You picked B" is useless a day later: the letter means nothing without the option list,
- * and this is the one place the recap is meant to be readable on its own.
- */
-function describePicked(attempt: {
-  selected?: string[];
-  question?: { options?: { id: string; label: string }[] };
-}): string {
-  const options = attempt.question?.options ?? [];
-  const labels = (attempt.selected ?? []).map((id) => {
-    const match = options.find((o) => o.id === id);
-    return match?.label ? `${id}. ${match.label}` : id;
-  });
-  return labels.join("; ");
 }
 
 const LEVEL_LABEL: Record<string, string> = {
@@ -517,9 +380,7 @@ function HeroStat({
         style={{ color: "rgba(255,255,255,0.7)", flexShrink: 0 }}
       />
       <Box sx={{ minWidth: 0 }}>
-        <Typography
-          sx={{ fontSize: "1.25rem", fontWeight: 600, lineHeight: 1.1, color: "#fff" }}
-        >
+        <Typography sx={{ fontSize: "1.25rem", fontWeight: 600, lineHeight: 1.1, color: "#fff" }}>
           {value}
         </Typography>
         <Typography
