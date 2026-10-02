@@ -141,6 +141,7 @@ function fakeAnalyser() {
 
 describe("the quiz follows the language the lesson is actually in", () => {
   beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     sent = [];
     startSession.mockResolvedValue({
       session: { id: "sess-1", planned_seconds: 1200 },
@@ -191,7 +192,10 @@ describe("the quiz follows the language the lesson is actually in", () => {
     });
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
 
   async function connected(onQuiz = vi.fn()) {
     const hook = renderHook(() => useRealtimeTutor({ onQuiz }));
@@ -207,6 +211,12 @@ describe("the quiz follows the language the lesson is actually in", () => {
       await Promise.resolve();
     });
     await waitFor(() => expect(hook.result.current.phase).toBe("listening"));
+    // A lesson has to have been running before its first question may appear
+    // (MIN_MS_BEFORE_FIRST_QUIZ): a quiz in the opening seconds has nothing to check, and was
+    // reported as "quiz this is coming with first 10-15 seconds itself". These tests are about
+    // which question is chosen and in what language, so they run their lesson past that point,
+    // the way a real one does.
+    vi.setSystemTime(Date.now() + 120_000);
     return hook;
   }
 

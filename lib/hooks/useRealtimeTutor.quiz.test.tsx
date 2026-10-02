@@ -89,6 +89,7 @@ function fakeAnalyser() {
 
 describe("show_quiz never replaces a question the learner is still on", () => {
   beforeEach(() => {
+    vi.useFakeTimers({ shouldAdvanceTime: true });
     sent = [];
     startSession.mockResolvedValue({
       session: { id: 7, planned_seconds: 1200 },
@@ -118,7 +119,10 @@ describe("show_quiz never replaces a question the learner is still on", () => {
     });
   });
 
-  afterEach(() => vi.unstubAllGlobals());
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    vi.useRealTimers();
+  });
 
   /** Bring the hook up to a live data channel with a loaded question pool.
    *  `start` resolves before the SDP exchange finishes, so wait for the hook's own opening
@@ -135,6 +139,12 @@ describe("show_quiz never replaces a question the learner is still on", () => {
       await Promise.resolve();
     });
     await waitFor(() => expect(hook.result.current.phase).toBe("listening"));
+    // A lesson has to have been running before its first question may appear
+    // (MIN_MS_BEFORE_FIRST_QUIZ): a quiz in the opening seconds has nothing to check, and was
+    // reported as "quiz this is coming with first 10-15 seconds itself". These tests are about
+    // which question is chosen and in what language, so they run their lesson past that point,
+    // the way a real one does.
+    vi.setSystemTime(Date.now() + 120_000);
     return hook;
   }
 
