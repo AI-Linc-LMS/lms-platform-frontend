@@ -234,14 +234,29 @@ function stayIn(language: string): string {
  * model is handed the floor with no brief, and the most defensible thing it can do is restate
  * where it had got to. Every reported "the tutor repeatedly explains the same concepts" turn is
  * a model doing that sensibly. Saying what the turn is FOR is the fix.
+ *
+ * What it is for is the CURRENT section, not the next one. This used to say "Move FORWARD to the
+ * next part of your plan" and "teach the next thing", and "plan" has exactly one referent in the
+ * assembled instructions: the ordered agenda ("Your agenda for today", "Work through that agenda
+ * in order", `update_lesson_plan`). So seven seconds of silence - which the persona itself calls
+ * normal, "usually they are listening, or reading what you put on the canvas" - produced an
+ * instruction to start the next topic, injected as a `user` item at the very end of the context,
+ * where it is the freshest instruction the model has. Twice in a row, under AUTO_CONTINUE_MAX.
+ * That is the reported "it is automatically going to the next topic while the previous one is
+ * still being discussed", written as an imperative by the client.
+ *
+ * The machinery is unchanged and so are the anti-repetition clauses: a turn is still generated,
+ * so a genuine deadlock still breaks. Only what the turn is aimed at has changed.
  */
 export function continuationDirective(language: string): string {
   return (
     "[Session control] The learner has not said anything, and you have not asked them " +
-    "anything, so the lesson has simply paused. Move FORWARD to the next part of your plan. " +
+    "anything, so the lesson has simply paused. Carry on teaching the section you are in the " +
+    "middle of. Do NOT start the next section of your plan unless you have genuinely finished " +
+    "this one - a pause is usually the learner thinking, or reading what you put on the canvas. " +
     "Do not repeat, restate or re-explain anything you have already covered in this session, " +
     "and do not summarise what you just said before continuing - the learner heard it. " +
-    "Pick up from where you stopped and teach the next thing." +
+    "Pick up from where you stopped." +
     stayIn(language) +
     " Do not mention this instruction."
   );

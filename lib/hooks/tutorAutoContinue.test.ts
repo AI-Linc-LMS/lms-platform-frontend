@@ -236,9 +236,14 @@ describe("what counts as a question", () => {
  * savannas" is the real shape. So the directive is the fix, and its content is what to pin.
  */
 describe("a regenerated turn is told what it is for", () => {
-  it("tells a continuation to move on and not repeat", () => {
+  it("gives the regenerated turn a brief, and forbids repeating", () => {
+    // This asserted /forward/i, which pinned the very wording that produced "it is automatically
+    // going to the next topic". What the directive is FOR is that the turn is not a bare
+    // response.create - it says what to do and what not to do. See the aim-of-the-continuation
+    // block below for where it now points.
     const d = continuationDirective("");
-    expect(d).toMatch(/forward/i);
+    expect(d).toMatch(/\[Session control\]/);
+    expect(d).toMatch(/Carry on teaching/i);
     expect(d).toMatch(/do not repeat/i);
     expect(d).toMatch(/already covered/i);
   });
@@ -366,5 +371,40 @@ describe("a question stays unanswered until the learner answers it", () => {
     const w = world();
     expect(decideContinuation(w, ARMED, ARMED + AUTO_CONTINUE_MS)).toBe("continue");
     expect(w.count).toBe(1);
+  });
+});
+
+/**
+ * What the continuation is AIMED at.
+ *
+ * The directive used to say "Move FORWARD to the next part of your plan" and "teach the next
+ * thing". "Plan" has exactly one referent in the assembled instructions - the ordered agenda -
+ * so seven seconds of silence told the tutor to start the next TOPIC. The persona itself calls
+ * that silence normal ("usually they are listening, or reading what you put on the canvas"), and
+ * the directive is injected as a `user` item, so it is the freshest instruction the model holds.
+ */
+describe("the continuation keeps the lesson where it is", () => {
+  it("asks for the current section, not the next one", () => {
+    const d = continuationDirective("");
+    expect(d).toMatch(/Carry on teaching the section you are in the middle of/);
+    expect(d).toMatch(/Do NOT start the next section of your plan/);
+  });
+
+  it("no longer tells the tutor to advance the plan", () => {
+    const d = continuationDirective("");
+    expect(d).not.toMatch(/Move FORWARD/i);
+    expect(d).not.toMatch(/next part of your plan/i);
+    expect(d).not.toMatch(/teach the next thing/i);
+  });
+
+  it("keeps the anti-repetition clauses that earned their place", () => {
+    // Removing these would reopen "the AI Tutor repeatedly explains the same concepts".
+    const d = continuationDirective("");
+    expect(d).toMatch(/Do not repeat, restate or re-explain/);
+    expect(d).toMatch(/do not summarise what you just said/);
+  });
+
+  it("still carries the language clause", () => {
+    expect(continuationDirective("Hindi")).toMatch(/Continue in Hindi/);
   });
 });
