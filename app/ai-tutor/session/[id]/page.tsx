@@ -40,16 +40,6 @@ import { PHONE } from "@/components/common/mobile/phone";
  * URL to the real session id mid-call would kill both the microphone and the tutor's voice.
  */
 
-/**
- * Room to the right of the transport bar for the fixed support FAB.
- *
- * Measured rather than eyeballed: `ReportIssueFAB` is a default-size MUI `Fab` (56px) at
- * `insetInlineEnd: 24`, so it occupies 24px to 80px from the right edge. The previous 72px
- * reserved less than that, and "End session" slid under the headset button - which is a bad
- * pair of controls to overlap, since one ends a paid session and the other opens a support
- * dialog. 96 clears the FAB with a 16px gap.
- */
-const FAB_CLEARANCE = 96;
 
 export default function TutorSessionPage() {
   const router = useRouter();
@@ -599,7 +589,13 @@ export default function TutorSessionPage() {
               alignItems: "center",
               gap: 1.25,
               // Keep clear of the fixed support FAB, which otherwise covers "End session".
-              pr: { xs: 2, md: `${FAB_CLEARANCE}px` },
+              // No reserved gutter any more. This used to hold 96px clear of the fixed support
+              // FAB, because that button really was on screen for the whole lesson - the rule
+              // meant to hide it exempted `/ai-tutor/session/new`, which is this room's URL for
+              // every lesson. Now that it is genuinely hidden here (components/common/
+              // ReportIssueFAB.tsx, pinned by reportIssueFabRoutes.test.tsx), the gutter was
+              // reserving space for nothing and pushing "End session" off the edge it belongs on.
+              pr: { xs: 2, md: 3 },
               pb: "calc(14px + env(safe-area-inset-bottom))",
               [PHONE]: {
                 pl: "calc(16px + env(safe-area-inset-left))",
