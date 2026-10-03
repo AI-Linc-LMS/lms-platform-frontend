@@ -19,12 +19,15 @@ export function ReportIssueFAB() {
   // screen. A live tutor lesson is one of those - it ends up beside "End session", which is the
   // last button anybody wants to miss by a few pixels.
   //
-  // `new` is deliberately still covered: that is the setup form, where somebody who cannot get a
-  // lesson started is exactly who needs support. The recap is a normal page and keeps it too.
+  // The room's pathname is `/ai-tutor/session/new` for the WHOLE lesson: the session id is never
+  // written into the URL, because the global camera guard tears media down on a pathname change
+  // (app/ai-tutor/session/[id]/page.tsx:38). So `new` IS the room, not a setup form - the setup
+  // form is `/ai-tutor` itself, which keeps the button. `$` leaves the recap at
+  // `/ai-tutor/session/<id>/recap` out, and it keeps the button too.
   const excludedRoutes = [
     /^\/assessments\/[^/]+\/take$/,
     /^\/mock-interview\/[^/]+\/take$/,
-    /^\/ai-tutor\/session\/(?!new$)[^/]+$/,
+    /^\/ai-tutor\/session\/[^/]+$/,
   ];
 
   const shouldHide = excludedRoutes.some((pattern) =>
