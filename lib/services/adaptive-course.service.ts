@@ -231,6 +231,17 @@ export interface AdaptiveCourseListItem {
   /** True when the admin has opened this course to student self-enrollment (catalog listing). */
   self_enroll_enabled?: boolean;
   /**
+   * How the course came to exist, and the only thing that tells the two halves of this list
+   * apart. `GET /courses/` merges two lanes: the tenant's published catalog, and the learner's
+   * OWN courses, which course_forge builds from a roadmap node (or, rarely, a free-text
+   * prompt) and leaves unpublished on purpose so every tenant-wide query skips them.
+   *
+   * Optional because a server that predates the field omits it; absent reads as "authored",
+   * which is the safe way round - a tenant course mislabelled as the learner's own would be
+   * the confusing direction.
+   */
+  origin?: "authored" | "forge";
+  /**
    * How far THIS learner has got. Null/absent on the self-enroll catalog, which lists
    * courses they are by definition not in, and on any server that predates the field.
    */
