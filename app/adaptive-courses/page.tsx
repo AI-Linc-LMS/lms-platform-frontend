@@ -17,7 +17,13 @@ import {
   adaptiveCourseService,
   type AdaptiveCourseListItem,
 } from "@/lib/services/adaptive-course.service";
-import { useIsAdaptiveQuizEnabled } from "@/lib/contexts/ClientInfoContext";
+import { useClientInfo, useIsAdaptiveQuizEnabled } from "@/lib/contexts/ClientInfoContext";
+import {
+  countByOrigin,
+  filterByOrigin,
+  shouldOfferOriginFilter,
+  type CourseOrigin,
+} from "@/lib/hooks/adaptiveCourseOrigin";
 import { PageShell } from "@/components/common/PageShell";
 import { ModulePageHeader, HeaderActionButton } from "@/components/common/ModulePageHeader";
 import { ViewToggle, SearchFilterBar, type ListView } from "@/components/common/list";
@@ -43,6 +49,13 @@ const PHONE_CHIP = { [PHONE]: { height: 44, px: 1, fontSize: "0.9rem", borderRad
 export default function AdaptiveCourseListPage() {
   const { push, prefetch } = useInstantNavigation();
   const featureOn = useIsAdaptiveQuizEnabled();
+  const { clientInfo } = useClientInfo();
+  /**
+   * Which half of the list to show. This endpoint merges the tenant's published catalog with
+   * the learner's own roadmap-built courses and sorts them together by date, so without this
+   * a learner with 39 of their own and 12 of their institution's has no way to find either.
+   */
+  const [origin, setOrigin] = useState<CourseOrigin>("all");
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState<AdaptiveCourseListItem[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -73,9 +86,12 @@ export default function AdaptiveCourseListPage() {
     };
   }, [featureOn]);
 
+  const originCounts = useMemo(() => countByOrigin(items), [items]);
+  const offerOriginFilter = useMemo(() => shouldOfferOriginFilter(items), [items]);
+
   const visible = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const filtered = items.filter((c) => {
+    const filtered = filterByOrigin(items, origin).filter((c) => {
       const matchesQuery =
         !q ||
         c.title.toLowerCase().includes(q) ||
@@ -90,7 +106,7 @@ export default function AdaptiveCourseListPage() {
       if (sort === "content") return contentScore(b) - contentScore(a);
       return (b.updated_at || "").localeCompare(a.updated_at || "");
     });
-  }, [items, query, sort]);
+  }, [items, origin, query, sort]);
 
   if (!featureOn) {
     return (
@@ -136,6 +152,15 @@ export default function AdaptiveCourseListPage() {
 
           {!loading && !error && items.length === 0 && (
             <EmptyState onBrowse={() => push("/adaptive-courses/catalog")} />
+          )}
+
+          {!loading && !error && offerOriginFilter && (
+            <OriginTabs
+              value={origin}
+              onChange={setOrigin}
+              counts={originCounts}
+              clientName={clientInfo?.name}
+            />
           )}
 
           {!loading && !error && items.length > 0 && (
@@ -186,12 +211,27 @@ export default function AdaptiveCourseListPage() {
           {!loading && !error && items.length > 0 && visible.length === 0 && (
             <Box sx={{ p: { xs: 3, md: 5 }, borderRadius: 4, textAlign: "center", bgcolor: "color-mix(in srgb, var(--card-bg) 60%, transparent)", border: "1px dashed color-mix(in srgb, var(--border-default) 90%, transparent)" }}>
               <Icon icon="mdi:magnify-close" width={44} style={{ color: "#a855f7" }} />
-              <Typography sx={{ fontWeight: 800, mt: 1.5, fontSize: "1.05rem" }}>No adaptive courses match your search.</Typography>
-              <Chip
-                label="Clear search"
-                onClick={() => setQuery("")}
-                sx={{ mt: 1.75, fontWeight: 700, cursor: "pointer", ...PHONE_CHIP }}
-              />
+              <Typography sx={{ fontWeight: 800, mt: 1.5, fontSize: "1.05rem" }}>
+                {origin === "all"
+                  ? "No adaptive courses match your search."
+                  : "Nothing here matches. Try the other courses, or clear the search."}
+              </Typography>
+              <Stack direction="row" spacing={1} justifyContent="center" sx={{ mt: 1.75 }}>
+                {query ? (
+                  <Chip
+                    label="Clear search"
+                    onClick={() => setQuery("")}
+                    sx={{ fontWeight: 700, cursor: "pointer", ...PHONE_CHIP }}
+                  />
+                ) : null}
+                {origin !== "all" ? (
+                  <Chip
+                    label="Show all courses"
+                    onClick={() => setOrigin("all")}
+                    sx={{ fontWeight: 700, cursor: "pointer", ...PHONE_CHIP }}
+                  />
+                ) : null}
+              </Stack>
             </Box>
           )}
 
@@ -310,6 +350,105 @@ function AdaptiveCourseRow({
     </Box>
   );
 }
+
+/**
+ * Which half of the list to show.
+ *
+ * Two kinds of course arrive in one array from `GET /courses/`: the ones this learner built
+ * themselves from a roadmap topic, and the ones their institution published. They look
+ * identical on the card and are interleaved by date. Named rather than numbered, because
+ * "mine" and "the institution's" is the distinction a learner actually holds in their head.
+ *
+ * Only rendered when the list contains both - see `shouldOfferOriginFilter`.
+ */
+function OriginTabs({
+  value,
+  onChange,
+  counts,
+  clientName,
+}: {
+  value: CourseOrigin;
+  onChange: (next: CourseOrigin) => void;
+  counts: { mine: number; client: number };
+  clientName?: string;
+}) {
+  const tabs: { key: CourseOrigin; label: string; count: number; icon: string }[] = [
+    { key: "all", label: "All", count: counts.mine + counts.client, icon: "mdi:view-grid-outline" },
+    { key: "mine", label: "Built by me", count: counts.mine, icon: "mdi:map-marker-path" },
+    {
+      // The tenant's own name when we have it. "From my institution" is the honest fallback:
+      // a blank where a name should be reads as a bug.
+      key: "client",
+      label: clientName ? `From ${clientName}` : "From my institution",
+      count: counts.client,
+      icon: "mdi:school-outline",
+    },
+  ];
+  return (
+    <Stack
+      direction="row"
+      spacing={1}
+      role="tablist"
+      aria-label="Filter courses by who made them"
+      sx={{ mb: 2, flexWrap: "wrap", rowGap: 1 }}
+    >
+      {tabs.map((tab) => {
+        const selected = tab.key === value;
+        return (
+          <Box
+            key={tab.key}
+            component="button"
+            type="button"
+            role="tab"
+            aria-selected={selected}
+            onClick={() => onChange(tab.key)}
+            sx={{
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 0.75,
+              cursor: "pointer",
+              borderRadius: 999,
+              px: 1.75,
+              py: 0.85,
+              fontWeight: 700,
+              fontSize: "0.875rem",
+              fontFamily: "inherit",
+              color: selected ? "#fff" : "var(--font-secondary)",
+              background: selected
+                ? "linear-gradient(135deg, #a855f7, #7c3aed)"
+                : "color-mix(in srgb, var(--card-bg) 70%, transparent)",
+              border: "1px solid",
+              borderColor: selected
+                ? "transparent"
+                : "color-mix(in srgb, var(--border-default) 90%, transparent)",
+              [PHONE]: { minHeight: 44 },
+              "&:hover": { borderColor: selected ? "transparent" : "#a855f7" },
+              "&:focus-visible": { outline: "2px solid #a855f7", outlineOffset: 2 },
+            }}
+          >
+            <Icon icon={tab.icon} width={17} />
+            {tab.label}
+            <Box
+              component="span"
+              sx={{
+                fontSize: "0.78rem",
+                fontWeight: 800,
+                px: 0.7,
+                borderRadius: 999,
+                bgcolor: selected
+                  ? "rgba(255,255,255,0.22)"
+                  : "color-mix(in srgb, var(--font-secondary) 12%, transparent)",
+              }}
+            >
+              {tab.count}
+            </Box>
+          </Box>
+        );
+      })}
+    </Stack>
+  );
+}
+
 
 function EmptyState({ onBrowse }: { onBrowse: () => void }) {
   return (

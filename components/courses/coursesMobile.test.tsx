@@ -36,7 +36,11 @@ const push = vi.fn();
 vi.mock("@/lib/hooks/useInstantNavigation", () => ({
   useInstantNavigation: () => ({ push, replace: vi.fn(), prefetch: vi.fn(), isPending: false }),
 }));
-vi.mock("@/lib/contexts/ClientInfoContext", () => ({ useIsAdaptiveQuizEnabled: () => true }));
+vi.mock("@/lib/contexts/ClientInfoContext", () => ({
+  useIsAdaptiveQuizEnabled: () => true,
+  // The page names the tenant on the "From {client}" filter, so it reads clientInfo too.
+  useClientInfo: () => ({ clientInfo: { name: "Acme Institute" } }),
+}));
 vi.mock("@/components/common/PageShell", () => ({
   PageShell: ({ children }: { children: ReactNode }) => <div>{children}</div>,
 }));
