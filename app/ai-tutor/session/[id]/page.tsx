@@ -13,6 +13,7 @@ import { LessonPlanRail } from "@/components/ai-tutor/room/LessonPlanRail";
 import { QuizOverlay } from "@/components/ai-tutor/room/QuizOverlay";
 import { IdePanel } from "@/components/ai-tutor/room/IdePanel";
 import { ConversationPanel } from "@/components/ai-tutor/room/ConversationPanel";
+import { swapBufferForLanguage } from "@/lib/hooks/tutorIdeBuffers";
 import { useRealtimeTutor } from "@/lib/hooks/useRealtimeTutor";
 import { aiTutorKeys } from "@/lib/services/ai-tutor.service";
 import type {
@@ -75,6 +76,20 @@ export default function TutorSessionPage() {
    * The tutor could cause it too, since `close_ide` is a tool the model calls on its own.
    */
   const [codeBuffer, setCodeBuffer] = useState("");
+  /**
+   * One buffer per language, so switching away and back does not cost the learner their work.
+   *
+   * The editor has a single buffer, and `IdePanel` refuses to seed over a non-empty one so a
+   * second `open_ide` cannot wipe what somebody is halfway through typing. That guard is right
+   * for a second exercise in the SAME language and wrong across a language change: asked to
+   * "switch the IDE to Python", the tutor reopens it with python and a Python scaffold, the
+   * buffer still holds Java, and the learner gets a panel labelled Python containing Java that
+   * cannot compile. Reported as the template not changing.
+   *
+   * Java is not the learner's in-progress Python work, so it is stashed rather than kept or
+   * discarded: come back to Java later and it is still there.
+   */
+  const buffersByLanguage = useRef<Record<string, string>>({});
   const [runRequest, setRunRequest] = useState<{ nonce: number; stdin: string }>({
     nonce: 0,
     stdin: "",
@@ -90,6 +105,21 @@ export default function TutorSessionPage() {
   const tutor = useRealtimeTutor({
     onQuiz: setQuiz,
     onOpenIde: ({ language, task, starter_code }) => {
+      const previous = ideRef.current;
+      const swap = swapBufferForLanguage({
+        wasOpen: previous.opened,
+        previousLanguage: previous.language,
+        nextLanguage: language,
+        currentBuffer: codeBufferRef.current,
+        buffers: buffersByLanguage.current,
+      });
+      if (swap.switched) {
+        buffersByLanguage.current = swap.buffers;
+        setCodeBuffer(swap.buffer);
+        // Written straight to the ref as well: IdePanel decides whether to seed the scaffold
+        // by reading the buffer, and it must not see the outgoing language's code there.
+        codeBufferRef.current = swap.buffer;
+      }
       setIde({ opened: true, language, task, starter: starter_code });
       // Show it. Without this the model could "open" an editor that stayed behind the
       // conversation panel, and then talk about code the learner could not see.

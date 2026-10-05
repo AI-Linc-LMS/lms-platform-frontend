@@ -96,10 +96,16 @@ export function IdePanel({
 
   // Seed from the scaffold only while the buffer is empty. A second `open_ide` mid-lesson used
   // to overwrite whatever the learner had written with the new exercise's starter code.
+  //
+  // `language` is in the deps as well as `starterCode`. On a language switch the room has just
+  // swapped the buffer out for that language's own, so the test below passes and the new
+  // scaffold lands - but only this dependency makes the effect re-run to notice, since the
+  // tutor can reopen the IDE in a different language carrying the same scaffold string, or
+  // none at all.
   useEffect(() => {
     if (starterCode && !codeRef.current.trim()) setCode(starterCode);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [starterCode]);
+  }, [starterCode, language]);
 
   const runCode = useCallback(async (stdin = "") => {
     if (running || !codeRef.current.trim() || !sessionId) return;
