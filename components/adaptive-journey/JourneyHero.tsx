@@ -12,10 +12,20 @@ import { Icon } from "@iconify/react";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { courseCta } from "@/lib/adaptive/courseCta";
 import { PHONE } from "@/components/common/mobile/phone";
+import type { ReactNode } from "react";
 import type { JourneyBoard as JourneyBoardData } from "@/lib/types/adaptive-journey";
 import { fmtLongDate } from "./spine/dates";
 
-export function JourneyHero({ board, courseId }: { board: JourneyBoardData; courseId: number }) {
+export function JourneyHero({
+  board,
+  courseId,
+  tabs,
+}: {
+  board: JourneyBoardData;
+  courseId: number;
+  /** The course's section tabs, rendered along the bottom edge of the hero. */
+  tabs?: ReactNode;
+}) {
   const { push, prefetch } = useInstantNavigation();
   const { t } = useTranslation();
   const c = board.course;
@@ -48,7 +58,7 @@ export function JourneyHero({ board, courseId }: { board: JourneyBoardData; cour
   if (c.estHours) meta.push({ icon: "mdi:clock-outline", label: `~${c.estHours} hrs` });
 
   return (
-    <Box sx={{ borderRadius: 5, p: { xs: 2.5, md: 3.5 }, mb: 2.5, color: "white", position: "relative", overflow: "hidden", background: "linear-gradient(135deg, #1b0f38 0%, #2d1659 48%, #46146b 100%)", boxShadow: "0 24px 60px -28px var(--module-hero-shadow, rgba(124,58,237,0.6))" }}>
+    <Box sx={{ borderRadius: 5, pt: { xs: 2.5, md: 3.5 }, px: { xs: 2.5, md: 3.5 }, pb: tabs ? 0 : { xs: 2.5, md: 3.5 }, mb: 2.5, color: "white", position: "relative", overflow: "hidden", background: "linear-gradient(135deg, #1b0f38 0%, #2d1659 48%, #46146b 100%)", boxShadow: "0 24px 60px -28px var(--module-hero-shadow, rgba(124,58,237,0.6))" }}>
       {/* A soft brand bloom in the corner, so the dark panel reads as the product's rather
           than as a generic dark card. */}
       <Box aria-hidden sx={{ position: "absolute", inset: 0, pointerEvents: "none", backgroundImage: "radial-gradient(70% 90% at 100% 0%, rgba(192,38,211,0.35) 0%, transparent 60%), radial-gradient(60% 80% at 0% 100%, rgba(99,102,241,0.3) 0%, transparent 55%)" }} />
@@ -125,6 +135,10 @@ export function JourneyHero({ board, courseId }: { board: JourneyBoardData; cour
           {resumeLabel}
         </ButtonBase>
       </Stack>
+
+      {tabs && (
+        <Box sx={{ position: "relative", mt: 2.5, mx: { xs: -2.5, md: -3.5 } }}>{tabs}</Box>
+      )}
     </Box>
   );
 }

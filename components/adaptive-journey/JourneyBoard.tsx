@@ -11,7 +11,8 @@
  * them from this path. Their definitions moved to `./spine/nodeVisuals`.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { Box, Chip, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
@@ -21,12 +22,23 @@ import { JourneyTopCards } from "./JourneyTopCards";
 import { JourneyHero } from "./JourneyHero";
 import { Spine } from "./spine/Spine";
 import { CareerRail } from "./CareerRail";
+import { useIsAiVoiceTutorEnabled } from "@/lib/contexts/ClientInfoContext";
+import { CourseTabBar, CourseSummaryStrip } from "./tabs/CourseTabBar";
+import { AssessmentsPanel } from "./tabs/AssessmentsPanel";
+import { InterviewPanel } from "./tabs/InterviewPanel";
+import { TutorPanel } from "./tabs/TutorPanel";
+import { CertificateMilestone } from "./spine/CertificateMilestone";
+import { averageScore, coursePapers, courseTabs, resolveTab, type CourseTabId } from "./tabs/courseTabs";
 import { JourneyBoardSkeleton } from "@/components/courses/CourseSkeletons";
 import { PHONE } from "@/components/common/mobile/phone";
 
 export { contentSummary, isAssessmentNode } from "./spine/nodeVisuals";
 
 export function JourneyBoard({ courseId }: { courseId: number; showHeader?: boolean }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const search = useSearchParams();
+  const tutorEnabled = useIsAiVoiceTutorEnabled();
   const [board, setBoard] = useState<JourneyBoardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -64,6 +76,21 @@ export function JourneyBoard({ courseId }: { courseId: number; showHeader?: bool
     return starts;
   }, [board]);
 
+  // The open tab lives in the URL, so a learner can link someone straight to a course's
+  // assessments and a reload keeps them where they were.
+  const tabs = board ? courseTabs(board, tutorEnabled) : [];
+  const active = resolveTab(search.get("tab"), tabs);
+  const openTab = useCallback(
+    (id: CourseTabId) => {
+      const next = new URLSearchParams(search.toString());
+      if (id === "journey") next.delete("tab");
+      else next.set("tab", id);
+      const q = next.toString();
+      router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
+    },
+    [pathname, router, search],
+  );
+
   if (loading) return <JourneyBoardSkeleton />;
   if (notEnrolled) {
     return <Typography sx={{ color: "#64748b", py: 6, textAlign: "center" }}>You are not enrolled in this course.</Typography>;
@@ -94,12 +121,70 @@ export function JourneyBoard({ courseId }: { courseId: number; showHeader?: bool
     );
   }
 
+  const papers = coursePapers(board);
+  const avg = averageScore(board);
+  const taughtModules = board.weeks
+    .flatMap((w) => w.nodes)
+    .filter((n) => n.type === "topic" && n.tutor?.state === "done").length;
+  // One line per section, each a reading. A section with nothing to report is left out of the
+  // strip rather than given a zero.
+  const summary = tabs
+    .map((t) => {
+      switch (t.id) {
+        case "journey":
+          return { id: t.id, step: 1, label: "Learn", icon: "mdi:book-open-page-variant",
+                   value: `${board.progressCard.nodesDone} of ${board.progressCard.nodesTotal} steps` };
+        case "tutor":
+          return { id: t.id, step: 2, label: "AI Tutor", icon: "mdi:robot-happy-outline",
+                   value: taughtModules > 0 ? `${taughtModules} modules taught` : "Session ready" };
+        case "assessments":
+          return { id: t.id, step: 3, label: "Assess", icon: "mdi:clipboard-text-outline",
+                   value: avg == null
+                     ? `${papers.length} papers`
+                     : `${papers.filter((p) => p.status === "done").length} of ${papers.length} · ${avg}%` };
+        case "interview":
+          return { id: t.id, step: 4, label: "Interview", icon: "mdi:account-voice",
+                   value: board.interview.card?.status === "done" ? "Completed" : "Ready when you are" };
+        case "jobs":
+          return { id: t.id, step: 5, label: "Jobs", icon: "mdi:briefcase-outline",
+                   value: `${(board.career?.openCount ?? 0) + (board.career?.related.length ?? 0)} roles` };
+        case "certificate":
+          return { id: t.id, step: 6, label: "Certificate", icon: "mdi:trophy-outline",
+                   value: `${board.course.certificateThreshold}% to unlock` };
+        default:
+          return null;
+      }
+    })
+    .filter((x): x is NonNullable<typeof x> => x !== null);
+
   return (
     <Box>
-      <JourneyHero board={board} courseId={courseId} />
-      <JourneyTopCards courseId={courseId} calibration={board.calibration} interview={board.interview} />
+      <JourneyHero
+        board={board}
+        courseId={courseId}
+        tabs={<CourseTabBar tabs={tabs} active={active} onChange={openTab} />}
+      />
 
-      {/* minmax(0,1fr): a bare 1fr column is as wide as its widest child, which pushed the week
+      {/* Six readings, one per section, each a doorway into it. */}
+      <CourseSummaryStrip items={summary} onJump={openTab} />
+
+      <Box role="tabpanel" id={`course-panel-${active}`} aria-labelledby={`course-tab-${active}`}>
+        {active === "tutor" && <TutorPanel board={board} />}
+        {active === "assessments" && <AssessmentsPanel board={board} courseId={courseId} />}
+        {active === "interview" && <InterviewPanel board={board} courseId={courseId} />}
+        {active === "jobs" && (
+          <CareerRail career={board.career} courseTitle={board.course.title} alwaysShow />
+        )}
+        {active === "certificate" && (
+          <Box sx={{ maxWidth: 820 }}>
+            <CertificateMilestone board={board} first last />
+          </Box>
+        )}
+        {active === "journey" && (
+          <>
+            <JourneyTopCards courseId={courseId} calibration={board.calibration} interview={board.interview} />
+
+            {/* minmax(0,1fr): a bare 1fr column is as wide as its widest child, which pushed the week
           cards past a phone's edge. Below lg the side panels follow the weeks in one column. */}
       <Box sx={{ display: "grid", gridTemplateColumns: { xs: "minmax(0,1fr)", lg: "minmax(0,1fr) 390px" }, gap: 2.5, [PHONE]: { gap: 2, "& > *": { minWidth: 0 } } }}>
         <Box>
@@ -153,9 +238,9 @@ export function JourneyBoard({ courseId }: { courseId: number; showHeader?: bool
         </Box>
       </Box>
 
-      {/* Below both columns, full width: where the course leads is the end of the page, not a
-          sidebar note. Renders nothing until there is something true to say. */}
-      <CareerRail career={board.career} courseTitle={board.course.title} />
+          </>
+        )}
+      </Box>
     </Box>
   );
 }

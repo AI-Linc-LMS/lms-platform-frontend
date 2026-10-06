@@ -10,6 +10,13 @@ import { fireEvent, render, screen } from "@testing-library/react";
  */
 
 const push = vi.fn();
+// The course page keeps its open tab in the URL, so it needs the app router.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: vi.fn(), push: vi.fn(), back: vi.fn(), prefetch: vi.fn() }),
+  usePathname: () => "/adaptive-courses/7",
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 vi.mock("@/lib/hooks/useInstantNavigation", () => ({
   useInstantNavigation: () => ({ push, replace: vi.fn(), prefetch: vi.fn(), isPending: false }),
 }));

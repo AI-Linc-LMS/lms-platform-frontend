@@ -11,6 +11,13 @@ import { render, screen, waitFor } from "@testing-library/react";
  * the course, its test, its destination and where it leads.
  */
 
+// The course page keeps its open tab in the URL, so it needs the app router.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ replace: vi.fn(), push: vi.fn(), back: vi.fn(), prefetch: vi.fn() }),
+  usePathname: () => "/adaptive-courses/7",
+  useSearchParams: () => new URLSearchParams(),
+}));
+
 vi.mock("@/lib/hooks/useInstantNavigation", () => ({
   useInstantNavigation: () => ({ push: vi.fn(), prefetch: vi.fn(), replace: vi.fn(), isPending: false }),
 }));
@@ -125,10 +132,10 @@ describe("a course with the whole journey switched on", () => {
     // Exactly one certificate station, carrying the real card's machinery.
     expect(screen.getAllByTestId("certificate-card")).toHaveLength(1);
 
-    // And where the course leads.
-    expect(screen.getByText("Where this takes you")).toBeTruthy();
-    expect(screen.getByText("Backend Engineer")).toBeTruthy();
-    expect(screen.getByText(/Add what Python Basics taught you/)).toBeTruthy();
+    // And where the course leads is now its own section rather than 78 rows below the spine -
+    // which is why it read as "there are no jobs" on a 28-week course.
+    expect(screen.getByRole("tab", { name: /Jobs & Resume/ })).toBeTruthy();
+    expect(screen.queryByText("Where this takes you")).toBeNull();
   });
 
   it("renders each milestone exactly once", async () => {
@@ -147,5 +154,31 @@ describe("a course with the whole journey switched on", () => {
     await waitFor(() => expect(screen.getAllByTestId("module-triad").length).toBe(2));
     // The locked paper's tile states its condition instead of a question count.
     expect(screen.getAllByText("After all lessons").length).toBeGreaterThanOrEqual(1);
+  });
+});
+
+
+describe("the course's sections", () => {
+  it("offers one tab per thing the course actually has", async () => {
+    render(<JourneyBoard courseId={7} />);
+    await waitFor(() => expect(screen.getByRole("tab", { name: /Journey/ })).toBeTruthy());
+    for (const name of [/Journey/, /AI Tutor/, /Assessments/, /Mock Interview/, /Jobs & Resume/, /Certificate/]) {
+      expect(screen.getByRole("tab", { name })).toBeTruthy();
+    }
+  });
+
+  it("opens on the journey", async () => {
+    render(<JourneyBoard courseId={7} />);
+    await waitFor(() => expect(screen.getByRole("tab", { name: /Journey/ })).toBeTruthy());
+    expect(screen.getByRole("tab", { name: /Journey/ })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getAllByTestId("journey-node").length).toBeGreaterThan(0);
+  });
+
+  it("gives each section a doorway in the summary strip", async () => {
+    render(<JourneyBoard courseId={7} />);
+    await waitFor(() => expect(screen.getByText("Learn")).toBeTruthy());
+    for (const label of ["Learn", "AI Tutor", "Assess", "Interview", "Jobs", "Certificate"]) {
+      expect(screen.getAllByText(label).length).toBeGreaterThan(0);
+    }
   });
 });
