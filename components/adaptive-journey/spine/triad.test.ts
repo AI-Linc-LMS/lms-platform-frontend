@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { assessmentLeg, checkpointForModule, lessonsLeg, moduleTriad, tutorLegView } from "./triad";
-import { layOutWeek } from "./weekLayout";
+import { assessmentLeg, lessonsLeg, moduleTriad, tutorLegView } from "./triad";
+import { paperByModule, weekPaper } from "./weekLayout";
 import type { JourneyNodeView } from "@/lib/types/adaptive-journey";
 
 /**
@@ -85,8 +85,8 @@ const paper = (over: Partial<JourneyNodeView> = {}): JourneyNodeView =>
     ref: { assessmentId: 5, assessmentSlug: "wk1" }, ...over });
 
 describe("the assessment leg", () => {
-  it("says so plainly when the module has no paper", () => {
-    expect(assessmentLeg(node(), null).value).toBe("None for this module");
+  it("says so plainly when the week has no paper", () => {
+    expect(assessmentLeg(node(), null).value).toBe("No assessment");
   });
 
   it("counts the questions on an open paper", () => {
@@ -109,6 +109,13 @@ describe("the assessment leg", () => {
     expect(assessmentLeg(node({ status: "current" }), paper({ status: "locked" })).value)
       .toBe("After all lessons");
   });
+
+  it("promises no timing just because THIS module is finished", () => {
+    // The paper covers the whole week. Finishing one of its three modules does not mean it is
+    // about to open, and "Opens shortly" said exactly that.
+    expect(assessmentLeg(node({ status: "done" }), paper({ status: "locked" })).value)
+      .toBe("After all lessons");
+  });
 });
 
 describe("the triad as a whole", () => {
@@ -127,37 +134,76 @@ describe("the triad as a whole", () => {
   });
 });
 
-describe("laying out a week", () => {
-  it("folds the module's checkpoint into its last module instead of drawing it twice", () => {
-    const m1 = node({ id: 1 });
-    const m2 = node({ id: 2 });
-    const cp = paper({ id: 9 });
-    const out = layOutWeek([m1, m2, cp]);
-    expect(out.rows.map((n) => n.id)).toEqual([1, 2]);
-    expect(out.checkpointFor.get(2)?.id).toBe(9);
-    expect(out.checkpointFor.get(1)).toBeUndefined();
+describe("which paper covers a module", () => {
+  // Shapes taken from production. The Impacteers DSA course (14) runs a `week_final` per week
+  // titled "Week N Check", and most of its weeks hold TWO modules. Platform-wide the split is
+  // 214 `checkpoint` to 118 `week_final`, so a rule that reads only one is wrong for a third
+  // of the platform.
+
+  it("finds a week's paper when it is stored as a checkpoint", () => {
+    expect(weekPaper([node({ id: 1 }), paper({ id: 9 })])?.id).toBe(9);
   });
 
-  it("leaves the calibration as its own step - it is not a module's test", () => {
-    const calib = paper({ id: 9, isCalibration: true });
-    const out = layOutWeek([node({ id: 1 }), calib]);
-    expect(out.rows.map((n) => n.id)).toEqual([1, 9]);
-    expect(out.checkpointFor.size).toBe(0);
+  it("finds it when it is stored as a week_final", () => {
+    // `week_final` is NOT the course's final assessment - it is the week's own paper. Reading
+    // only `checkpoint` is what made every module on an Impacteers course claim it had none.
+    expect(weekPaper([node({ id: 1 }), paper({ id: 9, type: "week_final" })])?.id).toBe(9);
   });
 
-  it("leaves a week-final as its own station on the rail", () => {
-    const final = paper({ id: 9, type: "week_final" });
-    const out = layOutWeek([node({ id: 1 }), final]);
-    expect(out.rows.map((n) => n.id)).toEqual([1, 9]);
+  it("does not mistake the calibration for a module's paper", () => {
+    // It is stored as a checkpoint node, but it is the course's entry assessment and belongs
+    // to no module.
+    expect(weekPaper([node({ id: 1 }), paper({ id: 9, isCalibration: true })])).toBeNull();
   });
 
-  it("keeps a paper that has no module to fold into, rather than losing it", () => {
-    const out = layOutWeek([paper({ id: 9 })]);
-    expect(out.rows.map((n) => n.id)).toEqual([9]);
+  it("is null for a week with no paper at all", () => {
+    expect(weekPaper([node({ id: 1 })])).toBeNull();
   });
 
-  it("finds the paper that closes a week", () => {
-    expect(checkpointForModule([node({ id: 1 }), paper({ id: 9 })])?.id).toBe(9);
-    expect(checkpointForModule([node({ id: 1 })])).toBeNull();
+  it("gives the week's paper to EVERY module in that week", () => {
+    // The shape that broke: week 2 of course 14 is Arrays + Strings + one Week 2 Check. The
+    // old rule handed it to the last module only, so "Arrays & Matrix Problems" reported no
+    // assessment while the week's paper sat on the rail directly beneath it.
+    const map = paperByModule([
+      node({ id: 1, title: "Arrays & Matrix Problems" }),
+      node({ id: 2, title: "Strings" }),
+      paper({ id: 9, type: "week_final" }),
+    ]);
+    expect(map.get(1)?.id).toBe(9);
+    expect(map.get(2)?.id).toBe(9);
+  });
+
+  it("maps nothing for a week that has no paper", () => {
+    expect(paperByModule([node({ id: 1 }), node({ id: 2 })]).size).toBe(0);
+  });
+
+  it("never maps the paper onto a non-module step", () => {
+    const map = paperByModule([node({ id: 1 }), paper({ id: 9 })]);
+    expect(map.has(9)).toBe(false);
+  });
+
+  it("keeps the paper's own node untouched - it stays a station on the rail", () => {
+    // It carries its weight ("counts 2x"), its question count and its result button, none of
+    // which fits in a tile. The tile points at it; it is not a copy of it.
+    const nodes = [node({ id: 1 }), paper({ id: 9, type: "week_final" })];
+    paperByModule(nodes);
+    expect(nodes.map((n) => n.id)).toEqual([1, 9]);
+  });
+});
+
+describe("a module in a week that has a paper", () => {
+  it("never claims it has no assessment", () => {
+    const map = paperByModule([node({ id: 1 }), node({ id: 2 }), paper({ id: 9, type: "week_final" })]);
+    for (const id of [1, 2]) {
+      const leg = assessmentLeg(node({ id }), map.get(id) ?? null);
+      expect(leg.value).not.toBe("No assessment");
+    }
+  });
+
+  it("reports the paper's real state on every module it covers", () => {
+    const done = paper({ id: 9, type: "week_final", status: "done", score: { earned: 17, total: 240 } });
+    const map = paperByModule([node({ id: 1 }), node({ id: 2 }), done]);
+    expect(assessmentLeg(node({ id: 1 }), map.get(1) ?? null).value).toBe("Scored 7%");
+    expect(assessmentLeg(node({ id: 2 }), map.get(2) ?? null).value).toBe("Scored 7%");
   });
 });

@@ -1,43 +1,42 @@
 /**
- * How a week's steps are laid out on the spine.
+ * Which paper covers a week, and which modules it covers.
  *
- * A module's checkpoint is drawn INSIDE that module, as the third leg of its triad, the way
- * the design shows it: "3 · ASSESSMENT · Scored 86%". So it must not also be drawn as its own
- * row below the module - the same paper twice, once as a tile and once as a card, reads as two
- * different tests.
+ * A week's assessment is a WEEK-level thing. On production a week commonly holds two or three
+ * modules and exactly one paper: the Impacteers DSA course runs
+ * `topic("Arrays & Matrix Problems") + topic("Strings") + week_final("Week 2 Check")`. So the
+ * paper belongs to every module in its week, not to one of them.
  *
- * Two things are deliberately NOT absorbed:
+ * It is stored under either type. `week_final` is NOT "the course's final assessment" - it is
+ * the week's own paper, titled "Week N Check" - and platform-wide the split is 214 `checkpoint`
+ * to 118 `week_final`. A rule that reads only one of them is wrong for a third of the platform.
  *
- * * The calibration. It is stored as a checkpoint node but it is not a module's test - it is
- *   the course's entry assessment, with its own card above the timeline.
- * * `week_final`. The design keeps the final assessment as its own station on the rail, and a
- *   week-final is a bigger thing than the module it follows.
+ * The calibration is excluded. It is stored as a checkpoint node but it is the course's entry
+ * assessment, with its own card above the timeline, and it belongs to no module.
+ *
+ * This file replaced one that folded the paper INTO the week's last module and dropped its row.
+ * That was modelled on a design where each week held exactly one module; on real data it left
+ * every other module in the week saying "None for this module" while the week's paper sat
+ * directly below them, and it only ever recognised `checkpoint`.
  */
 
 import type { JourneyNodeView } from "@/lib/types/adaptive-journey";
 
-export interface WeekLayout {
-  /** The rows to draw, in order. */
-  rows: JourneyNodeView[];
-  /** The paper folded into each module's triad, by that module's node id. */
-  checkpointFor: Map<number, JourneyNodeView>;
+/** The paper that covers this week, or null when the week has none. */
+export function weekPaper(nodes: JourneyNodeView[]): JourneyNodeView | null {
+  return (
+    nodes.find(
+      (n) => (n.type === "checkpoint" || n.type === "week_final") && !n.isCalibration,
+    ) ?? null
+  );
 }
 
-export function layOutWeek(nodes: JourneyNodeView[]): WeekLayout {
-  const modules = nodes.filter((n) => n.type === "topic");
-  const absorbable = nodes.find(
-    (n) => n.type === "checkpoint" && !n.isCalibration,
-  );
-
-  // With no module to attach to, the paper has to keep its own row or it would vanish.
-  if (!absorbable || modules.length === 0) {
-    return { rows: nodes, checkpointFor: new Map() };
+/** That paper, keyed by every module it covers, so each module can state its real status. */
+export function paperByModule(nodes: JourneyNodeView[]): Map<number, JourneyNodeView> {
+  const paper = weekPaper(nodes);
+  const out = new Map<number, JourneyNodeView>();
+  if (!paper) return out;
+  for (const n of nodes) {
+    if (n.type === "topic") out.set(n.id, paper);
   }
-
-  // It closes the week, so it belongs to the week's LAST module.
-  const owner = modules[modules.length - 1];
-  return {
-    rows: nodes.filter((n) => n.id !== absorbable.id),
-    checkpointFor: new Map([[owner.id, absorbable]]),
-  };
+  return out;
 }

@@ -19,7 +19,7 @@ import { NodeRow } from "./NodeRow";
 import { SpineRow } from "./SpineRow";
 import { WeekBand, WeekMarker } from "./WeekBand";
 import { railEnds, sameRung } from "./railEnds";
-import { layOutWeek } from "./weekLayout";
+import { paperByModule } from "./weekLayout";
 import { Milestones } from "./Milestones";
 import { courseMilestones } from "./milestoneRules";
 import type { JourneyBoard as JourneyBoardData } from "@/lib/types/adaptive-journey";
@@ -52,14 +52,16 @@ export function Spine({
 }) {
   // The rail begins at the first marker and ends at the last, with no loose ends. See
   // `railEnds` for why those are read off the data rather than assumed.
-  // A module's checkpoint is drawn inside that module's triad, so it is not also a row.
-  const layouts = weeks.map((w) => layOutWeek(w.nodes));
-  const laidOut = weeks.map((w, i) => ({ ...w, nodes: layouts[i].rows }));
-  const { first, last } = railEnds(laidOut);
+  // The week's paper keeps its own station on the rail - it covers the whole week, carries its
+  // own weight and question count, and a week often holds several modules - and every module in
+  // that week points at it, so none of them claims to have no assessment while it sits below
+  // them.
+  const papers = weeks.map((w) => paperByModule(w.nodes));
+  const { first, last } = railEnds(weeks);
   // Modules are numbered across the whole course, the way a learner refers to them.
   let moduleCounter = 0;
   const moduleNoById = new Map<number, number>();
-  for (const w of laidOut) {
+  for (const w of weeks) {
     for (const n of w.nodes) {
       if (n.type === "topic") moduleNoById.set(n.id, ++moduleCounter);
     }
@@ -71,7 +73,7 @@ export function Spine({
 
   return (
     <Box>
-      {laidOut.map((week, wi) => {
+      {weeks.map((week, wi) => {
         const band = { week: wi, node: null };
         return (
           <Box key={week.weekNo}>
@@ -95,7 +97,7 @@ export function Spine({
                   fieldTier={fieldTier}
                   first={sameRung(rung, first)}
                   last={sameRung(rung, lastStepRung)}
-                  checkpoint={layouts[wi].checkpointFor.get(n.id) ?? null}
+                  checkpoint={papers[wi].get(n.id) ?? null}
                   moduleNo={moduleNoById.get(n.id)}
                 />
               );
