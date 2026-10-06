@@ -10,6 +10,7 @@
  */
 
 import type React from "react";
+import { useState } from "react";
 import { Box, ButtonBase, Chip, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
@@ -21,6 +22,7 @@ import { contentSummary, isAssessmentNode, nodeLabel, NODE_STYLE } from "./nodeV
 import { TutorAction } from "./TutorAction";
 import { InterviewAction } from "./InterviewAction";
 import { SpineRow, type RailTone } from "./SpineRow";
+import { ModuleLessons } from "./ModuleLessons";
 import { TriadTile } from "./TriadTile";
 import { moduleTriad } from "./triad";
 import { useIsAiVoiceTutorEnabled } from "@/lib/contexts/ClientInfoContext";
@@ -99,6 +101,10 @@ export function NodeRow({
 }) {
   const { push, prefetch } = useInstantNavigation();
   const tutorEnabled = useIsAiVoiceTutorEnabled();
+  // Opens on demand. The board carries only item COUNTS, so the titles are fetched when a
+  // module is expanded - a 53-module course would otherwise ship every lesson of every module
+  // to show the one or two a learner opens.
+  const [open, setOpen] = useState(false);
   const l = nodeLabel(node);
   const ns = NODE_STYLE[node.type] ?? NODE_STYLE.topic;
   const done = node.status === "done";
@@ -127,6 +133,9 @@ export function NodeRow({
   // An interview step is reachable but has no href at all - it has to be minted. So it gets a
   // launch button wherever Continue would have gone, in every state but locked.
   const interviewable = node.type === "interview" && !locked;
+  // Only a module has lessons to show, and only an unlocked one has lessons the learner may
+  // open. A locked module's chevron would promise a list it then refuses to act on.
+  const expandable = node.type === "topic" && !!node.ref.submoduleId && !locked;
 
   return (
     <SpineRow marker={<NodeMarker node={node} stepNo={stepNo} />} tone={nodeTone(node)} first={first} last={last}>
@@ -183,7 +192,8 @@ export function NodeRow({
               <Typography sx={{ fontSize: "0.76rem", color: "#64748b", mt: 0.25, [PHONE]: { fontSize: "0.8rem" } }}>{summary}</Typography>
             )}
           </Box>
-          <Box sx={{ textAlign: "right", flexShrink: 0 }}>
+          <Box sx={{ display: "flex", alignItems: "flex-start", gap: 0.5, flexShrink: 0 }}>
+          <Box sx={{ textAlign: "right" }}>
             {(() => {
               // One tested rule, imported rather than re-typed here. The comment in
               // lms_api/services.py about "mirroring rather than importing" is the reason
@@ -201,6 +211,26 @@ export function NodeRow({
                 </Typography>
               );
             })()}
+          </Box>
+          {expandable && (
+            <ButtonBase
+              onClick={(e) => { e.stopPropagation(); setOpen((v) => !v); }}
+              aria-expanded={open}
+              aria-label={open ? `Hide the lessons in ${node.title}` : `Show the lessons in ${node.title}`}
+              sx={{
+                width: 30, height: 30, borderRadius: 2, flexShrink: 0, color: "#94a3b8",
+                "&:hover": { bgcolor: "#f1f5f9", color: "#475569" },
+                "&:focus-visible": { outline: "2px solid #6366f1", outlineOffset: 1 },
+                [PHONE]: { width: 44, height: 44 },
+              }}
+            >
+              <Icon
+                icon="mdi:chevron-down"
+                width={20}
+                style={{ transform: open ? "rotate(180deg)" : "none", transition: "transform .18s" }}
+              />
+            </ButtonBase>
+          )}
           </Box>
         </Stack>
 
@@ -223,6 +253,10 @@ export function NodeRow({
               />
             ))}
           </Stack>
+        )}
+
+        {expandable && open && node.ref.submoduleId && (
+          <ModuleLessons courseId={courseId} submoduleId={node.ref.submoduleId} />
         )}
 
         {current && (
