@@ -59,9 +59,13 @@ export function courseTabs(board: JourneyBoard, tutorEnabled: boolean): CourseTa
     });
   }
 
+  // Labelled for what it IS. `board.interview.card` comes only from the node flagged
+  // `is_calibration_interview` - the entry level-gauge that sizes a learner at the start -
+  // and a course has no other interview today. Calling it "Mock Interview" implied a closing
+  // round the course does not have.
   const card = board.interview?.card;
   if (card && card.configured && card.templateId != null) {
-    tabs.push({ id: "interview", label: "Mock Interview", icon: "mdi:account-voice" });
+    tabs.push({ id: "interview", label: "Level Check", icon: "mdi:account-voice" });
   }
 
   // The jobs tab exists when the server actually has jobs to show. `openCount` is what

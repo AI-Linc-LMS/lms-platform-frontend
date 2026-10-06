@@ -23,16 +23,20 @@ export interface Milestone {
 export function courseMilestones(board: JourneyBoard): Milestone[] {
   const out: Milestone[] = [];
 
-  const card = board.interview?.card;
-  // An interview already on the timeline is already in the journey; a second entry at the end
-  // would be the same interview twice. And an unconfigured template is not a destination -
-  // the top card is the surface that explains "your instructor is still setting this up".
-  const interviewAlreadyAStep = board.weeks.some((w) =>
-    w.nodes.some((n) => n.type === "interview"),
-  );
-  if (card && card.configured && card.templateId != null && !interviewAlreadyAStep) {
-    out.push({ kind: "interview", reached: card.status === "done" });
-  }
+  // NO interview milestone. `board.interview.card` is NOT the course's closing interview - it
+  // is the ENTRY calibration gauge. The server builds it from the node flagged
+  // `is_calibration_interview` and nothing else (adaptive_journey/journey/board.py:211-212),
+  // and withholds that node from the weeks precisely because it is an entry gauge with its own
+  // top card above the timeline.
+  //
+  // Putting it at the END of the spine said the opposite of the truth twice over: it presented
+  // the thing you do FIRST as the thing you finish with, and because the card reports that
+  // gauge's own completion, a learner who had sat the entry interview saw the course's "final"
+  // interview already ticked. Reported on Impacteers, where the superadmin had sat it.
+  //
+  // Mid-course interview ROUNDS are a separate piece of work. When they exist they will be
+  // real `JourneyNode(type="interview")` steps on the spine, each with its own template, and
+  // they will appear in the weeks like any other step - not here.
 
   if (board.course.certificateEnabled) {
     // `reached` here is NOT an entitlement check. Eligibility is the backend's answer and the
