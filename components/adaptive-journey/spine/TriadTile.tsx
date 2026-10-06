@@ -10,6 +10,7 @@
  * behind it says what would unlock it instead of showing a zero.
  */
 
+import type React from "react";
 import { Box, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PHONE } from "@/components/common/mobile/phone";
@@ -51,7 +52,17 @@ export function TriadTile({
     <Box
       component={interactive ? "button" : "div"}
       type={interactive ? "button" : undefined}
-      onClick={interactive ? onClick : undefined}
+      // The whole module card is clickable, and this tile sits inside it. Without stopping the
+      // click here it fires this handler and then bubbles to the card's, which runs second and
+      // wins - so every tile navigated into the module instead of to the thing it names.
+      onClick={
+        interactive
+          ? (e: React.MouseEvent) => {
+              e.stopPropagation();
+              onClick?.();
+            }
+          : undefined
+      }
       aria-label={interactive ? `${label}: ${value}` : undefined}
       sx={{
         flex: 1,

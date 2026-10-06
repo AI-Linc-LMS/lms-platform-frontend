@@ -34,7 +34,13 @@ export function TutorAction({ node, level }: { node: JourneyNodeView; level?: st
   return (
     <Tooltip title="Have the AI Tutor walk you through this module">
       <ButtonBase
-        onClick={() => push(href)}
+        // Stops at this button. It sits inside the module card, whose own click opens the
+        // module - and the card's handler runs after this one, so without this the learner
+        // was taken to the module they were trying to get the tutor to explain.
+        onClick={(e) => {
+          e.stopPropagation();
+          push(href);
+        }}
         onMouseEnter={() => prefetch(href)}
         onFocus={() => prefetch(href)}
         aria-label={`Learn ${node.title} with the AI Tutor`}

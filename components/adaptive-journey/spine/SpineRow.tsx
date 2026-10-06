@@ -61,22 +61,26 @@ export function SpineRow({
             borderRadius: 1,
           }}
         />
-        {/* The marker sits on a white disc so the rail appears to pass behind it. */}
-        <Box
-          sx={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%)",
-            display: "grid",
-            placeItems: "center",
-            bgcolor: "#fff",
-            borderRadius: "50%",
-            p: "3px",
-          }}
-        >
-          {marker}
-        </Box>
+        {/* The marker sits on a white disc so the rail appears to pass behind it. A rung with
+            no marker - a week heading, which is a label over its modules rather than a step -
+            skips the disc entirely, so the rail runs past it unbroken. */}
+        {marker !== null && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)",
+              display: "grid",
+              placeItems: "center",
+              bgcolor: "#fff",
+              borderRadius: "50%",
+              p: "3px",
+            }}
+          >
+            {marker}
+          </Box>
+        )}
       </Box>
       <Box sx={{ flex: 1, minWidth: 0 }}>{children}</Box>
     </Box>
