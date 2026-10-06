@@ -70,8 +70,12 @@ export function TutorPanel({ board }: { board: JourneyBoard }) {
       <Box
         sx={{
           p: { xs: 2.5, md: 3 }, borderRadius: 4, mb: 2.5, color: "white",
-          background: "linear-gradient(135deg, #1b0f38 0%, #2d1659 55%, #46146b 100%)",
-          backgroundImage: "radial-gradient(90% 120% at 100% 0%, rgba(192,38,211,0.3) 0%, transparent 60%)",
+          // ONE backgroundImage, with both gradients layered, and an explicit colour under
+          // them. Written as `background:` followed by `backgroundImage:` the second silently
+          // REPLACED the first - `background` is a shorthand that sets background-image - so
+          // the dark panel vanished and the white heading sat on a near-white page.
+          backgroundColor: "#1b0f38",
+          backgroundImage: "radial-gradient(90% 120% at 100% 0%, rgba(192,38,211,0.3) 0%, transparent 60%), linear-gradient(135deg, #1b0f38 0%, #2d1659 55%, #46146b 100%)",
           [PHONE]: { p: 2 },
         }}
       >
