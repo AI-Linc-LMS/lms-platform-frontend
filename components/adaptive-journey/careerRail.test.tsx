@@ -68,6 +68,41 @@ describe("the career rail", () => {
     expect(screen.getByText("Open to you")).toBeTruthy();
   });
 
+  it("renders the server's heading rather than composing its own", () => {
+    // The predicate that built the list lives on the server, so the sentence describing it
+    // does too. If the client wrote this, the two could drift - which is how a rail ends up
+    // claiming a relevance it does not have.
+    render(
+      <CareerRail
+        career={panel({
+          open: [job(1, "Backend Engineer")], openCount: 1,
+          openFilter: { applied: true, label: "Roles this course leads to" },
+        })}
+        courseTitle="Python"
+      />,
+    );
+    expect(screen.getByText("Roles this course leads to")).toBeTruthy();
+    expect(screen.queryByText("Open to you")).toBeNull();
+  });
+
+  it("falls back to Open to you when the server narrowed nothing", () => {
+    render(
+      <CareerRail
+        career={panel({
+          open: [job(1, "Backend Engineer")], openCount: 1,
+          openFilter: { applied: false, label: "Open to you" },
+        })}
+        courseTitle="Python"
+      />,
+    );
+    expect(screen.getByText("Open to you")).toBeTruthy();
+  });
+
+  it("still renders on a board served before the filter existed", () => {
+    render(<CareerRail career={panel({ open: [job(1, "Backend Engineer")], openCount: 1 })} courseTitle="Python" />);
+    expect(screen.getByText("Open to you")).toBeTruthy();
+  });
+
   it("never describes the open list as matched or recommended", () => {
     // The whole point. If this assertion ever has to change, the relevance signal behind it
     // had better be real.
