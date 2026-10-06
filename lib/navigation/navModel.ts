@@ -60,25 +60,44 @@ export interface NavSection {
 
 export const STUDENT_SECTIONS: NavSection[] = [
   {
+    // Learn is the COURSE. The course page now carries the tutor, an assessment per module,
+    // the mock interview, the certificate and the jobs it leads to - so a sidebar that listed
+    // those as five more places to go was describing an older product, and sent a learner
+    // hunting for in a menu what is already in front of them.
+    //
+    // The rest did not disappear; they moved to where they belong as standalone surfaces.
+    // Someone who wants to sit a paper outside a course, or re-read a certificate they earned
+    // last term, still has a door - it just is not the first thing a learner sees.
     id: "learn",
     labelKey: "navSection.learn",
     label: "Learn",
     icon: "mdi:school-outline",
-    itemFeatures: [
-      "course",
-      "adaptive_quiz",
-      "assessment",
-      "certificates",
-      "roadmaps",
-      "ai_voice_tutor",
-    ],
+    itemFeatures: ["course", "adaptive_quiz"],
   },
   {
+    // The things a learner does ALONGSIDE a course: ask the tutor about something that is not
+    // in one, sit a standalone paper, or pick the roadmap that builds the next course.
+    id: "practice",
+    labelKey: "navSection.practice",
+    label: "Practice",
+    icon: "mdi:lightning-bolt-outline",
+    itemFeatures: ["ai_voice_tutor", "assessment", "roadmaps"],
+  },
+  {
+    // Certificates join Career rather than Learn: a credential is not something you learn, it
+    // is something you show. The course page itself says so - "verifiable, shareable, and
+    // shown to recruiters in Jobs" - and this is where the jobs and the resume already are.
     id: "career",
     labelKey: "navSection.career",
     label: "Career",
     icon: "mdi:briefcase-outline",
-    itemFeatures: ["mock_interview", "jobs_v2", "resume"],
+    //
+    // `interview_realtime` is listed BESIDE `mock_interview`, not instead of it. It was in no
+    // section at all, which meant 832 students across three tenants - Impacteers, Agileology
+    // and Capabl Labs - held the Mock Interview feature with no sidebar entry to reach it,
+    // because those tenants have the v2 flag and not the legacy one. Tenants with both show
+    // one entry each; neither is a replacement for the other at the nav layer.
+    itemFeatures: ["mock_interview", "interview_realtime", "jobs_v2", "resume", "certificates"],
   },
   {
     id: "engage",

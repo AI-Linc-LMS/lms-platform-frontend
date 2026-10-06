@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { assessmentLeg, lessonsLeg, moduleTriad, tutorLegView } from "./triad";
-import { paperByModule, weekPaper } from "./weekLayout";
+import { paperByModule, weekPaper, weekRows } from "./weekLayout";
 import type { JourneyNodeView } from "@/lib/types/adaptive-journey";
 
 /**
@@ -205,5 +205,33 @@ describe("a module in a week that has a paper", () => {
     const map = paperByModule([node({ id: 1 }), node({ id: 2 }), done]);
     expect(assessmentLeg(node({ id: 1 }), map.get(1) ?? null).value).toBe("Scored 7%");
     expect(assessmentLeg(node({ id: 2 }), map.get(2) ?? null).value).toBe("Scored 7%");
+  });
+});
+
+describe("the week's paper is drawn once", () => {
+  it("comes out of the rows when a module is showing it", () => {
+    const rows = weekRows([node({ id: 1 }), node({ id: 2 }), paper({ id: 9, type: "week_final" })]);
+    expect(rows.map((n) => n.id)).toEqual([1, 2]);
+  });
+
+  it("keeps its row when there is no module to show it", () => {
+    // Otherwise the week's only assessment vanishes from the page, which is worse than
+    // showing it twice.
+    const rows = weekRows([paper({ id: 9 })]);
+    expect(rows.map((n) => n.id)).toEqual([9]);
+  });
+
+  it("never removes the calibration", () => {
+    const rows = weekRows([node({ id: 1 }), paper({ id: 9, isCalibration: true })]);
+    expect(rows.map((n) => n.id)).toEqual([1, 9]);
+  });
+
+  it("removes exactly one paper, not every assessment in the week", () => {
+    const rows = weekRows([
+      node({ id: 1 }),
+      paper({ id: 9, type: "week_final" }),
+      paper({ id: 10, type: "checkpoint" }),
+    ]);
+    expect(rows.map((n) => n.id)).toEqual([1, 10]);
   });
 });
