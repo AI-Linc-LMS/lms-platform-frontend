@@ -8,7 +8,6 @@
 
 import { useTranslation } from "react-i18next";
 import { Box, ButtonBase, Chip, Stack, Typography } from "@mui/material";
-import { AnimatedRing } from "@/components/scorecard/shared/AnimatedRing";
 import { Icon } from "@iconify/react";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { courseCta } from "@/lib/adaptive/courseCta";
@@ -48,26 +47,12 @@ export function JourneyHero({ board, courseId }: { board: JourneyBoardData; cour
   meta.push({ icon: "mdi:certificate-outline", label: `Certificate on ${c.certificateThreshold}%` });
   if (c.estHours) meta.push({ icon: "mdi:clock-outline", label: `~${c.estHours} hrs` });
 
-  // Three numbers the learner has earned, beside the ring. Each is read from the board, and a
-  // number the board does not carry is left out rather than filled with a zero.
-  const stats: { icon: string; value: string; label: string }[] = [
-    { icon: "mdi:star-four-points", value: `${board.progressCard.pointsEarned.toLocaleString()}`, label: "points earned" },
-    { icon: "mdi:target", value: `${board.progressCard.nodesDone}/${board.progressCard.nodesTotal}`, label: "steps done" },
-  ];
-  if (board.progressCard.onTimeRate != null) {
-    stats.push({
-      icon: "mdi:calendar-check",
-      value: `${Math.round(board.progressCard.onTimeRate * 100)}%`,
-      label: "on time",
-    });
-  }
-
   return (
     <Box sx={{ borderRadius: 5, p: { xs: 2.5, md: 3.5 }, mb: 2.5, color: "white", position: "relative", overflow: "hidden", background: "linear-gradient(135deg, #1b0f38 0%, #2d1659 48%, #46146b 100%)", boxShadow: "0 24px 60px -28px var(--module-hero-shadow, rgba(124,58,237,0.6))" }}>
       {/* A soft brand bloom in the corner, so the dark panel reads as the product's rather
           than as a generic dark card. */}
       <Box aria-hidden sx={{ position: "absolute", inset: 0, pointerEvents: "none", backgroundImage: "radial-gradient(70% 90% at 100% 0%, rgba(192,38,211,0.35) 0%, transparent 60%), radial-gradient(60% 80% at 0% 100%, rgba(99,102,241,0.3) 0%, transparent 55%)" }} />
-      <Stack direction={{ xs: "column", md: "row" }} justifyContent="space-between" alignItems="flex-start" spacing={2.5} sx={{ position: "relative" }}>
+      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2} sx={{ position: "relative" }}>
         <Box sx={{ minWidth: 0, flex: 1 }}>
           {/* The course title is the heading right below; on a phone the breadcrumb only repeated it. */}
           <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.7)", mb: 1, [PHONE]: { display: "none" } }}>‹ My Courses / {c.title}</Typography>
@@ -91,40 +76,10 @@ export function JourneyHero({ board, courseId }: { board: JourneyBoardData; cour
             ))}
           </Stack>
         </Box>
-        {/* Where they are, as one number and the three that explain it. This panel is the
-            thing the old hero was missing: it showed what the course IS and never what the
-            learner had done with it. */}
-        <Stack
-          direction="row"
-          spacing={2}
-          alignItems="center"
-          sx={{
-            flexShrink: 0, p: 2, borderRadius: 4,
-            bgcolor: "rgba(0,0,0,0.26)", border: "1px solid rgba(255,255,255,0.14)",
-            [PHONE]: { width: "100%", p: 1.75 },
-          }}
-        >
-          <AnimatedRing
-            value={c.completionPct ?? 0}
-            size={96}
-            strokeWidth={9}
-            color="#a855f7"
-            colorEnd="#f0abfc"
-            caption="complete"
-            valueFontSize={21}
-          />
-          <Stack spacing={1.1} sx={{ minWidth: 0 }}>
-            {stats.map((s) => (
-              <Stack key={s.label} direction="row" spacing={1} alignItems="center">
-                <Icon icon={s.icon} width={15} color="#d8b4fe" />
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", lineHeight: 1.15 }}>{s.value}</Typography>
-                  <Typography sx={{ fontSize: "0.7rem", color: "rgba(255,255,255,0.68)" }}>{s.label}</Typography>
-                </Box>
-              </Stack>
-            ))}
-          </Stack>
-        </Stack>
+        {/* No progress panel here. A ring and three counters were tried in the hero and taken
+            out: at hero scale the "N% COMPLETE" label sat dark-on-dark and was barely legible,
+            and the numbers already have a home in the side rail's "Your Progress" card, where
+            they are readable and not competing with the course title. */}
       </Stack>
 
       {/* AI-tuned banner */}

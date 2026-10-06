@@ -104,15 +104,18 @@ function stripMediaBlocks(css: string, opener: string): string {
 }
 
 describe("JourneyBoard on a phone", () => {
-  it("gives the hero's corner to the learner's real progress, not a like button", async () => {
-    // The like button was a fake control: `useState(false)` with no persistence and no API, so
-    // clicking it did nothing a reload did not undo. Nothing read it and nothing was stored.
-    // Its corner now carries the progress ring and the learner's earned points, which are
-    // read from the board.
+  it("keeps the hero to what the course is, with no fake control and no progress panel", async () => {
+    // Two things have been taken out of this corner. The like button was a fake control -
+    // `useState(false)` with no persistence and no API, so clicking it did nothing a reload
+    // did not undo. The progress ring that briefly replaced it was unreadable at hero scale
+    // (dark-on-dark) and duplicated the side rail's "Your Progress" card, which is where
+    // these numbers belong.
     render(<JourneyBoard courseId={7} />);
-    expect(await screen.findByText("points earned")).toBeTruthy();
+    expect(await screen.findByText("Python Basics", { selector: "p,h1,h2,h3,div" })).toBeTruthy();
     expect(screen.queryByRole("button", { name: /Like this course/ })).toBeNull();
-    expect(screen.getByText("steps done")).toBeTruthy();
+    expect(screen.queryByText("points earned")).toBeNull();
+    expect(screen.queryByText("steps done")).toBeNull();
+    expect(screen.queryByText("COMPLETE")).toBeNull();
   });
 
   it("opens an unlocked topic from its row and leaves a locked one inert", async () => {
