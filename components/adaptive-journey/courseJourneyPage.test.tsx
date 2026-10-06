@@ -98,10 +98,11 @@ describe("a course with the whole journey switched on", () => {
     render(<JourneyBoard courseId={7} />);
     await waitFor(() => expect(screen.getByText("Variables and types")).toBeTruthy());
 
-    // Two modules and the week's paper, which keeps its own station on the rail: it carries a
-    // weight, a question count and a result button that a tile cannot hold.
-    expect(screen.getAllByTestId("journey-node")).toHaveLength(3);
-    expect(screen.getByText("Module 1 checkpoint")).toBeTruthy();
+    // Two modules, and NO separate card for the week's paper: it is drawn as the third leg of
+    // each module's triad. Both at once is the same paper twice, once as a pill and once as a
+    // card, which reads as two different tests.
+    expect(screen.getAllByTestId("journey-node")).toHaveLength(2);
+    expect(screen.queryByText("Module 1 checkpoint")).toBeNull();
 
     // And every module states its three legs, with the third pointing at that same paper.
     expect(screen.getAllByTestId("module-triad")).toHaveLength(2);

@@ -19,7 +19,7 @@ import { NodeRow } from "./NodeRow";
 import { SpineRow } from "./SpineRow";
 import { WeekBand } from "./WeekBand";
 import { railEnds, sameRung } from "./railEnds";
-import { paperByModule } from "./weekLayout";
+import { paperByModule, weekRows } from "./weekLayout";
 import { Milestones } from "./Milestones";
 import { courseMilestones } from "./milestoneRules";
 import type { JourneyBoard as JourneyBoardData } from "@/lib/types/adaptive-journey";
@@ -57,11 +57,13 @@ export function Spine({
   // that week points at it, so none of them claims to have no assessment while it sits below
   // them.
   const papers = weeks.map((w) => paperByModule(w.nodes));
-  const { first, last } = railEnds(weeks);
+  // The week's paper is drawn inside its modules' triads, so it is not also a card below them.
+  const laidOut = weeks.map((w) => ({ ...w, nodes: weekRows(w.nodes) }));
+  const { first, last } = railEnds(laidOut);
   // Modules are numbered across the whole course, the way a learner refers to them.
   let moduleCounter = 0;
   const moduleNoById = new Map<number, number>();
-  for (const w of weeks) {
+  for (const w of laidOut) {
     for (const n of w.nodes) {
       if (n.type === "topic") moduleNoById.set(n.id, ++moduleCounter);
     }
@@ -73,7 +75,7 @@ export function Spine({
 
   return (
     <Box>
-      {weeks.map((week, wi) => {
+      {laidOut.map((week, wi) => {
         const band = { week: wi, node: null };
         return (
           <Box key={week.weekNo}>
