@@ -170,7 +170,16 @@ describe("sitting the course's mock interview", () => {
     expect(screen.getByRole("button", { name: /again/i })).toBeTruthy();
   });
 
-  describe("on a tenant that has the rebuilt interview", () => {
+  describe.skip("on a tenant that has the rebuilt interview (HELD)", () => {
+    // Skipped, not deleted. The v2 cutover is written and correct; it is held off because the
+    // v2 start endpoint cannot yet resolve a journey template - it authorises through
+    // `visible_templates`, and a journey template carries none of that queryset's three
+    // grants, so every round AND the calibration gauge answer 404. Measured on production:
+    // the gauge is invisible to it for all four Impacteers AI Mastery courses.
+    //
+    // `mock_interview.tests_v2_journey_door` is the backend test that proves the 404 and will
+    // prove the fix. Un-skip this block together with the one-word change in
+    // `useInterviewLaunch`.
     // Two interview stacks are mounted at once. A tenant with `interview_realtime` gets the
     // rebuilt room, which mints its own session - so the launch is a route and NOT a POST.
     // Routing a round at the legacy endpoint is the bug this guards: it mints a v1 sitting
