@@ -26,6 +26,7 @@ vi.mock("@/lib/auth/auth-context", () => ({
   useAuth: () => ({ user: { first_name: "Shubham", last_name: "Lal", email: "s@x.com" } }),
 }));
 vi.mock("@/lib/contexts/ClientInfoContext", () => ({
+  useIsInterviewV2Enabled: () => false,
   useOptionalClientInfo: () => ({ id: 29, name: "Impacteers" }),
   useIsAiVoiceTutorEnabled: () => true,
 }));

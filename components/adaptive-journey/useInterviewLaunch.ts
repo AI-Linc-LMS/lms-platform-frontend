@@ -13,6 +13,11 @@
  * the timeline node run the same launch instead of a copy each -- including the opening-clip
  * prewarm, which is the difference between the interviewer speaking on arrival and three
  * seconds of dead air.
+ *
+ * On a tenant with `interview_realtime` it routes to the rebuilt interview instead. That room
+ * mints its own session and drives the whole lifecycle - preflight, WebRTC, server-released
+ * questions, grading - so there is nothing to POST first and the launch is a route. Both
+ * stacks are mounted and a tenant can hold either, so the legacy path stays for the rest.
  */
 
 import { useCallback, useState } from "react";
@@ -20,6 +25,8 @@ import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { useToast } from "@/components/common/Toast";
 import mockInterviewService from "@/lib/services/mock-interview.service";
 import { prefetchInterviewerClip } from "@/lib/hooks/useInterviewerVoice";
+import { useIsInterviewV2Enabled } from "@/lib/contexts/ClientInfoContext";
+import { withFrom } from "@/lib/utils/return-to";
 
 export interface InterviewLaunchMeta {
   topic?: string | null;
@@ -30,11 +37,26 @@ export interface InterviewLaunchMeta {
 export function useInterviewLaunch(courseId: number) {
   const { push } = useInstantNavigation();
   const { showToast } = useToast();
+  const v2 = useIsInterviewV2Enabled();
   const [busy, setBusy] = useState(false);
 
   const launch = useCallback(
     async (templateId: number | null | undefined, meta: InterviewLaunchMeta = {}) => {
       if (templateId == null || busy) return;
+
+      // v2 where the tenant has it. The room mints its own session, so there is nothing to
+      // POST first: it takes the template id and drives the whole lifecycle itself, which is
+      // why this is a route rather than a request. `from` brings the learner back to the
+      // course they left, which the standalone hub has no reason to know about.
+      //
+      // The two stacks are both mounted and a tenant can hold either, so the legacy path
+      // stays for the ones without `interview_realtime`.
+      if (v2) {
+        setBusy(true);
+        push(withFrom(`/interview/room?template=${templateId}`, `/adaptive-courses/${courseId}`));
+        return;
+      }
+
       setBusy(true);
       try {
         const created = await mockInterviewService.startTemplateInterview(templateId);
@@ -64,7 +86,7 @@ export function useInterviewLaunch(courseId: number) {
         setBusy(false);
       }
     },
-    [busy, courseId, push, showToast],
+    [busy, courseId, push, showToast, v2],
   );
 
   return { launch, busy };

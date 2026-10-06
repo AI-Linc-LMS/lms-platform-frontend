@@ -32,6 +32,7 @@ import {
 import { LIVE_PHASES, useRealtimeInterview } from "@/lib/hooks/useRealtimeInterview";
 import { useScreenWakeLock } from "@/lib/hooks/useScreenWakeLock";
 import interviewService, { type NextQuestion } from "@/lib/services/interview.service";
+import { safeFrom, withFrom } from "@/lib/utils/return-to";
 import { PHONE } from "@/components/common/mobile/phone";
 
 /**
@@ -147,6 +148,10 @@ function InterviewRoom() {
   const practiceType = params.get("type") || "mixed";
   // A follow-up carries no topic of its own: the server inherits it from the source sitting.
   const followUpOf = params.get("followUp") || "";
+  // Where "leave" goes. The room is a shared runtime: a round launched from a course's journey
+  // must return to that course, not to the standalone hub the learner never visited. Resolved
+  // through `safeFrom` because this arrives in the URL bar.
+  const backHref = safeFrom(params.get("from")) || "/interview";
 
   /**
    * What the server said when it refused an answer. Shown, not swallowed.
@@ -255,9 +260,11 @@ function InterviewRoom() {
 
   useEffect(() => {
     if (phase === "ended" && finishedSessionRef.current) {
-      router.push(`/interview/result/${finishedSessionRef.current}`);
+      // `from` rides along: the result page is the last hop and its exit is the one the
+      // candidate actually takes.
+      router.push(withFrom(`/interview/result/${finishedSessionRef.current}`, backHref));
     }
-  }, [phase, router]);
+  }, [backHref, phase, router]);
 
   // A structured question's modal is OPEN whenever the current question is structured and
   // not yet submitted: derived, never set in an effect. The mic mutes while it is up, so
@@ -387,7 +394,7 @@ function InterviewRoom() {
             setDegraded(result.degraded);
             setPreflightDone(true);
           }}
-          onCancel={() => router.push("/interview")}
+          onCancel={() => router.push(backHref)}
         />
       ) : (
         <Box sx={{ maxWidth: 1100, mx: "auto" }}>
@@ -454,7 +461,7 @@ function InterviewRoom() {
               </Typography>
               <Box sx={{ display: "flex", gap: 1.5, flexWrap: "wrap" }}>
                 <Button
-                  onClick={() => router.push("/interview")}
+                  onClick={() => router.push(backHref)}
                   sx={{
                     textTransform: "none",
                     color: ROOM_TEXT_DIM,
