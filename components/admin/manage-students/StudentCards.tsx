@@ -22,6 +22,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import { ScrollRow } from "@/components/common/mobile/ScrollRow";
 import type { CourseCompletionStats, Student } from "@/lib/services/admin/admin-student.service";
 import { completionStatsFor } from "@/lib/utils/student-risk";
+import { attendanceCell } from "@/lib/utils/attendanceCell";
 import { CardStat } from "./mobile";
 import { StudentResumeDialog } from "./StudentResumeDialog";
 
@@ -211,12 +212,11 @@ export function StudentCards({
         students.map((student) => {
           const stats = completionStatsFor(completionStats, student);
           const live = student.live_attendance;
+          // Same rule as the desktop table, from lib/utils/attendanceCell, so a phone and a
+          // laptop cannot answer the same question differently.
+          const attendanceState = attendanceCell(live, stats);
           const attendance =
-            live && live.percent !== null
-              ? live.percent
-              : stats && stats.total_attendance_activities > 0
-                ? stats.attendance_percentage
-                : null;
+            attendanceState.kind === "percent" ? attendanceState.percent : null;
           const selected = selectedIds?.has(student.id) ?? false;
           const name = student.name || t("adminManageStudents.na");
           return (
@@ -338,6 +338,8 @@ export function StudentCards({
                     <CircularProgress size={16} />
                   ) : attendance !== null ? (
                     <PercentBar value={attendance} />
+                  ) : attendanceState.kind === "no-classes" ? (
+                    t("adminManageStudents.noClassesYet")
                   ) : (
                     t("adminManageStudents.na")
                   )}

@@ -2493,6 +2493,7 @@
     "tryAdjustingFilters": "Try adjusting your filters",
     "noActivity": "No Activity",
     "na": "N/A",
+    "noClassesYet": "No classes yet",
     "showingStudents": "Showing {{start}} to {{end}} of {{total}} students",
     "uploadCsv": "Upload CSV",
     "selectCourses": "Select Courses",

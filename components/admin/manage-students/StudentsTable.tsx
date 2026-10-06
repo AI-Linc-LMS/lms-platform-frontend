@@ -27,6 +27,7 @@ import {
   CourseCompletionStats,
 } from "@/lib/services/admin/admin-student.service";
 import { completionStatsFor } from "@/lib/utils/student-risk";
+import { attendanceCell, attendanceExplanation } from "@/lib/utils/attendanceCell";
 import { StudentCards } from "./StudentCards";
 import { useIsPhone } from "./mobile";
 import { StudentResumeDialog } from "./StudentResumeDialog";
@@ -505,14 +506,11 @@ export function StudentsTable({
               students.map((student) => {
                 const stats = completionStatsFor(completionStats, student);
                 // Live sessions are the answer this column should give; the roll-call activity
-                // system is what it used to give and is kept as a fallback.
-                const liveAttendance = student.live_attendance;
+                // system is what it used to give and is kept as a fallback. The rule lives in
+                // lib/utils/attendanceCell so this table and the phone cards cannot drift.
+                const attendance = attendanceCell(student.live_attendance, stats);
                 const attendancePercent =
-                  liveAttendance && liveAttendance.percent !== null
-                    ? liveAttendance.percent
-                    : stats && stats.total_attendance_activities > 0
-                      ? stats.attendance_percentage
-                      : null;
+                  attendance.kind === "percent" ? attendance.percent : null;
                 return (
                   <TableRow
                     key={student.id}
@@ -793,15 +791,23 @@ export function StudentsTable({
                           </Box>
                         </Box>
                       ) : (
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: "#6b7280",
-                            fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                          }}
-                        >
-                          {t("adminManageStudents.na")}
-                        </Typography>
+                        // Say WHICH silence this is. "No classes yet" is a fact about the
+                        // batch's schedule; "N/A" reads as missing data and, on a tenant where
+                        // most batches have never held a session, as a broken column.
+                        <Tooltip title={attendanceExplanation(attendance)}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: "#6b7280",
+                              fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                              cursor: "help",
+                            }}
+                          >
+                            {attendance.kind === "no-classes"
+                              ? t("adminManageStudents.noClassesYet")
+                              : t("adminManageStudents.na")}
+                          </Typography>
+                        </Tooltip>
                       )}
                     </TableCell>
                     <TableCell
