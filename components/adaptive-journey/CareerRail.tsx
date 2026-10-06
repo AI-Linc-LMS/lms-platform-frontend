@@ -103,16 +103,27 @@ function Section({ icon, title, note, children }: {
   );
 }
 
-export function CareerRail({ career, courseTitle }: { career?: CareerPanel; courseTitle: string }) {
+export function CareerRail({
+  career,
+  courseTitle,
+  alwaysShow = false,
+}: {
+  career?: CareerPanel;
+  courseTitle: string;
+  /** On its own tab the rail IS the page, so it explains itself instead of disappearing.
+   *  Inline on the journey it stays quiet until it has something to say. */
+  alwaysShow?: boolean;
+}) {
   const { push, prefetch } = useInstantNavigation();
 
   // A board served before this shipped has no career key at all.
   if (!career) return null;
 
   const hasRelated = career.related.length > 0;
-  // Nothing to say yet: no tagged job, and the fortnight gate is still shut. Render nothing
-  // rather than a countdown - "come back in 9 days" is not useful to anyone.
-  if (!hasRelated && !career.unlocked) return null;
+  // Nothing to say yet: no tagged job, and the fortnight gate is still shut. Inline that means
+  // rendering nothing - "come back in 9 days" is not useful to anyone - but a learner who has
+  // clicked the Jobs tab asked, and an empty page with no explanation is worse than the wait.
+  if (!hasRelated && !career.unlocked && !alwaysShow) return null;
 
   const daysLeft =
     career.daysSinceStart != null
@@ -185,6 +196,16 @@ export function CareerRail({ career, courseTitle }: { career?: CareerPanel; cour
             <Icon icon="mdi:briefcase-search-outline" width={16} />
             Explore all jobs
           </ButtonBase>
+        </Section>
+      )}
+
+      {!career.unlocked && !hasRelated && (
+        <Section icon="mdi:briefcase-clock-outline" title="Opening soon">
+          <Typography sx={{ fontSize: "0.82rem", color: "#64748b", lineHeight: 1.5 }}>
+            {daysLeft != null
+              ? `Roles open up here after a fortnight on the course — ${daysLeft} ${daysLeft === 1 ? "day" : "days"} to go.`
+              : "Roles open up here once you are a fortnight into the course."}
+          </Typography>
         </Section>
       )}
 
