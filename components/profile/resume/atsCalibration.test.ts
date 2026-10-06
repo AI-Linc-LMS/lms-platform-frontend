@@ -17,7 +17,7 @@
 
 import { describe, expect, it } from "vitest";
 import { computeStandardATSScoreReport } from "./atsStandardReport";
-import type { ResumeData } from "@/lib/types/resume";
+import type { ResumeData, WorkExperience, Education } from "./types";
 
 /** A resume that a recruiter would call complete. Nothing exotic, nothing missing. */
 function completeResume(): ResumeData {
@@ -183,8 +183,8 @@ describe("and an incomplete one still cannot", () => {
     // This is the failure that actually stops an ATS placing you in time, and it used to be
     // worth 50 - better than a resume whose dates were merely inconsistent.
     const r = completeResume();
-    r.workExperience.forEach((w) => { w.startDate = ""; w.endDate = ""; w.current = false; });
-    r.education.forEach((e) => { e.startDate = ""; e.endDate = ""; });
+    r.workExperience.forEach((w: WorkExperience) => { w.startDate = ""; w.endDate = ""; w.current = false; });
+    r.education.forEach((e: Education) => { e.startDate = ""; e.endDate = ""; });
     const q = checks(r);
     expect(q.dateConsistency.score).toBe(20);
     expect(q.dateConsistency.score).toBeLessThan(55);
