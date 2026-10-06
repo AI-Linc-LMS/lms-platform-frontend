@@ -174,11 +174,13 @@ describe("the course's sections", () => {
     expect(screen.getAllByTestId("journey-node").length).toBeGreaterThan(0);
   });
 
-  it("gives each section a doorway in the summary strip", async () => {
+  it("offers each section exactly once", async () => {
+    // There was a white strip of status pills under the tab bar saying the same six words
+    // again. Two rows of section navigation, one above the other, is one row too many.
     render(<JourneyBoard courseId={7} />);
-    await waitFor(() => expect(screen.getByText("Learn")).toBeTruthy());
-    for (const label of ["Learn", "AI Tutor", "Assess", "Interview", "Jobs", "Certificate"]) {
-      expect(screen.getAllByText(label).length).toBeGreaterThan(0);
+    await waitFor(() => expect(screen.getByRole("tab", { name: /Journey/ })).toBeTruthy());
+    for (const name of [/Journey/, /AI Tutor/, /Assessments/, /Mock Interview/, /Jobs & Resume/, /Certificate/]) {
+      expect(screen.getAllByRole("tab", { name })).toHaveLength(1);
     }
   });
 });

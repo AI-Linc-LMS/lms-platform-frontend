@@ -23,12 +23,12 @@ import { JourneyHero } from "./JourneyHero";
 import { Spine } from "./spine/Spine";
 import { CareerRail } from "./CareerRail";
 import { useIsAiVoiceTutorEnabled } from "@/lib/contexts/ClientInfoContext";
-import { CourseTabBar, CourseSummaryStrip } from "./tabs/CourseTabBar";
+import { CourseTabBar } from "./tabs/CourseTabBar";
 import { AssessmentsPanel } from "./tabs/AssessmentsPanel";
 import { InterviewPanel } from "./tabs/InterviewPanel";
 import { TutorPanel } from "./tabs/TutorPanel";
 import { CertificateMilestone } from "./spine/CertificateMilestone";
-import { averageScore, coursePapers, courseTabs, resolveTab, type CourseTabId } from "./tabs/courseTabs";
+import { courseTabs, resolveTab, type CourseTabId } from "./tabs/courseTabs";
 import { JourneyBoardSkeleton } from "@/components/courses/CourseSkeletons";
 import { PHONE } from "@/components/common/mobile/phone";
 
@@ -121,42 +121,6 @@ export function JourneyBoard({ courseId }: { courseId: number; showHeader?: bool
     );
   }
 
-  const papers = coursePapers(board);
-  const avg = averageScore(board);
-  const taughtModules = board.weeks
-    .flatMap((w) => w.nodes)
-    .filter((n) => n.type === "topic" && n.tutor?.state === "done").length;
-  // One line per section, each a reading. A section with nothing to report is left out of the
-  // strip rather than given a zero.
-  const summary = tabs
-    .map((t) => {
-      switch (t.id) {
-        case "journey":
-          return { id: t.id, step: 1, label: "Learn", icon: "mdi:book-open-page-variant",
-                   value: `${board.progressCard.nodesDone} of ${board.progressCard.nodesTotal} steps` };
-        case "tutor":
-          return { id: t.id, step: 2, label: "AI Tutor", icon: "mdi:robot-happy-outline",
-                   value: taughtModules > 0 ? `${taughtModules} modules taught` : "Session ready" };
-        case "assessments":
-          return { id: t.id, step: 3, label: "Assess", icon: "mdi:clipboard-text-outline",
-                   value: avg == null
-                     ? `${papers.length} papers`
-                     : `${papers.filter((p) => p.status === "done").length} of ${papers.length} · ${avg}%` };
-        case "interview":
-          return { id: t.id, step: 4, label: "Interview", icon: "mdi:account-voice",
-                   value: board.interview.card?.status === "done" ? "Completed" : "Ready when you are" };
-        case "jobs":
-          return { id: t.id, step: 5, label: "Jobs", icon: "mdi:briefcase-outline",
-                   value: `${(board.career?.openCount ?? 0) + (board.career?.related.length ?? 0)} roles` };
-        case "certificate":
-          return { id: t.id, step: 6, label: "Certificate", icon: "mdi:trophy-outline",
-                   value: `${board.course.certificateThreshold}% to unlock` };
-        default:
-          return null;
-      }
-    })
-    .filter((x): x is NonNullable<typeof x> => x !== null);
-
   return (
     <Box>
       <JourneyHero
@@ -164,9 +128,6 @@ export function JourneyBoard({ courseId }: { courseId: number; showHeader?: bool
         courseId={courseId}
         tabs={<CourseTabBar tabs={tabs} active={active} onChange={openTab} />}
       />
-
-      {/* Six readings, one per section, each a doorway into it. */}
-      <CourseSummaryStrip items={summary} onJump={openTab} />
 
       <Box role="tabpanel" id={`course-panel-${active}`} aria-labelledby={`course-tab-${active}`}>
         {active === "tutor" && <TutorPanel board={board} />}
