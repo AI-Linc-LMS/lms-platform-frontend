@@ -17,7 +17,7 @@ import { Box } from "@mui/material";
 import type { JourneyWeekView } from "@/lib/types/adaptive-journey";
 import { NodeRow } from "./NodeRow";
 import { SpineRow } from "./SpineRow";
-import { WeekBand, WeekMarker } from "./WeekBand";
+import { WeekBand } from "./WeekBand";
 import { railEnds, sameRung } from "./railEnds";
 import { paperByModule } from "./weekLayout";
 import { Milestones } from "./Milestones";
@@ -78,7 +78,9 @@ export function Spine({
         return (
           <Box key={week.weekNo}>
             <SpineRow
-              marker={<WeekMarker done={weekTone(week) === "done"} started={weekTone(week) !== "ahead"} />}
+              // No marker: a week heading is a label over its modules, not a step on the path.
+              // The rail runs straight past it to the first module of the week.
+              marker={null}
               tone={weekTone(week)}
               first={sameRung(band, first)}
               last={sameRung(band, lastStepRung)}

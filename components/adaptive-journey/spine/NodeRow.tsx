@@ -9,6 +9,7 @@
  * linking at a list that knows nothing about this course (`InterviewAction`).
  */
 
+import type React from "react";
 import { Box, ButtonBase, Chip, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
@@ -118,6 +119,9 @@ export function NodeRow({
   };
 
   const go = () => { if (navigable && navHref) push(navHref); };
+  // For a button INSIDE the card: the card navigates too, and its handler runs second. Even
+  // where both go to the same place, two pushes for one click is a bug waiting to matter.
+  const goOnly = (e: React.MouseEvent) => { e.stopPropagation(); go(); };
   const warm = () => { if (navigable && navHref) prefetch(navHref); };
 
   // An interview step is reachable but has no href at all - it has to be minted. So it gets a
@@ -234,7 +238,7 @@ export function NodeRow({
               {interviewable ? (
                 <InterviewAction node={node} courseId={courseId} done={false} />
               ) : navigable ? (
-                <ButtonBase onClick={go} sx={{ flexShrink: 0, px: 2, py: 0.85, borderRadius: 2, fontWeight: 800, fontSize: "0.8rem", color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)", [PHONE]: { minHeight: 44, fontSize: "0.9rem", borderRadius: 2.5 } }}>
+                <ButtonBase onClick={goOnly} sx={{ flexShrink: 0, px: 2, py: 0.85, borderRadius: 2, fontWeight: 800, fontSize: "0.8rem", color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)", [PHONE]: { minHeight: 44, fontSize: "0.9rem", borderRadius: 2.5 } }}>
                   Continue →
                 </ButtonBase>
               ) : null}
@@ -263,7 +267,7 @@ export function NodeRow({
         {done && isAssessmentNode(node) && navigable && (
           <Stack direction="row" justifyContent="flex-end" sx={{ mt: 1.5 }}>
             <ButtonBase
-              onClick={go}
+              onClick={goOnly}
               sx={{
                 flexShrink: 0, px: 2, py: 0.85, borderRadius: 2, fontWeight: 800,
                 fontSize: "0.8rem", color: "#15803d", border: "1px solid #86efac",

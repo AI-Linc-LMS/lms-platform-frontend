@@ -36,7 +36,11 @@ export function InterviewAction({
   return (
     <ButtonBase
       disabled={busy}
-      onClick={() => void launch(templateId, { durationMinutes: node.durationMinutes })}
+      // Stops at this button, for the same reason as the tutor's: the card around it navigates.
+      onClick={(e) => {
+        e.stopPropagation();
+        void launch(templateId, { durationMinutes: node.durationMinutes });
+      }}
       aria-label={done ? "Take the mock interview again" : "Start the mock interview"}
       sx={{
         flexShrink: 0,
