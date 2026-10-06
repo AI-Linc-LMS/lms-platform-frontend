@@ -126,9 +126,10 @@ describe("a course with the whole journey switched on", () => {
     // The finished module reports the time this learner really spent with the tutor.
     expect(screen.getByText("22 min session")).toBeTruthy();
 
-    // Both terminal milestones, on the spine.
-    expect(screen.getByText("MOCK INTERVIEW")).toBeTruthy();
-    expect(screen.getByText("Interview: Python")).toBeTruthy();
+    // The certificate is the course's ONLY terminal milestone. The entry level-gauge used to
+    // sit here too, which put the first thing a learner does at the end of their course - and
+    // ticked it the moment they sat the gauge.
+    expect(screen.queryByText("Interview: Python")).toBeNull();
     // Exactly one certificate station, carrying the real card's machinery.
     expect(screen.getAllByTestId("certificate-card")).toHaveLength(1);
 
@@ -145,8 +146,7 @@ describe("a course with the whole journey switched on", () => {
     await waitFor(() => expect(screen.getAllByTestId("certificate-card")).toHaveLength(1));
     // The reported bug: the certificate rendered twice, as a milestone card AND the full
     // certificate card nested under it, saying the same thing in two voices.
-    expect(screen.getAllByText("CERTIFICATE")).toHaveLength(1);
-    expect(screen.getAllByText("MOCK INTERVIEW")).toHaveLength(1);
+    expect(screen.getAllByTestId("certificate-card")).toHaveLength(1);
   });
 
   it("says what opens the module's assessment rather than offering a locked one", async () => {
@@ -162,7 +162,7 @@ describe("the course's sections", () => {
   it("offers one tab per thing the course actually has", async () => {
     render(<JourneyBoard courseId={7} />);
     await waitFor(() => expect(screen.getByRole("tab", { name: /Journey/ })).toBeTruthy());
-    for (const name of [/Journey/, /AI Tutor/, /Assessments/, /Mock Interview/, /Jobs & Resume/, /Certificate/]) {
+    for (const name of [/Journey/, /AI Tutor/, /Assessments/, /Level Check/, /Jobs & Resume/, /Certificate/]) {
       expect(screen.getByRole("tab", { name })).toBeTruthy();
     }
   });
@@ -179,7 +179,7 @@ describe("the course's sections", () => {
     // again. Two rows of section navigation, one above the other, is one row too many.
     render(<JourneyBoard courseId={7} />);
     await waitFor(() => expect(screen.getByRole("tab", { name: /Journey/ })).toBeTruthy());
-    for (const name of [/Journey/, /AI Tutor/, /Assessments/, /Mock Interview/, /Jobs & Resume/, /Certificate/]) {
+    for (const name of [/Journey/, /AI Tutor/, /Assessments/, /Level Check/, /Jobs & Resume/, /Certificate/]) {
       expect(screen.getAllByRole("tab", { name })).toHaveLength(1);
     }
   });

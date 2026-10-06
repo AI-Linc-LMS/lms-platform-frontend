@@ -1,11 +1,17 @@
 "use client";
 
 /**
- * The mock interview for this course.
+ * The course's spoken level check.
  *
- * One interview, because that is what the data holds: a course carries a single configured
- * `InterviewTemplate`, not a numbered series of rounds. A four-round ladder would be a
- * drawing, not a reading.
+ * One interview, because that is what the data holds - and specifically it is the ENTRY gauge:
+ * the server builds `board.interview.card` only from the node flagged `is_calibration_interview`
+ * (adaptive_journey/journey/board.py:211-212). It is not a closing round, and this panel no
+ * longer calls it one.
+ *
+ * Mid-course interview rounds are a separate piece of work. When they exist they will be real
+ * steps on the spine, each with its own template - one template per node, because
+ * `interview_node_complete` keys completion on the TEMPLATE, so two nodes sharing one would
+ * both tick the moment either was sat.
  */
 
 import { Box, Chip, CircularProgress, Stack, Typography, ButtonBase } from "@mui/material";
@@ -37,14 +43,14 @@ export function InterviewPanel({ board, courseId }: { board: JourneyBoard; cours
         }}
       >
         <Typography sx={{ fontSize: "0.64rem", fontWeight: 800, letterSpacing: 0.9, color: "#7dd3fc", '[dir="rtl"] &': { letterSpacing: "normal" } }}>
-          MOCK INTERVIEW
+          LEVEL CHECK
         </Typography>
         <Typography sx={{ fontWeight: 800, fontSize: { xs: "1.3rem", md: "1.6rem" }, mt: 0.5 }}>
-          A spoken interview on what this course taught you
+          A spoken conversation that sizes where you are
         </Typography>
         <Typography sx={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.72)", mt: 0.75, lineHeight: 1.5, maxWidth: 640 }}>
           The interviewer asks, listens, and follows up on your answers rather than reading from
-          a list.
+          a list. It sets the level your course starts at.
         </Typography>
         <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap sx={{ mt: 2 }}>
           {[card.topic, card.difficulty && `${card.difficulty} level`, "Voice conversation", "Adaptive follow-ups"]

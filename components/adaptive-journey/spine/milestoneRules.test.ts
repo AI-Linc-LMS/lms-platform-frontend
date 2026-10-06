@@ -26,40 +26,23 @@ describe("what a course ends with", () => {
     expect(courseMilestones(board())).toEqual([]);
   });
 
-  it("offers the interview when one is configured", () => {
-    const m = courseMilestones(board({ interview: configuredInterview }));
-    expect(m).toEqual([{ kind: "interview", reached: false }]);
+  it("never puts the entry level-gauge at the END of the course", () => {
+    // `board.interview.card` is NOT a closing interview. The server builds it only from the
+    // node flagged `is_calibration_interview` (board.py:211-212) - the gauge a learner sits
+    // FIRST, which has its own card above the timeline.
+    //
+    // Placing it as a terminal milestone said the opposite of the truth twice: it presented
+    // the first thing as the last, and because the card reports that gauge's completion, a
+    // learner who had sat the entry interview saw the "final" interview already ticked.
+    // Reported on Impacteers.
+    expect(courseMilestones(board({ interview: configuredInterview }))).toEqual([]);
   });
 
-  it("does not offer an interview the instructor has not finished setting up", () => {
-    // The top card is the surface that explains "your instructor is still setting this up".
-    // A destination the learner cannot reach is not a destination.
-    const m = courseMilestones(board({
-      interview: { card: { templateId: 28, configured: false, status: "not_configured" } },
-    }));
-    expect(m).toEqual([]);
-  });
-
-  it("does not offer an interview whose template is gone", () => {
-    const m = courseMilestones(board({
-      interview: { card: { templateId: null, configured: true, status: "not_started" } },
-    }));
-    expect(m).toEqual([]);
-  });
-
-  it("does not show the same interview twice when it is already a step on the timeline", () => {
-    const m = courseMilestones(board({
-      interview: configuredInterview,
-      weeks: [{ nodes: [{ type: "topic" }, { type: "interview" }] }],
-    }));
-    expect(m).toEqual([]);
-  });
-
-  it("marks a finished interview as reached", () => {
+  it("does not resurrect it just because it was completed", () => {
     const m = courseMilestones(board({
       interview: { card: { ...configuredInterview.card, status: "done" } },
     }));
-    expect(m[0]).toEqual({ kind: "interview", reached: true });
+    expect(m).toEqual([]);
   });
 
   it("offers the certificate when the course issues one", () => {
@@ -69,12 +52,12 @@ describe("what a course ends with", () => {
     expect(m).toEqual([{ kind: "certificate", reached: false }]);
   });
 
-  it("puts the certificate last, after the interview", () => {
+  it("ends on the certificate, which is the course's only real destination today", () => {
     const m = courseMilestones(board({
       interview: configuredInterview,
       course: { certificateEnabled: true, certificateThreshold: 80 },
     }));
-    expect(m.map((x) => x.kind)).toEqual(["interview", "certificate"]);
+    expect(m.map((x) => x.kind)).toEqual(["certificate"]);
   });
 
   it("lights the certificate diamond once the learner is past the threshold", () => {
