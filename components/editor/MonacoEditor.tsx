@@ -84,6 +84,8 @@ export function CodeEditor({
 }: MonacoEditorProps) {
   const [mounted, setMounted] = useState(false);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
+  /** The wrapper, watched so the editor can be told to lay out again when it becomes visible. */
+  const shellRef = useRef<HTMLDivElement | null>(null);
   const monacoRef = useRef<typeof import("monaco-editor") | null>(null);
   const decorationsRef = useRef<editor.IEditorDecorationsCollection | null>(null);
   const valueRef = useRef(value);
@@ -92,6 +94,43 @@ export function CodeEditor({
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  /**
+   * Lay out again the moment this editor is given a size.
+   *
+   * Monaco measures its container when it initialises and caches the result. Initialise it
+   * inside `display: none` - which is what a tabbed layout does to the pane that is not on top -
+   * and it measures 0 by 0 and renders nothing. Reported on mobile: the Code tab of a coding
+   * question showed the language picker, Run and Submit, and then a blank area where the editor
+   * should be, so the question could not be attempted at all.
+   *
+   * It happens there because the phone layout keeps ONE tree at every width and hides the
+   * inactive panes rather than unmounting them (so rotating does not remount the editor and
+   * lose the learner's code). The pane therefore mounts hidden, and the default tab is Problem.
+   *
+   * `automaticLayout` is already on and is meant to cover this, but it cannot be relied on for
+   * the none-to-block transition: a zero-sized box is not always reported, and once Monaco holds
+   * a zero it has no reason to ask again. An explicit layout() when the box gains a size is the
+   * cheap, certain version. Fixed here rather than in the one screen that reported it, because
+   * every tabbed or accordion surface that embeds this editor has the same shape.
+   */
+  useEffect(() => {
+    const shell = shellRef.current;
+    if (!shell || typeof ResizeObserver === "undefined") return;
+    let hadSize = shell.offsetWidth > 0 && shell.offsetHeight > 0;
+    const observer = new ResizeObserver(() => {
+      const nowHasSize = shell.offsetWidth > 0 && shell.offsetHeight > 0;
+      // Only on the transition INTO a real size. Laying out on every resize would fight
+      // automaticLayout, which already handles the ordinary case.
+      if (nowHasSize && !hadSize) {
+        // After the browser has applied the new box, not during the callback that observed it.
+        requestAnimationFrame(() => editorRef.current?.layout());
+      }
+      hadSize = nowHasSize;
+    });
+    observer.observe(shell);
+    return () => observer.disconnect();
+  }, [mounted]);
 
   // Apply / clear the mentor root-cause gutter marker whenever the line changes.
   useEffect(() => {
@@ -206,6 +245,8 @@ export function CodeEditor({
 
   return (
     <Box
+      ref={shellRef}
+      data-testid="code-editor-shell"
       sx={{
         width: "100%",
         height: height,

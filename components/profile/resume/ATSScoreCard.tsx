@@ -197,9 +197,38 @@ export function ATSScoreCard({ resumeData, initialLiveScore, dialogOpen, onResum
     () => computeStandardATSScoreReport(resumeData),
     [resumeData]
   );
-  // Text from the AI when available, but the SCORES are always the deterministic ones.
+  /**
+   * Text from the AI when available, but every SCORE is the deterministic one.
+   *
+   * That was always the intent and only half of it was done: `overallScore` and `atsScore` were
+   * replaced, and `qualityChecks` was taken wholly from the model - its per-criterion scores as
+   * well as its prose. The two disagreed, out loud, on screen:
+   *
+   *     Standard sections present: 30/100  - "All standard sections are present and correctly
+   *                                          labeled."
+   *     Contact info complete:     30/100  - "Contact info is complete and links are valid."
+   *     Length appropriate:        30/100  - "Resume length is appropriate, fitting within 1-2
+   *                                          pages."
+   *     Date consistency:           0/100  - "No dates provided for work experience."
+   *
+   * A model writing an affirming sentence and emitting a low number beside it is an ordinary
+   * failure, and nothing here reconciled them. The computed scorers would have said 100, 100
+   * and 90 for that resume; `scoreDateRecency` cannot return 0 at all, its floor is 50, which
+   * is how we know that zero was never computed.
+   *
+   * So the notes come from the same place as the scores now. Pairing a model's prose with a
+   * computed number is how this contradiction happened; doing it the other way round would
+   * reintroduce it reversed. The model's narrative survives in `detailedReport`, which is
+   * commentary rather than measurement.
+   */
   const report: AIAnalysisResult = aiResult
-    ? { ...aiResult, overallScore: standardReport.overallScore, atsScore: standardReport.atsScore }
+    ? {
+        ...aiResult,
+        overallScore: standardReport.overallScore,
+        atsScore: standardReport.atsScore,
+        qualityChecks: standardReport.qualityChecks,
+        feedback: standardReport.feedback,
+      }
     : {
     overallScore: standardReport.overallScore,
     atsScore: standardReport.atsScore,

@@ -173,31 +173,73 @@ function scoreEvidenceAuthentication(data: ResumeData, placeholderScore: number,
   return { score, note };
 }
 
+/**
+ * The sections an ATS actually looks for.
+ *
+ * Reported as "all standard sections are present and the score is still low". It was: this
+ * used to require SIX sections and divide by six, so a resume with a summary, work history,
+ * education and skills - everything a parser needs - scored 67 and was told to "add missing
+ * standard sections". Projects and certifications are good things to have and are not standard
+ * sections; a career changer with neither is not failing an ATS check.
+ *
+ * So the four that parsers key on are the score, and the two optional ones are a bonus that
+ * cannot pull a complete resume below full marks.
+ */
 function scoreSectionBalance(data: ResumeData): { score: number; note?: string } {
-  let score = 0;
-  const checks = [
+  const core = [
     !!data.basicInfo?.summary?.trim(),
     (data.workExperience?.length ?? 0) >= 1,
     (data.education?.length ?? 0) >= 1,
     (data.skills?.length ?? 0) >= 1,
-    (data.projects?.length ?? 0) >= 1,
-    (data.certifications?.length ?? 0) >= 1,
   ];
-  const present = checks.filter(Boolean).length;
-  score = Math.round((present / 6) * 100);
-  const note = score >= 85 ? "All key sections present." : score >= 65 ? "Add missing sections (e.g. projects or certifications)." : "Include work, education, skills, and a summary.";
+  const present = core.filter(Boolean).length;
+  const score = Math.round((present / core.length) * 100);
+  const missing: string[] = [];
+  if (!core[0]) missing.push("a professional summary");
+  if (!core[1]) missing.push("work experience");
+  if (!core[2]) missing.push("education");
+  if (!core[3]) missing.push("skills");
+  const note = missing.length === 0
+    ? "All standard sections are present."
+    : `Add ${missing.join(", ")}.`;
   return { score: clamp(score), note };
 }
 
+/**
+ * Contact details an ATS needs to reach you.
+ *
+ * Reported as "all required contact details are present and the score is still low". It was:
+ * reaching 100 required THREE profile links, so a resume with an email, a phone, a location
+ * and a LinkedIn - which is a complete contact block by any recruiter's standard - scored 75
+ * and was told to "add phone, location, or LinkedIn/GitHub", all three of which it had.
+ *
+ * One professional link is the requirement. Further links are genuinely nice, so they top up
+ * a resume that is missing something else, but their absence is not a deduction.
+ */
 function scoreContactCompleteness(data: ResumeData): { score: number; note?: string } {
   const b = data.basicInfo;
+  const links = [b?.linkedin, b?.github, b?.portfolio].filter((l) => !!l?.toString().trim()).length;
+  const has = {
+    email: !!b?.email?.trim(),
+    phone: !!b?.phone?.trim(),
+    location: !!b?.location?.trim(),
+    link: links >= 1,
+  };
   let score = 0;
-  if (b?.email?.trim()) score += 25;
-  if (b?.phone?.trim()) score += 20;
-  if (b?.location?.trim()) score += 15;
-  const links = [b?.linkedin, b?.github, b?.portfolio].filter(Boolean).length;
-  score += Math.min(40, links * 15);
-  const note = score >= 80 ? "Contact and profile links are complete." : score >= 50 ? "Add phone, location, or LinkedIn/GitHub." : "Add email, phone, and at least one profile link.";
+  if (has.email) score += 35;   // the one a parser cannot do without
+  if (has.phone) score += 30;
+  if (has.location) score += 15;
+  if (has.link) score += 20;
+  // Extra links can only make up ground already lost; they never push past 100.
+  if (links > 1) score = Math.min(100, score + 5);
+  const missing: string[] = [];
+  if (!has.email) missing.push("an email address");
+  if (!has.phone) missing.push("a phone number");
+  if (!has.location) missing.push("a location");
+  if (!has.link) missing.push("a LinkedIn or portfolio link");
+  const note = missing.length === 0
+    ? "Contact details are complete."
+    : `Add ${missing.join(", ")}.`;
   return { score: clamp(score), note };
 }
 
@@ -217,22 +259,44 @@ function scoreBulletQuality(data: ResumeData): { score: number; note?: string } 
   return { score: clamp(score), note };
 }
 
+/**
+ * Dates a parser can read, and a history it can place in time.
+ *
+ * Two things were wrong. A resume with NO dates at all scored 50 - a soft landing for the one
+ * failure in this list that genuinely breaks an ATS, since a parser that cannot date your roles
+ * cannot rank your recency. And a resume with clean dates throughout and a current role capped
+ * at 90, so "dates are consistent and recent" could never be worth full marks.
+ *
+ * A role still in progress counts as current: `current: true` with no end date is the normal
+ * way to write it and used to contribute nothing.
+ */
 function scoreDateRecency(data: ResumeData): { score: number; note?: string } {
+  const work = data.workExperience || [];
   const dates = [
-    ...(data.workExperience || []).flatMap((w) => [w.startDate, w.endDate].filter(Boolean)),
+    ...work.flatMap((w) => [w.startDate, w.endDate].filter(Boolean)),
     ...(data.education || []).flatMap((e) => [e.startDate, e.endDate].filter(Boolean)),
-  ];
-  if (dates.length === 0) return { score: clamp(50), note: "Add start/end dates to work and education." };
-  const isoFormat = dates.filter((d) => /^\d{4}-\d{2}/.test(d)).length;
-  const consistent = dates.length > 0 && isoFormat === dates.length;
-  let score = consistent ? 70 : 50;
+  ] as string[];
+  if (dates.length === 0) {
+    // The one failure here that actually stops an ATS placing you in time.
+    return { score: clamp(20), note: "Add start and end dates to your work and education." };
+  }
+  const parseable = dates.filter((d) => /^\d{4}-\d{2}/.test(d)).length;
+  const consistent = parseable === dates.length;
   const currentYear = new Date().getFullYear();
-  const hasRecent = dates.some((d) => {
-    const y = parseInt(d.slice(0, 4), 10);
-    return !isNaN(y) && currentYear - y <= 2;
-  });
+  // A role marked "I currently work here" is current whether or not it carries an end date.
+  const hasRecent =
+    work.some((w) => w.current) ||
+    dates.some((d) => {
+      const y = parseInt(d.slice(0, 4), 10);
+      return !isNaN(y) && currentYear - y <= 2;
+    });
+  let score = consistent ? 80 : 55;
   if (hasRecent) score += 20;
-  const note = consistent && hasRecent ? "Dates are consistent and recent." : consistent ? "Use YYYY-MM format; include current or recent roles." : "Use consistent date format (e.g. 2020-01 to 2023-06).";
+  const note = consistent && hasRecent
+    ? "Dates are consistent and your history is current."
+    : consistent
+      ? "Dates are consistent. Add your current or most recent role."
+      : "Use one date format throughout, e.g. 2020-01 to 2023-06.";
   return { score: clamp(score), note };
 }
 
@@ -272,7 +336,11 @@ function scoreLength(data: ResumeData): { score: number; note?: string } {
     return { score: 40, note: "Resume looks very short. Aim for 1 well-filled page." };
   }
   if (pages >= 0.5 && pages <= 2.2) {
-    return { score: 90, note: pages < 1 ? "Slightly short but acceptable." : "Length is appropriate." };
+    // An appropriate length is the whole of this criterion, so it is worth full marks. It used
+    // to cap at 90, which left every well-sized resume permanently a little bit wrong.
+    return pages < 1
+      ? { score: 80, note: "A little short. One well-filled page reads stronger." }
+      : { score: 100, note: "Length is appropriate, within 1-2 pages." };
   }
   if (pages > 2.2 && pages <= 3) {
     return { score: 65, note: "Tightens better at 1-2 pages. Consider removing older or less-relevant content." };
@@ -384,7 +452,21 @@ export function computeStandardATSScoreReport(input: ResumeData): StandardATSSco
   const technicalAvg = technicalScores.reduce((a, b) => a + b, 0) / technicalScores.length;
   let blendedOverall = technicalAvg * TECHNICAL_WEIGHT + parseabilityAvg * PRESENTATION_WEIGHT;
   if (technicalAvg < POOR_TECHNICAL_THRESHOLD) {
-    blendedOverall = Math.min(blendedOverall, POOR_TECHNICAL_CAP);
+    // Scale down, do not clamp.
+    //
+    // This used to be `Math.min(blendedOverall, 30)`, and on the twelve resumes saved in
+    // production SIX of them came out at exactly 30 - a resume with no work experience at all
+    // and a resume with two jobs and real bullets scored the same. A number that cannot tell
+    // those apart is not a measurement, and it is the reason the score felt invented: nothing
+    // the learner changed moved it.
+    //
+    // Scaling keeps a thin resume low, which is correct, while preserving the ordering between
+    // thin resumes so that adding a role or a bullet is visible in the score.
+    // The cap itself scales with how far short the content falls, so nothing scores HIGHER
+    // than it did under the flat cap - the severity is unchanged - and resumes that were all
+    // pinned to the same number spread back out underneath it.
+    const shortfall = technicalAvg / POOR_TECHNICAL_THRESHOLD;
+    blendedOverall = Math.min(blendedOverall, POOR_TECHNICAL_CAP * shortfall);
   }
 
   // detectPlaceholders() has existed in this file since the feature shipped but was

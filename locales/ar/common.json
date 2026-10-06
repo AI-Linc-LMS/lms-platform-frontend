@@ -1979,6 +1979,7 @@
     "tryAdjustingFilters": "جرّب تعديل الفلاتر",
     "noActivity": "لا يوجد نشاط",
     "na": "غ.م",
+    "noClassesYet": "لا توجد حصص بعد",
     "showingStudents": "عرض {{start}} إلى {{end}} من {{total}} طالب",
     "uploadCsv": "رفع CSV",
     "selectCourses": "اختر الدورات",

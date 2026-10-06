@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toMonthInputValue } from "./monthValue";
 import {
   Box,
   Paper,
@@ -681,7 +682,7 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                     <TextField
                       label="Start Date"
                       type="month"
-                      value={exp.startDate}
+                      value={toMonthInputValue(exp.startDate)}
                       onChange={(e) =>
                         updateWorkExperience(
                           exp.id,
@@ -696,7 +697,7 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                     <TextField
                       label="End Date"
                       type="month"
-                      value={exp.endDate}
+                      value={toMonthInputValue(exp.endDate)}
                       onChange={(e) =>
                         updateWorkExperience(exp.id, "endDate", e.target.value)
                       }
@@ -893,7 +894,7 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                     <TextField
                       label="Start Date"
                       type="month"
-                      value={edu.startDate}
+                      value={toMonthInputValue(edu.startDate)}
                       onChange={(e) =>
                         updateEducation(edu.id, "startDate", e.target.value)
                       }
@@ -904,7 +905,7 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                     <TextField
                       label="End Date"
                       type="month"
-                      value={edu.endDate}
+                      value={toMonthInputValue(edu.endDate)}
                       onChange={(e) =>
                         updateEducation(edu.id, "endDate", e.target.value)
                       }
@@ -1271,7 +1272,7 @@ export function ResumeForm({ resumeData, setResumeData }: ResumeFormProps) {
                       <TextField
                         label="Date"
                         type="month"
-                        value={cert.date}
+                        value={toMonthInputValue(cert.date)}
                         onChange={(e) =>
                           updateCertification(cert.id, "date", e.target.value)
                         }

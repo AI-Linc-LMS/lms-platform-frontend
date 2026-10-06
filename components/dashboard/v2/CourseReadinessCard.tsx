@@ -95,6 +95,11 @@ export function CourseReadinessCard({
 
         <Box sx={{ flex: 1, width: "100%" }}>
           {[...SIGNALS]
+            // A signal this course has no material for is not shown at all. "Applied Craft:
+            // Not started" on a course with no coding is a gap nobody can close, and 64 of the
+            // 210 adaptive courses on production have none. It is already left out of the
+            // overall percentage, which renormalises over the signals that have data.
+            .filter((s) => active.readiness[s.key].applicable !== false)
             .sort((a, b) => (active.readiness[b.key].percent ?? -1) - (active.readiness[a.key].percent ?? -1))
             .map((s) => {
             const cell = active.readiness[s.key];

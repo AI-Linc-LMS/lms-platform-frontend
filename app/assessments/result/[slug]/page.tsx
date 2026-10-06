@@ -714,43 +714,6 @@ export default function AssessmentResultPage() {
           </Box>
         </Paper>
 
-        {/* Headline stats */}
-        <Box sx={{ mb: 3 }}>
-          <StatStrip
-            items={[
-              {
-                label: "Accuracy",
-                value: `${(Number(stats.accuracy_percent) || 0).toFixed(1)}%`,
-                icon: "mdi:target-variant",
-                tone: "var(--accent-blue-light)",
-              },
-              {
-                label: "Percentile",
-                value: `${(Number(stats.percentile) || 0).toFixed(1)}%`,
-                icon: "mdi:chart-bell-curve-cumulative",
-                tone: "var(--assessment-chart-violet)",
-              },
-              {
-                label: "Attempted",
-                value: `${Number(stats.attempted_questions) || 0}/${Number(stats.total_questions) || 0}`,
-                icon: "mdi:help-circle",
-                tone: "var(--accent-indigo)",
-              },
-              {
-                label: "Correct",
-                value: Number(stats.correct_answers) || 0,
-                icon: "mdi:check-circle",
-                tone: "var(--course-cta)",
-              },
-              {
-                label: "Time",
-                value: formatResultMinutes(Number(stats.time_taken_minutes) || 0),
-                icon: "mdi:clock-time-four",
-                tone: "var(--accent-purple)",
-              },
-            ]}
-          />
-        </Box>
         {certificateLoading && !certificate ? (
           <Paper
             className="exclude-from-pdf"
@@ -867,6 +830,10 @@ export default function AssessmentResultPage() {
         ) : null}
 
         {/* Stats */}
+        {/* Every count-based result, once. The chip strip that used to sit above the fold
+            repeated Attempted, Correct and Time verbatim from these cards - and repeated them
+            with less information, since the cards carry the denominator and the progress bar.
+            Accuracy and Percentile were the only two it alone carried, so they live here now. */}
         <EnhancedStatsBar
           totalQuestions={stats.total_questions}
           attemptedQuestions={stats.attempted_questions}
@@ -874,6 +841,8 @@ export default function AssessmentResultPage() {
           incorrectAnswers={stats.incorrect_answers}
           timeTakenMinutes={stats.time_taken_minutes}
           totalTimeMinutes={stats.total_time_minutes}
+          accuracyPercent={Number(stats.accuracy_percent) || 0}
+          percentile={Number(stats.percentile) || 0}
         />
 
         {/* Proctoring */}

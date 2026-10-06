@@ -3,6 +3,16 @@
 import { Box, Paper, Typography, LinearProgress } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 
+/**
+ * Every count-based result, once.
+ *
+ * The result page used to carry two rows of statistics: a chip strip (Accuracy, Percentile,
+ * Attempted, Correct, Time) and these cards (Correct, Incorrect, Attempted, Time). Three of the
+ * five chips repeated a card directly underneath them, and repeated them WORSE - "Correct 1"
+ * against "Correct Answers 1 / 1", "Time 7 min" against "Time Used 7 min" with its budget and a
+ * bar. Accuracy and Percentile were the only two the strip alone carried, so they moved here
+ * and the strip went.
+ */
 interface EnhancedStatsBarProps {
   totalQuestions: number;
   attemptedQuestions: number;
@@ -10,6 +20,24 @@ interface EnhancedStatsBarProps {
   incorrectAnswers: number;
   timeTakenMinutes: number;
   totalTimeMinutes: number;
+  /** Correct as a share of ATTEMPTED. Optional so other callers keep the four-card bar. */
+  accuracyPercent?: number | null;
+  /** Where this score sits against everyone else's. */
+  percentile?: number | null;
+}
+
+interface StatCard {
+  icon: string;
+  label: string;
+  value: string | number;
+  total: string | number | null;
+  color: string;
+  bgColor: string;
+  progress: number;
+  /** The time card prints its own "x of y" and owns the over-budget warning. */
+  isTime?: boolean;
+  /** False for a percentage, which has no denominator to show. */
+  showTotal?: boolean;
 }
 
 export function EnhancedStatsBar({
@@ -19,6 +47,8 @@ export function EnhancedStatsBar({
   incorrectAnswers,
   timeTakenMinutes,
   totalTimeMinutes,
+  accuracyPercent,
+  percentile,
 }: EnhancedStatsBarProps) {
   const attemptRate = totalQuestions > 0 ? (attemptedQuestions / totalQuestions) * 100 : 0;
   const correctRate = attemptedQuestions > 0 ? (correctAnswers / attemptedQuestions) * 100 : 0;
@@ -37,7 +67,28 @@ export function EnhancedStatsBar({
     return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
   };
 
-  const stats = [
+  // A percentage is already out of 100, so it carries no "/ total" and is its own progress.
+  const pctCard = (
+    label: string, icon: string, value: number | null | undefined, color: string,
+  ): StatCard => ({
+    icon,
+    label,
+    value: `${(Number(value) || 0).toFixed(1)}%`,
+    total: null,
+    color,
+    bgColor: `color-mix(in srgb, ${color} 12%, transparent)`,
+    progress: Math.min(Math.max(Number(value) || 0, 0), 100),
+    showTotal: false,
+  });
+
+  const stats: StatCard[] = [
+    ...(accuracyPercent == null
+      ? []
+      : [pctCard("Accuracy", "mdi:target-variant", accuracyPercent, "var(--accent-blue-light)")]),
+    ...(percentile == null
+      ? []
+      : [pctCard("Percentile", "mdi:chart-bell-curve-cumulative", percentile,
+                 "var(--assessment-chart-violet)")]),
     {
       icon: "mdi:check-circle",
       label: "Correct Answers",
@@ -81,7 +132,12 @@ export function EnhancedStatsBar({
     <Box
       sx={{
         display: "grid",
-        gridTemplateColumns: { xs: "1fr", sm: "repeat(2, 1fr)", lg: "repeat(4, 1fr)" },
+        // Three across on a wide screen so six cards make two even rows rather than 4 + 2.
+        gridTemplateColumns: {
+          xs: "1fr",
+          sm: "repeat(2, 1fr)",
+          lg: stats.length % 3 === 0 ? "repeat(3, 1fr)" : "repeat(4, 1fr)",
+        },
         gap: 2.5,
         mb: 3,
       }}
@@ -149,7 +205,7 @@ export function EnhancedStatsBar({
                 >
                   {stat.value}
                 </Typography>
-                {!stat.isTime && (
+                {!stat.isTime && stat.showTotal !== false && (
                   <Typography
                     variant="body2"
                     sx={{
