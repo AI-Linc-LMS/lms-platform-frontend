@@ -20,6 +20,10 @@ import { contentSummary, isAssessmentNode, nodeLabel, NODE_STYLE } from "./nodeV
 import { TutorAction } from "./TutorAction";
 import { InterviewAction } from "./InterviewAction";
 import { SpineRow, type RailTone } from "./SpineRow";
+import { TriadTile } from "./TriadTile";
+import { moduleTriad } from "./triad";
+import { useIsAiVoiceTutorEnabled } from "@/lib/contexts/ClientInfoContext";
+import { tutorHrefForModule } from "../tutorHref";
 import { fmtDate } from "./dates";
 
 /** The rail is behind a finished step, handing over at the current one, ahead of the rest. */
@@ -76,17 +80,24 @@ export function NodeRow({
   fieldTier,
   first,
   last,
+  checkpoint = null,
+  moduleNo,
 }: {
   node: JourneyNodeView;
   courseId: number;
   stepNo: number;
   dueAt?: string | null;
+  /** The paper that closes this module, so the triad's third leg can report its real state. */
+  checkpoint?: JourneyNodeView | null;
+  /** Its position in the course, for the numbered tile. Modules only. */
+  moduleNo?: number;
   /** The learner's calibrated level, so a tutor lesson opens at the right difficulty. */
   fieldTier?: string | null;
   first?: boolean;
   last?: boolean;
 }) {
   const { push, prefetch } = useInstantNavigation();
+  const tutorEnabled = useIsAiVoiceTutorEnabled();
   const l = nodeLabel(node);
   const ns = NODE_STYLE[node.type] ?? NODE_STYLE.topic;
   const done = node.status === "done";
@@ -95,6 +106,16 @@ export function NodeRow({
   const navHref = nodeHref(node, courseId);
   const navigable = !locked && !!navHref;
   const summary = contentSummary(node);
+  // A module states its three legs - lessons, tutor, assessment - in place of a content line.
+  // Everything else on the board (a checkpoint, an interview) is one thing and keeps the line.
+  const triad = node.type === "topic" ? moduleTriad(node, checkpoint, tutorEnabled) : [];
+  const tutorHref = tutorHrefForModule(node, fieldTier ?? undefined);
+  const checkpointHref = checkpoint ? nodeHref(checkpoint, courseId) : null;
+  const legHandlers: Record<string, (() => void) | undefined> = {
+    LESSONS: navigable && navHref ? () => push(navHref) : undefined,
+    "AI TUTOR": tutorHref ? () => push(tutorHref) : undefined,
+    ASSESSMENT: checkpointHref ? () => push(checkpointHref) : undefined,
+  };
 
   const go = () => { if (navigable && navHref) push(navHref); };
   const warm = () => { if (navigable && navHref) prefetch(navHref); };
@@ -126,8 +147,26 @@ export function NodeRow({
         }}
       >
         <Stack direction="row" alignItems="flex-start" gap={1.25}>
-          <Box data-testid="journey-node-type-tile" sx={{ width: 34, height: 34, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", color: ns.color, bgcolor: ns.bg, [PHONE]: { display: "none" } }}>
-            <Icon icon={ns.icon} width={18} />
+          {/* A module gets its number on a gradient tile; everything else keeps its type icon.
+              The number is what a learner says out loud ("I'm on module three"), and the board
+              never showed it anywhere. */}
+          <Box
+            data-testid="journey-node-type-tile"
+            sx={{
+              width: 34, height: 34, borderRadius: 2, flexShrink: 0,
+              display: "grid", placeItems: "center",
+              fontWeight: 800, fontSize: "0.85rem",
+              ...(moduleNo != null && node.type === "topic"
+                ? locked
+                  ? { color: "#94a3b8", bgcolor: "#f1f5f9" }
+                  : { color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)" }
+                : { color: ns.color, bgcolor: ns.bg }),
+              [PHONE]: { display: "none" },
+            }}
+          >
+            {moduleNo != null && node.type === "topic"
+              ? String(moduleNo).padStart(2, "0")
+              : <Icon icon={ns.icon} width={18} />}
           </Box>
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap">
@@ -136,7 +175,7 @@ export function NodeRow({
               {l.ai && <Chip label="+AI" size="small" sx={{ height: 16, fontSize: "0.56rem", fontWeight: 800, color: "#7c3aed", bgcolor: "#ede9fe", [PHONE]: { height: 20, fontSize: "0.75rem" } }} />}
             </Stack>
             <Typography sx={{ fontWeight: 700, fontSize: "0.95rem", color: "#0f172a", mt: 0.25, [PHONE]: { fontSize: "1rem", lineHeight: 1.35, overflowWrap: "anywhere" } }}>{node.title}</Typography>
-            {summary && (
+            {summary && triad.length === 0 && (
               <Typography sx={{ fontSize: "0.76rem", color: "#64748b", mt: 0.25, [PHONE]: { fontSize: "0.8rem" } }}>{summary}</Typography>
             )}
           </Box>
@@ -160,6 +199,27 @@ export function NodeRow({
             })()}
           </Box>
         </Stack>
+
+        {triad.length > 0 && (
+          <Stack
+            data-testid="module-triad"
+            direction={{ xs: "column", sm: "row" }}
+            spacing={1}
+            sx={{ mt: 1.5 }}
+          >
+            {triad.map((leg) => (
+              <TriadTile
+                key={leg.label}
+                step={leg.step}
+                label={leg.label}
+                value={leg.value}
+                state={leg.state}
+                icon={leg.icon}
+                onClick={legHandlers[leg.label]}
+              />
+            ))}
+          </Stack>
+        )}
 
         {current && (
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1} justifyContent="space-between" alignItems={{ sm: "center" }} sx={{ mt: 1.5 }}>
@@ -190,21 +250,10 @@ export function NodeRow({
           </Stack>
         )}
 
-        {/* A module they have already finished is the one they are most likely to want
-            re-explained, so the tutor stays reachable after the Continue button is gone. */}
-        {done && node.type === "topic" && (
-          <Stack direction="row" justifyContent="flex-end" sx={{ mt: 1.5 }}>
-            <TutorAction node={node} level={fieldTier ?? undefined} />
-          </Stack>
-        )}
-
-        {/* An unlocked topic that is not the current step: the tutor is still the way in when
-            the learner wants the idea explained before opening the material. */}
-        {node.status === "available" && node.type === "topic" && (
-          <Stack direction="row" justifyContent="flex-end" sx={{ mt: 1.5 }}>
-            <TutorAction node={node} level={fieldTier ?? undefined} />
-          </Stack>
-        )}
+        {/* No separate tutor button on a module that is not the current step: its triad
+            already carries the tutor, and a second control for the same thing reads as two
+            different things. The current step keeps its explicit button below, because that
+            is where the learner is looking. */}
 
         {/* A finished assessment keeps an explicit way back to its result.
             The card has always been clickable, but only the CURRENT step rendered a button, so a

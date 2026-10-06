@@ -35,7 +35,52 @@ export interface JourneyNodeView {
   questionCount: number;
   proctored: boolean;
   durationMinutes: number | null;
+  /**
+   * The tutor leg of this module's triad - what the learner has actually done with the AI
+   * Tutor on THIS module. Null for a step that is not a module, and absent on a board served
+   * before `TutorSession.submodule` existed (there was no way to know before that).
+   */
+  tutor?: {
+    state: "done" | "ready" | "locked";
+    sessions: number;
+    minutes: number;
+  } | null;
   ref: JourneyNodeRef;
+}
+
+/** One job, as the career rail draws it. */
+export interface CareerJobCard {
+  id: number;
+  title: string;
+  company: string;
+  companyLogo: string | null;
+  location: string;
+  workMode: string;
+  employmentType: string;
+  salary: string;
+}
+
+/**
+ * Where the course leads. Note what is NOT here: a relevance score.
+ *
+ * "Jobs matching this course's skills" was measured against production and does not work - the
+ * course skill vocabulary comes from content generation and the job vocabulary from recruiters,
+ * and they do not share terms (a German language course matched four jobs on "assessment").
+ * So `related` means "an admin tied this job to this course" and `open` means "this learner is
+ * allowed to see it". Neither is a match, and the UI must not call either one.
+ */
+export interface CareerPanel {
+  /** Days since this learner enrolled, or null when they have no enrolment row. */
+  daysSinceStart: number | null;
+  unlocked: boolean;
+  unlocksAfterDays: number;
+  /** Jobs an admin explicitly tied to this course. The only list that may be called related. */
+  related: CareerJobCard[];
+  /** Jobs this learner may see. Not a relevance claim. Empty until `unlocked`. */
+  open: CareerJobCard[];
+  /** The real total behind `open`, which is only a page of it. */
+  openCount: number;
+  resumeNudge: boolean;
 }
 
 export interface JourneyWeekSchedule {
@@ -105,6 +150,8 @@ export interface JourneyBoard {
   /** "Week" or "Module" — what this course calls one unit. Vocabulary only. */
   unitNoun?: string;
   moduleOnlyStructure?: boolean;
+  /** Optional: a board served before the career rail shipped does not carry it. */
+  career?: CareerPanel;
   course: {
     id: number;
     title: string;

@@ -70,6 +70,9 @@ export function WeekBand({ week, unitNoun = "Week" }: { week: JourneyWeekView; u
   const pct = week.totals.total > 0 ? Math.round((week.totals.earned / week.totals.total) * 100) : 0;
   const dl = daysLeft(week.schedule?.dueAt);
   const locked = week.nodes.every((n) => n.status === "locked");
+  // The learner's place in a long course. On a twelve-week board the current week is otherwise
+  // indistinguishable from the eleven others until you read every status chip.
+  const youAreHere = week.nodes.some((n) => n.status === "current");
 
   return (
     <Box
@@ -77,9 +80,12 @@ export function WeekBand({ week, unitNoun = "Week" }: { week: JourneyWeekView; u
         mb: 1.5,
         p: { xs: 1.75, md: 2.25 },
         borderRadius: 3.5,
-        border: "1px solid #e9e6f7",
+        border: "1px solid",
+        borderColor: youAreHere ? "#c7d2fe" : "#e9e6f7",
         backgroundImage: "linear-gradient(135deg, #f5f3ff 0%, #fdf2f8 100%)",
-        boxShadow: "0 12px 30px -26px rgba(99,102,241,0.5)",
+        boxShadow: youAreHere
+          ? "0 0 0 3px rgba(99,102,241,0.10), 0 12px 30px -26px rgba(99,102,241,0.5)"
+          : "0 12px 30px -26px rgba(99,102,241,0.5)",
         [PHONE]: { p: 1.5 },
       }}
     >
@@ -91,6 +97,19 @@ export function WeekBand({ week, unitNoun = "Week" }: { week: JourneyWeekView; u
           <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", color: "#0f172a" }}>
             {weekHeading(week, unitNoun)}
           </Typography>
+          {youAreHere && (
+            <Chip
+              size="small"
+              label="YOU ARE HERE"
+              sx={{
+                height: 20, fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.6,
+                color: "white",
+                background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)",
+                '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" },
+                [PHONE]: { height: 22, fontSize: "0.7rem" },
+              }}
+            />
+          )}
           <Typography sx={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>
             {week.stepsDone} of {week.stepsTotal} steps done
           </Typography>

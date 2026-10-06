@@ -19,6 +19,10 @@ import { NodeRow } from "./NodeRow";
 import { SpineRow } from "./SpineRow";
 import { WeekBand, WeekMarker } from "./WeekBand";
 import { railEnds, sameRung } from "./railEnds";
+import { layOutWeek } from "./weekLayout";
+import { Milestones } from "./Milestones";
+import { courseMilestones } from "./milestoneRules";
+import type { JourneyBoard as JourneyBoardData } from "@/lib/types/adaptive-journey";
 
 /** A week is behind the learner once every step in it is done, and lit from the moment any
  *  step in it has been touched. An empty week is never "done" -- nothing was completed. */
@@ -35,6 +39,7 @@ export function Spine({
   stepStarts,
   unitNoun = "Week",
   fieldTier,
+  board,
 }: {
   weeks: JourneyWeekView[];
   courseId: number;
@@ -42,14 +47,31 @@ export function Spine({
   stepStarts: number[];
   unitNoun?: string;
   fieldTier?: string | null;
+  /** The whole board, for the terminal milestones. */
+  board: JourneyBoardData;
 }) {
   // The rail begins at the first marker and ends at the last, with no loose ends. See
   // `railEnds` for why those are read off the data rather than assumed.
-  const { first, last } = railEnds(weeks);
+  // A module's checkpoint is drawn inside that module's triad, so it is not also a row.
+  const layouts = weeks.map((w) => layOutWeek(w.nodes));
+  const laidOut = weeks.map((w, i) => ({ ...w, nodes: layouts[i].rows }));
+  const { first, last } = railEnds(laidOut);
+  // Modules are numbered across the whole course, the way a learner refers to them.
+  let moduleCounter = 0;
+  const moduleNoById = new Map<number, number>();
+  for (const w of laidOut) {
+    for (const n of w.nodes) {
+      if (n.type === "topic") moduleNoById.set(n.id, ++moduleCounter);
+    }
+  }
+  // A milestone at the end takes over as the rail's bottom end, so the line runs through the
+  // last module and into the destination rather than stopping short of it.
+  const hasMilestones = courseMilestones(board).length > 0;
+  const lastStepRung = hasMilestones ? undefined : last;
 
   return (
     <Box>
-      {weeks.map((week, wi) => {
+      {laidOut.map((week, wi) => {
         const band = { week: wi, node: null };
         return (
           <Box key={week.weekNo}>
@@ -57,7 +79,7 @@ export function Spine({
               marker={<WeekMarker done={weekTone(week) === "done"} started={weekTone(week) !== "ahead"} />}
               tone={weekTone(week)}
               first={sameRung(band, first)}
-              last={sameRung(band, last)}
+              last={sameRung(band, lastStepRung)}
             >
               <WeekBand week={week} unitNoun={unitNoun} />
             </SpineRow>
@@ -72,13 +94,16 @@ export function Spine({
                   dueAt={week.schedule?.dueAt}
                   fieldTier={fieldTier}
                   first={sameRung(rung, first)}
-                  last={sameRung(rung, last)}
+                  last={sameRung(rung, lastStepRung)}
+                  checkpoint={layouts[wi].checkpointFor.get(n.id) ?? null}
+                  moduleNo={moduleNoById.get(n.id)}
                 />
               );
             })}
           </Box>
         );
       })}
+      <Milestones board={board} courseId={courseId} startsTheRail={!first} />
     </Box>
   );
 }

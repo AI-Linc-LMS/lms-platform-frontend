@@ -20,6 +20,7 @@ import { JourneySidePanels } from "./JourneySidePanels";
 import { JourneyTopCards } from "./JourneyTopCards";
 import { JourneyHero } from "./JourneyHero";
 import { Spine } from "./spine/Spine";
+import { CareerRail } from "./CareerRail";
 import { JourneyBoardSkeleton } from "@/components/courses/CourseSkeletons";
 import { PHONE } from "@/components/common/mobile/phone";
 
@@ -143,6 +144,7 @@ export function JourneyBoard({ courseId }: { courseId: number; showHeader?: bool
             stepStarts={stepStarts}
             unitNoun={board.unitNoun || "Week"}
             fieldTier={board.course.fieldTier}
+            board={board}
           />
         </Box>
 
@@ -150,6 +152,10 @@ export function JourneyBoard({ courseId }: { courseId: number; showHeader?: bool
           <JourneySidePanels courseId={courseId} board={board} />
         </Box>
       </Box>
+
+      {/* Below both columns, full width: where the course leads is the end of the page, not a
+          sidebar note. Renders nothing until there is something true to say. */}
+      <CareerRail career={board.career} courseTitle={board.course.title} />
     </Box>
   );
 }

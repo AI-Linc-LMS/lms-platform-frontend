@@ -104,12 +104,15 @@ function stripMediaBlocks(css: string, opener: string): string {
 }
 
 describe("JourneyBoard on a phone", () => {
-  it("names the icon-only like button and reports its state", async () => {
+  it("gives the hero's corner to the learner's real progress, not a like button", async () => {
+    // The like button was a fake control: `useState(false)` with no persistence and no API, so
+    // clicking it did nothing a reload did not undo. Nothing read it and nothing was stored.
+    // Its corner now carries the progress ring and the learner's earned points, which are
+    // read from the board.
     render(<JourneyBoard courseId={7} />);
-    const like = await screen.findByRole("button", { name: "Like this course" });
-    expect(like).toHaveAttribute("aria-pressed", "false");
-    fireEvent.click(like);
-    expect(screen.getByRole("button", { name: "Unlike this course" })).toHaveAttribute("aria-pressed", "true");
+    expect(await screen.findByText("points earned")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Like this course/ })).toBeNull();
+    expect(screen.getByText("steps done")).toBeTruthy();
   });
 
   it("opens an unlocked topic from its row and leaves a locked one inert", async () => {

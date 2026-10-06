@@ -52,3 +52,20 @@ if (!window.ResizeObserver) {
     disconnect() {}
   } as unknown as typeof ResizeObserver;
 }
+
+// Beside matchMedia and ResizeObserver, and for the same reason: jsdom does not implement it,
+// every browser does. Without it anything built on `useInView` - AnimatedRing, AnimatedCountUp,
+// every reveal-on-scroll - throws on render, which looks like a component bug rather than a
+// missing global. Several test files were each polyfilling it on their own; one place is
+// enough. It never fires, so anything gated on visibility renders in its initial state, which
+// is what a non-visual assertion wants anyway.
+if (!window.IntersectionObserver) {
+  window.IntersectionObserver = class {
+    observe() {}
+    unobserve() {}
+    disconnect() {}
+    takeRecords() {
+      return [];
+    }
+  } as unknown as typeof IntersectionObserver;
+}
