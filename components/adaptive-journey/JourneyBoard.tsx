@@ -1,465 +1,30 @@
 "use client";
 
+/**
+ * A course, as a single page.
+ *
+ * This file used to be the whole thing - hero, week cards, step rows, date helpers and all,
+ * in 600 lines. It is now the shell: it loads the board, and lays out the hero, the top cards,
+ * the spine and the side panels. The parts live in `./spine` and `./JourneyHero`.
+ *
+ * `contentSummary` and `isAssessmentNode` are re-exported because tests and callers import
+ * them from this path. Their definitions moved to `./spine/nodeVisuals`.
+ */
+
 import { useEffect, useMemo, useState } from "react";
-import { useTranslation } from "react-i18next";
-import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
-import { Box, ButtonBase, Chip, LinearProgress, Stack, Typography } from "@mui/material";
+import { Box, Chip, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service";
-import { nodeHref } from "./nodeHref";
-import type {
-  JourneyBoard as JourneyBoardData,
-  JourneyNodeView,
-  JourneyWeekView,
-} from "@/lib/types/adaptive-journey";
+import type { JourneyBoard as JourneyBoardData } from "@/lib/types/adaptive-journey";
 import { JourneySidePanels } from "./JourneySidePanels";
 import { JourneyTopCards } from "./JourneyTopCards";
+import { JourneyHero } from "./JourneyHero";
+import { Spine } from "./spine/Spine";
+import { CareerRail } from "./CareerRail";
 import { JourneyBoardSkeleton } from "@/components/courses/CourseSkeletons";
-import { journeyScoreDisplay, journeyAvailabilityLine } from "./journeyScoreDisplay";
-import { courseCta } from "@/lib/adaptive/courseCta";
 import { PHONE } from "@/components/common/mobile/phone";
 
-function fmtDate(iso: string | null | undefined): string {
-  if (!iso) return "";
-  try {
-    return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-  } catch {
-    return "";
-  }
-}
-
-function addDays(iso: string, n: number): string {
-  const d = new Date(iso);
-  d.setDate(d.getDate() + n);
-  return d.toISOString();
-}
-
-/** "Jul 11 – 14" when same month, else "Jul 11 – Aug 2". */
-function fmtRange(a: string, b: string): string {
-  try {
-    const da = new Date(a);
-    const db = new Date(b);
-    const mon = (d: Date) => d.toLocaleDateString(undefined, { month: "short" });
-    if (mon(da) === mon(db)) return `${mon(da)} ${da.getDate()} – ${db.getDate()}`;
-    return `${fmtDate(a)} – ${fmtDate(b)}`;
-  } catch {
-    return "";
-  }
-}
-
-function fmtLongDate(iso: string | null | undefined): string {
-  if (!iso) return "";
-  try {
-    return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
-  } catch {
-    return "";
-  }
-}
-
-function daysLeft(iso: string | null | undefined): number | null {
-  if (!iso) return null;
-  const d = new Date(iso).getTime() - Date.now();
-  return Math.ceil(d / 86_400_000);
-}
-
-/** Nodes whose completion has a result worth re-reading. */
-export function isAssessmentNode(n: JourneyNodeView): boolean {
-  return n.type === "checkpoint" || n.type === "week_final";
-}
-
-
-export function contentSummary(n: JourneyNodeView): string {
-  if (n.type === "topic" && n.content) {
-    const c = n.content;
-    const p: string[] = [];
-    if (c.videos) p.push(`${c.videos} video${c.videos > 1 ? "s" : ""}`);
-    if (c.quizzes) p.push(`${c.quizzes} quiz${c.quizzes > 1 ? "zes" : ""}`);
-    if (c.articles) p.push(`${c.articles} article${c.articles > 1 ? "s" : ""}`);
-    if (c.coding) p.push(`${c.coding} coding`);
-    return p.join(" · ");
-  }
-  if (n.type === "checkpoint" || n.type === "week_final") {
-    // `n.proctored`, not an assumption. This line asserted "Proctored" unconditionally while
-    // `nodeLabel` twelve lines down read the real flag, so a non-proctored paper carried the word
-    // with no PROCTORED tag above it - true of all 112 Impacteers papers and every other paper
-    // generated with proctoring off.
-    const p = n.proctored ? ["Proctored"] : [];
-    if (n.questionCount) p.push(`${n.questionCount} Qs`);
-    p.push(n.weight > 1 ? `counts ${n.weight}×` : "same for all");
-    return p.join(" · ");
-  }
-  if (n.type === "interview") return `AI interviewer · ~${n.durationMinutes ?? 15} min`;
-  return "";
-}
-
-function nodeLabel(n: JourneyNodeView): { main: string; sub?: string; ai?: boolean } {
-  if (n.isCalibration) return { main: "CALIBRATION", sub: "PROCTORED · NON-ADAPTIVE" };
-  if (n.type === "topic") return { main: "TOPIC" };
-  if (n.type === "checkpoint" || n.type === "week_final")
-    return { main: "CHECKPOINT ASSESSMENT", sub: n.proctored ? "PROCTORED · NON-ADAPTIVE" : undefined };
-  if (n.type === "interview") return { main: "MOCK INTERVIEW", ai: true };
-  return { main: "STEP" };
-}
-
-const NODE_STYLE: Record<string, { color: string; bg: string; icon: string }> = {
-  topic: { color: "#6366f1", bg: "#eef2ff", icon: "mdi:book-open-page-variant" },
-  checkpoint: { color: "#a855f7", bg: "#f5f3ff", icon: "mdi:shield-check" },
-  week_final: { color: "#f59e0b", bg: "#fff7ed", icon: "mdi:flag-checkered" },
-  interview: { color: "#db2777", bg: "#fdf2f8", icon: "mdi:account-voice" },
-};
-
-function NodeRow({ node, courseId, stepNo, dueAt }: { node: JourneyNodeView; courseId: number; stepNo: number; dueAt?: string | null }) {
-  const { push, prefetch } = useInstantNavigation();
-  const l = nodeLabel(node);
-  const ns = NODE_STYLE[node.type] ?? NODE_STYLE.topic;
-  const done = node.status === "done";
-  const current = node.status === "current";
-  const locked = node.status === "locked";
-  const navHref = nodeHref(node, courseId);
-  const navigable = !locked && !!navHref;
-
-  const go = () => { if (navigable && navHref) push(navHref); };
-  const warm = () => { if (navigable && navHref) prefetch(navHref); };
-
-  const available = node.status === "available";
-  const circle = done ? (
-    <Box sx={{ width: 28, height: 28, borderRadius: "50%", display: "grid", placeItems: "center", bgcolor: "#22c55e", color: "white", flexShrink: 0, zIndex: 1 }}>
-      <Icon icon="mdi:check" width={16} />
-    </Box>
-  ) : current ? (
-    <Box sx={{ width: 28, height: 28, borderRadius: "50%", display: "grid", placeItems: "center", bgcolor: "#6366f1", color: "white", fontWeight: 800, fontSize: "0.8rem", flexShrink: 0, zIndex: 1, boxShadow: "0 0 0 4px rgba(99,102,241,0.18)" }}>
-      {stepNo}
-    </Box>
-  ) : available ? (
-    // Unlocked-but-not-started: open and actionable - a step number, never a padlock.
-    <Box sx={{ width: 28, height: 28, borderRadius: "50%", display: "grid", placeItems: "center", bgcolor: "#eef2ff", color: "#6366f1", fontWeight: 800, fontSize: "0.8rem", flexShrink: 0, zIndex: 1, border: "1.5px solid #c7d2fe" }}>
-      {stepNo}
-    </Box>
-  ) : (
-    <Box sx={{ width: 28, height: 28, borderRadius: "50%", display: "grid", placeItems: "center", bgcolor: "#e2e8f0", color: "#64748b", flexShrink: 0, zIndex: 1 }}>
-      <Icon icon="mdi:lock" width={14} />
-    </Box>
-  );
-
-  return (
-    <Box data-testid="journey-node" sx={{ display: "flex", gap: 1.75, alignItems: "stretch", [PHONE]: { gap: 1.25 } }}>
-      {/* timeline rail - marker vertically centred on the card, continuous line behind */}
-      <Box sx={{ position: "relative", width: 28, flexShrink: 0 }}>
-        <Box sx={{ position: "absolute", left: "50%", top: 0, bottom: -12, width: "2px", bgcolor: "#eef2f7", transform: "translateX(-50%)" }} />
-        <Box sx={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", display: "grid", placeItems: "center", bgcolor: "#fff", borderRadius: "50%", p: "3px" }}>
-          {circle}
-        </Box>
-      </Box>
-
-      <Box
-        onClick={go}
-        onMouseEnter={warm}
-        sx={{
-          flex: 1, mb: 1.5, p: 1.75, borderRadius: 3, border: "1px solid",
-          borderLeft: "4px solid", borderLeftColor: ns.color,
-          borderColor: current ? "#c7d2fe" : "#eef2f7",
-          bgcolor: current ? "#fbfbff" : "#fff",
-          boxShadow: current ? `0 4px 14px -14px ${ns.color}` : "0 1px 2px rgba(16,24,40,0.04)",
-          opacity: locked ? 0.72 : 1,
-          cursor: navigable ? "pointer" : "default",
-          transition: "border-color .15s",
-          "&:hover": navigable ? { borderColor: "#cbd5e1" } : {},
-          // Phone: the row is a thumb target, so it is never shorter than 56px, and it gives up
-          // the type tile (the rail marker and the coloured edge already say what it is) so the
-          // title keeps the width instead of wrapping every other word.
-          [PHONE]: { minWidth: 0, minHeight: 56, p: 1.5 },
-        }}
-      >
-        <Stack direction="row" alignItems="flex-start" gap={1.25}>
-          <Box data-testid="journey-node-type-tile" sx={{ width: 34, height: 34, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", color: ns.color, bgcolor: ns.bg, [PHONE]: { display: "none" } }}>
-            <Icon icon={ns.icon} width={18} />
-          </Box>
-          <Box sx={{ minWidth: 0, flex: 1 }}>
-            <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap">
-              <Typography sx={{ fontSize: "0.64rem", fontWeight: 800, letterSpacing: 0.6, color: ns.color, [PHONE]: { fontSize: "0.75rem", letterSpacing: 0.4 } }}>{l.main}</Typography>
-              {l.sub && <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.5, color: "#a855f7", [PHONE]: { fontSize: "0.75rem", letterSpacing: 0.3 } }}>· {l.sub}</Typography>}
-              {l.ai && <Chip label="+AI" size="small" sx={{ height: 16, fontSize: "0.56rem", fontWeight: 800, color: "#7c3aed", bgcolor: "#ede9fe", [PHONE]: { height: 20, fontSize: "0.75rem" } }} />}
-            </Stack>
-            <Typography sx={{ fontWeight: 700, fontSize: "0.95rem", color: "#0f172a", mt: 0.25, [PHONE]: { fontSize: "1rem", lineHeight: 1.35, overflowWrap: "anywhere" } }}>{node.title}</Typography>
-            {contentSummary(node) && (
-              <Typography sx={{ fontSize: "0.76rem", color: "#64748b", mt: 0.25, [PHONE]: { fontSize: "0.8rem" } }}>{contentSummary(node)}</Typography>
-            )}
-          </Box>
-          <Box sx={{ textAlign: "right", flexShrink: 0 }}>
-            {(() => {
-              // One tested rule, imported rather than re-typed here. The comment in
-              // lms_api/services.py about "mirroring rather than importing" is the reason
-              // this whole class of bug keeps recurring.
-              const sd = journeyScoreDisplay(node.score, done);
-              return sd.mode === "earned" ? (
-                <Typography sx={{ fontWeight: 800, fontSize: "0.9rem", color: done ? "#15803d" : "#7c3aed" }}>
-                  {sd.earned}<span style={{ color: "#64748b", fontWeight: 600 }}>/{sd.total}</span>
-                  <Typography component="span" sx={{ fontSize: "0.66rem", color: "#64748b", display: "block", fontWeight: 600, [PHONE]: { fontSize: "0.75rem" } }}>{sd.label}</Typography>
-                </Typography>
-              ) : (
-                <Typography sx={{ fontWeight: 800, fontSize: "0.9rem", color: "#475569" }}>
-                  {sd.total}<Box component="span" sx={{ fontSize: "0.66rem", color: "#64748b", fontWeight: 600, [PHONE]: { fontSize: "0.75rem" } }}> pts</Box>
-                  <Typography component="span" sx={{ fontSize: "0.66rem", color: "#64748b", display: "block", fontWeight: 600, [PHONE]: { fontSize: "0.75rem" } }}>{sd.label}</Typography>
-                </Typography>
-              );
-            })()}
-          </Box>
-        </Stack>
-
-        {current && (
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1} justifyContent="space-between" alignItems={{ sm: "center" }} sx={{ mt: 1.5 }}>
-            <Stack direction="row" spacing={0.6} alignItems="center" sx={{ minWidth: 0 }}>
-              <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: "#15803d", flexShrink: 0 }} />
-              <Typography sx={{ fontSize: "0.74rem", color: "#15803d", fontWeight: 600, [PHONE]: { fontSize: "0.8rem" } }}>
-                {journeyAvailabilityLine(node.score)}{dueAt ? ` before ${fmtDate(dueAt)}` : ""}
-              </Typography>
-            </Stack>
-            {navigable && (
-              <ButtonBase onClick={go} sx={{ flexShrink: 0, px: 2, py: 0.85, borderRadius: 2, fontWeight: 800, fontSize: "0.8rem", color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)", [PHONE]: { minHeight: 44, fontSize: "0.9rem", borderRadius: 2.5 } }}>
-                Continue →
-              </ButtonBase>
-            )}
-          </Stack>
-        )}
-        {/* A finished assessment keeps an explicit way back to its result.
-            The card has always been clickable, but only the CURRENT step rendered a button, so a
-            learner who had submitted saw a completed row with no affordance at all - and the
-            assessment's own page answers an already-submitted paper with "Already submitted" and a
-            disabled button. `nodeHref` routes a done assessment straight to its result. */}
-        {done && isAssessmentNode(node) && navigable && (
-          <Stack direction="row" justifyContent="flex-end" sx={{ mt: 1.5 }}>
-            <ButtonBase
-              onClick={go}
-              sx={{
-                flexShrink: 0, px: 2, py: 0.85, borderRadius: 2, fontWeight: 800,
-                fontSize: "0.8rem", color: "#15803d", border: "1px solid #86efac",
-                bgcolor: "#f0fdf4", gap: 0.5,
-                [PHONE]: { minHeight: 44, fontSize: "0.9rem", borderRadius: 2.5 },
-              }}
-            >
-              <Icon icon="mdi:clipboard-text-search-outline" width={16} />
-              View result
-            </ButtonBase>
-          </Stack>
-        )}
-        {locked && node.lockReason && (
-          <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 1 }}>
-            <Icon icon="mdi:lock-outline" width={12} color="#64748b" style={{ flexShrink: 0 }} />
-            <Typography sx={{ fontSize: "0.72rem", color: "#64748b", [PHONE]: { fontSize: "0.78rem" } }}>{node.lockReason}</Typography>
-          </Stack>
-        )}
-      </Box>
-    </Box>
-  );
-}
-
-function WeekCard({ week, courseId, startStep, unitNoun = "Week" }: {
-  week: JourneyWeekView; courseId: number; startStep: number; unitNoun?: string;
-}) {
-  const pct = week.totals.total > 0 ? Math.round((week.totals.earned / week.totals.total) * 100) : 0;
-  const dl = daysLeft(week.schedule?.dueAt);
-  const locked = week.nodes.every((n) => n.status === "locked");
-
-  // The unit heading, named by the course: "Module 3" or "Week 3". The title is only appended
-  // when it adds something — nearly every module in production is literally titled "Week 1",
-  // which would otherwise render "Module 1 · Week 1". The server already suppresses those, and
-  // this stays as a second line of defence for a board served before that shipped.
-  const autoLabel = week.weekNo === 0 ? "Get started" : `${unitNoun} ${week.weekNo}`;
-  const title = (week.title || "").trim();
-  const showTitle =
-    !!title &&
-    title.toLowerCase() !== autoLabel.toLowerCase() &&
-    !/^(week|module)\s*\d+$/i.test(title);
-
-  return (
-    <Box sx={{ border: "1px solid #e9e6f7", borderRadius: 4, overflow: "hidden", bgcolor: "#fff", mb: 2, boxShadow: "0 12px 30px -24px rgba(99,102,241,0.45)" }}>
-      <Box sx={{ p: { xs: 2, md: 2.5 }, borderBottom: "1px solid #eef2f7", backgroundImage: "linear-gradient(135deg, #f5f3ff 0%, #fdf2f8 100%)" }}>
-        <Stack direction="row" justifyContent="space-between" alignItems="flex-start" flexWrap="wrap" gap={1}>
-          <Stack direction="row" spacing={1.25} alignItems="center" flexWrap="wrap">
-            <Box sx={{ width: 32, height: 32, borderRadius: 2, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)", boxShadow: "0 8px 18px -10px var(--module-hero-shadow, rgba(124,58,237,0.6))" }}>
-              <Icon icon="mdi:calendar-month" width={18} />
-            </Box>
-            <Typography sx={{ fontWeight: 800, fontSize: "1.05rem", color: "#0f172a" }}>
-              {autoLabel}{showTitle ? ` · ${title}` : ""}
-            </Typography>
-            <Typography sx={{ fontSize: "0.8rem", color: "#64748b", fontWeight: 600 }}>
-              {week.stepsDone} of {week.stepsTotal} steps done
-            </Typography>
-            {locked && <Icon icon="mdi:lock" width={14} color="#64748b" />}
-          </Stack>
-          <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-            {week.schedule && (
-              <Chip
-                size="small"
-                icon={<Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: dl != null && dl < 0 ? "#ef4444" : "#22c55e", ml: 0.75 }} />}
-                label={`Due ${fmtDate(week.schedule.dueAt)}${dl != null ? ` · ${dl < 0 ? `${-dl}d overdue` : `${dl} days left`}` : ""}`}
-                sx={{ fontWeight: 700, fontSize: "0.74rem", color: dl != null && dl < 0 ? "#b91c1c" : "#15803d", bgcolor: dl != null && dl < 0 ? "#fef2f2" : "#f0fdf4", [PHONE]: { fontSize: "0.78rem" } }}
-              />
-            )}
-            <Chip
-              size="small"
-              icon={<Icon icon="mdi:trophy" width={14} />}
-              label={`${week.totals.earned} / ${week.totals.total} pts`}
-              sx={{ fontWeight: 800, fontSize: "0.74rem", color: "#6d28d9", bgcolor: "#ede9fe", "& .MuiChip-icon": { color: "#6d28d9" }, [PHONE]: { fontSize: "0.78rem" } }}
-            />
-          </Stack>
-        </Stack>
-
-        <LinearProgress variant="determinate" value={pct} sx={{ mt: 1.5, height: 6, borderRadius: 3, bgcolor: "#eef2f7", "& .MuiLinearProgress-bar": { borderRadius: 3, background: "linear-gradient(90deg, #6366f1, #a855f7)" } }} />
-
-        {week.penaltyStrip && week.schedule && (
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1} alignItems="stretch" sx={{ mt: 1.5 }}>
-            <PenaltyCell color="#15803d" bg="#f0fdf4" head="On time" sub={`by ${fmtDate(week.schedule.dueAt)}`} note="Full score" />
-            <Box component="span" sx={PENALTY_ARROW}><Icon icon="mdi:arrow-right" width={16} /></Box>
-            <PenaltyCell color="#b45309" bg="#fffbeb" head="1–4 days late" sub={fmtRange(addDays(week.schedule.dueAt, 1), addDays(week.penaltyStrip.zeroAfter, -1))} note="−50% penalty" />
-            <Box component="span" sx={PENALTY_ARROW}><Icon icon="mdi:arrow-right" width={16} /></Box>
-            <PenaltyCell color="#b91c1c" bg="#fef2f2" head="After deadline" sub={`from ${fmtDate(week.penaltyStrip.zeroAfter)}`} note="−100% · no credit" />
-          </Stack>
-        )}
-      </Box>
-
-      <Box sx={{ p: { xs: 1.5, md: 2 }, [PHONE]: { p: 1.25, pt: 1.5 } }}>
-        {week.nodes.map((n, i) => (
-          <NodeRow key={n.id} node={n} courseId={courseId} stepNo={startStep + i + 1} dueAt={week.schedule?.dueAt} />
-        ))}
-      </Box>
-    </Box>
-  );
-}
-
-/** The arrow between penalty cells. The cells stack on a phone, so the arrow turns to point down. */
-const PENALTY_ARROW = {
-  display: "inline-flex",
-  alignSelf: "center",
-  color: "#cbd5e1",
-  [PHONE]: { transform: "rotate(90deg)" },
-} as const;
-
-function PenaltyCell({ color, bg, head, sub, note }: { color: string; bg: string; head: string; sub: string; note: string }) {
-  return (
-    <Box sx={{ flex: 1, p: 1, borderRadius: 2, bgcolor: bg, border: `1px solid ${color}22`, [PHONE]: { p: 1.25 } }}>
-      <Typography sx={{ fontSize: "0.74rem", fontWeight: 800, color, [PHONE]: { fontSize: "0.8rem" } }}>{head}</Typography>
-      <Typography sx={{ fontSize: "0.7rem", fontWeight: 600, color: "#0f172a", [PHONE]: { fontSize: "0.78rem" } }}>{sub}</Typography>
-      <Typography sx={{ fontSize: "0.7rem", fontWeight: 700, color, mt: 0.25, [PHONE]: { fontSize: "0.78rem" } }}>{note}</Typography>
-    </Box>
-  );
-}
-
-function Hero({ board, courseId }: { board: JourneyBoardData; courseId: number }) {
-  const { push, prefetch } = useInstantNavigation();
-  const { t } = useTranslation();
-  const c = board.course;
-  const [liked, setLiked] = useState(false);
-  const subject = c.title.split(/[—-]/)[0].trim() || "Course";
-
-  // The one button on this page. What it promises, and where it goes, is decided by
-  // lib/adaptive/courseCta.ts - the SAME resolver the dashboard's course card uses, fed the
-  // same server-derived `calibration` state. It used to be worked out here alone, and only
-  // routed to the calibration when there happened to be no unlocked topic at all; a learner
-  // whose entry topic was open still read "Resume learning" on a course they had not begun,
-  // and the dashboard - which had no calibration data of its own - could not even try.
-  const nodes = board.weeks.flatMap((w) => w.nodes);
-  const current = nodes.find((n) => n.status === "current" && n.ref.submoduleId);
-  const firstTopic = nodes.find((n) => n.type === "topic" && n.ref.submoduleId && n.status !== "locked");
-  const resumeSub = current?.ref.submoduleId ?? firstTopic?.ref.submoduleId ?? null;
-  const cta = courseCta({
-    courseId,
-    calibration: board.calibration,
-    resumeSubmoduleId: resumeSub,
-    completionPct: c.completionPct,
-  });
-  const resumeLabel = `${t(cta.labelKey)} →`;
-  // Dead only when there is neither a calibration to sit nor a step to open.
-  const resumeDisabled = !cta.toCalibration && !resumeSub;
-  const resumeHref = resumeDisabled ? null : cta.href;
-  const meta: { icon: string; label: string }[] = [];
-  if (c.startedAt) meta.push({ icon: "mdi:calendar-check", label: `Started ${fmtLongDate(c.startedAt)}` });
-  meta.push({ icon: "mdi:account-group", label: `${c.enrolledCount} enrolled` });
-  meta.push({ icon: "mdi:certificate-outline", label: `Certificate on ${c.certificateThreshold}%` });
-  if (c.estHours) meta.push({ icon: "mdi:clock-outline", label: `~${c.estHours} hrs` });
-
-  return (
-    <Box sx={{ borderRadius: 5, p: { xs: 2.5, md: 3.5 }, mb: 2.5, color: "white", position: "relative", overflow: "hidden", background: "linear-gradient(135deg, var(--module-hero-from, #7c3aed) 0%, var(--module-hero-mid, #a855f7) 55%, var(--module-hero-to, #c026d3) 100%)", boxShadow: "0 24px 60px -28px var(--module-hero-shadow, rgba(124,58,237,0.6))" }}>
-      <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={2}>
-        <Box sx={{ minWidth: 0, flex: 1 }}>
-          {/* The course title is the heading right below; on a phone the breadcrumb only repeated it. */}
-          <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.7)", mb: 1, [PHONE]: { display: "none" } }}>‹ My Courses / {c.title}</Typography>
-          <Stack direction="row" spacing={0.75} sx={{ mb: 1, [PHONE]: { flexWrap: "wrap", rowGap: 0.75 } }}>
-            <Chip label={subject} size="small" sx={{ fontWeight: 700, color: "white", bgcolor: "rgba(255,255,255,0.18)" }} />
-            <Chip icon={<Icon icon="mdi:certificate" width={14} color="white" />} label="Certified track" size="small" sx={{ fontWeight: 700, color: "white", bgcolor: "rgba(255,255,255,0.18)", "& .MuiChip-icon": { color: "white" } }} />
-          </Stack>
-          <Typography sx={{ fontWeight: 900, fontSize: { xs: "1.7rem", md: "2.2rem" }, lineHeight: 1.1, [PHONE]: { fontSize: "1.5rem", lineHeight: 1.15, overflowWrap: "anywhere" } }}>{c.title}</Typography>
-          {c.description && (
-            /* Full width. The 980px cap left the description ending mid-header on a wide screen
-               while the hero it sits in ran the whole container, which read as a layout bug rather
-               than a reading-width choice. The flex parent already bounds it. */
-            <Typography sx={{ fontSize: "0.88rem", color: "rgba(255,255,255,0.82)", mt: 1, maxWidth: "100%", lineHeight: 1.5 }}>{c.description}</Typography>
-          )}
-          <Stack direction="row" flexWrap="wrap" gap={1.5} sx={{ mt: 1.75 }}>
-            {meta.map((m) => (
-              <Stack key={m.label} direction="row" spacing={0.5} alignItems="center" sx={{ fontSize: "0.78rem", color: "rgba(255,255,255,0.85)" }}>
-                <Icon icon={m.icon} width={15} />
-                {m.label}
-              </Stack>
-            ))}
-          </Stack>
-        </Box>
-        <ButtonBase
-          aria-label={liked ? "Unlike this course" : "Like this course"}
-          aria-pressed={liked}
-          onClick={() => setLiked((v) => !v)}
-          sx={{ flexShrink: 0, flexDirection: "column", gap: 0.25, p: 1, borderRadius: 3, bgcolor: "rgba(255,255,255,0.14)", [PHONE]: { width: 44, height: 44, p: 0 } }}
-        >
-          <Icon icon={liked ? "mdi:heart" : "mdi:heart-outline"} width={22} color="white" />
-        </ButtonBase>
-      </Stack>
-
-      {/* AI-tuned banner */}
-      <Stack direction={{ xs: "column", md: "row" }} spacing={1.5} alignItems={{ md: "center" }} justifyContent="space-between" sx={{ mt: 2.5, p: 2, borderRadius: 3, bgcolor: "rgba(0,0,0,0.18)", border: "1px solid rgba(255,255,255,0.15)" }}>
-        <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0 }}>
-          <Box sx={{ width: 38, height: 38, borderRadius: "50%", display: "grid", placeItems: "center", bgcolor: "rgba(255,255,255,0.15)", flexShrink: 0 }}>
-            <Icon icon="mdi:auto-fix" width={20} />
-          </Box>
-          <Box sx={{ minWidth: 0 }}>
-            <Stack direction="row" spacing={1} alignItems="center" flexWrap="wrap">
-              {/* "AI has tuned this" is false on a roadmap-built course: it is assembled from
-                  verified bank rows by a deterministic resolver, with no model in the loop. */}
-              <Typography sx={{ fontWeight: 800, fontSize: "0.92rem" }}>
-                {board.calibration.card
-                  ? "AI has tuned this course to you"
-                  : "Built for you from the verified library"}
-              </Typography>
-              {c.fieldTier && <Chip label={`LEVEL · ${c.fieldTier.toUpperCase()}`} size="small" sx={{ height: 18, fontSize: "0.6rem", fontWeight: 800, color: "#7c3aed", bgcolor: "white", [PHONE]: { height: 22, fontSize: "0.75rem" } }} />}
-            </Stack>
-            <Typography sx={{ fontSize: "0.76rem", color: "rgba(255,255,255,0.8)", mt: 0.25, lineHeight: 1.45, [PHONE]: { fontSize: "0.8rem" } }}>
-              {/* A course with no calibration card will never have one (roadmap-built courses
-                  have no admin to configure it), so neither "retake it" nor "complete it" is a
-                  thing the learner can do. The banner keeps its Resume button and drops the
-                  instruction. */}
-              {!board.calibration.card
-                ? "Assembled for you from the verified library, so every question here was written and reviewed before it reached you."
-                : c.fieldTier
-                  ? "Based on your calibration baseline, quizzes start at the right difficulty and articles open at your reading tier. Retake the calibration anytime to recalibrate."
-                  : "Complete the calibration assessment and the course retunes itself - quizzes start at the right difficulty and articles open at your reading tier."}
-            </Typography>
-          </Box>
-        </Stack>
-        <ButtonBase
-          disabled={resumeDisabled}
-          onMouseEnter={() => resumeHref && prefetch(resumeHref)}
-          onClick={() => resumeHref && push(resumeHref)}
-          sx={{
-            flexShrink: 0, px: 2.25, py: 1, borderRadius: 2, fontWeight: 800, fontSize: "0.82rem", color: "#7c3aed", bgcolor: "white", "&.Mui-disabled": { opacity: 0.5 },
-            // The page's primary action: full width and 48px on a phone, not a 34px chip.
-            [PHONE]: { width: "100%", minHeight: 48, fontSize: "0.95rem", borderRadius: 2.5 },
-          }}
-        >
-          {resumeLabel}
-        </ButtonBase>
-      </Stack>
-    </Box>
-  );
-}
+export { contentSummary, isAssessmentNode } from "./spine/nodeVisuals";
 
 export function JourneyBoard({ courseId }: { courseId: number; showHeader?: boolean }) {
   const [board, setBoard] = useState<JourneyBoardData | null>(null);
@@ -514,7 +79,7 @@ export function JourneyBoard({ courseId }: { courseId: number; showHeader?: bool
   if (!hasNodes) {
     return (
       <Box>
-        <Hero board={board} courseId={courseId} />
+        <JourneyHero board={board} courseId={courseId} />
         <JourneyTopCards courseId={courseId} calibration={board.calibration} interview={board.interview} />
         <Box sx={{ mt: 2.5, p: { xs: 3, md: 5 }, borderRadius: 4, textAlign: "center", border: "1px solid #eef2f7", bgcolor: "#fff", boxShadow: "0 1px 2px rgba(16,24,40,0.04)" }}>
           <Box sx={{ width: 52, height: 52, mx: "auto", mb: 1.5, borderRadius: "50%", display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)" }}>
@@ -531,7 +96,7 @@ export function JourneyBoard({ courseId }: { courseId: number; showHeader?: bool
 
   return (
     <Box>
-      <Hero board={board} courseId={courseId} />
+      <JourneyHero board={board} courseId={courseId} />
       <JourneyTopCards courseId={courseId} calibration={board.calibration} interview={board.interview} />
 
       {/* minmax(0,1fr): a bare 1fr column is as wide as its widest child, which pushed the week
@@ -573,21 +138,24 @@ export function JourneyBoard({ courseId }: { courseId: number; showHeader?: bool
             </Stack>
           )}
 
-          {board.weeks.map((w, i) => (
-            <WeekCard
-              key={w.weekNo}
-              week={w}
-              courseId={courseId}
-              startStep={stepStarts[i] ?? 0}
-              unitNoun={board.unitNoun || "Week"}
-            />
-          ))}
+          <Spine
+            weeks={board.weeks}
+            courseId={courseId}
+            stepStarts={stepStarts}
+            unitNoun={board.unitNoun || "Week"}
+            fieldTier={board.course.fieldTier}
+            board={board}
+          />
         </Box>
 
         <Box>
           <JourneySidePanels courseId={courseId} board={board} />
         </Box>
       </Box>
+
+      {/* Below both columns, full width: where the course leads is the end of the page, not a
+          sidebar note. Renders nothing until there is something true to say. */}
+      <CareerRail career={board.career} courseTitle={board.course.title} />
     </Box>
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import dynamic from "next/dynamic";
 import { Avatar, Box, LinearProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PointsInfo } from "@/components/common/PointsInfo";
@@ -13,15 +12,9 @@ import { PHONE } from "@/components/common/mobile/phone";
 const PHONE_12 = { [PHONE]: { fontSize: "0.75rem" } };
 const PHONE_13 = { [PHONE]: { fontSize: "0.8rem" } };
 
-// Lazy: the certificate card drags in jspdf + html-to-image (~500KB gz). Only
-// needed when a course is certifiable, so defer it off the initial bundle.
-const CertificateCard = dynamic(
-  () =>
-    import("@/components/adaptive-journey/CertificateCard").then((m) => ({
-      default: m.CertificateCard,
-    })),
-  { ssr: false },
-);
+// The certificate used to be the first panel here. It is a DESTINATION, so it moved onto the
+// end of the spine (components/adaptive-journey/spine/Milestones.tsx) where the learner can see
+// what finishing the course leads to. It is still lazy-loaded there.
 
 // Medal colours for the top-3 rank circles.
 const RANK_BG = ["#fde68a", "#e5e7eb", "#e7c4a0"];
@@ -83,9 +76,6 @@ export function JourneySidePanels({ courseId, board }: { courseId: number; board
 
   return (
     <>
-      {/* Certificate */}
-      {c.certificateEnabled && <CertificateCard board={board} />}
-
       {/* Your Progress */}
       <Card>
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1.25 }}>

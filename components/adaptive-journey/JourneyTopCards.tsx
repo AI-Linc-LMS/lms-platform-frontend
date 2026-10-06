@@ -6,10 +6,8 @@ import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { Box, ButtonBase, Chip, CircularProgress, Collapse, Stack, Typography, useMediaQuery } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { PHONE } from "@/components/common/mobile/phone";
-import { useToast } from "@/components/common/Toast";
-import mockInterviewService from "@/lib/services/mock-interview.service";
-import { prefetchInterviewerClip } from "@/lib/hooks/useInterviewerVoice";
 import type { JourneyBoard } from "@/lib/types/adaptive-journey";
+import { useInterviewLaunch } from "./useInterviewLaunch";
 import {
   calibrationNeedsAction,
   interviewNeedsAction,
@@ -380,9 +378,7 @@ function CalibrationCard({ calibration, courseId }: { calibration: JourneyBoard[
 
 function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["interview"]; courseId: number }) {
   const { t } = useTranslation();
-  const { push } = useInstantNavigation();
-  const { showToast } = useToast();
-  const [busy, setBusy] = useState(false);
+  const { launch: launchInterview, busy } = useInterviewLaunch(courseId);
   const card = interview.card;
   // No card means this course will never have one (a roadmap-built course has no admin to
   // configure an interview), so render nothing rather than a stub that promises setup.
@@ -402,31 +398,16 @@ function InterviewerCard({ interview, courseId }: { interview: JourneyBoard["int
     { t: "Adaptive follow-ups" },
   ];
 
-  const launch = async () => {
-    if (!configured || card.templateId == null || busy) return;
-    setBusy(true);
-    try {
-      const created = await mockInterviewService.startTemplateInterview(card.templateId);
-      // Warm the interviewer's opening TTS clip while the candidate reads the Begin screen,
-      // and stash the text so the interview page can re-warm after a reload (its detail API
-      // only serves completed interviews). Kills the first-question dead air.
-      if (created.opening_question_text) {
-        prefetchInterviewerClip(created.opening_question_text);
-        try {
-          sessionStorage.setItem(`adaptiveInterviewOpening_${created.id}`, created.opening_question_text);
-        } catch {
-          /* best-effort */
-        }
-      }
-      const q = new URLSearchParams();
-      if (card.topic) q.set("topic", card.topic);
-      if (card.difficulty) q.set("difficulty", card.difficulty);
-      if (card.durationMinutes) q.set("mins", String(card.durationMinutes));
-      push(`/adaptive-courses/${courseId}/interview/${created.id}?${q.toString()}`);
-    } catch {
-      showToast("Couldn't start the interview. Please try again.", "error");
-      setBusy(false);
-    }
+  // The launch itself lives in `useInterviewLaunch`, shared with the timeline's interview node
+  // so both mint the interview the same way. `configured` is still checked here: this card is
+  // the surface that renders an unconfigured state, and the hook has no opinion about it.
+  const launch = () => {
+    if (!configured) return;
+    void launchInterview(card.templateId, {
+      topic: card.topic,
+      difficulty: card.difficulty,
+      durationMinutes: card.durationMinutes,
+    });
   };
 
   // An admin can deactivate a template AFTER a learner has sat the interview - the board then

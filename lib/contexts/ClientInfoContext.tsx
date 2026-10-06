@@ -210,6 +210,19 @@ export function useIsJobsEnabled(): boolean {
   return Boolean(clientInfo?.features?.some((f) => f.name === "jobs_v2"));
 }
 
+/** The live tutor. Keyed on `ai_voice_tutor`, NOT `ai_tutor`: a backend migration renamed
+ *  the legacy text-chat row into `ai_tutor` in place, so tenants still hold a key that buys
+ *  them nothing. The sidebar gates on the same name (`lib/navigation/navModel.ts`), and this
+ *  one costs real money per minute, so it stays default-deny. */
+export function useIsAiVoiceTutorEnabled(): boolean {
+  // `useOptionalClientInfo`, not `useClientInfo`: this gate is read from inside the course
+  // spine, which renders in unit tests without the app shell, and a feature gate that THROWS
+  // takes the whole course page down rather than hiding one button. No tenant means no
+  // feature, which is the right answer anyway - this one is default-deny.
+  const clientInfo = useOptionalClientInfo();
+  return Boolean(clientInfo?.features?.some((f) => f.name === "ai_voice_tutor"));
+}
+
 export function useIsCommunityEnabled(): boolean {
   const { clientInfo } = useClientInfo();
   return Boolean(clientInfo?.features?.some((f) => f.name === "community_forum"));

@@ -54,7 +54,8 @@ describe("the journey card", () => {
   });
 
   it("renders a View result button on a done assessment", () => {
-    const src = read("components/adaptive-journey/JourneyBoard.tsx");
+    // The step card moved to `spine/NodeRow.tsx` when the board became one continuous spine.
+    const src = read("components/adaptive-journey/spine/NodeRow.tsx");
     expect(src).toMatch(/\{done && isAssessmentNode\(node\) && navigable && \(/);
     expect(src).toMatch(/View result/);
   });
