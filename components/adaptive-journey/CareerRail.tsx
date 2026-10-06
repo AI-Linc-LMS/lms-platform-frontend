@@ -160,9 +160,12 @@ export function CareerRail({ career, courseTitle }: { career?: CareerPanel; cour
       {career.unlocked && career.open.length > 0 && (
         <Section
           icon="mdi:briefcase-search-outline"
-          title="Open to you"
-          // Says what this list IS. It is not "matched to your course", and labelling it so
-          // would be the fabricated-relevance problem this rail exists to avoid.
+          // Server-authored. When the server narrowed the list to the families this course
+          // leads to, it says so ("Roles this course leads to"); when it could not read the
+          // course well enough to narrow anything, it stays "Open to you". Composing this
+          // sentence here would let it drift from the predicate that built the list - which is
+          // exactly how a rail ends up claiming a relevance it does not have.
+          title={career.openFilter?.label ?? "Open to you"}
           note={career.openCount > career.open.length
             ? `${career.openCount} roles open right now`
             : undefined}

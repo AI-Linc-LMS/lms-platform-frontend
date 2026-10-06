@@ -3,9 +3,10 @@
 /**
  * The milestones at the end of the spine, rendered from what the course actually has.
  *
- * The certificate card is loaded lazily here exactly as the side rail loaded it (it drags in
- * jspdf + html-to-image, ~500KB gz) and it keeps its own server-authoritative claim gate. This
- * file decides WHERE it sits, not whether it can be claimed.
+ * The certificate station is loaded lazily, exactly as the side rail's card was: it reaches
+ * `useCertificateActions`, which drags in jspdf and html-to-image (~500KB gz) to render the
+ * document. It keeps that hook's server-authoritative claim gate - this file decides WHERE the
+ * certificate sits, never whether it can be claimed.
  */
 
 import dynamic from "next/dynamic";
@@ -14,24 +15,20 @@ import type { JourneyBoard } from "@/lib/types/adaptive-journey";
 import { MilestoneRow } from "./MilestoneRow";
 import { InterviewAction } from "./InterviewAction";
 import { courseMilestones } from "./milestoneRules";
-import type { JourneyNodeView } from "@/lib/types/adaptive-journey";
 
-const CertificateCard = dynamic(
-  () =>
-    import("@/components/adaptive-journey/CertificateCard").then((m) => ({
-      default: m.CertificateCard,
-    })),
+const CertificateMilestone = dynamic(
+  () => import("./CertificateMilestone").then((m) => ({ default: m.CertificateMilestone })),
   {
     ssr: false,
     loading: () => (
-      <Box sx={{ p: 2, borderRadius: 4, border: "1px solid #eef2f7", bgcolor: "#fff" }}>
-        <Typography sx={{ fontSize: "0.82rem", color: "#64748b" }}>
-          Loading your certificate…
-        </Typography>
+      <Box sx={{ ml: "46px", mb: 1.5, p: 2, borderRadius: 3.5, border: "1px solid #fde68a", bgcolor: "#fffbeb" }}>
+        <Typography sx={{ fontSize: "0.82rem", color: "#b45309" }}>Loading your certificate…</Typography>
       </Box>
     ),
   },
 );
+import type { JourneyNodeView } from "@/lib/types/adaptive-journey";
+
 
 /** The interview milestone launches through the same action a timeline step uses, so it needs a
  *  node-shaped object. Only `ref.interviewTemplateId` and `durationMinutes` are read. */
@@ -89,24 +86,11 @@ export function Milestones({
             />
           );
         }
-        return (
-          <MilestoneRow
-            key="certificate"
-            icon="mdi:certificate"
-            label="CERTIFICATE"
-            title={board.course.certificateTitle || "Your course certificate"}
-            blurb={
-              m.reached
-                ? "You have cleared the bar for this course. Your certificate is below - download it or share it."
-                : `Finish ${board.course.certificateThreshold}% of this course and your certificate unlocks here, ready to download and share.`
-            }
-            reached={m.reached}
-            tone={m.reached ? "done" : "ahead"}
-            first={first}
-            last={last}
-            below={<CertificateCard board={board} />}
-          />
-        );
+        // ONE card, not a milestone wrapper with the certificate card nested under it. That
+        // arrangement said the same thing twice in two voices: "Your course certificate -
+        // finish 80% and it unlocks here", and directly beneath it "Complete 80% of the course
+        // to unlock certificate download & LinkedIn sharing".
+        return <CertificateMilestone key="certificate" board={board} first={first} last={last} />;
       })}
     </>
   );

@@ -15,10 +15,11 @@ vi.mock("@/lib/hooks/useInstantNavigation", () => ({
   useInstantNavigation: () => ({ push: vi.fn(), prefetch: vi.fn(), replace: vi.fn(), isPending: false }),
 }));
 vi.mock("./JourneySidePanels", () => ({ JourneySidePanels: () => null }));
-// The certificate card drags in jspdf + html-to-image and does its own server round trip.
-// Its own tests cover it; here we only need to know the spine mounted it.
-vi.mock("./CertificateCard", () => ({
-  CertificateCard: () => <div data-testid="certificate-card">certificate</div>,
+// The certificate station drags in jspdf + html-to-image and does its own server round trip.
+// Its own tests cover it; here we only need to know the spine mounted it, exactly ONCE - it
+// used to render twice, as a milestone wrapper plus the full card nested beneath it.
+vi.mock("./spine/CertificateMilestone", () => ({
+  CertificateMilestone: () => <div data-testid="certificate-card">CERTIFICATE</div>,
 }));
 vi.mock("@/lib/contexts/ClientInfoContext", () => ({ useIsAiVoiceTutorEnabled: () => true }));
 vi.mock("@/components/common/Toast", () => ({ useToast: () => ({ showToast: vi.fn() }) }));
@@ -120,10 +121,8 @@ describe("a course with the whole journey switched on", () => {
     // Both terminal milestones, on the spine.
     expect(screen.getByText("MOCK INTERVIEW")).toBeTruthy();
     expect(screen.getByText("Interview: Python")).toBeTruthy();
-    expect(screen.getByText("CERTIFICATE")).toBeTruthy();
-    expect(screen.getByText("Python Professional")).toBeTruthy();
-    // The certificate card moved here out of the side rail; it must still be on the page.
-    expect(screen.getByTestId("certificate-card")).toBeTruthy();
+    // Exactly one certificate station, carrying the real card's machinery.
+    expect(screen.getAllByTestId("certificate-card")).toHaveLength(1);
 
     // And where the course leads.
     expect(screen.getByText("Where this takes you")).toBeTruthy();
@@ -135,10 +134,11 @@ describe("a course with the whole journey switched on", () => {
     // The interview exists as a top card AND as a milestone; the certificate used to be in the
     // side rail. Either could easily have ended up on the page twice.
     render(<JourneyBoard courseId={7} />);
-    await waitFor(() => expect(screen.getByText("CERTIFICATE")).toBeTruthy());
+    await waitFor(() => expect(screen.getAllByTestId("certificate-card")).toHaveLength(1));
+    // The reported bug: the certificate rendered twice, as a milestone card AND the full
+    // certificate card nested under it, saying the same thing in two voices.
     expect(screen.getAllByText("CERTIFICATE")).toHaveLength(1);
     expect(screen.getAllByText("MOCK INTERVIEW")).toHaveLength(1);
-    expect(screen.getAllByTestId("certificate-card")).toHaveLength(1);
   });
 
   it("says what opens the module's assessment rather than offering a locked one", async () => {

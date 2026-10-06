@@ -80,6 +80,18 @@ export interface CareerPanel {
   open: CareerJobCard[];
   /** The real total behind `open`, which is only a page of it. */
   openCount: number;
+  /**
+   * What the server did to `open`, so the heading can be true.
+   *
+   * `label` is server-authored on purpose: the predicate that built the list and the sentence
+   * describing it must not be able to drift apart. The client renders it and does not compose
+   * its own. Optional, because a board served before this shipped has no opinion.
+   */
+  openFilter?: {
+    /** True when the list was narrowed to the roles this course leads to. */
+    applied: boolean;
+    label: string;
+  };
   resumeNudge: boolean;
 }
 
