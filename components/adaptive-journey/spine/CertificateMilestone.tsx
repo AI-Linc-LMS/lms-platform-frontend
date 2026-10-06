@@ -14,6 +14,7 @@
  * answer, never a percentage compared in the browser.
  */
 
+import { useState } from "react";
 import { Box, ButtonBase, CircularProgress, LinearProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 import { useCertificateActions } from "@/components/certificate/useCertificateActions";
@@ -23,6 +24,7 @@ import { PHONE } from "@/components/common/mobile/phone";
 import type { JourneyBoard } from "@/lib/types/adaptive-journey";
 import { SpineRow } from "./SpineRow";
 import { MilestoneMarker } from "./MilestoneRow";
+import { CertificatePreviewDialog } from "./CertificatePreviewDialog";
 
 function Action({
   icon, label, onClick, disabled, busy, primary,
@@ -60,6 +62,7 @@ export function CertificateMilestone({
 }) {
   const c = board.course;
   const completion = board.progressCard?.completionPct ?? 0;
+  const [preview, setPreview] = useState(false);
   const cert = useCertificateActions({
     courseTitle: c.certificateTitle || c.title,
     certificateAvailable: c.certificateEnabled,
@@ -92,6 +95,14 @@ export function CertificateMilestone({
       last={last}
     >
       {cert.portal}
+      <CertificatePreviewDialog
+        open={preview}
+        onClose={() => setPreview(false)}
+        courseTitle={c.certificateTitle || c.title}
+        completion={completion}
+        threshold={threshold}
+        earned={cert.canClaim}
+      />
       <Box
         sx={{
           mb: 1.5, p: { xs: 1.75, md: 2.25 }, borderRadius: 3.5,
@@ -142,21 +153,32 @@ export function CertificateMilestone({
           </Stack>
 
           <Stack direction="row" spacing={1} alignItems="center" sx={{ flexShrink: 0 }}>
+            {/* Always available, earned or not. A learner who can almost read their own name on
+                it has a reason to finish; "complete 80%" alone gives them nothing to want. */}
             <Action
-              icon="mdi:download"
-              label={cert.downloading ? "Preparing…" : "Certificate"}
-              onClick={cert.downloadCertificate}
-              disabled={!cert.canClaim || cert.downloading}
-              busy={cert.downloading}
-              primary
+              icon="mdi:eye-outline"
+              label="Preview"
+              onClick={() => setPreview(true)}
             />
-            <Action
-              icon="mdi:linkedin"
-              label="Share"
-              onClick={cert.shareOnLinkedIn}
-              disabled={!cert.canClaim || cert.sharing}
-              busy={cert.sharing}
-            />
+            {cert.canClaim && (
+              <>
+                <Action
+                  icon="mdi:download"
+                  label={cert.downloading ? "Preparing…" : "Certificate"}
+                  onClick={cert.downloadCertificate}
+                  disabled={cert.downloading}
+                  busy={cert.downloading}
+                  primary
+                />
+                <Action
+                  icon="mdi:linkedin"
+                  label="Share"
+                  onClick={cert.shareOnLinkedIn}
+                  disabled={cert.sharing}
+                  busy={cert.sharing}
+                />
+              </>
+            )}
           </Stack>
         </Stack>
 
