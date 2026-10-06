@@ -184,6 +184,15 @@ export interface StartSessionInput {
   minutes: number;
   topic_slug?: string;
   topic_source?: string;
+  /**
+   * The course module this lesson is for, when it was started from a course.
+   *
+   * The server resolves it against this learner's own enrolments and ignores it otherwise,
+   * so it is a hint rather than a grant. With it, the lesson plan is built from that
+   * module's own articles instead of from the topic string, and the session is recorded
+   * against the course.
+   */
+  submodule_id?: number;
 }
 
 export interface TranscriptTurn {

@@ -53,6 +53,10 @@ export default function TutorSessionPage() {
   const minutes = Number(search.get("minutes") ?? 20);
   const slug = search.get("slug") ?? undefined;
   const source = search.get("source") ?? undefined;
+  // Set when the lesson was opened from a course module. The server treats it as a hint and
+  // checks it against the learner's enrolments, so a bad value costs a generic lesson, not an
+  // error.
+  const submoduleId = Number(search.get("submoduleId")) || undefined;
 
   const [plan, setPlan] = useState<LessonPlanSection[]>([]);
   const [quiz, setQuiz] = useState<PooledQuestion | null>(null);
@@ -171,10 +175,11 @@ export default function TutorSessionPage() {
         minutes,
         topic_slug: slug,
         topic_source: source,
+        submodule_id: submoduleId,
       });
       if (started) setPlan(started.session.lesson_plan ?? []);
     })();
-  }, [level, minutes, resumeIfPossible, slug, source, start, topic]);
+  }, [level, minutes, resumeIfPossible, slug, source, start, submoduleId, topic]);
 
   /** The dock holds one panel, so each toggle both selects and deselects. */
   const openEditor = useCallback(() => {

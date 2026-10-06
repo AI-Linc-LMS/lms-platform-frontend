@@ -68,9 +68,13 @@ describe("nodeHref", () => {
       .toBe("/adaptive-courses/19/submodule/884");
   });
 
-  it("leaves an interview where it was", () => {
+  it("gives an interview no href at all, because it has to be minted first", () => {
+    // This used to assert `/mock-interview/courses` -- a generic list with no course and no
+    // template behind it, which is exactly why the one step promising an interview sent the
+    // learner somewhere else. The real route carries an interview id the server only creates
+    // on POST, so there is no href to return: `spine/InterviewAction` starts it instead.
     expect(nodeHref(node({ type: "interview",
       ref: { interviewTemplateId: 28 } } as Partial<JourneyNodeView>), 19))
-      .toBe("/mock-interview/courses");
+      .toBeNull();
   });
 });

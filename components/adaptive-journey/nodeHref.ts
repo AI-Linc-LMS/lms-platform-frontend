@@ -18,7 +18,12 @@ export function nodeHref(node: JourneyNodeView, courseId: number): string | null
   if (node.type === "topic" && node.ref.submoduleId) {
     return `/adaptive-courses/${courseId}/submodule/${node.ref.submoduleId}`;
   }
-  if (node.type === "interview") return "/mock-interview/courses";
+  // Deliberately NOT a link. This used to return `/mock-interview/courses`, a generic list
+  // with no course and no template behind it, so the one step that promised an interview sent
+  // the learner somewhere else. The real route needs an interview id that only exists after a
+  // POST, so the step renders `spine/InterviewAction` and mints one. Null keeps the card inert
+  // rather than clickable-and-wrong.
+  if (node.type === "interview") return null;
   if (node.type === "checkpoint" || node.type === "week_final") {
     const slug = node.ref.assessmentSlug;
     if (!slug) return null;
