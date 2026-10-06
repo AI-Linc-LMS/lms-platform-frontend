@@ -37,25 +37,18 @@ export interface InterviewLaunchMeta {
 export function useInterviewLaunch(courseId: number) {
   const { push } = useInstantNavigation();
   const { showToast } = useToast();
-  // HELD. Routing the journey's interviews to v2 is correct and the cutover is written, but
-  // the v2 start endpoint cannot resolve a journey template yet: it authorises through
+  // Un-held. This was `false` for one release: the v2 start endpoint authorises through
   // `visible_templates`, whose three grants are the `courses` M2M, the `adaptive_courses` M2M
-  // and a cohort mapping - and a journey template carries NONE of them. The rounds builder
-  // omits `adaptive_courses` deliberately (tagging it puts seven unlocked cards on the hub)
-  // and the calibration gauge is excluded a second time by `is_level_gauge=False`.
+  // and a cohort mapping, and a journey template carries none of them - the rounds builder
+  // omits `adaptive_courses` deliberately, and the calibration gauge is excluded again by
+  // `is_level_gauge=False`. Every round AND the gauge answered 404, which on Impacteers meant
+  // 48 learners' level check.
   //
-  // Measured on production: for all four Impacteers AI Mastery courses the gauge is invisible
-  // to that queryset even with `include_level_gauge=True`, so this hook sent 48 enrolled
-  // learners' level check to a 404. The gauge worked on the legacy stack and nothing asked for
-  // it to move; this holds every journey launch there until the backend grant lands.
-  //
-  // Re-enable by restoring `useIsInterviewV2Enabled()` here once a journey-node grant is
-  // deployed - `mock_interview.tests_v2_journey_door` is the test that proves it.
-  // Called unconditionally - a hook behind `&&` is a conditional hook call.
-  const tenantHasV2 = useIsInterviewV2Enabled();
-  // HELD at false. Set this to `tenantHasV2` to re-enable; see the note above.
-  const v2 = false;
-  void tenantHasV2;
+  // BE #969 gives that endpoint the journey-node grant the legacy one has always had, scoped
+  // by `has_course_access` and still behind the week gate. `mock_interview
+  // .tests_v2_journey_door` is the test that proves it, including that the grant widens
+  // neither tenancy, enrolment, lifecycle nor the lock.
+  const v2 = useIsInterviewV2Enabled();
   const [busy, setBusy] = useState(false);
 
   const launch = useCallback(
