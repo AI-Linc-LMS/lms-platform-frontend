@@ -17,6 +17,7 @@ import interviewService, {
   type QuestionResult,
 } from "@/lib/services/interview.service";
 import { PHONE } from "@/components/common/mobile/phone";
+import { useReturnTo } from "@/lib/hooks/useReturnTo";
 
 /**
  * The candidate's result: the mark, the words around the mark, and the review.
@@ -357,6 +358,9 @@ export default function InterviewResultPage({
 }) {
   const { sessionId } = use(params);
   const router = useRouter();
+  // A round launched from a course's journey returns to that course. The standalone hub stays
+  // the fallback for anyone who started there.
+  const back = useReturnTo({ href: "/interview", label: "All interviews" });
   const [result, setResult] = useState<InterviewResult | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -411,10 +415,10 @@ export default function InterviewResultPage({
         icon="solar:diploma-verified-bold-duotone"
         action={
           <Button
-            onClick={() => router.push("/interview")}
+            onClick={() => router.push(back.href)}
             sx={{ textTransform: "none", color: "#fff", border: "1px solid rgba(255,255,255,0.35)", borderRadius: 2, px: 2, [PHONE]: { minHeight: 44 } }}
           >
-            All interviews
+            {back.href === "/interview" ? "All interviews" : back.label}
           </Button>
         }
       />

@@ -20,8 +20,10 @@ const showToast = vi.fn();
 vi.mock("@/components/common/Toast", () => ({ useToast: () => ({ showToast }) }));
 
 let tutorEnabled = true;
+let v2Enabled = false;
 vi.mock("@/lib/contexts/ClientInfoContext", () => ({
   useIsAiVoiceTutorEnabled: () => tutorEnabled,
+  useIsInterviewV2Enabled: () => v2Enabled,
 }));
 
 const startTemplateInterview = vi.fn();
@@ -66,6 +68,7 @@ beforeEach(() => {
   prefetchInterviewerClip.mockClear();
   showToast.mockClear();
   tutorEnabled = true;
+  v2Enabled = false;
 });
 
 describe("having the tutor teach a module", () => {
@@ -165,5 +168,34 @@ describe("sitting the course's mock interview", () => {
   it("offers a finished interview again rather than going quiet", () => {
     render(<InterviewAction node={interviewNode} courseId={7} done />);
     expect(screen.getByRole("button", { name: /again/i })).toBeTruthy();
+  });
+
+  describe("on a tenant that has the rebuilt interview", () => {
+    // Two interview stacks are mounted at once. A tenant with `interview_realtime` gets the
+    // rebuilt room, which mints its own session - so the launch is a route and NOT a POST.
+    // Routing a round at the legacy endpoint is the bug this guards: it mints a v1 sitting
+    // that the journey step can never be completed by, because completion reads v2.
+    beforeEach(() => {
+      v2Enabled = true;
+    });
+
+    it("routes to the rebuilt room instead of minting a legacy interview", async () => {
+      render(<InterviewAction node={interviewNode} courseId={14} done={false} />);
+      fireEvent.click(screen.getByRole("button"));
+      await waitFor(() => expect(push).toHaveBeenCalled());
+      expect(startTemplateInterview).not.toHaveBeenCalled();
+      expect(push.mock.calls[0][0]).toContain("/interview/room?template=28");
+    });
+
+    it("carries the course back, so finishing does not strand the learner on the hub", async () => {
+      // The room is a shared runtime reached from the hub too. Without `from`, every exit -
+      // cancel, a dropped call, the result page - lands on /interview, a page the learner
+      // never visited.
+      render(<InterviewAction node={interviewNode} courseId={14} done={false} />);
+      fireEvent.click(screen.getByRole("button"));
+      await waitFor(() => expect(push).toHaveBeenCalled());
+      const href = push.mock.calls[0][0] as string;
+      expect(new URL(href, "https://x.invalid").searchParams.get("from")).toBe("/adaptive-courses/14");
+    });
   });
 });

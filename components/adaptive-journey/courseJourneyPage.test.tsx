@@ -28,7 +28,10 @@ vi.mock("./JourneySidePanels", () => ({ JourneySidePanels: () => null }));
 vi.mock("./spine/CertificateMilestone", () => ({
   CertificateMilestone: () => <div data-testid="certificate-card">CERTIFICATE</div>,
 }));
-vi.mock("@/lib/contexts/ClientInfoContext", () => ({ useIsAiVoiceTutorEnabled: () => true }));
+vi.mock("@/lib/contexts/ClientInfoContext", () => ({
+  useIsAiVoiceTutorEnabled: () => true,
+  useIsInterviewV2Enabled: () => false,
+}));
 vi.mock("@/components/common/Toast", () => ({ useToast: () => ({ showToast: vi.fn() }) }));
 vi.mock("@/lib/services/mock-interview.service", () => ({
   default: { startTemplateInterview: vi.fn() },

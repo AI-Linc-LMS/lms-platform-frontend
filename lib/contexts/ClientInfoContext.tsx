@@ -214,6 +214,14 @@ export function useIsJobsEnabled(): boolean {
  *  the legacy text-chat row into `ai_tutor` in place, so tenants still hold a key that buys
  *  them nothing. The sidebar gates on the same name (`lib/navigation/navModel.ts`), and this
  *  one costs real money per minute, so it stays default-deny. */
+/** The rebuilt interview (`interview_realtime`). The legacy `mock_interview` key is a
+ *  DIFFERENT module that is still mounted, so a tenant can hold either, both or neither -
+ *  which is why this asks for the one it means rather than for "interviews". */
+export function useIsInterviewV2Enabled(): boolean {
+  const clientInfo = useOptionalClientInfo();
+  return Boolean(clientInfo?.features?.some((f) => f.name === "interview_realtime"));
+}
+
 export function useIsAiVoiceTutorEnabled(): boolean {
   // `useOptionalClientInfo`, not `useClientInfo`: this gate is read from inside the course
   // spine, which renders in unit tests without the app shell, and a feature gate that THROWS

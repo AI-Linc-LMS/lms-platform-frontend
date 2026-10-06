@@ -20,7 +20,10 @@ vi.mock("@/lib/hooks/useInstantNavigation", () => ({
   useInstantNavigation: () => ({ push, prefetch: vi.fn(), replace: vi.fn(), isPending: false }),
 }));
 vi.mock("@/components/common/Toast", () => ({ useToast: () => ({ showToast: vi.fn() }) }));
-vi.mock("@/lib/contexts/ClientInfoContext", () => ({ useIsAiVoiceTutorEnabled: () => true }));
+vi.mock("@/lib/contexts/ClientInfoContext", () => ({
+  useIsAiVoiceTutorEnabled: () => true,
+  useIsInterviewV2Enabled: () => false,
+}));
 const startTemplateInterview = vi.fn();
 vi.mock("@/lib/services/mock-interview.service", () => ({
   default: { startTemplateInterview: (...a: unknown[]) => startTemplateInterview(...a) },
