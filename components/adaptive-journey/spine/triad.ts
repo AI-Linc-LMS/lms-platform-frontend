@@ -67,8 +67,12 @@ export function tutorLegView(node: JourneyNodeView, tutorEnabled: boolean): Tria
 }
 
 /**
- * The module's assessment. Fed the checkpoint node that closes this module, if one exists -
- * the triad is drawn on the module, but the paper is its own step on the board.
+ * The module's assessment. Fed the paper that covers this module's WEEK, if there is one.
+ *
+ * A week usually holds several modules and exactly one paper, so the same paper is the answer
+ * for every module in that week. The paper keeps its own station on the rail; this tile states
+ * its status from inside the module, so a learner never reads "no assessment" on a module whose
+ * week has one.
  */
 export function assessmentLeg(
   module: JourneyNodeView,
@@ -78,7 +82,11 @@ export function assessmentLeg(
     return {
       step: 3,
       label: "ASSESSMENT",
-      value: "None for this module",
+      // Says the course has none here, without asserting a scope. It used to read "None for
+      // this module", which was wrong twice over: the paper is a week-level thing, and the
+      // rule that fed this only recognised `checkpoint`, so every `week_final` course showed
+      // it on every module with the week's paper sitting directly below.
+      value: "No assessment",
       state: "locked",
       icon: "mdi:clipboard-text-outline",
     };
@@ -99,8 +107,11 @@ export function assessmentLeg(
     return {
       step: 3,
       label: "ASSESSMENT",
-      // `lockReason` is the server's own words for why, and is what the locked card shows.
-      value: module.status === "done" ? "Opens shortly" : "After all lessons",
+      // No promise about WHEN. This used to say "Opens shortly" on a module the learner had
+      // finished, but the paper covers the whole week - finishing one of its three modules
+      // does not mean it is about to open. The paper's own card carries the server's
+      // `lockReason`, which is the authority on why.
+      value: "After all lessons",
       state: "locked",
       icon: "mdi:clipboard-text-outline",
     };
@@ -112,13 +123,6 @@ export function assessmentLeg(
     state: checkpoint.status === "current" ? "active" : "ready",
     icon: "mdi:clipboard-text-outline",
   };
-}
-
-/** The checkpoint that closes a given module, or null. One paper per week by construction. */
-export function checkpointForModule(
-  weekNodes: JourneyNodeView[],
-): JourneyNodeView | null {
-  return weekNodes.find((n) => n.type === "checkpoint" || n.type === "week_final") ?? null;
 }
 
 export function moduleTriad(

@@ -97,19 +97,20 @@ describe("a course with the whole journey switched on", () => {
     render(<JourneyBoard courseId={7} />);
     await waitFor(() => expect(screen.getByText("Variables and types")).toBeTruthy());
 
-    // Two modules. The checkpoint is NOT a third row - it is the third leg of the module it
-    // closes, which is the whole point of the triad.
-    expect(screen.getAllByTestId("journey-node")).toHaveLength(2);
-    expect(screen.queryByText("Module 1 checkpoint")).toBeNull();
+    // Two modules and the week's paper, which keeps its own station on the rail: it carries a
+    // weight, a question count and a result button that a tile cannot hold.
+    expect(screen.getAllByTestId("journey-node")).toHaveLength(3);
+    expect(screen.getByText("Module 1 checkpoint")).toBeTruthy();
 
-    // Every module states its three legs.
+    // And every module states its three legs, with the third pointing at that same paper.
     expect(screen.getAllByTestId("module-triad")).toHaveLength(2);
     expect(screen.getAllByText(/1 · LESSONS/).length).toBe(2);
     expect(screen.getAllByText(/2 · AI TUTOR/).length).toBe(2);
     expect(screen.getAllByText(/3 · ASSESSMENT/).length).toBe(2);
-    // This course's paper is still locked, so its tile states the condition rather than a
-    // question count. `triad.test.ts` covers the open and scored wordings.
-    expect(screen.getByText("After all lessons")).toBeTruthy();
+    // The reported bug: a module saying it has no assessment while the week's paper sits
+    // directly below it. Both modules state the paper's real condition instead.
+    expect(screen.queryByText("No assessment")).toBeNull();
+    expect(screen.getAllByText("After all lessons")).toHaveLength(2);
 
     // The tutor is offered on the module they are on.
     expect(screen.getAllByRole("button", { name: /with the AI Tutor/ }).length).toBeGreaterThanOrEqual(1);
@@ -144,6 +145,6 @@ describe("a course with the whole journey switched on", () => {
     render(<JourneyBoard courseId={7} />);
     await waitFor(() => expect(screen.getAllByTestId("module-triad").length).toBe(2));
     // The locked paper's tile states its condition instead of a question count.
-    expect(screen.getByText("After all lessons")).toBeTruthy();
+    expect(screen.getAllByText("After all lessons").length).toBeGreaterThanOrEqual(1);
   });
 });
