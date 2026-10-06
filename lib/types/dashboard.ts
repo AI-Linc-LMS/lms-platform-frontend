@@ -3,11 +3,28 @@ import type { MomentumInfo } from "./momentum";
 
 // Payload for GET /adaptive-journey/api/learner/dashboard/
 
-export type ReadinessBand = "not-started" | "needs-work" | "building" | "strong";
+/**
+ * `not-applicable` is distinct from `not-started` on purpose: it means this course contains no
+ * such work at all, so there is nothing for the learner to begin. 64 of the 210 adaptive
+ * courses on production have no coding, and every learner on one of them was being told
+ * "Applied Craft: Not started" permanently, with no way to clear it.
+ */
+export type ReadinessBand = "not-started" | "not-applicable" | "needs-work" | "building" | "strong";
 
 export interface ReadinessCell {
   percent: number | null;
   band: ReadinessBand;
+  /**
+   * Whether this course contains any such work at all.
+   *
+   * False means the row is not shown: a course with no coding has no Applied Craft to report,
+   * and a permanently empty row reads as a deficiency the learner cannot clear. It is already
+   * absent from `overall`, which renormalises over the signals that have data.
+   *
+   * Optional, and absent means TRUE, so a server that predates the field still renders every
+   * row exactly as it did before.
+   */
+  applicable?: boolean;
 }
 
 export interface CourseReadiness {

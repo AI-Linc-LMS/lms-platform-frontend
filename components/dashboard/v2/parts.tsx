@@ -9,6 +9,10 @@ import { phoneText } from "@/components/common/mobile/phoneText";
 // --- band → color (single source) ---
 export const BAND_STYLE: Record<ReadinessBand, { color: string; bg: string; label: string; bar: string }> = {
   "not-started": { color: "#94a3b8", bg: "#f1f5f9", label: "Not started", bar: "#cbd5e1" },
+  // Carried for type completeness only: a signal this course has no material for is filtered
+  // out before it reaches a bar, so this label is never read. Kept because the band is still
+  // the honest value for the payload to carry.
+  "not-applicable": { color: "#94a3b8", bg: "#f1f5f9", label: "Not in this course", bar: "#cbd5e1" },
   "needs-work": { color: "#b91c1c", bg: "#fef2f2", label: "Needs work", bar: "#ef4444" },
   building: { color: "#b45309", bg: "#fffbeb", label: "Building", bar: "#f59e0b" },
   strong: { color: "#15803d", bg: "#f0fdf4", label: "Strong", bar: "#22c55e" },
