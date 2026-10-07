@@ -122,7 +122,9 @@ describe("a course with the whole journey switched on", () => {
     // kept making an optional help read as work the course expects.
     expect(screen.queryByText("AI TUTOR")).toBeNull();
     // So the module's work is two legs: the lessons, then the paper.
-    expect(screen.getAllByText(/2 · ASSESSMENT/).length).toBe(2);
+    // The leg names the PAPER, so a learner on either module of this week can see that one
+    // check covers both of them.
+    expect(screen.getAllByText(/2 · .*CHECK|2 · ASSESSMENT/).length).toBe(2);
     // The reported bug: a module saying it has no assessment while the week's paper sits
     // directly below it. Both modules state the paper's real condition instead.
     expect(screen.queryByText("No assessment")).toBeNull();

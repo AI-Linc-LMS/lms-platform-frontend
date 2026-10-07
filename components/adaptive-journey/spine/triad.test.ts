@@ -45,7 +45,7 @@ describe("the lessons leg", () => {
 
 
 const paper = (over: Partial<JourneyNodeView> = {}): JourneyNodeView =>
-  node({ id: 9, type: "checkpoint", title: "Checkpoint", questionCount: 10,
+  node({ id: 9, type: "checkpoint", title: "Week 2 Check", questionCount: 10,
     ref: { assessmentId: 5, assessmentSlug: "wk1" }, ...over });
 
 describe("the assessment leg", () => {
@@ -85,7 +85,10 @@ describe("the assessment leg", () => {
 describe("the triad as a whole", () => {
   it("is the module's WORK and nothing else: lessons, then the assessment", () => {
     expect(moduleTriad(node(), paper(), true).map((l) => l.label))
-      .toEqual(["LESSONS", "ASSESSMENT"]);
+      // The paper's own name, not the word "ASSESSMENT". A week's paper shows on every module
+      // in that week, so calling it "ASSESSMENT" on the Arrays card read as *this topic's*
+      // assessment - and the learner met Strings questions in it.
+      .toEqual(["LESSONS", "WEEK 2 CHECK"]);
   });
 
   it("carries NO tutor tile, whatever the tenant has enabled", () => {
@@ -104,7 +107,7 @@ describe("the triad as a whole", () => {
 
   it("numbers the same way whether or not the tenant has the tutor", () => {
     const stepOf = (enabled: boolean) =>
-      moduleTriad(node(), paper(), enabled).find((l) => l.label === "ASSESSMENT")?.step;
+      moduleTriad(node(), paper(), enabled).find((l) => l.kind === "assessment")?.step;
     expect(stepOf(true)).toBe(2);
     expect(stepOf(false)).toBe(2);
   });
@@ -209,5 +212,38 @@ describe("the week's paper is drawn once", () => {
       paper({ id: 10, type: "checkpoint" }),
     ]);
     expect(rows.map((n) => n.id)).toEqual([1, 10]);
+  });
+});
+
+
+describe("what the assessment leg is CALLED", () => {
+  it("names the paper, so its scope is on the card", () => {
+    // Reported: week 2 holds Arrays and Strings, both cards said "ASSESSMENT", and the paper
+    // covers both - so finishing Arrays and opening "the assessment" produced Strings
+    // questions. The paper being shared is correct; calling it the topic's was not.
+    const leg = assessmentLeg(node(), paper({ title: "Week 2 Check" }));
+    expect(leg.label).toBe("WEEK 2 CHECK");
+  });
+
+  it("names it the same way whatever state it is in", () => {
+    const done = assessmentLeg(node(), paper({ title: "Week 5 Check", status: "done" }));
+    const locked = assessmentLeg(node(), paper({ title: "Week 5 Check", status: "locked" }));
+    expect(done.label).toBe("WEEK 5 CHECK");
+    expect(locked.label).toBe("WEEK 5 CHECK");
+  });
+
+  it("falls back to ASSESSMENT for a paper with no title", () => {
+    expect(assessmentLeg(node(), paper({ title: "" })).label).toBe("ASSESSMENT");
+  });
+
+  it("says ASSESSMENT when the week has no paper at all", () => {
+    expect(assessmentLeg(node(), null).label).toBe("ASSESSMENT");
+  });
+
+  it("carries a stable `kind` so a click does not depend on the label", () => {
+    // The handler used to be looked up by display string. A dynamic label would have left a
+    // tile that silently stopped navigating.
+    expect(assessmentLeg(node(), paper({ title: "Week 2 Check" })).kind).toBe("assessment");
+    expect(lessonsLeg(node()).kind).toBe("lessons");
   });
 });

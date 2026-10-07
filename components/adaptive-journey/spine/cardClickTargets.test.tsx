@@ -77,7 +77,7 @@ describe("a control inside the module card", () => {
 
   it("sends the ASSESSMENT tile to the paper, not to the module", async () => {
     render(<NodeRow node={mod()} courseId={14} stepNo={1} checkpoint={paper()} moduleNo={1} />);
-    fireEvent.click(screen.getByRole("button", { name: /ASSESSMENT/ }));
+    fireEvent.click(screen.getByRole("button", { name: /CHECK|ASSESSMENT/ }));
     await waitFor(() => expect(push).toHaveBeenCalled());
     expect(push).toHaveBeenCalledTimes(1);
     const href = push.mock.calls[0][0] as string;
@@ -88,7 +88,7 @@ describe("a control inside the module card", () => {
   it("sends a finished paper's tile to its result", async () => {
     const done = paper({ status: "done", score: { earned: 17, total: 240 } });
     render(<NodeRow node={mod()} courseId={14} stepNo={1} checkpoint={done} moduleNo={1} />);
-    fireEvent.click(screen.getByRole("button", { name: /ASSESSMENT/ }));
+    fireEvent.click(screen.getByRole("button", { name: /CHECK|ASSESSMENT/ }));
     await waitFor(() => expect(push).toHaveBeenCalled());
     expect(push).toHaveBeenCalledTimes(1);
     expect(push.mock.calls[0][0]).toContain("/assessments/result/imp-14-wk01-final");
