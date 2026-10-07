@@ -11,16 +11,12 @@ import {
   Typography,
   CircularProgress,
   Button,
-  Menu,
-  MenuItem,
 } from "@mui/material";
-import { PHONE } from "@/components/common/mobile/phone";
+import { RecordingControls } from "./RecordingControls";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import apiClient from "@/lib/services/api";
 import { config } from "@/lib/config";
 
-/** The usual ladder. 2x is the top because a lecture past that is not listenable. */
-const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] as const;
 
 interface RecordingPlayerDialogProps {
   liveClassId: number | null;
@@ -81,7 +77,6 @@ export function RecordingPlayerDialog({
   // drawn here instead of hoped for.
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const [rate, setRate] = useState(1);
-  const [rateAnchor, setRateAnchor] = useState<HTMLElement | null>(null);
 
   // The rate is ALSO held in a ref so the callback ref below can stay identity-stable. A
   // callback ref whose identity changes is detached and reattached on every render that
@@ -91,7 +86,6 @@ export function RecordingPlayerDialog({
   const applyRate = useCallback((next: number) => {
     rateRef.current = next;
     setRate(next);
-    setRateAnchor(null);
     const el = videoRef.current;
     if (el) el.playbackRate = next;
   }, []);
@@ -251,23 +245,28 @@ export function RecordingPlayerDialog({
           >
             <video
               ref={bindVideo}
-              controls
               autoPlay
+              playsInline
               src={streamUrl}
+              onClick={() => {
+                const el = videoRef.current;
+                if (!el) return;
+                if (el.paused) void el.play().catch(() => undefined);
+                else el.pause();
+              }}
               onLoadedMetadata={(e) => {
                 (e.currentTarget as HTMLVideoElement).playbackRate = rateRef.current;
               }}
-              // Hides Download (and Picture-in-picture, which is just a second route to a
-              // detached window) unless this viewer is allowed it. Right-click is blocked for
-              // the same reason: "Save video as…" sits in that menu.
+              // NO `controls`, and therefore no `controlsList`.
               //
-              // `noplaybackrate` is deliberately NOT here. It was, and it took the speed
-              // control away from every learner who cannot download - which is the default.
-              // `nofullscreen` turns off the NATIVE fullscreen button, which promotes the
-              // <video> element alone and leaves our controls behind. Ours is beside the speed
-              // pill and fullscreens the container instead. `noplaybackrate` is deliberately
-              // still absent - see the note above.
-              controlsList={allowDownload ? "nofullscreen" : "nodownload nofullscreen"}
+              // The native bar is browser shadow DOM: a custom control cannot be put inside it.
+              // Floating speed and fullscreen above it - which is what the first two attempts
+              // did - left the learner with two fullscreen buttons and a speed pill nowhere
+              // near the other controls. Reported, fairly.
+              //
+              // With the native bar gone there is no menu left to carry a Download item, so
+              // what `controlsList="nodownload"` asked for is now structural. Still not access
+              // control: the signed, short-lived stream URL is what limits a copied link.
               disablePictureInPicture={!allowDownload}
               onContextMenu={allowDownload ? undefined : (e) => e.preventDefault()}
               style={
@@ -276,83 +275,14 @@ export function RecordingPlayerDialog({
                   : { width: "100%", maxHeight: "70vh", display: "block", background: "#000" }
               }
             />
-            <Box
-              sx={{
-                position: "absolute",
-                top: 8,
-                right: 8,
-                display: "flex",
-                gap: 0.75,
-                alignItems: "center",
-                zIndex: 2,
-                [PHONE]: { top: 6, right: 6 },
-              }}
-            >
-            <Button
-              size="small"
-              onClick={(e) => setRateAnchor(e.currentTarget)}
-              aria-label={t("liveSessions.playbackSpeed", "Playback speed")}
-              aria-haspopup="menu"
-              sx={{
-                minWidth: 0,
-                px: 1.25,
-                py: 0.5,
-                borderRadius: "999px",
-                fontWeight: 700,
-                fontSize: "0.8rem",
-                lineHeight: 1.4,
-                textTransform: "none",
-                color: "#fff",
-                backgroundColor: "rgba(0,0,0,0.62)",
-                backdropFilter: "blur(4px)",
-                "&:hover": { backgroundColor: "rgba(0,0,0,0.78)" },
-                // The native control bar owns the bottom edge on every platform, so this sits
-                // top-right and out of its way. 44px of tap target on a phone.
-                [PHONE]: { minHeight: 44, minWidth: 44 },
-              }}
-            >
-              {rate}x
-            </Button>
-            <IconButton
-              size="small"
-              onClick={toggleFullscreen}
-              aria-label={
-                isFullscreen
-                  ? t("liveSessions.exitFullscreen", "Exit full screen")
-                  : t("liveSessions.enterFullscreen", "Full screen")
-              }
-              sx={{
-                color: "#fff",
-                backgroundColor: "rgba(0,0,0,0.62)",
-                backdropFilter: "blur(4px)",
-                "&:hover": { backgroundColor: "rgba(0,0,0,0.78)" },
-                [PHONE]: { minHeight: 44, minWidth: 44 },
-              }}
-            >
-              <IconWrapper
-                icon={isFullscreen ? "mdi:fullscreen-exit" : "mdi:fullscreen"}
-                size={20}
-              />
-            </IconButton>
-            </Box>
-            <Menu
-              anchorEl={rateAnchor}
-              open={Boolean(rateAnchor)}
-              onClose={() => setRateAnchor(null)}
-              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-              transformOrigin={{ vertical: "top", horizontal: "right" }}
-            >
-              {SPEEDS.map((v) => (
-                <MenuItem
-                  key={v}
-                  selected={v === rate}
-                  onClick={() => applyRate(v)}
-                  sx={{ fontWeight: v === rate ? 700 : 500, [PHONE]: { minHeight: 44 } }}
-                >
-                  {v}x
-                </MenuItem>
-              ))}
-            </Menu>
+            <RecordingControls
+              videoRef={videoRef}
+              isFullscreen={isFullscreen}
+              onToggleFullscreen={toggleFullscreen}
+              rate={rate}
+              onRate={applyRate}
+              label={(k, d) => t(k, d)}
+            />
           </Box>
         ) : null}
       </DialogContent>

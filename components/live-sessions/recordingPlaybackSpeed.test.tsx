@@ -52,6 +52,50 @@ beforeEach(() => {
 
 describe("the live-session recording player", () => {
   /**
+   * There is ONE control bar, and it is ours.
+   *
+   * Reported after the first two attempts: "the speed changing option is added in the top
+   * right corner rather than in the bottom bar where other options are also present. A new
+   * full screen button has also added at the top disabling the one already existed."
+   *
+   * Both fair. The native bar is browser shadow DOM - a custom control cannot be put inside
+   * it - so speed had to float, and fullscreen had to be duplicated because the native one
+   * promotes the <video> element alone and strands anything hovering over it. Two floating
+   * controls above a bar that already had its own was the wrong shape.
+   */
+  it("renders no native control bar at all", async () => {
+    open();
+    await screen.findByTestId("recording-controls");
+    const video = document.querySelector("video") as HTMLVideoElement;
+    expect(video.hasAttribute("controls")).toBe(false);
+    // And therefore no controlsList: there is no native menu left to restrict.
+    expect(video.getAttribute("controlsList")).toBeNull();
+  });
+
+  it("has exactly ONE fullscreen control", async () => {
+    open();
+    await screen.findByTestId("recording-controls");
+    expect(screen.getAllByLabelText(/full screen/i)).toHaveLength(1);
+  });
+
+  it("puts speed in the bar beside the other controls, not floating over the picture", async () => {
+    open();
+    const bar = await screen.findByTestId("recording-controls");
+    for (const name of [/playback speed/i, /^full screen$/i, /^mute$/i, /^(play|pause)$/i]) {
+      expect(within(bar).getByLabelText(name)).toBeTruthy();
+    }
+  });
+
+  it("keeps Download structurally unavailable", async () => {
+    // What `controlsList="nodownload"` asked for is now a consequence of there being no
+    // native menu. Right-click stays blocked, since "Save video as…" lives there.
+    open();
+    await screen.findByTestId("recording-controls");
+    const video = document.querySelector("video") as HTMLVideoElement;
+    expect(video.getAttribute("controls")).toBeNull();
+    expect(video.hasAttribute("disablepictureinpicture")).toBe(true);
+  });
+  /**
    * Reported after the first fix shipped: "in full screen - speed save mode disappears".
    *
    * The speed pill is an overlay on the container. The NATIVE fullscreen button promotes the
@@ -62,12 +106,6 @@ describe("the live-session recording player", () => {
    * So the native button is turned off and fullscreen is taken on the CONTAINER, which carries
    * the controls into the fullscreen layer with it.
    */
-  it("turns the native fullscreen button off, because it strands the controls", async () => {
-    open();
-    await screen.findByLabelText("Playback speed");
-    const video = document.querySelector("video") as HTMLVideoElement;
-    expect(video.getAttribute("controlsList") || "").toContain("nofullscreen");
-  });
 
   it("offers its own fullscreen control beside the speed one", async () => {
     open();
@@ -159,44 +197,8 @@ describe("the live-session recording player", () => {
     expect(screen.getByLabelText("Playback speed").textContent).toContain("1.5x");
   });
 
-  it("does NOT ask the browser to hide the native speed control", async () => {
-    // The regression, in one assertion. `noplaybackrate` suppresses it in the native chrome
-    // too, so leaving it in would make our button the only way to reach speed on desktop.
-    open();
-    await screen.findByLabelText("Playback speed");
-    const video = document.querySelector("video") as HTMLVideoElement;
-    expect(video.getAttribute("controlsList") || "").not.toContain("noplaybackrate");
-  });
 
-  it("still hides Download for a viewer who is not allowed one", async () => {
-    // The restriction that `noplaybackrate` was wrongly riding along with has to survive.
-    open();
-    await screen.findByLabelText("Playback speed");
-    const video = document.querySelector("video") as HTMLVideoElement;
-    expect(video.getAttribute("controlsList") || "").toContain("nodownload");
-  });
 
-  it("drops both restrictions for a viewer who IS allowed a download", async () => {
-    render(
-      <RecordingPlayerDialog
-        liveClassId={7}
-        occurrenceId={3}
-        title="Week 1"
-        open
-        onClose={vi.fn()}
-        allowDownload
-      />,
-    );
-    await screen.findByLabelText("Playback speed");
-    const video = document.querySelector("video") as HTMLVideoElement;
-    const list = video.getAttribute("controlsList") || "";
-    // The RESTRICTIONS are gone: they are about what this viewer may do.
-    expect(list).not.toContain("nodownload");
-    expect(list).not.toContain("noplaybackrate");
-    // `nofullscreen` stays, because it is not a restriction. The native button strands our
-    // controls outside the fullscreen layer for every viewer, privileged or not.
-    expect(list).toContain("nofullscreen");
-  });
 
   it("keeps the chosen speed when the element reloads", async () => {
     // A new signed URL remounts the <video>, which comes back at 1x. The rate is re-applied on
