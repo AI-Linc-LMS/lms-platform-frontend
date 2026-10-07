@@ -118,10 +118,12 @@ export function NodeRow({
   const triad = node.type === "topic" ? moduleTriad(node, checkpoint, tutorEnabled) : [];
   const tutorHref = tutorHrefForModule(node, fieldTier ?? undefined);
   const checkpointHref = checkpoint ? nodeHref(checkpoint, courseId) : null;
+  // Keyed on what a leg IS, not on what it is called. The assessment leg's label is now the
+  // paper's own name ("WEEK 2 CHECK"), and a lookup by display string would have stopped
+  // matching it - leaving a tile that silently no longer navigates.
   const legHandlers: Record<string, (() => void) | undefined> = {
-    LESSONS: navigable && navHref ? () => push(navHref) : undefined,
-    "AI TUTOR": tutorHref ? () => push(tutorHref) : undefined,
-    ASSESSMENT: checkpointHref ? () => push(checkpointHref) : undefined,
+    lessons: navigable && navHref ? () => push(navHref) : undefined,
+    assessment: checkpointHref ? () => push(checkpointHref) : undefined,
   };
 
   const go = () => { if (navigable && navHref) push(navHref); };
@@ -243,14 +245,14 @@ export function NodeRow({
           >
             {triad.map((leg) => (
               <TriadTile
-                key={leg.label}
+                key={leg.kind}
                 step={leg.step}
                 label={leg.label}
                 value={leg.value}
                 state={leg.state}
                 icon={leg.icon}
                 tag={leg.tag}
-                onClick={legHandlers[leg.label]}
+                onClick={legHandlers[leg.kind]}
               />
             ))}
           </Stack>
