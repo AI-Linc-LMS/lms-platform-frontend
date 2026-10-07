@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { assessmentLeg, lessonsLeg, moduleTriad, tutorLegView } from "./triad";
+import { assessmentLeg, lessonsLeg, moduleTriad } from "./triad";
 import { paperByModule, weekPaper, weekRows } from "./weekLayout";
 import type { JourneyNodeView } from "@/lib/types/adaptive-journey";
 
@@ -43,64 +43,6 @@ describe("the lessons leg", () => {
   });
 });
 
-describe("the tutor leg", () => {
-  it("shows nothing at all for a tenant without the tutor", () => {
-    expect(tutorLegView(node(), false)).toBeNull();
-  });
-
-  it("shows nothing on a board served before the tutor knew about modules", () => {
-    expect(tutorLegView(node({ tutor: undefined }), true)).toBeNull();
-    expect(tutorLegView(node({ tutor: null }), true)).toBeNull();
-  });
-
-  it("offers a session on an open module", () => {
-    expect(tutorLegView(node(), true)?.value).toBe("Ask anything");
-  });
-
-  it("is an OPTION, not a step: no number, and it says so", () => {
-    // Reported: "2 · AI TUTOR / Unlocks with module ... this should not be a step right now it
-    // looks like its a step to complete - but rather i want this to be optional".
-    // A numbered leg is work the course expects. The tutor is a help a learner may ignore, and
-    // a module is finished without it.
-    const leg = tutorLegView(node(), true);
-    expect(leg?.step).toBeUndefined();
-    expect(leg?.tag).toBe("OPTIONAL");
-  });
-
-  it("never reports `done`, however many sessions were had", () => {
-    // `done` is what paints the green tick, and a tick is the mark of a finished STEP.
-    for (const sessions of [1, 3, 20]) {
-      const leg = tutorLegView(node({ tutor: { state: "done", sessions, minutes: 30 } }), true);
-      expect(leg?.state).not.toBe("done");
-      expect(leg?.step).toBeUndefined();
-    }
-  });
-
-  it("reports the minutes the learner really spent", () => {
-    const leg = tutorLegView(node({ tutor: { state: "done", sessions: 1, minutes: 22 } }), true);
-    expect(leg?.value).toBe("22 min session");
-    // Reported as a fact, not as an achievement - see "never reports `done`" above.
-    expect(leg?.state).toBe("ready");
-  });
-
-  it("pluralises several sessions", () => {
-    expect(tutorLegView(node({ tutor: { state: "done", sessions: 3, minutes: 54 } }), true)?.value)
-      .toBe("54 min sessions");
-  });
-
-  it("never says 0 min for a session that did happen", () => {
-    // A session under a minute rounds to zero. "0 min session" reads as a failure.
-    expect(tutorLegView(node({ tutor: { state: "done", sessions: 1, minutes: 0 } }), true)?.value)
-      .toBe("1 session");
-  });
-
-  it("states its availability on a locked module, without promising a gate", () => {
-    // "Unlocks with module" reads as a gate the learner must clear. The tutor teaches THIS
-    // module's material, so it is simply there once the module is.
-    expect(tutorLegView(node({ tutor: { state: "locked", sessions: 0, minutes: 0 } }), true)?.value)
-      .toBe("Available with the module");
-  });
-});
 
 const paper = (over: Partial<JourneyNodeView> = {}): JourneyNodeView =>
   node({ id: 9, type: "checkpoint", title: "Checkpoint", questionCount: 10,
@@ -141,30 +83,30 @@ describe("the assessment leg", () => {
 });
 
 describe("the triad as a whole", () => {
-  it("is three legs on a module with the tutor on", () => {
+  it("is the module's WORK and nothing else: lessons, then the assessment", () => {
     expect(moduleTriad(node(), paper(), true).map((l) => l.label))
-      .toEqual(["LESSONS", "AI TUTOR", "ASSESSMENT"]);
-  });
-
-  it("drops to two when the tenant has no tutor, rather than showing a dead tile", () => {
-    expect(moduleTriad(node(), paper(), false).map((l) => l.label))
       .toEqual(["LESSONS", "ASSESSMENT"]);
   });
 
-  it("numbers only the legs that ARE steps", () => {
-    // Lessons and the assessment are the module's work: 1 and 2. The tutor sits between them
-    // on the card and carries no number at all.
-    expect(moduleTriad(node(), paper(), true).map((l) => l.step)).toEqual([1, undefined, 2]);
+  it("carries NO tutor tile, whatever the tenant has enabled", () => {
+    // The card already has a "Learn with AI Tutor" pill. A tile beside it was a second
+    // control for the same thing, sitting in a row of steps - which is what kept making an
+    // optional help read as work. Reported twice before it came out.
+    for (const enabled of [true, false]) {
+      expect(moduleTriad(node(), paper(), enabled).map((l) => l.label))
+        .not.toContain("AI TUTOR");
+    }
+  });
+
+  it("numbers the two legs 1 and 2", () => {
+    expect(moduleTriad(node(), paper(), true).map((l) => l.step)).toEqual([1, 2]);
   });
 
   it("numbers the same way whether or not the tenant has the tutor", () => {
-    // The assessment must not change number because a tile beside it appeared.
-    const withTutor = moduleTriad(node(), paper(), true);
-    const without = moduleTriad(node(), paper(), false);
-    const stepOf = (legs: typeof withTutor, label: string) =>
-      legs.find((l) => l.label === label)?.step;
-    expect(stepOf(withTutor, "ASSESSMENT")).toBe(2);
-    expect(stepOf(without, "ASSESSMENT")).toBe(2);
+    const stepOf = (enabled: boolean) =>
+      moduleTriad(node(), paper(), enabled).find((l) => l.label === "ASSESSMENT")?.step;
+    expect(stepOf(true)).toBe(2);
+    expect(stepOf(false)).toBe(2);
   });
 });
 

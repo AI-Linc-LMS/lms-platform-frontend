@@ -68,12 +68,11 @@ describe("a control inside the module card", () => {
     expect(href).not.toContain("/adaptive-courses/");
   });
 
-  it("sends the AI TUTOR tile to the tutor, not to the module", async () => {
+  it("has NO tutor tile - the pill above is the only way in", () => {
+    // There used to be a tile as well, and two controls for one thing is what kept making an
+    // optional help sit in a row of steps. The pill is asserted in the test above this one.
     render(<NodeRow node={mod()} courseId={14} stepNo={1} checkpoint={paper()} moduleNo={1} />);
-    fireEvent.click(screen.getByRole("button", { name: /AI TUTOR/ }));
-    await waitFor(() => expect(push).toHaveBeenCalled());
-    expect(push).toHaveBeenCalledTimes(1);
-    expect(push.mock.calls[0][0]).toContain("/ai-tutor/session/new");
+    expect(screen.queryByText("AI TUTOR")).toBeNull();
   });
 
   it("sends the ASSESSMENT tile to the paper, not to the module", async () => {
