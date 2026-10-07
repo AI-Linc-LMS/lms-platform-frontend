@@ -117,22 +117,25 @@ describe("a course with the whole journey switched on", () => {
     // And every module states its legs, with the assessment pointing at that same paper.
     expect(screen.getAllByTestId("module-triad")).toHaveLength(2);
     expect(screen.getAllByText(/1 · LESSONS/).length).toBe(2);
-    // No number: the tutor is an option, not a step the course expects. It used to render
-    // "2 · AI TUTOR", which made an optional help look like work to complete.
-    expect(screen.getAllByText(/^AI TUTOR$/).length).toBe(2);
-    expect(screen.queryByText(/· AI TUTOR/)).toBeNull();
-    // 2, not 3: the tutor between them carries no number, so the assessment is the module's
-    // second and last step.
+    // No tutor tile at all. The card carries a "Learn with AI Tutor" pill, and a tile beside
+    // it was a second control for the same thing sitting in a row of steps - which is what
+    // kept making an optional help read as work the course expects.
+    expect(screen.queryByText("AI TUTOR")).toBeNull();
+    // So the module's work is two legs: the lessons, then the paper.
     expect(screen.getAllByText(/2 · ASSESSMENT/).length).toBe(2);
     // The reported bug: a module saying it has no assessment while the week's paper sits
     // directly below it. Both modules state the paper's real condition instead.
     expect(screen.queryByText("No assessment")).toBeNull();
     expect(screen.getAllByText("After all lessons")).toHaveLength(2);
 
-    // The tutor is offered on the module they are on.
+    // The tutor is offered on the module they are on - by the pill, which is now the only
+    // control for it.
     expect(screen.getAllByRole("button", { name: /with the AI Tutor/ }).length).toBeGreaterThanOrEqual(1);
-    // The finished module reports the time this learner really spent with the tutor.
-    expect(screen.getByText("22 min session")).toBeTruthy();
+    // And the minutes are no longer reported on the card. That went with the tile, and it is
+    // a deliberate loss rather than an oversight: the tile was a second control for the same
+    // thing, sitting in a row of steps, and that is what made an optional help read as work.
+    // The tutor's own surface still has the history.
+    expect(screen.queryByText("22 min session")).toBeNull();
 
     // The certificate is the course's ONLY terminal milestone. The entry level-gauge used to
     // sit here too, which put the first thing a learner does at the end of their course - and

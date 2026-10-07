@@ -41,44 +41,6 @@ export function lessonsLeg(node: JourneyNodeView): TriadLeg {
   };
 }
 
-/** The AI Tutor on this module. Real connected minutes, or an offer. */
-export function tutorLegView(node: JourneyNodeView, tutorEnabled: boolean): TriadLeg | null {
-  const t = node.tutor;
-  // Absent (an older board) or null (not a module) means there is nothing truthful to show.
-  // A tenant without the tutor gets no tile at all rather than an advert.
-  if (!t || !tutorEnabled) return null;
-  // The tutor carries NO step number and never a tick.
-  //
-  // It used to be "2 · AI TUTOR" with a green check once used, which is the vocabulary of a
-  // step to complete - a learner reads a numbered leg with a tick as work the course expects
-  // of them. It is not. It is a help they may take or ignore, and a module is finished without
-  // it. So: no number, an OPTIONAL tag, and minutes reported as a fact rather than as an
-  // achievement.
-  if (t.state === "done") {
-    const mins = t.minutes;
-    return {
-      label: "AI TUTOR",
-      tag: "OPTIONAL",
-      // A session shorter than a minute rounds to 0; say it happened rather than "0 min".
-      value: mins > 0
-        ? `${mins} min session${t.sessions > 1 ? "s" : ""}`
-        : `${t.sessions} session${t.sessions > 1 ? "s" : ""}`,
-      // "ready", not "done": it stays an open offer however many times it has been used, and
-      // `done` is what paints the green tick.
-      state: "ready",
-      icon: "mdi:robot-happy-outline",
-    };
-  }
-  return {
-    label: "AI TUTOR",
-    tag: "OPTIONAL",
-    // Not "Unlocks with module", which promises a gate the learner must clear. The tutor
-    // teaches THIS module's material, so it is simply there once the module is.
-    value: t.state === "locked" ? "Available with the module" : "Ask anything",
-    state: t.state === "locked" ? "locked" : "ready",
-    icon: "mdi:robot-happy-outline",
-  };
-}
 
 /**
  * The module's assessment. Fed the paper that covers this module's WEEK, if there is one.
@@ -139,11 +101,22 @@ export function assessmentLeg(
   };
 }
 
+/**
+ * A module's two legs: its lessons and its assessment.
+ *
+ * The tutor is NOT one of them. It had a tile here - numbered at first, then unnumbered and
+ * tagged OPTIONAL - and the tile was redundant either way: the card already carries a
+ * "Learn with AI Tutor" pill, which is the way in. Two controls for one thing, one of them
+ * sitting in a row of steps, is what kept making an optional help look like work.
+ *
+ * `tutorEnabled` is kept in the signature because callers pass it and the tenant check still
+ * belongs to them; it simply no longer changes what this returns.
+ */
 export function moduleTriad(
   node: JourneyNodeView,
   checkpoint: JourneyNodeView | null,
-  tutorEnabled: boolean,
+  _tutorEnabled?: boolean,
 ): TriadLeg[] {
-  return [lessonsLeg(node), tutorLegView(node, tutorEnabled), assessmentLeg(node, checkpoint)]
+  return [lessonsLeg(node), assessmentLeg(node, checkpoint)]
     .filter((l): l is TriadLeg => l !== null);
 }
