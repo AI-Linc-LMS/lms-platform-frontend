@@ -70,7 +70,10 @@ describe("the interview room", () => {
     // A bare catch turned a specific 409 - "You already have an interview open" - into
     // "Please try again", and Try again could not succeed while that sitting was open.
     const src = read(HOOK);
-    expect(src).toMatch(/response\?\.data\?\.error/);
-    expect(src).toMatch(/fail\(detail \|\| "Could not start the interview/);
+    // The read moved into `readProviderOutage`, which also decides whether a retry is worth
+    // offering - but the property this test exists for is unchanged: the server's own sentence
+    // reaches the candidate instead of a generic retry.
+    expect(src).toMatch(/readProviderOutage\(err\)/);
+    expect(src).toMatch(/outage\.message \|\| "Could not start the interview/);
   });
 });

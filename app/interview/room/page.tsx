@@ -174,6 +174,7 @@ function InterviewRoom() {
     connectedAt,
     sessionId,
     dropped,
+    unavailable,
     connect,
     end,
     setMuted: setMicMuted,
@@ -447,14 +448,21 @@ function InterviewRoom() {
             <Box
               sx={{
                 borderRadius: "var(--radius-card, 12px)",
-                border: `1px solid ${ROOM_RED}`,
+                // A capacity problem is not an error state. Red chrome plus "Could not
+                // connect" is what makes a provider being busy read as the platform being
+                // broken, which is what turns a wait into a support ticket.
+                border: `1px solid ${unavailable ? ROOM_BORDER : ROOM_RED}`,
                 bgcolor: ROOM_PANEL,
                 p: 3,
                 mb: 3,
               }}
             >
               <Typography sx={{ color: ROOM_TEXT, fontWeight: 600, mb: 0.5 }}>
-                {dropped ? "The call dropped" : "Could not connect"}
+                {unavailable
+                  ? "Just a bit busy right now"
+                  : dropped
+                    ? "The call dropped"
+                    : "Could not connect"}
               </Typography>
               <Typography sx={{ color: ROOM_TEXT_DIM, fontSize: "0.92rem", mb: 2 }}>
                 {error}
@@ -473,7 +481,7 @@ function InterviewRoom() {
                 >
                   Back to interviews
                 </Button>
-                {!dropped ? (
+                {!dropped && !unavailable ? (
                   <Button
                     onClick={() => {
                       startedRef.current = false;
