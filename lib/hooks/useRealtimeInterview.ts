@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { readProviderOutage } from "@/lib/ai/providerOutage";
 
 import interviewService, {
   type InterviewTurnPayload,
@@ -150,6 +151,10 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
   // True only for a mid-call drop, distinct from a connect failure: the two need different
   // copy and different recovery (a dropped sitting is void; a failed connect can retry).
   const [dropped, setDropped] = useState(false);
+  // "The provider cannot serve this right now", as distinct from "it broke". The room renders
+  // this calmly and offers no retry, because a retry cannot help until the account is topped
+  // up - and a dead Try again button is what makes a capacity problem look like a defect.
+  const [unavailable, setUnavailable] = useState(false);
   const [connectedAt, setConnectedAt] = useState<number | null>(null);
   const [candidateSpeaking, setCandidateSpeaking] = useState(false);
   /** What the interviewer is saying right now, before the turn is committed. */
@@ -243,8 +248,9 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
   }, []);
 
   const fail = useCallback(
-    (message: string) => {
+    (message: string, opts?: { retryLater?: boolean }) => {
       setError(message);
+      setUnavailable(Boolean(opts?.retryLater));
       setPhaseSafe("failed");
       optionsRef.current.onError?.(message);
     },
@@ -648,6 +654,7 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
       }
       setError("");
       setDropped(false);
+      setUnavailable(false);
       setTranscript([]);
       setPhaseSafe("starting");
 
@@ -678,8 +685,15 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
           // already have an interview open" - into "Please try again", and Try again could not
           // succeed while that sitting was still open. The candidate retried a message that was
           // never going to change.
-          const detail = (err as { response?: { data?: { error?: string } } })?.response?.data?.error;
-          fail(detail || "Could not start the interview. Please try again.");
+          // The server's reason, when it gave one. A bare catch turned a specific 409 - "You
+          // already have an interview open" - into "Please try again", and Try again could not
+          // succeed while that sitting was still open.
+          //
+          // `retryLater` is the same idea one step further: when the provider is at capacity,
+          // offering a retry at all is the thing that makes it look broken.
+          const outage = readProviderOutage(err);
+          fail(outage.message || "Could not start the interview. Please try again.",
+               { retryLater: outage.retryLater });
           return;
         }
       }
@@ -1015,6 +1029,7 @@ export function useRealtimeInterview(options: UseRealtimeInterviewOptions = {}) 
     plannedMinutes,
     connectedAt,
     dropped,
+    unavailable,
     connect,
     end,
     setMuted,
