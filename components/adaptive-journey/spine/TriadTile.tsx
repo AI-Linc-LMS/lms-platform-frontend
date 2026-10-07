@@ -34,16 +34,20 @@ export function TriadTile({
   value,
   state,
   icon,
+  tag,
   onClick,
 }: {
-  /** 1, 2 or 3 - the order a module is meant to be worked through. */
-  step: number;
+  /** The position in the module's sequence, or ABSENT for a leg that is not a step at all.
+   *  The tutor has none: numbering it made an optional help read as work to complete. */
+  step?: number;
   /** LESSONS / AI TUTOR / ASSESSMENT. */
   label: string;
   /** What this leg says right now: "3 of 3", "22 min session", "Scored 86%". */
   value: string;
   state: TriadState;
   icon: string;
+  /** A short qualifier beside the label, e.g. OPTIONAL. */
+  tag?: string;
   onClick?: () => void;
 }) {
   const tone = TONE[state];
@@ -90,12 +94,14 @@ export function TriadTile({
         sx={{
           width: 26, height: 26, borderRadius: 1.5, flexShrink: 0,
           display: "grid", placeItems: "center",
-          bgcolor: state === "done" ? "#22c55e" : "transparent",
-          border: state === "done" ? "none" : `1px solid ${tone.border}`,
-          color: state === "done" ? "#fff" : tone.fg,
+          // A tick is the mark of a STEP that is finished. A leg with no step number is not
+          // one, so it keeps its own icon however much it has been used.
+          bgcolor: state === "done" && step ? "#22c55e" : "transparent",
+          border: state === "done" && step ? "none" : `1px solid ${tone.border}`,
+          color: state === "done" && step ? "#fff" : tone.fg,
         }}
       >
-        <Icon icon={state === "done" ? "mdi:check" : icon} width={15} />
+        <Icon icon={state === "done" && step ? "mdi:check" : icon} width={15} />
       </Box>
       <Box sx={{ minWidth: 0 }}>
         <Stack direction="row" spacing={0.5} alignItems="center">
@@ -106,8 +112,26 @@ export function TriadTile({
               [PHONE]: { fontSize: "0.68rem", letterSpacing: 0.4 },
             }}
           >
-            {step} · {label}
+            {step ? `${step} · ${label}` : label}
           </Typography>
+          {tag ? (
+            <Typography
+              sx={{
+                fontSize: "0.52rem",
+                fontWeight: 800,
+                letterSpacing: 0.6,
+                color: "#94a3b8",
+                border: "1px solid #e2e8f0",
+                borderRadius: 999,
+                px: 0.6,
+                lineHeight: 1.6,
+                '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" },
+                [PHONE]: { fontSize: "0.58rem" },
+              }}
+            >
+              {tag}
+            </Typography>
+          ) : null}
         </Stack>
         <Typography
           sx={{
