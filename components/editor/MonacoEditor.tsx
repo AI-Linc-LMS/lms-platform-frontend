@@ -52,6 +52,15 @@ interface MonacoEditorProps {
   glyphLine?: number | null;
   /** Hover message shown over the gutter glyph (the mentor's one-line note). */
   glyphMessage?: string;
+  /**
+   * Changes whenever this editor is revealed - typically the active tab of the surface that
+   * embeds it. Each change makes the editor measure its box again.
+   *
+   * Needed because Monaco caches its dimensions at init: an editor that mounts inside a
+   * `display: none` pane measures 0 by 0 and renders a sliver, and nothing prompts it to look
+   * again. Leave it unset on a surface that is never hidden.
+   */
+  revealKey?: string | number;
 }
 
 // Inject the mentor decoration CSS once. Monaco decoration classNames must exist
@@ -81,6 +90,7 @@ export function CodeEditor({
   allowClipboard = false,
   glyphLine = null,
   glyphMessage = "",
+  revealKey,
 }: MonacoEditorProps) {
   const [mounted, setMounted] = useState(false);
   const editorRef = useRef<editor.IStandaloneCodeEditor | null>(null);
@@ -131,6 +141,41 @@ export function CodeEditor({
     observer.observe(shell);
     return () => observer.disconnect();
   }, [mounted]);
+
+  /**
+   * Lay out again when the CALLER says this editor has been revealed.
+   *
+   * The observer above was the first attempt at the blank-editor-on-mobile report, and it was
+   * reported again afterwards: still blank. It depends on a geometry transition being observed
+   * and on `hadSize` having been false when the effect first ran, and neither is guaranteed -
+   * a `display: none` ancestor, a remount, or an effect that happens to run while the pane is
+   * already on top all defeat it, silently and without a second chance, because once Monaco
+   * holds a zero it has no reason to ask again.
+   *
+   * `revealKey` removes the guessing. The tabbed surface already knows which pane is on top;
+   * it passes that, and a change is a direct instruction to measure again. No geometry, no
+   * observer, no race.
+   *
+   * Three attempts rather than one, which is not superstition: Monaco lays out against the
+   * box AND the loaded font, and on a phone the webfont often resolves a frame or two after
+   * the tab switch. A layout against a fallback metric leaves the text misplaced.
+   */
+  useEffect(() => {
+    if (revealKey === undefined || !editorRef.current) return;
+    const timers: number[] = [];
+    const relayout = () => {
+      const shell = shellRef.current;
+      if (!shell || shell.offsetWidth === 0) return;
+      editorRef.current?.layout();
+    };
+    const raf = requestAnimationFrame(relayout);
+    timers.push(window.setTimeout(relayout, 120));
+    timers.push(window.setTimeout(relayout, 400));
+    return () => {
+      cancelAnimationFrame(raf);
+      timers.forEach(window.clearTimeout);
+    };
+  }, [revealKey, mounted]);
 
   // Apply / clear the mentor root-cause gutter marker whenever the line changes.
   useEffect(() => {

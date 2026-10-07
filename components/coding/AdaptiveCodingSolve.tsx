@@ -603,6 +603,12 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
       allowClipboard={allowClipboard}
       glyphLine={diagnosis?.root_cause_line ?? null}
       glyphMessage={diagnosis?.whats_wrong || ""}
+      // The phone keeps ONE tree and HIDES the inactive panes rather than unmounting them, so
+      // rotating never costs the learner their code. The cost is that this editor mounts
+      // inside `display: none` - the default tab is Problem - and Monaco caches a 0 by 0 box
+      // at init, which is the reported blank Code tab. Handing it the active tab makes every
+      // switch an instruction to measure again, instead of hoping a resize is observed.
+      revealKey={isPhone ? phoneTab : undefined}
     />
   );
   const customPanel = customOpen && (

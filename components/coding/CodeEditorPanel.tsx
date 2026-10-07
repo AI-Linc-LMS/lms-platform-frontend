@@ -21,6 +21,8 @@ interface LanguageOption {
 }
 
 interface CodeEditorPanelProps {
+  /** Changes when this panel is revealed, so the editor measures its box again. */
+  revealKey?: string | number;
   code: string;
   selectedLanguage: string;
   availableLanguages: LanguageOption[];
@@ -34,6 +36,7 @@ interface CodeEditorPanelProps {
 }
 
 export function CodeEditorPanel({
+  revealKey,
   code,
   selectedLanguage,
   availableLanguages,
@@ -157,6 +160,7 @@ export function CodeEditorPanel({
           value={code}
           language={monacoLanguage}
           height="100%"
+          revealKey={revealKey}
           readOnly={false}
           theme="vs-dark"
           onChange={(value) => onCodeChange(value || "")}

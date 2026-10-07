@@ -132,3 +132,89 @@ describe("an editor that mounts inside a hidden tab", () => {
     expect(observed).toBe(getByTestId("code-editor-shell"));
   });
 });
+
+describe("an editor told directly that it has been revealed", () => {
+  /**
+   * The observer above was the first fix, and the blank editor was reported AGAIN afterwards.
+   *
+   * It depends on a geometry transition being observed, and on `hadSize` having been false
+   * when the effect first ran. Neither is guaranteed: a `display: none` ancestor, a remount,
+   * or an effect that happens to run while the pane is already on top all defeat it - silently
+   * and permanently, because once Monaco holds a zero it has no reason to measure again.
+   *
+   * `revealKey` takes the guessing out. The tabbed surface already knows which pane is on top,
+   * so it says so, and a change is a direct instruction rather than a hope.
+   */
+  beforeEach(() => {
+    layout.mockClear();
+    observed = null;
+    fire = null;
+    capturedOnMount = null;
+    vi.stubGlobal("ResizeObserver", FakeResizeObserver);
+    vi.stubGlobal("requestAnimationFrame", (cb: FrameRequestCallback) => {
+      cb(0);
+      return 0;
+    });
+  });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("lays out when the key changes, with NO resize observed at all", () => {
+    const { getByTestId, rerender } = render(
+      <CodeEditor value="x" height="55vh" revealKey="problem" />,
+    );
+    const shell = getByTestId("code-editor-shell") as HTMLElement;
+    sizeOf(shell, 0, 0);
+    capturedOnMount?.(fakeEditor(), fakeMonaco());
+    layout.mockClear();
+
+    // The learner taps Code. The pane now has a box, but nothing fires the observer.
+    sizeOf(shell, 360, 420);
+    rerender(<CodeEditor value="x" height="55vh" revealKey="code" />);
+    expect(layout).toHaveBeenCalled();
+  });
+
+  it("does not lay out into a box that is still zero", () => {
+    // A key change while the pane is STILL hidden would cache another zero.
+    const { getByTestId, rerender } = render(
+      <CodeEditor value="x" height="55vh" revealKey="problem" />,
+    );
+    const shell = getByTestId("code-editor-shell") as HTMLElement;
+    sizeOf(shell, 0, 0);
+    capturedOnMount?.(fakeEditor(), fakeMonaco());
+    layout.mockClear();
+
+    rerender(<CodeEditor value="x" height="55vh" revealKey="results" />);
+    expect(layout).not.toHaveBeenCalled();
+  });
+
+  it("retries, because the webfont can resolve after the tab switch", () => {
+    // Monaco lays out against the box AND the font. One attempt against a fallback metric
+    // leaves the text misplaced, which reads as broken even though the editor is there.
+    vi.useFakeTimers();
+    const { getByTestId, rerender } = render(
+      <CodeEditor value="x" height="55vh" revealKey="problem" />,
+    );
+    const shell = getByTestId("code-editor-shell") as HTMLElement;
+    sizeOf(shell, 0, 0);
+    capturedOnMount?.(fakeEditor(), fakeMonaco());
+    layout.mockClear();
+
+    sizeOf(shell, 360, 420);
+    rerender(<CodeEditor value="x" height="55vh" revealKey="code" />);
+    const immediate = layout.mock.calls.length;
+    vi.advanceTimersByTime(500);
+    expect(layout.mock.calls.length).toBeGreaterThan(immediate);
+    vi.useRealTimers();
+  });
+
+  it("is inert on a surface that never hides the editor", () => {
+    // Desktop passes nothing, and must not pay for any of this.
+    const { getByTestId, rerender } = render(<CodeEditor value="x" height="60vh" />);
+    const shell = getByTestId("code-editor-shell") as HTMLElement;
+    sizeOf(shell, 800, 600);
+    capturedOnMount?.(fakeEditor(), fakeMonaco());
+    layout.mockClear();
+    rerender(<CodeEditor value="y" height="60vh" />);
+    expect(layout).not.toHaveBeenCalled();
+  });
+});
