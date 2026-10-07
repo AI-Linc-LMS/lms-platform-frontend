@@ -275,17 +275,42 @@ export function AdditionalPractice({
                 {items.map((it) => {
                   const m = KIND_META[it.kind];
                   return (
-                    <Stack key={it.id} direction="row" alignItems="center" spacing={1.25} sx={{ p: 1.5, borderRadius: 2.5, border: "1px solid #eef2f7" }}>
+                    // `minWidth: 0` on the GRID ITEM, not just on the text inside it. A grid
+                    // track is `min-width: auto` by default, which means it refuses to shrink
+                    // below its content - so a card wider than its share pushes the row past
+                    // the container instead of fitting, and the page has no horizontal scroll
+                    // to reach what fell off the edge.
+                    <Stack key={it.id} direction="row" alignItems="flex-start" spacing={1.25} sx={{ p: 1.5, borderRadius: 2.5, border: "1px solid #eef2f7", minWidth: 0 }}>
                       <Box sx={{ width: 36, height: 36, borderRadius: 2, flexShrink: 0, display: "grid", placeItems: "center", color: m.color, bgcolor: m.bg }}>
                         <Icon icon={m.icon} width={19} />
                       </Box>
                       <Box sx={{ minWidth: 0, flex: 1 }}>
-                        <Typography sx={{ fontWeight: 700, fontSize: "0.88rem", color: "#0f172a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{it.title}</Typography>
+                        {/* Wraps to two lines instead of being cut at one.
+                          * These titles are the topic's own name - "Types of operators,
+                          * programs using operators, and an introduction to conditionals" -
+                          * so a single nowrap line could never show one, and the report was
+                          * that the card could not be read. A horizontal scrollbar would let
+                          * someone chase the text sideways; fitting it is better. `title`
+                          * carries the whole string for the rare one that still clips. */}
+                        <Typography
+                          title={it.title}
+                          sx={{
+                            fontWeight: 700, fontSize: "0.88rem", color: "#0f172a",
+                            overflow: "hidden",
+                            display: "-webkit-box",
+                            WebkitBoxOrient: "vertical",
+                            WebkitLineClamp: 2,
+                            lineHeight: 1.35,
+                            wordBreak: "break-word",
+                          }}
+                        >
+                          {it.title}
+                        </Typography>
                         <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "#94a3b8", textTransform: "capitalize" }}>
                           {it.kind} · {it.item_count} {it.kind === "article" ? "explainer" : it.kind === "coding" ? "problem" + (it.item_count > 1 ? "s" : "") : "MCQ" + (it.item_count > 1 ? "s" : "")}
                         </Typography>
                       </Box>
-                      <ButtonBase onClick={() => openItem(it)} sx={{ flexShrink: 0, px: 1.75, py: 0.7, borderRadius: 999, fontWeight: 800, fontSize: "0.8rem", color: m.color, border: `1px solid ${m.color}`, gap: 0.4 }}>
+                      <ButtonBase onClick={() => openItem(it)} sx={{ flexShrink: 0, alignSelf: "center", px: 1.75, py: 0.7, borderRadius: 999, fontWeight: 800, fontSize: "0.8rem", color: m.color, border: `1px solid ${m.color}`, gap: 0.4, [PHONE]: { minHeight: 44 } }}>
                         Open <Icon icon="mdi:arrow-right" width={14} />
                       </ButtonBase>
                     </Stack>
