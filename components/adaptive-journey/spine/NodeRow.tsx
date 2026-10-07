@@ -249,6 +249,7 @@ export function NodeRow({
                 value={leg.value}
                 state={leg.state}
                 icon={leg.icon}
+                tag={leg.tag}
                 onClick={legHandlers[leg.label]}
               />
             ))}

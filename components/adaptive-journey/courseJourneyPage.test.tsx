@@ -114,11 +114,16 @@ describe("a course with the whole journey switched on", () => {
     expect(screen.getAllByTestId("journey-node")).toHaveLength(2);
     expect(screen.queryByText("Module 1 checkpoint")).toBeNull();
 
-    // And every module states its three legs, with the third pointing at that same paper.
+    // And every module states its legs, with the assessment pointing at that same paper.
     expect(screen.getAllByTestId("module-triad")).toHaveLength(2);
     expect(screen.getAllByText(/1 · LESSONS/).length).toBe(2);
-    expect(screen.getAllByText(/2 · AI TUTOR/).length).toBe(2);
-    expect(screen.getAllByText(/3 · ASSESSMENT/).length).toBe(2);
+    // No number: the tutor is an option, not a step the course expects. It used to render
+    // "2 · AI TUTOR", which made an optional help look like work to complete.
+    expect(screen.getAllByText(/^AI TUTOR$/).length).toBe(2);
+    expect(screen.queryByText(/· AI TUTOR/)).toBeNull();
+    // 2, not 3: the tutor between them carries no number, so the assessment is the module's
+    // second and last step.
+    expect(screen.getAllByText(/2 · ASSESSMENT/).length).toBe(2);
     // The reported bug: a module saying it has no assessment while the week's paper sits
     // directly below it. Both modules state the paper's real condition instead.
     expect(screen.queryByText("No assessment")).toBeNull();
