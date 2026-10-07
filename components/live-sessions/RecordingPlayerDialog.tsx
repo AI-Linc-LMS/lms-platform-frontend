@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Dialog,
@@ -11,10 +11,16 @@ import {
   Typography,
   CircularProgress,
   Button,
+  Menu,
+  MenuItem,
 } from "@mui/material";
+import { PHONE } from "@/components/common/mobile/phone";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import apiClient from "@/lib/services/api";
 import { config } from "@/lib/config";
+
+/** The usual ladder. 2x is the top because a lecture past that is not listenable. */
+const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2] as const;
 
 interface RecordingPlayerDialogProps {
   liveClassId: number | null;
@@ -61,6 +67,41 @@ export function RecordingPlayerDialog({
   const [streamUrl, setStreamUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Playback speed, ours rather than the browser's.
+  //
+  // `controlsList="noplaybackrate"` used to be set here, bundled in with `nodownload` - but
+  // speed has nothing to do with downloading, and it removed the control for every learner who
+  // is not allowed a download, which is all of them by default.
+  //
+  // Dropping that flag is necessary and not sufficient: the NATIVE control set differs per
+  // platform. Chrome on desktop puts speed behind an overflow menu, Safari on iOS puts it
+  // behind "...", and Android Chrome does not offer it at all. A two-hour recording with no way
+  // to speed it up is the complaint, and it has to be answered everywhere, so the control is
+  // drawn here instead of hoped for.
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [rate, setRate] = useState(1);
+  const [rateAnchor, setRateAnchor] = useState<HTMLElement | null>(null);
+
+  // The rate is ALSO held in a ref so the callback ref below can stay identity-stable. A
+  // callback ref whose identity changes is detached and reattached on every render that
+  // changes it, which is churn at best and a loop at worst.
+  const rateRef = useRef(1);
+
+  const applyRate = useCallback((next: number) => {
+    rateRef.current = next;
+    setRate(next);
+    setRateAnchor(null);
+    const el = videoRef.current;
+    if (el) el.playbackRate = next;
+  }, []);
+
+  // A <video> that remounts (a new signed URL, a reopened dialog) comes back at 1x, so the
+  // chosen rate is re-applied when the element arrives rather than set once and forgotten.
+  const bindVideo = useCallback((el: HTMLVideoElement | null) => {
+    videoRef.current = el;
+    if (el && el.playbackRate !== rateRef.current) el.playbackRate = rateRef.current;
+  }, []);
 
   useEffect(() => {
     if (!open || liveClassId == null) {
@@ -150,18 +191,73 @@ export function RecordingPlayerDialog({
             </Button>
           </Box>
         ) : streamUrl ? (
-          <video
-            controls
-            autoPlay
-            src={streamUrl}
-            // Hides Download (and Picture-in-picture, which is just a second route to a
-            // detached window) unless this viewer is allowed it. Right-click is blocked for
-            // the same reason: "Save video as…" sits in that menu.
-            controlsList={allowDownload ? undefined : "nodownload noplaybackrate"}
-            disablePictureInPicture={!allowDownload}
-            onContextMenu={allowDownload ? undefined : (e) => e.preventDefault()}
-            style={{ width: "100%", maxHeight: "70vh", display: "block", background: "#000" }}
-          />
+          <Box sx={{ position: "relative" }}>
+            <video
+              ref={bindVideo}
+              controls
+              autoPlay
+              src={streamUrl}
+              onLoadedMetadata={(e) => {
+                (e.currentTarget as HTMLVideoElement).playbackRate = rateRef.current;
+              }}
+              // Hides Download (and Picture-in-picture, which is just a second route to a
+              // detached window) unless this viewer is allowed it. Right-click is blocked for
+              // the same reason: "Save video as…" sits in that menu.
+              //
+              // `noplaybackrate` is deliberately NOT here. It was, and it took the speed
+              // control away from every learner who cannot download - which is the default.
+              controlsList={allowDownload ? undefined : "nodownload"}
+              disablePictureInPicture={!allowDownload}
+              onContextMenu={allowDownload ? undefined : (e) => e.preventDefault()}
+              style={{ width: "100%", maxHeight: "70vh", display: "block", background: "#000" }}
+            />
+            <Button
+              size="small"
+              onClick={(e) => setRateAnchor(e.currentTarget)}
+              aria-label={t("liveSessions.playbackSpeed", "Playback speed")}
+              aria-haspopup="menu"
+              sx={{
+                position: "absolute",
+                top: 8,
+                right: 8,
+                minWidth: 0,
+                px: 1.25,
+                py: 0.5,
+                borderRadius: "999px",
+                fontWeight: 700,
+                fontSize: "0.8rem",
+                lineHeight: 1.4,
+                textTransform: "none",
+                color: "#fff",
+                backgroundColor: "rgba(0,0,0,0.62)",
+                backdropFilter: "blur(4px)",
+                "&:hover": { backgroundColor: "rgba(0,0,0,0.78)" },
+                // The native control bar owns the bottom edge on every platform, so this sits
+                // top-right and out of its way. 44px of tap target on a phone.
+                [PHONE]: { minHeight: 44, minWidth: 44, top: 6, right: 6 },
+              }}
+            >
+              {rate}x
+            </Button>
+            <Menu
+              anchorEl={rateAnchor}
+              open={Boolean(rateAnchor)}
+              onClose={() => setRateAnchor(null)}
+              anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+              transformOrigin={{ vertical: "top", horizontal: "right" }}
+            >
+              {SPEEDS.map((v) => (
+                <MenuItem
+                  key={v}
+                  selected={v === rate}
+                  onClick={() => applyRate(v)}
+                  sx={{ fontWeight: v === rate ? 700 : 500, [PHONE]: { minHeight: 44 } }}
+                >
+                  {v}x
+                </MenuItem>
+              ))}
+            </Menu>
+          </Box>
         ) : null}
       </DialogContent>
     </Dialog>
