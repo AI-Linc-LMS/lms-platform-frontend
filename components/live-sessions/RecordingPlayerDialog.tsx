@@ -103,6 +103,45 @@ export function RecordingPlayerDialog({
     if (el && el.playbackRate !== rateRef.current) el.playbackRate = rateRef.current;
   }, []);
 
+  // Fullscreen, ours rather than the browser's - and for one blunt reason: the native button
+  // promotes the <video> ELEMENT, and an element in the fullscreen layer is rendered alone.
+  // Our speed pill is a sibling in the DOM, so it was simply left behind, which is the
+  // reported "in full screen - speed save mode disappears".
+  //
+  // A <video> is a replaced element and cannot take children, so there is nowhere to portal
+  // the control to either. The only fix is to fullscreen the CONTAINER, which carries the
+  // controls with it - so the native button is turned off with `nofullscreen` and replaced.
+  //
+  // iOS Safari ignores `controlsList` and hands fullscreen to its own player. That is fine and
+  // deliberately not fought: the iOS player's "..." menu already has playback speed, which is
+  // what the second screenshot in the report was pointing at.
+  const shellRef = useRef<HTMLDivElement | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const onChange = () => setIsFullscreen(Boolean(document.fullscreenElement));
+    document.addEventListener("fullscreenchange", onChange);
+    return () => document.removeEventListener("fullscreenchange", onChange);
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    const shell = shellRef.current;
+    if (!shell) return;
+    try {
+      if (document.fullscreenElement) {
+        void document.exitFullscreen?.();
+        return;
+      }
+      const req = shell.requestFullscreen?.bind(shell)
+        // Safari desktop. Not a polyfill, just the other spelling.
+        || (shell as unknown as { webkitRequestFullscreen?: () => void }).webkitRequestFullscreen;
+      req?.();
+    } catch {
+      // A browser that refuses fullscreen still has a working player underneath, and the
+      // speed control is the thing this dialog must not lose.
+    }
+  }, []);
+
   useEffect(() => {
     if (!open || liveClassId == null) {
       setStreamUrl(null);
@@ -191,7 +230,25 @@ export function RecordingPlayerDialog({
             </Button>
           </Box>
         ) : streamUrl ? (
-          <Box sx={{ position: "relative" }}>
+          <Box
+            ref={shellRef}
+            sx={{
+              position: "relative",
+              // In the fullscreen layer this Box IS the viewport, so it has to letterbox the
+              // video itself - without this the element keeps its 70vh cap and sits in the
+              // top-left of a black screen.
+              ...(isFullscreen
+                ? {
+                    width: "100vw",
+                    height: "100vh",
+                    bgcolor: "#000",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }
+                : null),
+            }}
+          >
             <video
               ref={bindVideo}
               controls
@@ -206,20 +263,37 @@ export function RecordingPlayerDialog({
               //
               // `noplaybackrate` is deliberately NOT here. It was, and it took the speed
               // control away from every learner who cannot download - which is the default.
-              controlsList={allowDownload ? undefined : "nodownload"}
+              // `nofullscreen` turns off the NATIVE fullscreen button, which promotes the
+              // <video> element alone and leaves our controls behind. Ours is beside the speed
+              // pill and fullscreens the container instead. `noplaybackrate` is deliberately
+              // still absent - see the note above.
+              controlsList={allowDownload ? "nofullscreen" : "nodownload nofullscreen"}
               disablePictureInPicture={!allowDownload}
               onContextMenu={allowDownload ? undefined : (e) => e.preventDefault()}
-              style={{ width: "100%", maxHeight: "70vh", display: "block", background: "#000" }}
+              style={
+                isFullscreen
+                  ? { width: "100%", maxHeight: "100%", display: "block", background: "#000" }
+                  : { width: "100%", maxHeight: "70vh", display: "block", background: "#000" }
+              }
             />
+            <Box
+              sx={{
+                position: "absolute",
+                top: 8,
+                right: 8,
+                display: "flex",
+                gap: 0.75,
+                alignItems: "center",
+                zIndex: 2,
+                [PHONE]: { top: 6, right: 6 },
+              }}
+            >
             <Button
               size="small"
               onClick={(e) => setRateAnchor(e.currentTarget)}
               aria-label={t("liveSessions.playbackSpeed", "Playback speed")}
               aria-haspopup="menu"
               sx={{
-                position: "absolute",
-                top: 8,
-                right: 8,
                 minWidth: 0,
                 px: 1.25,
                 py: 0.5,
@@ -234,11 +308,33 @@ export function RecordingPlayerDialog({
                 "&:hover": { backgroundColor: "rgba(0,0,0,0.78)" },
                 // The native control bar owns the bottom edge on every platform, so this sits
                 // top-right and out of its way. 44px of tap target on a phone.
-                [PHONE]: { minHeight: 44, minWidth: 44, top: 6, right: 6 },
+                [PHONE]: { minHeight: 44, minWidth: 44 },
               }}
             >
               {rate}x
             </Button>
+            <IconButton
+              size="small"
+              onClick={toggleFullscreen}
+              aria-label={
+                isFullscreen
+                  ? t("liveSessions.exitFullscreen", "Exit full screen")
+                  : t("liveSessions.enterFullscreen", "Full screen")
+              }
+              sx={{
+                color: "#fff",
+                backgroundColor: "rgba(0,0,0,0.62)",
+                backdropFilter: "blur(4px)",
+                "&:hover": { backgroundColor: "rgba(0,0,0,0.78)" },
+                [PHONE]: { minHeight: 44, minWidth: 44 },
+              }}
+            >
+              <IconWrapper
+                icon={isFullscreen ? "mdi:fullscreen-exit" : "mdi:fullscreen"}
+                size={20}
+              />
+            </IconButton>
+            </Box>
             <Menu
               anchorEl={rateAnchor}
               open={Boolean(rateAnchor)}

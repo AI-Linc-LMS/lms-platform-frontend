@@ -1,4 +1,4 @@
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
 /**
@@ -40,12 +40,107 @@ const open = () =>
     <RecordingPlayerDialog liveClassId={7} occurrenceId={3} title="Week 1" open onClose={vi.fn()} />,
   );
 
+afterEach(() => {
+  // fullscreenElement is defined per-test; leave it clean for the next one.
+  Object.defineProperty(document, "fullscreenElement", { value: null, configurable: true });
+});
+
 beforeEach(() => {
   get.mockReset();
   get.mockResolvedValue({ data: { token: "tok" } });
 });
 
 describe("the live-session recording player", () => {
+  /**
+   * Reported after the first fix shipped: "in full screen - speed save mode disappears".
+   *
+   * The speed pill is an overlay on the container. The NATIVE fullscreen button promotes the
+   * <video> ELEMENT, and an element in the fullscreen layer renders alone - so the pill was
+   * left behind. There is nowhere to portal it either: a <video> is a replaced element and
+   * cannot take children.
+   *
+   * So the native button is turned off and fullscreen is taken on the CONTAINER, which carries
+   * the controls into the fullscreen layer with it.
+   */
+  it("turns the native fullscreen button off, because it strands the controls", async () => {
+    open();
+    await screen.findByLabelText("Playback speed");
+    const video = document.querySelector("video") as HTMLVideoElement;
+    expect(video.getAttribute("controlsList") || "").toContain("nofullscreen");
+  });
+
+  it("offers its own fullscreen control beside the speed one", async () => {
+    open();
+    await screen.findByLabelText("Playback speed");
+    expect(screen.getByLabelText("Full screen")).toBeTruthy();
+  });
+
+  it("fullscreens the CONTAINER, not the video", async () => {
+    // The whole point: the container carries the speed pill with it.
+    open();
+    await screen.findByLabelText("Playback speed");
+    const req = vi.fn();
+    const video = document.querySelector("video") as HTMLVideoElement;
+    const shell = video.parentElement as HTMLElement;
+    shell.requestFullscreen = req;
+    (video as unknown as { requestFullscreen?: () => void }).requestFullscreen = vi.fn();
+    fireEvent.click(screen.getByLabelText("Full screen"));
+    expect(req).toHaveBeenCalled();
+    expect((video as unknown as { requestFullscreen: ReturnType<typeof vi.fn> })
+      .requestFullscreen).not.toHaveBeenCalled();
+  });
+
+  it("keeps the speed control reachable while fullscreen", async () => {
+    open();
+    await screen.findByLabelText("Playback speed");
+    const video = document.querySelector("video") as HTMLVideoElement;
+    const shell = video.parentElement as HTMLElement;
+    shell.requestFullscreen = vi.fn();
+    fireEvent.click(screen.getByLabelText("Full screen"));
+    // The browser tells us it happened via the event, not the call.
+    Object.defineProperty(document, "fullscreenElement", { value: shell, configurable: true });
+    fireEvent(document, new Event("fullscreenchange"));
+    await waitFor(() => expect(screen.getByLabelText("Exit full screen")).toBeTruthy());
+    expect(screen.getByLabelText("Playback speed")).toBeTruthy();
+  });
+
+  it("still changes the rate while fullscreen", async () => {
+    open();
+    await screen.findByLabelText("Playback speed");
+    const video = document.querySelector("video") as HTMLVideoElement;
+    const shell = video.parentElement as HTMLElement;
+    Object.defineProperty(document, "fullscreenElement", { value: shell, configurable: true });
+    fireEvent(document, new Event("fullscreenchange"));
+    fireEvent.click(screen.getByLabelText("Playback speed"));
+    const menu = await screen.findByRole("menu");
+    fireEvent.click(within(menu).getByText("1.5x"));
+    await waitFor(() => expect(video.playbackRate).toBe(1.5));
+  });
+
+  it("exits fullscreen rather than re-requesting it", async () => {
+    open();
+    await screen.findByLabelText("Playback speed");
+    const video = document.querySelector("video") as HTMLVideoElement;
+    const shell = video.parentElement as HTMLElement;
+    Object.defineProperty(document, "fullscreenElement", { value: shell, configurable: true });
+    fireEvent(document, new Event("fullscreenchange"));
+    const exit = vi.fn();
+    document.exitFullscreen = exit;
+    fireEvent.click(await screen.findByLabelText("Exit full screen"));
+    expect(exit).toHaveBeenCalled();
+  });
+
+  it("does not throw when the browser refuses fullscreen", async () => {
+    // A refused request must still leave a working player and a working speed control.
+    open();
+    await screen.findByLabelText("Playback speed");
+    const video = document.querySelector("video") as HTMLVideoElement;
+    const shell = video.parentElement as HTMLElement;
+    shell.requestFullscreen = vi.fn(() => { throw new Error("denied"); });
+    expect(() => fireEvent.click(screen.getByLabelText("Full screen"))).not.toThrow();
+    expect(screen.getByLabelText("Playback speed")).toBeTruthy();
+  });
+
   it("offers a playback speed control", async () => {
     open();
     const btn = await screen.findByLabelText("Playback speed");
@@ -94,7 +189,13 @@ describe("the live-session recording player", () => {
     );
     await screen.findByLabelText("Playback speed");
     const video = document.querySelector("video") as HTMLVideoElement;
-    expect(video.getAttribute("controlsList")).toBeNull();
+    const list = video.getAttribute("controlsList") || "";
+    // The RESTRICTIONS are gone: they are about what this viewer may do.
+    expect(list).not.toContain("nodownload");
+    expect(list).not.toContain("noplaybackrate");
+    // `nofullscreen` stays, because it is not a restriction. The native button strands our
+    // controls outside the fullscreen layer for every viewer, privileged or not.
+    expect(list).toContain("nofullscreen");
   });
 
   it("keeps the chosen speed when the element reloads", async () => {
