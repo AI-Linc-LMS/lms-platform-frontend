@@ -42,6 +42,25 @@ export function fmtTime(seconds: number): string {
 
 const BAR_BG = "linear-gradient(to top, rgba(0,0,0,0.82) 0%, rgba(0,0,0,0.55) 60%, transparent 100%)";
 
+/**
+ * The element the browser is currently showing full screen, if any.
+ *
+ * Reported after the bar shipped: "in full screen the playback speed the options of speed is
+ * not coming even after clicking speed changer". The menu was opening every time - it just had
+ * nowhere visible to open. A full screen element is promoted to the browser's top layer and
+ * ONLY its own subtree is painted, so a menu that MUI portals onto `document.body` renders
+ * outside the one subtree on screen. Mounting it inside the full screen element instead puts it
+ * back in the painted tree, and out of full screen `container={undefined}` is MUI's own default.
+ *
+ * `webkitFullscreenElement` is the iOS Safari spelling, which is the half of the fleet most
+ * likely to be watching a recording full screen in the first place.
+ */
+function fullscreenElement(): HTMLElement | undefined {
+  if (typeof document === "undefined") return undefined;
+  const d = document as Document & { webkitFullscreenElement?: Element | null };
+  return (d.fullscreenElement ?? d.webkitFullscreenElement ?? undefined) as HTMLElement | undefined;
+}
+
 export function RecordingControls({
   videoRef,
   isFullscreen,
@@ -167,6 +186,9 @@ export function RecordingControls({
           {rate}x
         </Box>
         <Menu
+          // Without this the menu lands on document.body, which the browser does not paint
+          // while something else is full screen. See fullscreenElement above.
+          container={isFullscreen ? fullscreenElement() : undefined}
           anchorEl={rateAnchor}
           open={Boolean(rateAnchor)}
           onClose={() => setRateAnchor(null)}
