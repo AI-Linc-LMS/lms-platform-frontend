@@ -155,6 +155,45 @@ describe("the live-session recording player", () => {
     await waitFor(() => expect(video.playbackRate).toBe(1.5));
   });
 
+  /**
+   * Reported after the bar shipped: "in full screen the playback speed the options of speed is
+   * not coming even after clicking speed changer".
+   *
+   * Note that the test above this one - "still changes the rate while fullscreen" - PASSED the
+   * whole time this was broken, and would pass again if the fix were reverted. jsdom has no
+   * top layer, so every node is equally visible to it and clicking through the menu works
+   * fine. Asserting the rate therefore asserts nothing about the bug.
+   *
+   * What actually differs is WHERE the menu is mounted. A real browser paints only the
+   * fullscreen element's subtree, so a menu portalled onto document.body is rendered nowhere
+   * the learner can see. That containment is the thing to pin.
+   */
+  it("mounts the speed menu INSIDE the fullscreen element, where it can be seen", async () => {
+    open();
+    await screen.findByLabelText("Playback speed");
+    const video = document.querySelector("video") as HTMLVideoElement;
+    const shell = video.parentElement as HTMLElement;
+    Object.defineProperty(document, "fullscreenElement", { value: shell, configurable: true });
+    fireEvent(document, new Event("fullscreenchange"));
+    await screen.findByLabelText("Exit full screen");
+
+    fireEvent.click(screen.getByLabelText("Playback speed"));
+    const menu = await screen.findByRole("menu");
+    expect(shell.contains(menu)).toBe(true);
+  });
+
+  it("leaves the menu on the body when nothing is fullscreen", async () => {
+    // The other half: out of fullscreen MUI's own default is correct, and overriding the
+    // container unconditionally would nest the menu inside a clipped, transformed box.
+    open();
+    await screen.findByLabelText("Playback speed");
+    const video = document.querySelector("video") as HTMLVideoElement;
+    const shell = video.parentElement as HTMLElement;
+    fireEvent.click(screen.getByLabelText("Playback speed"));
+    const menu = await screen.findByRole("menu");
+    expect(shell.contains(menu)).toBe(false);
+  });
+
   it("exits fullscreen rather than re-requesting it", async () => {
     open();
     await screen.findByLabelText("Playback speed");
