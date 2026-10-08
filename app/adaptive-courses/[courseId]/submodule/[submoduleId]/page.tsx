@@ -48,7 +48,7 @@ interface FlowItem {
    * Coding-only facts the deck renders as its own controls rather than as chip text. Reading
    * them back out of `chips` would mean parsing a sentence we had just formatted.
    */
-  practice?: { difficulty: string; requiresUpcoming: string[] };
+  practice?: { difficulty: string; requiresUpcoming: string[]; typicalMinutes?: number };
 }
 
 const VERB: Record<FlowKind, string> = { video: "watch", article: "read", quiz: "quiz", coding: "practice" };
@@ -129,6 +129,7 @@ function buildItems(
           practice: {
             difficulty: step.source.difficulty_level,
             requiresUpcoming: asStringList(step.source.requires_upcoming),
+            typicalMinutes: step.source.typical_minutes,
           },
         };
       }
@@ -236,6 +237,7 @@ export default function AdaptiveCourseSubmodulePage() {
             onPrefetch: () => prefetch(i.completed && i.reviewHref ? i.reviewHref : i.href),
             onOffer: pts?.on_offer,
             earned: pts ? displayEarned(pts) : undefined,
+            typicalMinutes: i.practice?.typicalMinutes,
           };
         }),
     [items, pointsByKey, prefetch],
