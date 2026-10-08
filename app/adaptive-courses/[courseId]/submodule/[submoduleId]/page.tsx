@@ -14,6 +14,8 @@ import {
 import { displayEarned, displayTopicEarned, pointsFactors } from "@/lib/adaptive/pointsFactors";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { AdditionalPractice } from "@/components/adaptive-journey/AdditionalPractice";
+import { PracticeDeck } from "@/components/adaptive-journey/practice/PracticeDeck";
+import type { PracticeCardItem } from "@/components/adaptive-journey/practice/PracticeCard";
 import { PointsInfo } from "@/components/common/PointsInfo";
 import { AdaptiveSubmoduleSkeleton } from "@/components/courses/CourseSkeletons";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
@@ -42,6 +44,11 @@ interface FlowItem {
   /** Where "Review" goes once completed (e.g. past quiz results); falls back to onClick. */
   onReview?: () => void;
   reviewHref?: string;
+  /**
+   * Coding-only facts the deck renders as its own controls rather than as chip text. Reading
+   * them back out of `chips` would mean parsing a sentence we had just formatted.
+   */
+  practice?: { difficulty: string; requiresUpcoming: string[] };
 }
 
 const VERB: Record<FlowKind, string> = { video: "watch", article: "read", quiz: "quiz", coding: "practice" };
@@ -114,9 +121,16 @@ function buildItems(
         };
       }
       case "coding": {
-        // Including the "needs X - not taught yet" warning the backend has been sending since #940
-        // and nothing rendered.
-        return { ...base, chips: codingChips(step.source) };
+        // `chips` stays for anything still rendering a coding step as a row; the deck reads
+        // `practice` instead, so difficulty and the reach-ahead list arrive unformatted.
+        return {
+          ...base,
+          chips: codingChips(step.source),
+          practice: {
+            difficulty: step.source.difficulty_level,
+            requiresUpcoming: asStringList(step.source.requires_upcoming),
+          },
+        };
       }
     }
   });
@@ -200,6 +214,32 @@ export default function AdaptiveCourseSubmodulePage() {
   // Progress: first incomplete step = "current"; everything before it that's done = "done".
   const doneCount = items.filter((i) => i.completed).length;
   const firstIncomplete = items.findIndex((i) => !i.completed);
+
+  // Coding is always the tail of a topic (lib/adaptive/courseFlow.ts builds videos, then
+  // articles, then quizzes, then coding, and both this page and every Next button walk that one
+  // order). So splitting here changes what the steps LOOK like and not what order they are in,
+  // and the deck can keep numbering from where the rows stopped.
+  const lessonItems = useMemo(() => items.filter((i) => i.kind !== "coding"), [items]);
+  const practiceItems: PracticeCardItem[] = useMemo(
+    () =>
+      items
+        .filter((i) => i.kind === "coding")
+        .map((i) => {
+          const pts = pointsByKey.get(i.contentKey);
+          return {
+            key: i.key,
+            title: i.title,
+            difficulty: i.practice?.difficulty ?? "",
+            requiresUpcoming: i.practice?.requiresUpcoming ?? [],
+            completed: i.completed,
+            onOpen: i.completed && i.onReview ? i.onReview : i.onClick,
+            onPrefetch: () => prefetch(i.completed && i.reviewHref ? i.reviewHref : i.href),
+            onOffer: pts?.on_offer,
+            earned: pts ? displayEarned(pts) : undefined,
+          };
+        }),
+    [items, pointsByKey, prefetch],
+  );
   const allDone = items.length > 0 && firstIncomplete < 0;
   const resumeIdx = allDone ? 0 : firstIncomplete;
 
@@ -318,18 +358,20 @@ export default function AdaptiveCourseSubmodulePage() {
                 </Stack>
 
                 <Box>
-                  {items.map((it, idx) => (
+                  {lessonItems.map((it, idx) => (
                     <PathRow
                       key={it.key}
                       item={it}
                       step={idx + 1}
-                      last={idx === items.length - 1}
+                      last={idx === lessonItems.length - 1}
                       status={it.completed ? "done" : idx === firstIncomplete ? "current" : "upcoming"}
                       points={pointsByKey.get(it.contentKey)}
                       onPrefetch={() => prefetch(it.completed && it.reviewHref ? it.reviewHref : it.href)}
                     />
                   ))}
                 </Box>
+
+                <PracticeDeck items={practiceItems} firstStep={lessonItems.length + 1} />
               </Box>
             )}
 
