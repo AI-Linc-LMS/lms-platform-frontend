@@ -43,6 +43,11 @@ export interface PracticeCardItem {
   /** Points this problem is worth, and what was earned if it is done. */
   onOffer?: number;
   earned?: number;
+  /**
+   * Whole minutes, measured from real attempts. Undefined when too few learners have finished
+   * it to publish a median, and then the card says nothing rather than estimating.
+   */
+  typicalMinutes?: number;
 }
 
 const chipBase = {
@@ -154,7 +159,12 @@ export function PracticeCard({ item, index }: { item: PracticeCardItem; index: n
         >
           {item.completed
             ? `Solved${item.earned ? ` · ${item.earned} earned` : ""}`
-            : item.onOffer != null ? `${item.onOffer} pts` : "Not started"}
+            : [
+                item.onOffer != null ? `${item.onOffer} pts` : null,
+                // Measured, never derived from difficulty. Absent on most cards at first and
+                // spreading as the problem is used, which is the honest direction.
+                item.typicalMinutes != null ? `~${item.typicalMinutes} min` : null,
+              ].filter(Boolean).join(" · ") || "Not started"}
         </Typography>
 
         {/* A nested button would be invalid inside the card button, so the action renders as a

@@ -167,3 +167,108 @@ describe("the deck obeys the design system the rest of the product is moving to"
     expect(CARD).toContain("&:focus-visible");
   });
 });
+
+/**
+ * Grouping by what the learner can do today, rather than by the order the course was authored
+ * in. The signal is `requires_upcoming`, which the backend has sent for a long time and nothing
+ * read until the cards did.
+ */
+describe("readiness grouping", () => {
+  const mixed = [
+    item({ key: "r1", title: "Ready one", completed: true }),
+    item({ key: "r2", title: "Ready two" }),
+    item({ key: "s1", title: "Stretch one", requiresUpcoming: ["Hash Tables"] }),
+    item({ key: "s2", title: "Stretch two", requiresUpcoming: ["Graphs"] }),
+  ];
+
+  it("separates what the topic has taught from what it has not", () => {
+    render(<PracticeDeck items={mixed} firstStep={4} />);
+    const text = screen.getByTestId("practice-deck").textContent ?? "";
+    expect(text).toContain("Ready now");
+    expect(text).toContain("A stretch");
+  });
+
+  it("counts each bucket on its own", () => {
+    render(<PracticeDeck items={mixed} firstStep={4} />);
+    const text = screen.getByTestId("practice-deck").textContent ?? "";
+    expect(text).toContain("1/2");   // ready: one solved of two
+    expect(text).toContain("0/2");   // stretch: none solved of two
+  });
+
+  /**
+   * The bug this prevents: numbering the buckets instead of the authored order would renumber
+   * a problem every time the learner changed the filter, and the Next button walks the authored
+   * order, so the page would start disagreeing with it.
+   */
+  it("keeps each card's authored step number, not its position in a bucket", () => {
+    render(<PracticeDeck items={mixed} firstStep={4} />);
+    const cards = screen.getAllByTestId("practice-card");
+    // The number opens the card's text and runs straight into the title ("04Ready one"), so
+    // there is no word boundary to anchor on.
+    const numbers = cards.map((c) => c.textContent?.match(/^0\d/)?.[0]);
+    // Ready renders first and holds the authored 1st and 2nd; stretch holds the 3rd and 4th.
+    expect(numbers).toEqual(["04", "05", "06", "07"]);
+  });
+
+  it("shows only one heading when every problem is ready", () => {
+    render(<PracticeDeck items={[item({ key: "a" }), item({ key: "b" })]} firstStep={1} />);
+    const text = screen.getByTestId("practice-deck").textContent ?? "";
+    expect(text).toContain("Ready now");
+    expect(text).not.toContain("A stretch");
+  });
+});
+
+describe("the time filter", () => {
+  const timed = [
+    item({ key: "a", title: "Quick", typicalMinutes: 5 }),
+    item({ key: "b", title: "Slow", typicalMinutes: 40 }),
+    item({ key: "c", title: "Unmeasured" }),
+  ];
+
+  it("is not offered at all when nothing has a measured time", () => {
+    render(<PracticeDeck items={[item({ key: "x" })]} firstStep={1} />);
+    expect(screen.queryByTestId("practice-budget")).toBeNull();
+  });
+
+  it("narrows to what fits, and says what it hid", () => {
+    render(<PracticeDeck items={timed} firstStep={1} />);
+    fireEvent.click(screen.getByRole("button", { name: "10 min" }));
+    const text = screen.getByTestId("practice-deck").textContent ?? "";
+    expect(text).toContain("Quick");
+    expect(text).not.toContain("Slow");
+    // No silent caps: a filter that quietly removes work reads as a thinner topic.
+    expect(text).toContain("1 longer one hidden");
+  });
+
+  /**
+   * Only 68 of 611 problems had enough attempts to publish a median when this shipped, so
+   * treating "unmeasured" as "too long" would empty the page to prove a point.
+   */
+  it("keeps a problem whose length nobody has measured", () => {
+    render(<PracticeDeck items={timed} firstStep={1} />);
+    fireEvent.click(screen.getByRole("button", { name: "10 min" }));
+    expect(screen.getByTestId("practice-deck").textContent).toContain("Unmeasured");
+  });
+
+  it("offers a way back when the filter leaves nothing", () => {
+    render(<PracticeDeck items={[item({ key: "b", title: "Slow", typicalMinutes: 40 })]} firstStep={1} />);
+    fireEvent.click(screen.getByRole("button", { name: "10 min" }));
+    expect(screen.getByTestId("practice-deck").textContent).toContain("Nothing here fits");
+    fireEvent.click(screen.getByRole("button", { name: "Show everything" }));
+    expect(screen.getByTestId("practice-deck").textContent).toContain("Slow");
+  });
+});
+
+describe("the measured minute figure", () => {
+  it("is shown when it was measured", () => {
+    render(<PracticeCard item={item({ onOffer: 150, typicalMinutes: 6 })} index={4} />);
+    expect(screen.getByTestId("practice-card").textContent).toContain("~6 min");
+  });
+
+  it("is absent, not estimated, when it was not", () => {
+    render(<PracticeCard item={item({ onOffer: 150 })} index={4} />);
+    const text = screen.getByTestId("practice-card").textContent ?? "";
+    expect(text).toContain("150 pts");
+    expect(text).not.toMatch(/min/);
+  });
+});

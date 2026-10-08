@@ -123,6 +123,14 @@ export interface AdaptiveCourseCodingProblemSummary {
    * backend does not send it.
    */
   requires_upcoming?: string[];
+  /**
+   * Whole minutes, measured from real attempts at this problem. ABSENT when too few learners
+   * have finished it to publish a median (see adaptive_coding/solve_times.py) - the backend
+   * omits the key rather than sending a null, because a null renders as a figure of nothing.
+   * There is deliberately no fallback derived from difficulty: that would be a guess wearing
+   * the clothes of a measurement.
+   */
+  typical_minutes?: number;
 }
 
 export interface AdaptiveCourseCodingSet {
