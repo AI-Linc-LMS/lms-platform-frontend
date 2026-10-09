@@ -16,7 +16,9 @@
 
 import { describe, expect, it, vi } from "vitest";
 
-type Draw = { text: string; x: number; y: number; align: string; size: number };
+// `page` matters: a table long enough to spill carries on at the TOP of the next page, so
+// grouping by y alone makes a page-2 row look like it sits on page 1's heading.
+type Draw = { text: string; x: number; y: number; align: string; size: number; page: number };
 
 const draws: Draw[] = [];
 
@@ -33,11 +35,12 @@ const PT_TO_MM = 0.3528;
 vi.mock("jspdf", () => {
   class FakePdf {
     private size = 10;
+    private page = 1;
     setFontSize(n: number) { this.size = n; }
     getTextWidth(t: string) { return emWidth(t) * this.size * PT_TO_MM; }
     text(t: string | string[], x: number, y: number, opts?: { align?: string }) {
       const one = Array.isArray(t) ? t.join(" ") : t;
-      draws.push({ text: one, x, y, align: opts?.align ?? "left", size: this.size });
+      draws.push({ text: one, x, y, align: opts?.align ?? "left", size: this.size, page: this.page });
     }
     splitTextToSize(t: string) { return [t]; }
     setFont() {}
@@ -50,9 +53,9 @@ vi.mock("jspdf", () => {
     circle() {}
     triangle() {}
     line() {}
-    addPage() {}
-    setPage() {}
-    getNumberOfPages() { return 1; }
+    addPage() { this.page += 1; }
+    setPage(n: number) { this.page = n; }
+    getNumberOfPages() { return this.page; }
     save() {}
   }
   return { jsPDF: FakePdf };
@@ -116,6 +119,58 @@ function extent(d: Draw): [number, number] {
   return [d.x, d.x + w];
 }
 
+/**
+ * The exact rows from the report that was sent in again on 2026-10-09, emails and all. The fix
+ * in #1736 right-anchored the numeric columns; this pins the real data it was reported with, so
+ * "it still overlaps" can be answered by running it rather than by reading the screenshot.
+ */
+const REPORTED = {
+  ...(data as Record<string, unknown>),
+  top_performers: [
+    ["ANDHARI YUVAKISHOR", "yuvakishorea633@gmail.com", 402, 100.0, 47],
+    ["Suganth B", "bsuganth6@gmail.com", 402, 100.0, 83],
+    ["Moneesh Kumar T", "moneeshthirumalai1408@gmail.com", 388, 96.5, 24],
+    ["Jesin Milesh", "jesinmilesh61@gmail.com", 388, 96.5, 16],
+    ["Hemasri Hemasri", "hemasrisanthu@gmail.com", 378, 94.0, 11],
+    ["Rahul Raghul J", "jraghul134@gmail.com", 378, 94.0, 29],
+    ["Priya G", "priyag25072007@gmail.com", 377, 93.8, 11],
+    ["Riyas R", "riyas.r9894679295@gmail.com", 372, 92.5, 42],
+    ["Meghana Reddy .D", "dantlameghanareddy@gmail.com", 369, 91.8, 29],
+    ["Nidish Aadithya", "nidishaadithya6@gmail.com", 352, 87.6, 21],
+  ].map(([name, email, score, percentage, mins], i) => ({
+    rank: i + 1, name, email, score, percentage,
+    time_taken_minutes: mins, submitted_at: "2026-09-26T13:51:56Z",
+  })),
+} as never;
+
+describe("the reported report", () => {
+  it("draws no two cells over each other, with the real emails", async () => {
+    const { generateAssessmentAnalyticsPdfVector } = await import(
+      "./assessment-analytics-pdf.utils"
+    );
+    draws.length = 0;
+    await generateAssessmentAnalyticsPdfVector(REPORTED, "report.pdf");
+
+    const byLine = new Map<string, Draw[]>();
+    for (const d of draws) {
+      const key = `${d.page}:${Math.round(d.y * 10) / 10}`;
+      byLine.set(key, [...(byLine.get(key) ?? []), d]);
+    }
+    const collisions: string[] = [];
+    for (const [line, row] of byLine) {
+      const spans = row.map((d) => ({ d, span: extent(d) })).sort((a, b) => a.span[0] - b.span[0]);
+      for (let i = 1; i < spans.length; i += 1) {
+        if (spans[i].span[0] < spans[i - 1].span[1] - 0.01) {
+          collisions.push(
+            `y=${line}: "${spans[i - 1].d.text}" ends ${spans[i - 1].span[1].toFixed(1)}mm, ` +
+            `"${spans[i].d.text}" starts ${spans[i].span[0].toFixed(1)}mm`);
+        }
+      }
+    }
+    expect(collisions).toEqual([]);
+  });
+});
+
 describe("the assessment analytics report", () => {
   it("never draws two pieces of text over each other", async () => {
     const { generateAssessmentAnalyticsPdfVector } = await import(
@@ -126,9 +181,9 @@ describe("the assessment analytics report", () => {
 
     expect(draws.length).toBeGreaterThan(0);
 
-    const byLine = new Map<number, Draw[]>();
+    const byLine = new Map<string, Draw[]>();
     for (const d of draws) {
-      const key = Math.round(d.y * 10) / 10;
+      const key = `${d.page}:${Math.round(d.y * 10) / 10}`;
       byLine.set(key, [...(byLine.get(key) ?? []), d]);
     }
 
