@@ -13,6 +13,7 @@ import { IconWrapper as Icon } from "@/components/common/IconWrapper";
 import {
   adminProfileService,
   AdminSavedResume,
+  AdminResumeDocument,
 } from "@/lib/services/admin/admin-profile.service";
 import { AdminResumeViewerModal } from "./AdminResumeViewerModal";
 
@@ -287,6 +288,9 @@ export function AdminSavedResumesSection({
 }: AdminSavedResumesSectionProps) {
   const { t } = useTranslation("common");
   const [resumes, setResumes] = useState<AdminSavedResume[]>([]);
+  // Resumes still in the builder. They are real - the column counts them - but there is no file
+  // to stream, so they are stated as a fact rather than offered as a button that would 404.
+  const [documents, setDocuments] = useState<AdminResumeDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [viewingResume, setViewingResume] = useState<AdminSavedResume | null>(
     null
@@ -296,9 +300,11 @@ export function AdminSavedResumesSection({
     try {
       setLoading(true);
       const data = await adminProfileService.getStudentResumes(studentId);
-      setResumes(data);
+      setResumes(data.resumes);
+      setDocuments(data.documents);
     } catch {
       setResumes([]);
+      setDocuments([]);
     } finally {
       setLoading(false);
     }
@@ -381,7 +387,7 @@ export function AdminSavedResumesSection({
           >
             <CircularProgress size={40} sx={{ color: "#0a66c2" }} />
           </Box>
-        ) : resumes.length > 0 ? (
+        ) : resumes.length > 0 || documents.length > 0 ? (
           <Box
             sx={{
               display: "grid",
@@ -404,6 +410,26 @@ export function AdminSavedResumesSection({
                 />
               ))}
             </AnimatePresence>
+            {documents.map((doc) => (
+              <Box
+                key={`doc-${doc.id}`}
+                data-testid="builder-document"
+                sx={{
+                  p: 2.5, borderRadius: 3, border: "1px dashed #cbd5e1",
+                  backgroundColor: "#f8fafc", display: "flex", alignItems: "center", gap: 1.5,
+                }}
+              >
+                <Icon icon="mdi:file-edit-outline" size={22} color="#64748b" />
+                <Box sx={{ minWidth: 0 }}>
+                  <Typography variant="body2" sx={{ fontWeight: 600, color: "#334155" }}>
+                    {doc.display_name}
+                  </Typography>
+                  <Typography variant="caption" sx={{ color: "#64748b" }}>
+                    In the resume builder - no PDF saved yet
+                  </Typography>
+                </Box>
+              </Box>
+            ))}
           </Box>
         ) : (
           <Box

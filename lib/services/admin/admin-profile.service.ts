@@ -9,6 +9,23 @@ export interface AdminSavedResume {
   created_at: string;
 }
 
+/** A resume still living in the builder: real, but with no file anyone can open. */
+export interface AdminResumeDocument {
+  id: number;
+  display_name: string;
+  updated_at?: string;
+}
+
+/**
+ * The shared answer to "has this learner saved a resume?", from `accounts.resume_presence`.
+ * The same payload Manage Students uses, so the profile section cannot contradict the column.
+ */
+export interface AdminResumePresence {
+  has_saved_resume: boolean;
+  resumes: AdminSavedResume[];
+  documents: AdminResumeDocument[];
+}
+
 export const adminProfileService = {
   /** Fetch a student's profile (admin view). */
   getStudentProfile: async (studentId: number): Promise<UserProfile & { id: number }> => {
@@ -19,11 +36,15 @@ export const adminProfileService = {
   },
 
   /** Fetch a student's saved resumes. */
-  getStudentResumes: async (studentId: number): Promise<AdminSavedResume[]> => {
-    const response = await apiClient.get<AdminSavedResume[]>(
+  getStudentResumes: async (studentId: number): Promise<AdminResumePresence> => {
+    const response = await apiClient.get<AdminResumePresence>(
       `/admin-dashboard/api/clients/${config.clientId}/student-profile/${studentId}/resumes/`
     );
-    return response.data;
+    const d = response.data;
+    // Tolerate the old bare-array shape for one deploy, so a stale backend degrades to "PDFs
+    // only" instead of rendering an empty section.
+    if (Array.isArray(d)) return { has_saved_resume: d.length > 0, resumes: d, documents: [] };
+    return { has_saved_resume: !!d?.has_saved_resume, resumes: d?.resumes ?? [], documents: d?.documents ?? [] };
   },
 
   /** Fetch a student's resume PDF as blob for preview. */
