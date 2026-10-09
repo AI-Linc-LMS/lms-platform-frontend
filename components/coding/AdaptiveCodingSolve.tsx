@@ -9,6 +9,7 @@ import { CodeEditor } from "@/components/editor/MonacoEditor";
 import { AdaptiveCodingProblemPanel } from "@/components/coding/AdaptiveCodingProblemPanel";
 import { AdaptiveCodingSubmissions } from "@/components/coding/AdaptiveCodingSubmissions";
 import { useToast } from "@/components/common/Toast";
+import { useAuth } from "@/lib/auth/auth-context";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import {
@@ -64,22 +65,53 @@ function pickDefaultLanguage(templateCode: Record<string, string>, offered: stri
 }
 
 // Per-language editor drafts persisted locally so typed code survives a refresh AND a language
-// switch (the adaptive flow only persisted code to the server on Run/Submit). Keyed by problem +
-// language, plus the last-used language per problem so a reload restores the right dropdown.
-const draftKey = (pid: number, lang: string) => `adaptiveCoding:draft:${pid}:${lang}`;
+// switch (the adaptive flow only persisted code to the server on Run/Submit).
+//
+// Keyed by VIEWER as well as problem + language. It used to be `problem:language` alone, which
+// is not a per-person key at all: on a shared or lab machine the next person to open the
+// problem was handed whatever the last person left in the editor. Reported as "the solution of
+// this question is already written there even before I attempted it" - on production, 3 of the
+// 6 stored attempts at that problem were complete working solutions.
+//
+// `base` records the starter a draft was seeded from, which is what lets a repaired starter
+// actually reach anyone. A draft outranks the template, so once a learner opened a problem the
+// old template was pinned in their browser for good: starters fixed in the database never
+// arrived, and they kept failing the empty-input test with a `Scanner.nextLine()` driver the
+// bank no longer ships. An UNTOUCHED draft is now dropped when its starter has changed. A draft
+// the learner actually typed into is never discarded - their work outranks everything.
+const draftKey = (uid: string, pid: number, lang: string) =>
+  `adaptiveCoding:draft:${uid}:${pid}:${lang}`;
+const baseKey = (uid: string, pid: number, lang: string) =>
+  `adaptiveCoding:base:${uid}:${pid}:${lang}`;
 const langKey = (pid: number) => `adaptiveCoding:lang:${pid}`;
-function readDraft(pid: number, lang: string): string | null {
+
+/** The draft to use, or null to fall through to the server source / the current starter. */
+function readDraft(uid: string, pid: number, lang: string, starter?: string): string | null {
   try {
-    return typeof window !== "undefined" ? localStorage.getItem(draftKey(pid, lang)) : null;
+    if (typeof window === "undefined") return null;
+    const draft = localStorage.getItem(draftKey(uid, pid, lang));
+    if (draft === null) return null;
+    const base = localStorage.getItem(baseKey(uid, pid, lang));
+    // Untouched copy of a starter that has since been replaced: prefer the new one.
+    if (base !== null && draft === base && starter !== undefined && starter !== base) return null;
+    return draft;
   } catch {
     return null;
   }
 }
-function writeDraft(pid: number, lang: string, code: string) {
+function writeDraft(uid: string, pid: number, lang: string, code: string) {
   try {
-    if (typeof window !== "undefined") localStorage.setItem(draftKey(pid, lang), code ?? "");
+    if (typeof window !== "undefined") localStorage.setItem(draftKey(uid, pid, lang), code ?? "");
   } catch {
     /* quota / private mode - drafts are best-effort */
+  }
+}
+/** Remember what the editor was seeded with, so an untouched draft can be recognised later. */
+function writeBase(uid: string, pid: number, lang: string, starter: string) {
+  try {
+    if (typeof window !== "undefined") localStorage.setItem(baseKey(uid, pid, lang), starter ?? "");
+  } catch {
+    /* best-effort */
   }
 }
 function readLangPref(pid: number): string | null {
@@ -108,6 +140,10 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
   const { t } = useTranslation("common");
   const theme = useTheme();
   const isPhone = useMediaQuery(theme.breakpoints.down("sm"));
+  // Drafts are per viewer. "anon" only when there is no profile yet, which cannot collide
+  // with a signed-in learner's key.
+  const { user } = useAuth();
+  const uid = String(user?.id ?? "anon");
   const [phoneTab, setPhoneTab] = useState<PhoneTab>("problem");
 
   const [problem, setProblem] = useState<CodingProblem | null>(null);
@@ -221,10 +257,13 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
         // Priority for code: local draft for that language -> server last_source (only if it was
         // that language) -> the language's starter template (or a stub if it has none).
         const codeFor = (lang: string, serverSource?: string | null, serverLang?: string | null) => {
-          const draft = readDraft(problemId, lang);
+          const starter = starterCodeFor(lang, prob.template_code);
+          const draft = readDraft(uid, problemId, lang, starter);
           if (draft !== null) return draft;
           if (serverSource && lang === serverLang) return serverSource;
-          return starterCodeFor(lang, prob.template_code);
+          // Record what we seeded from, so a later starter repair can tell this apart from work.
+          writeBase(uid, problemId, lang, starter);
+          return starter;
         };
         if (existing) {
           setSessionData(existing);
@@ -284,11 +323,13 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
     if (next === language) return;
     // Stash the current language's work before switching, then restore the target language's
     // draft if it has one - never blow away typed code with the fresh template.
-    writeDraft(problemId, language, code);
+    writeDraft(uid, problemId, language, code);
     writeLangPref(problemId, next);
-    const draft = readDraft(problemId, next);
+    const nextStarter = starterCodeFor(next, problem?.template_code);
+    const draft = readDraft(uid, problemId, next, nextStarter);
     setLanguage(next);
-    setCode(draft !== null ? draft : starterCodeFor(next, problem?.template_code));
+    if (draft === null) writeBase(uid, problemId, next, nextStarter);
+    setCode(draft !== null ? draft : nextStarter);
     setTestResults(null);
     resetMentorState();
   }
@@ -298,11 +339,11 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
   useEffect(() => {
     if (!problem) return;
     const t = setTimeout(() => {
-      writeDraft(problemId, language, code);
+      writeDraft(uid, problemId, language, code);
       writeLangPref(problemId, language);
     }, 700);
     return () => clearTimeout(t);
-  }, [code, language, problem, problemId]);
+  }, [code, language, problem, problemId, uid]);
 
   // The scratch pad below the editor. `customResult === null` is "not run yet"; an empty stdout
   // on a result object is a program that genuinely printed nothing, and the two must look
@@ -524,7 +565,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
       refreshKey={masteryRefresh}
       onRestore={(src, lang) => {
         // Stash the current work, then load the chosen submission back into the editor.
-        writeDraft(problemId, language, code);
+        writeDraft(uid, problemId, language, code);
         const l = lang && problem?.template_code?.[lang] != null ? lang : language;
         if (l !== language) writeLangPref(problemId, l);
         setLanguage(l);
