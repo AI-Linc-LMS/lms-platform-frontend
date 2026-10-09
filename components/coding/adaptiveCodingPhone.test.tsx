@@ -221,3 +221,38 @@ describe("after a Run on a phone", () => {
     expect(screen.queryByTestId("results-ready")).toBeNull();
   });
 });
+
+describe("the phone column gives its panes the full width", () => {
+  /**
+   * Reported from Android: the Code tab showed the toolbar and then nothing - a few pixels of
+   * dark editor down the left edge and white to the right of it, with no way to type.
+   *
+   * It was never Monaco. The desktop layout is a two-column grid that wants `alignItems: start`
+   * so the columns top-align, and the phone branch overrode `display`, `flexDirection` and `gap`
+   * but not that. In a column flex container `align-items` is the HORIZONTAL axis, so `start`
+   * told every pane to shrink to its content width. Most panes have content and looked roughly
+   * right; the editor's width comes entirely from stretching, so it collapsed to a sliver, and
+   * `revealKey` then dutifully laid Monaco out against the sliver.
+   *
+   * jsdom does no layout, so this asserts the property that caused it rather than a measured
+   * width: nothing may pack the phone column's panes on the cross axis.
+   */
+  it("does not pack its panes on the cross axis", async () => {
+    installViewport(390);
+    render(<AdaptiveCodingSolve configId={819} problemId={3874} />);
+    const workspace = await screen.findByTestId("coding-workspace");
+    expect(workspace).toHaveAttribute("data-layout", "phone");
+    expect(getComputedStyle(workspace).display).toBe("flex");
+    expect(getComputedStyle(workspace).alignItems).toBe("stretch");
+  });
+
+  it("still top-aligns the two desktop columns", async () => {
+    installViewport(1440);
+    render(<AdaptiveCodingSolve configId={819} problemId={3874} />);
+    const workspace = await screen.findByTestId("coding-workspace");
+    expect(workspace).toHaveAttribute("data-layout", "desktop");
+    // Without this the shorter column stretches to the taller one's height and its panels
+    // grow blank space - which is why `alignItems: start` is on the grid in the first place.
+    expect(getComputedStyle(workspace).alignItems).toBe("start");
+  });
+});

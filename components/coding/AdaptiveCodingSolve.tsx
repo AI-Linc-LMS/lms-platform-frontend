@@ -730,7 +730,13 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
       data-layout={isPhone ? "phone" : "desktop"}
       sx={{
         display: "grid", gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1fr) minmax(0, 1fr)" }, gap: 2.5, alignItems: "start",
-        ...(isPhone ? { display: "flex", flexDirection: "column", gap: 1.5, minWidth: 0 } : {}),
+        // `alignItems: start` is right for the grid - it top-aligns the two columns instead of
+        // stretching the shorter one. It is wrong the moment this becomes a COLUMN flex box,
+        // where align-items is the horizontal axis: it told every pane to shrink to its content
+        // width. The editor's width comes entirely from stretching, so on Android it collapsed to
+        // a few pixels of dark sliver with the Code tab otherwise blank, and revealKey then laid
+        // Monaco out against the sliver. Restate it here; the phone branch owns the whole box.
+        ...(isPhone ? { display: "flex", flexDirection: "column", alignItems: "stretch", gap: 1.5, minWidth: 0 } : {}),
       }}
     >
       {isPhone && (
