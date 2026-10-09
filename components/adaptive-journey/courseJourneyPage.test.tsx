@@ -108,27 +108,18 @@ describe("a course with the whole journey switched on", () => {
     render(<JourneyBoard courseId={7} />);
     await waitFor(() => expect(screen.getByText("Variables and types")).toBeTruthy());
 
-    // Two modules, and NO separate card for the week's paper: it is drawn as the third leg of
-    // each module's triad. Both at once is the same paper twice, once as a pill and once as a
-    // card, which reads as two different tests.
-    expect(screen.getAllByTestId("journey-node")).toHaveLength(2);
-    expect(screen.queryByText("Module 1 checkpoint")).toBeNull();
+    // Two modules AND the week's paper, each once. The paper used to be taken off the rail and
+    // redrawn as a tile inside every module's card: one paper became two tiles, each sitting on
+    // a single topic, and a learner who finished one topic opened it expecting that topic's
+    // questions. It covers the week, so it gets one station of its own after the modules.
+    expect(screen.getAllByTestId("journey-node")).toHaveLength(3);
+    expect(screen.getAllByText("Module 1 checkpoint")).toHaveLength(1);
 
-    // And every module states its legs, with the assessment pointing at that same paper.
-    expect(screen.getAllByTestId("module-triad")).toHaveLength(2);
-    expect(screen.getAllByText(/1 · LESSONS/).length).toBe(2);
-    // No tutor tile at all. The card carries a "Learn with AI Tutor" pill, and a tile beside
-    // it was a second control for the same thing sitting in a row of steps - which is what
-    // kept making an optional help read as work the course expects.
+    // No tiles on a module at all - not the tutor (the card carries a "Learn with AI Tutor"
+    // pill, and a tile beside it was a second control for one thing) and not the assessment.
+    expect(screen.queryByTestId("module-triad")).toBeNull();
     expect(screen.queryByText("AI TUTOR")).toBeNull();
-    // So the module's work is two legs: the lessons, then the paper.
-    // The leg names the PAPER, so a learner on either module of this week can see that one
-    // check covers both of them.
-    expect(screen.getAllByText(/2 · .*CHECK|2 · ASSESSMENT/).length).toBe(2);
-    // The reported bug: a module saying it has no assessment while the week's paper sits
-    // directly below it. Both modules state the paper's real condition instead.
     expect(screen.queryByText("No assessment")).toBeNull();
-    expect(screen.getAllByText("After all lessons")).toHaveLength(2);
 
     // The tutor is offered on the module they are on - by the pill, which is now the only
     // control for it.
@@ -162,11 +153,16 @@ describe("a course with the whole journey switched on", () => {
     expect(screen.getAllByTestId("certificate-card")).toHaveLength(1);
   });
 
-  it("says what opens the module's assessment rather than offering a locked one", async () => {
+  it("draws the week's paper once, after the modules it covers", async () => {
     render(<JourneyBoard courseId={7} />);
-    await waitFor(() => expect(screen.getAllByTestId("module-triad").length).toBe(2));
-    // The locked paper's tile states its condition instead of a question count.
-    expect(screen.getAllByText("After all lessons").length).toBeGreaterThanOrEqual(1);
+    await waitFor(() => expect(screen.getAllByTestId("journey-node").length).toBe(3));
+    const titles = screen.getAllByTestId("journey-node").map((n) => n.textContent ?? "");
+    // Order matters: the paper closes the week, so it reads as covering what came before it
+    // rather than as one more topic.
+    expect(titles[0]).toContain("Variables and types");
+    expect(titles[2]).toContain("Module 1 checkpoint");
+    // And it is the ONLY place the paper appears - the duplication is what was reported.
+    expect(titles.filter((t) => t.includes("Module 1 checkpoint"))).toHaveLength(1);
   });
 });
 

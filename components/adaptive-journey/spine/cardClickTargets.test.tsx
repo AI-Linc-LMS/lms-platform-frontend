@@ -6,10 +6,9 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
  *
  * Reported live: "Learn with AI Tutor is redirecting to course, not ai tutor - same is
  * happening with assessment". One cause for both. The whole card carries `onClick={go}` so
- * that clicking anywhere on a module opens it, and the tutor button, the triad tiles and the
- * interview button all sit inside it. A click on any of them fired its own handler and then
- * BUBBLED to the card, whose handler ran second and won - so every nested control ended up
- * opening the module.
+ * that clicking anywhere on a module opens it, and the tutor button and the interview button
+ * sit inside it. A click on either fired its own handler and then BUBBLED to the card, whose
+ * handler ran second and won - so every nested control ended up opening the module.
  *
  * Each case below asserts `push` was called exactly ONCE, and with the right URL. Asserting
  * only the last call would have passed throughout the bug.
@@ -59,7 +58,7 @@ beforeEach(() => {
 
 describe("a control inside the module card", () => {
   it("sends Learn with AI Tutor to the tutor, not to the module", async () => {
-    render(<NodeRow node={mod()} courseId={14} stepNo={1} checkpoint={paper()} moduleNo={1} />);
+    render(<NodeRow node={mod()} courseId={14} stepNo={1} moduleNo={1} />);
     fireEvent.click(screen.getByRole("button", { name: /with the AI Tutor/ }));
     await waitFor(() => expect(push).toHaveBeenCalled());
     expect(push).toHaveBeenCalledTimes(1);
@@ -71,40 +70,12 @@ describe("a control inside the module card", () => {
   it("has NO tutor tile - the pill above is the only way in", () => {
     // There used to be a tile as well, and two controls for one thing is what kept making an
     // optional help sit in a row of steps. The pill is asserted in the test above this one.
-    render(<NodeRow node={mod()} courseId={14} stepNo={1} checkpoint={paper()} moduleNo={1} />);
+    render(<NodeRow node={mod()} courseId={14} stepNo={1} moduleNo={1} />);
     expect(screen.queryByText("AI TUTOR")).toBeNull();
   });
 
-  it("sends the ASSESSMENT tile to the paper, not to the module", async () => {
-    render(<NodeRow node={mod()} courseId={14} stepNo={1} checkpoint={paper()} moduleNo={1} />);
-    fireEvent.click(screen.getByRole("button", { name: /CHECK|ASSESSMENT/ }));
-    await waitFor(() => expect(push).toHaveBeenCalled());
-    expect(push).toHaveBeenCalledTimes(1);
-    const href = push.mock.calls[0][0] as string;
-    expect(href).toContain("/assessments/imp-14-wk01-final");
-    expect(href.startsWith("/adaptive-courses/14/submodule")).toBe(false);
-  });
-
-  it("sends a finished paper's tile to its result", async () => {
-    const done = paper({ status: "done", score: { earned: 17, total: 240 } });
-    render(<NodeRow node={mod()} courseId={14} stepNo={1} checkpoint={done} moduleNo={1} />);
-    fireEvent.click(screen.getByRole("button", { name: /CHECK|ASSESSMENT/ }));
-    await waitFor(() => expect(push).toHaveBeenCalled());
-    expect(push).toHaveBeenCalledTimes(1);
-    expect(push.mock.calls[0][0]).toContain("/assessments/result/imp-14-wk01-final");
-  });
-
-  it("sends the LESSONS tile into the module, which IS where the card goes", async () => {
-    render(<NodeRow node={mod()} courseId={14} stepNo={1} checkpoint={paper()} moduleNo={1} />);
-    fireEvent.click(screen.getByRole("button", { name: /LESSONS/ }));
-    await waitFor(() => expect(push).toHaveBeenCalled());
-    // Same destination as the card, but still exactly one navigation.
-    expect(push).toHaveBeenCalledTimes(1);
-    expect(push.mock.calls[0][0]).toBe("/adaptive-courses/14/submodule/912");
-  });
-
   it("still opens the module when the card itself is clicked", async () => {
-    render(<NodeRow node={mod()} courseId={14} stepNo={1} checkpoint={paper()} moduleNo={1} />);
+    render(<NodeRow node={mod()} courseId={14} stepNo={1} moduleNo={1} />);
     fireEvent.click(screen.getByText("Java Fundamentals & Complexity Analysis"));
     await waitFor(() => expect(push).toHaveBeenCalled());
     expect(push).toHaveBeenCalledTimes(1);
@@ -122,5 +93,48 @@ describe("a control inside the module card", () => {
     await waitFor(() => expect(push).toHaveBeenCalled());
     expect(push).toHaveBeenCalledTimes(1);
     expect(push.mock.calls[0][0]).toContain("/adaptive-courses/14/interview/5501");
+  });
+});
+
+/**
+ * The week's paper is the WEEK's, not any one topic's.
+ *
+ * Reported: "The assessment are built week wise but they are being shown topic wise, for
+ * example in week 2, 2 topics are there and both have the same assessment so if a student
+ * completes the content of arrays and try to take the assessment, he will face questions from
+ * strings also." On production, Impacteers week 2 is `Arrays & Matrix Problems` + `Strings` +
+ * one `Week 2 Check`, and the paper was taken off the rail and redrawn as a tile on BOTH topic
+ * cards. Naming the tile after the paper ("WEEK 2 CHECK") was tried first and was not enough:
+ * a control sitting on a topic's card reads as that topic's, whatever it is called.
+ */
+describe("a module card", () => {
+  it("offers no assessment at all", () => {
+    render(<NodeRow node={mod()} courseId={14} stepNo={1} moduleNo={1} />);
+    expect(screen.queryByText(/CHECK|ASSESSMENT/)).toBeNull();
+    expect(screen.queryByTestId("module-triad")).toBeNull();
+  });
+
+  it("states its own contents on the line where the tiles used to be", () => {
+    render(<NodeRow node={mod()} courseId={14} stepNo={1} moduleNo={1} />);
+    expect(screen.getByText("2 quizzes · 5 articles · 2 coding")).toBeInTheDocument();
+  });
+});
+
+describe("the week's paper, on its own row", () => {
+  it("goes to the paper", async () => {
+    render(<NodeRow node={paper()} courseId={14} stepNo={2} />);
+    fireEvent.click(screen.getByText("Week 1 Check"));
+    await waitFor(() => expect(push).toHaveBeenCalled());
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(push.mock.calls[0][0]).toContain("/assessments/imp-14-wk01-final");
+  });
+
+  it("goes to the result once it is done", async () => {
+    render(<NodeRow node={paper({ status: "done", score: { earned: 17, total: 240 } })}
+                    courseId={14} stepNo={2} />);
+    fireEvent.click(screen.getByText("Week 1 Check"));
+    await waitFor(() => expect(push).toHaveBeenCalled());
+    expect(push).toHaveBeenCalledTimes(1);
+    expect(push.mock.calls[0][0]).toContain("/assessments/result/imp-14-wk01-final");
   });
 });

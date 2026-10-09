@@ -19,7 +19,6 @@ import { NodeRow } from "./NodeRow";
 import { SpineRow } from "./SpineRow";
 import { WeekBand } from "./WeekBand";
 import { railEnds, sameRung } from "./railEnds";
-import { paperByModule, weekRows } from "./weekLayout";
 import { Milestones } from "./Milestones";
 import { courseMilestones } from "./milestoneRules";
 import type { JourneyBoard as JourneyBoardData } from "@/lib/types/adaptive-journey";
@@ -52,13 +51,17 @@ export function Spine({
 }) {
   // The rail begins at the first marker and ends at the last, with no loose ends. See
   // `railEnds` for why those are read off the data rather than assumed.
-  // The week's paper keeps its own station on the rail - it covers the whole week, carries its
-  // own weight and question count, and a week often holds several modules - and every module in
-  // that week points at it, so none of them claims to have no assessment while it sits below
-  // them.
-  const papers = weeks.map((w) => paperByModule(w.nodes));
-  // The week's paper is drawn inside its modules' triads, so it is not also a card below them.
-  const laidOut = weeks.map((w) => ({ ...w, nodes: weekRows(w.nodes) }));
+  // The week's paper keeps its own station on the rail, ONCE, after the modules it covers.
+  //
+  // It used to be pulled off the rail and redrawn as a tile inside every module's card instead.
+  // A week commonly holds two or three modules and exactly one paper - Impacteers week 2 is
+  // `Arrays & Matrix Problems` + `Strings` + `Week 2 Check` - so one paper became two or three
+  // tiles, each sitting on a single topic's card. Reported: a learner who finished Arrays
+  // opened the assessment from the Arrays card and met Strings questions. Naming the tile after
+  // the paper ("WEEK 2 CHECK") was tried first and was not enough: a control on a topic's card
+  // reads as that topic's, whatever it is called. The paper covers the week, so it belongs to
+  // the week, drawn where it actually sits in the sequence.
+  const laidOut = weeks;
   const { first, last } = railEnds(laidOut);
   // Modules are numbered across the whole course, the way a learner refers to them.
   let moduleCounter = 0;
@@ -101,7 +104,6 @@ export function Spine({
                   fieldTier={fieldTier}
                   first={sameRung(rung, first)}
                   last={sameRung(rung, lastStepRung)}
-                  checkpoint={papers[wi].get(n.id) ?? null}
                   moduleNo={moduleNoById.get(n.id)}
                 />
               );
