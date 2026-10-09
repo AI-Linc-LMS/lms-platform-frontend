@@ -221,7 +221,7 @@ export default function AdminDashboardPage() {
     ...(people?.cohorts?.length
       ? [{ icon: "mdi:account-group-outline", label: `${people.cohorts.length} cohorts` }]
       : []),
-    // No tickets chip here: the "Tickets waiting" KPI tile below carries the same number, and
+    // No tickets chip here: the "Unresolved tickets" KPI tile below carries the same number, and
     // carries it better - with its definition and its period-over-period delta. Two copies of one
     // figure in one hero just makes the reader check whether they disagree.
   ];
@@ -308,14 +308,22 @@ export default function AdminDashboardPage() {
               }
               footnote="per active day"
             />
+            {/* The headline is what Ticket Management shows as Open plus In progress. It used
+                to count only tickets older than 48h, measured from the start of today, so a
+                ticket opened this morning read as zero here while the tickets page listed it -
+                which is what was reported. Staleness is the footnote now. */}
             <HeroKpi
-              label="Tickets waiting"
-              value={tiles?.stale_tickets.value ?? 0}
+              label="Unresolved tickets"
+              value={tiles?.unresolved_tickets.value ?? 0}
               definition={
-                tiles?.stale_tickets.definition ??
-                "Unresolved tickets opened more than 48 hours ago."
+                tiles?.unresolved_tickets.definition ??
+                "Tickets nobody has resolved yet - Open plus In progress on Ticket Management."
               }
-              footnote="unanswered over 48h"
+              footnote={
+                tiles?.unresolved_tickets.over_48h
+                  ? `${tiles.unresolved_tickets.over_48h} open over 48h`
+                  : "none over 48h"
+              }
             />
           </Box>
         </DashboardHero>
