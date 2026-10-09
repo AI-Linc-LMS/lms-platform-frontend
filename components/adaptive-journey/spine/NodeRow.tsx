@@ -23,8 +23,6 @@ import { TutorAction } from "./TutorAction";
 import { InterviewAction } from "./InterviewAction";
 import { SpineRow, type RailTone } from "./SpineRow";
 import { ModuleLessons } from "./ModuleLessons";
-import { TriadTile } from "./TriadTile";
-import { moduleTriad } from "./triad";
 import { useIsAiVoiceTutorEnabled } from "@/lib/contexts/ClientInfoContext";
 import { tutorHrefForModule } from "../tutorHref";
 import { fmtDate } from "./dates";
@@ -83,15 +81,12 @@ export function NodeRow({
   fieldTier,
   first,
   last,
-  checkpoint = null,
   moduleNo,
 }: {
   node: JourneyNodeView;
   courseId: number;
   stepNo: number;
   dueAt?: string | null;
-  /** The paper that closes this module, so the triad's third leg can report its real state. */
-  checkpoint?: JourneyNodeView | null;
   /** Its position in the course, for the numbered tile. Modules only. */
   moduleNo?: number;
   /** The learner's calibrated level, so a tutor lesson opens at the right difficulty. */
@@ -112,19 +107,12 @@ export function NodeRow({
   const locked = node.status === "locked";
   const navHref = nodeHref(node, courseId);
   const navigable = !locked && !!navHref;
+  // Every row states what it holds on one line. A module briefly stated it as a row of tiles
+  // instead - lessons, tutor, assessment - and all three are gone: the tutor because the card
+  // already carries a "Learn with AI Tutor" pill, and the assessment because the paper is the
+  // WEEK's, not this topic's, and now keeps its own station on the rail (see Spine).
   const summary = contentSummary(node);
-  // A module states its three legs - lessons, tutor, assessment - in place of a content line.
-  // Everything else on the board (a checkpoint, an interview) is one thing and keeps the line.
-  const triad = node.type === "topic" ? moduleTriad(node, checkpoint, tutorEnabled) : [];
   const tutorHref = tutorHrefForModule(node, fieldTier ?? undefined);
-  const checkpointHref = checkpoint ? nodeHref(checkpoint, courseId) : null;
-  // Keyed on what a leg IS, not on what it is called. The assessment leg's label is now the
-  // paper's own name ("WEEK 2 CHECK"), and a lookup by display string would have stopped
-  // matching it - leaving a tile that silently no longer navigates.
-  const legHandlers: Record<string, (() => void) | undefined> = {
-    lessons: navigable && navHref ? () => push(navHref) : undefined,
-    assessment: checkpointHref ? () => push(checkpointHref) : undefined,
-  };
 
   const go = () => { if (navigable && navHref) push(navHref); };
   // For a button INSIDE the card: the card navigates too, and its handler runs second. Even
@@ -190,7 +178,7 @@ export function NodeRow({
               {l.ai && <Chip label="+AI" size="small" sx={{ height: 16, fontSize: "0.56rem", fontWeight: 800, color: "#7c3aed", bgcolor: "#ede9fe", [PHONE]: { height: 20, fontSize: "0.75rem" } }} />}
             </Stack>
             <Typography sx={{ fontWeight: 700, fontSize: "0.95rem", color: "#0f172a", mt: 0.25, [PHONE]: { fontSize: "1rem", lineHeight: 1.35, overflowWrap: "anywhere" } }}>{node.title}</Typography>
-            {summary && triad.length === 0 && (
+            {summary && (
               <Typography sx={{ fontSize: "0.76rem", color: "#64748b", mt: 0.25, [PHONE]: { fontSize: "0.8rem" } }}>{summary}</Typography>
             )}
           </Box>
@@ -235,28 +223,6 @@ export function NodeRow({
           )}
           </Box>
         </Stack>
-
-        {triad.length > 0 && (
-          <Stack
-            data-testid="module-triad"
-            direction={{ xs: "column", sm: "row" }}
-            spacing={1}
-            sx={{ mt: 1.5 }}
-          >
-            {triad.map((leg) => (
-              <TriadTile
-                key={leg.kind}
-                step={leg.step}
-                label={leg.label}
-                value={leg.value}
-                state={leg.state}
-                icon={leg.icon}
-                tag={leg.tag}
-                onClick={legHandlers[leg.kind]}
-              />
-            ))}
-          </Stack>
-        )}
 
         {expandable && open && node.ref.submoduleId && (
           <ModuleLessons courseId={courseId} submoduleId={node.ref.submoduleId} />
