@@ -114,6 +114,7 @@ vi.mock("@/components/coding/AdaptiveCodingSubmissions", () => ({
   },
 }));
 vi.mock("@/components/common/Toast", () => ({ useToast: () => ({ showToast: vi.fn() }) }));
+vi.mock("@/lib/auth/auth-context", () => ({ useAuth: () => ({ user: { id: 77 } }) }));
 vi.mock("react-i18next", () => ({ useTranslation: () => ({ t: (k: string) => k.split(".").pop() }) }));
 
 import { AdaptiveCodingSolve } from "./AdaptiveCodingSolve";
