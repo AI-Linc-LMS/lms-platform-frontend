@@ -87,7 +87,7 @@ export interface PulsePayload {
     active_students: DeltaTile;
     items_completed: DeltaTile;
     median_minutes: PlainTile;
-    stale_tickets: PlainTile;
+    unresolved_tickets: PlainTile & { over_48h: number };
   };
   trend: Array<{ bucket: string; active_students: number; items_completed: number }>;
   freshness: { computed_at: string; note: string };
