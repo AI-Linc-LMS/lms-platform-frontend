@@ -218,44 +218,42 @@ describe("readiness grouping", () => {
   });
 });
 
-describe("the time filter", () => {
+/**
+ * The time filter is gone.
+ *
+ * It asked "how long have you got" and narrowed the deck to problems whose measured median fit.
+ * Removed on request. What is pinned here is that removing it took the whole mechanism with it
+ * and left the deck showing everything - a filter half-removed is a deck that silently hides
+ * work with no control to bring it back.
+ */
+describe("the deck shows every problem", () => {
   const timed = [
     item({ key: "a", title: "Quick", typicalMinutes: 5 }),
     item({ key: "b", title: "Slow", typicalMinutes: 40 }),
     item({ key: "c", title: "Unmeasured" }),
   ];
 
-  it("is not offered at all when nothing has a measured time", () => {
-    render(<PracticeDeck items={[item({ key: "x" })]} firstStep={1} />);
+  it("offers no time filter", () => {
+    render(<PracticeDeck items={timed} firstStep={1} />);
     expect(screen.queryByTestId("practice-budget")).toBeNull();
+    expect(screen.queryByText("I have")).toBeNull();
+    for (const label of ["10 min", "30 min", "An hour", "Any"]) {
+      expect(screen.queryByRole("button", { name: label })).toBeNull();
+    }
   });
 
-  it("narrows to what fits, and says what it hid", () => {
+  it("shows the long ones and the unmeasured ones alongside the quick ones", () => {
     render(<PracticeDeck items={timed} firstStep={1} />);
-    fireEvent.click(screen.getByRole("button", { name: "10 min" }));
     const text = screen.getByTestId("practice-deck").textContent ?? "";
-    expect(text).toContain("Quick");
-    expect(text).not.toContain("Slow");
-    // No silent caps: a filter that quietly removes work reads as a thinner topic.
-    expect(text).toContain("1 longer one hidden");
+    for (const title of ["Quick", "Slow", "Unmeasured"]) expect(text).toContain(title);
   });
 
-  /**
-   * Only 68 of 611 problems had enough attempts to publish a median when this shipped, so
-   * treating "unmeasured" as "too long" would empty the page to prove a point.
-   */
-  it("keeps a problem whose length nobody has measured", () => {
+  it("never says anything is hidden", () => {
     render(<PracticeDeck items={timed} firstStep={1} />);
-    fireEvent.click(screen.getByRole("button", { name: "10 min" }));
-    expect(screen.getByTestId("practice-deck").textContent).toContain("Unmeasured");
-  });
-
-  it("offers a way back when the filter leaves nothing", () => {
-    render(<PracticeDeck items={[item({ key: "b", title: "Slow", typicalMinutes: 40 })]} firstStep={1} />);
-    fireEvent.click(screen.getByRole("button", { name: "10 min" }));
-    expect(screen.getByTestId("practice-deck").textContent).toContain("Nothing here fits");
-    fireEvent.click(screen.getByRole("button", { name: "Show everything" }));
-    expect(screen.getByTestId("practice-deck").textContent).toContain("Slow");
+    const text = screen.getByTestId("practice-deck").textContent ?? "";
+    expect(text).not.toContain("hidden");
+    expect(text).not.toContain("Nothing here fits");
+    expect(text).not.toContain("Show everything");
   });
 });
 
