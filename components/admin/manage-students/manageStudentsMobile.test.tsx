@@ -95,6 +95,11 @@ vi.mock("@/lib/services/admin/admin-student.service", () => ({
     bulkCourseAction: vi.fn(),
     getProgressResetHistory: () => Promise.resolve([]),
     previewProgressReset: () => Promise.resolve({ counts: {}, preserved: [], total: 0 }),
+    // The SAVED RESUME cell opens a dialog that fetches; the point under test is which column
+    // the chip sits in, so the fetch just has to resolve.
+    getStudentResumes: () =>
+      Promise.resolve({ has_saved_resume: true, resumes: [], documents: [] }),
+    getStudentResumePdf: () => Promise.resolve(new Blob()),
   },
 }));
 
@@ -557,5 +562,67 @@ describe("the student's page", () => {
     // not even the `(min-width:0px)` half of an `{ xs, sm }` value.
     expect(css.unscoped).toMatch(/font-size:0\.66rem/);
     expect(css.unscoped).not.toMatch(/font-size:0\.75rem/);
+  });
+});
+
+/**
+ * Every cell under the heading that names it.
+ *
+ * Reported as "in manage students, an admin should be able to click on saved resume and view the
+ * particular saved resume". The Yes chip was already clickable and already opened the dialog -
+ * it was just three columns away from the heading that named it. The body rendered a learner's
+ * batches FIFTH while the header labelled BATCHES eighth, so everything in between was drawn
+ * under the wrong heading: cohort chips under SAVED RESUME, the resume indicator under
+ * COMPLETION %, completion under ATTENDANCE %, attendance under BATCHES.
+ *
+ * A table cannot tell you it is misaligned - both halves are individually valid markup - so the
+ * check has to walk the two in step.
+ */
+describe("the directory's columns", () => {
+  // The i18n mock returns the raw key when a string has no defaultValue, so the heading
+  // reads SAVEDRESUME here and "Saved resume" in the app. Match either.
+  const columnOf = (label: RegExp) => {
+    const heads = Array.from(document.querySelectorAll("thead th"));
+    return heads.findIndex((h) => label.test(h.textContent ?? ""));
+  };
+  const cellIn = (rowIdx: number, col: number) =>
+    document.querySelectorAll("tbody tr")[rowIdx].querySelectorAll("td")[col];
+
+  beforeEach(() => viewport(DESKTOP));
+
+  it("has exactly as many body cells as headings", () => {
+    renderTable();
+    const heads = document.querySelectorAll("thead th").length;
+    const cells = document.querySelectorAll("tbody tr")[0].querySelectorAll("td").length;
+    expect(cells).toBe(heads);
+  });
+
+  it("puts the resume indicator under SAVED RESUME", () => {
+    renderTable({ students: [student(7, "Asha Rao", { has_saved_resume: true })] });
+    const col = columnOf(/SAVED\s*RESUME/i);
+    expect(col).toBeGreaterThan(-1);
+    expect(cellIn(0, col).querySelector('[data-testid="view-resume-7"]')).toBeTruthy();
+  });
+
+  it("puts the learner's batches under BATCHES", () => {
+    renderTable();
+    const col = columnOf(/BATCHES/i);
+    expect(col).toBeGreaterThan(-1);
+    expect(cellIn(0, col).textContent).toContain("Batch 28");
+  });
+
+  it("puts completion under COMPLETION % and attendance under ATTENDANCE %", () => {
+    renderTable();
+    expect(cellIn(0, columnOf(/COMPLETION/i)).textContent).toContain("42");
+    expect(cellIn(0, columnOf(/ATTENDANCE/i)).textContent).toContain("75");
+  });
+
+  it("opens the resume dialog from the SAVED RESUME cell", () => {
+    // The reported ask, end to end: click what the heading calls a saved resume, get the resume.
+    renderTable({ students: [student(7, "Asha Rao", { has_saved_resume: true })] });
+    const chip = cellIn(0, columnOf(/SAVED\s*RESUME/i))
+      .querySelector('[data-testid="view-resume-7"]') as HTMLElement;
+    fireEvent.click(chip);
+    expect(screen.getByRole("dialog")).toBeTruthy();
   });
 });

@@ -659,41 +659,6 @@ export function StudentsTable({
                         {student.most_active_course || t("adminManageStudents.noActivity")}
                       </Typography>
                     </TableCell>
-                    {/* Which batch a student is in was not on this screen at all, so an admin
-                        could see their marks and their streak but not who teaches them. */}
-                    <TableCell
-                      sx={{
-                        py: 2,
-                        fontSize: { xs: "0.75rem", sm: "0.875rem" },
-                        display: { xs: "none", md: "table-cell" },
-                      }}
-                    >
-                      {student.cohorts && student.cohorts.length > 0 ? (
-                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, maxWidth: 220 }}>
-                          {student.cohorts.map((cohort) => (
-                            <Chip
-                              key={cohort.id}
-                              label={cohort.name}
-                              size="small"
-                              sx={{
-                                backgroundColor:
-                                  "color-mix(in srgb, var(--accent-purple, var(--primary-500)) 12%, var(--surface) 88%)",
-                                color: "var(--font-primary)",
-                                fontWeight: 600,
-                                fontSize: { xs: "0.65rem", sm: "0.7rem" },
-                              }}
-                            />
-                          ))}
-                        </Box>
-                      ) : (
-                        <Typography
-                          variant="body2"
-                          sx={{ color: "#6b7280", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
-                        >
-                          {t("adminManageStudents.noBatch", "No batch")}
-                        </Typography>
-                      )}
-                    </TableCell>
                     <TableCell
                       sx={{
                         py: 2,
@@ -878,6 +843,47 @@ export function StudentsTable({
                           }}
                         >
                           {t("adminManageStudents.na")}
+                        </Typography>
+                      )}
+                    </TableCell>
+                    {/* Batches sits here, LAST before the actions, because that is where the
+                        header puts it. It used to render fifth while the header labelled it
+                        eighth, so every column between the two was drawn under the wrong
+                        heading: a learner's cohort chips appeared under SAVED RESUME, their
+                        resume indicator under COMPLETION %, completion under ATTENDANCE %.
+                        Reported as "an admin should be able to click saved resume and view
+                        it" - the Yes chip WAS clickable, it was just three columns away from
+                        the heading that named it. */}
+                    <TableCell
+                      sx={{
+                        py: 2,
+                        fontSize: { xs: "0.75rem", sm: "0.875rem" },
+                        display: { xs: "none", md: "table-cell" },
+                      }}
+                    >
+                      {student.cohorts && student.cohorts.length > 0 ? (
+                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, maxWidth: 220 }}>
+                          {student.cohorts.map((cohort) => (
+                            <Chip
+                              key={cohort.id}
+                              label={cohort.name}
+                              size="small"
+                              sx={{
+                                backgroundColor:
+                                  "color-mix(in srgb, var(--accent-purple, var(--primary-500)) 12%, var(--surface) 88%)",
+                                color: "var(--font-primary)",
+                                fontWeight: 600,
+                                fontSize: { xs: "0.65rem", sm: "0.7rem" },
+                              }}
+                            />
+                          ))}
+                        </Box>
+                      ) : (
+                        <Typography
+                          variant="body2"
+                          sx={{ color: "#6b7280", fontSize: { xs: "0.75rem", sm: "0.875rem" } }}
+                        >
+                          {t("adminManageStudents.noBatch", "No batch")}
                         </Typography>
                       )}
                     </TableCell>
