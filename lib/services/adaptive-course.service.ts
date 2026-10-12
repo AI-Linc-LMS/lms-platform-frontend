@@ -314,6 +314,13 @@ export interface PointsBreakdownItem {
   on_offer: number;
   earned: number;
   status: "earned" | "available";
+  /** Content this learner was paid for that has since left the topic — an article deactivated
+   *  after they read it, a quiz retired after they sat it. Its `content_key` matches no step on
+   *  the page, so `pointsByKey` never renders it as a card; it is here so the topic's earned
+   *  total includes points the learner really banked, and so matches the journey board's (which
+   *  sums the ledger by node and has no idea an item was retired). `on_offer` equals `earned`,
+   *  so a row like this can never inflate a denominator. Absent on every live item. */
+  retired?: boolean;
   breakdown?: {
     base: number;
     after_decay: number;
