@@ -4,6 +4,7 @@ import { useEffect, useState, useRef, use, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { safeFrom, withFrom } from "@/lib/utils/return-to";
+import { attachCameraStream } from "@/lib/utils/attachCameraStream";
 import { useTranslation } from "react-i18next";
 import {
   Container,
@@ -95,6 +96,16 @@ export default function DeviceCheckPage({
   const isNavigatingToAssessmentRef = useRef(false);
   const [isNavigatingToAssessment, setIsNavigatingToAssessment] = useState(false);
   const hasAutoTestedRef = useRef(false);
+  /**
+   * The camera stream, held in STATE as well as in streamRef.
+   *
+   * streamRef alone cannot drive a re-render, and the <video> is not always mounted when the
+   * stream arrives — this page returns a spinner while `mobileAssessmentGate === "pending"`,
+   * which is resolved by a network call. So the element can appear *after* getUserMedia
+   * resolves, and something has to notice and attach the stream then.
+   */
+  const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  const faceDetectionStartedRef = useRef(false);
   const { showToast } = useToast();
 
   // Face detection proctoring - use its videoRef
@@ -228,6 +239,55 @@ export default function DeviceCheckPage({
   }, []);
 
 
+  /**
+   * Attach the camera stream to the <video> and start face detection. Order-independent.
+   *
+   * The bug this replaces: the stream was attached inline inside `testDevices` behind a bare
+   * `if (videoRef.current)`, with no retry. When getUserMedia resolved before the element
+   * mounted, `srcObject` was never set and never set later — the camera stayed live (the
+   * browser's green indicator on, because the tracks are held by streamRef) while the panel
+   * rendered black forever. Face detection never started either, because its trigger lived
+   * inside the same block, so the learner also could not pass the check.
+   *
+   * Whether that race is lost depends on how fast getUserMedia resolves against a network
+   * fetch, which is why it hit only some people: a first-time user waits on the permission
+   * prompt and the fetch wins, while a returning user whose browser already remembers the
+   * grant resolves in milliseconds and loses. Edge persists permissions per site, so repeat
+   * takers there are the most likely to see it.
+   *
+   * Safe to call repeatedly: re-attaching the same stream is a no-op, and face detection is
+   * started once per stream.
+   */
+  const attachStreamToVideo = useCallback(
+    (stream: MediaStream | null, hasVideo = true) => {
+      attachCameraStream({
+        el: videoRef.current,
+        stream,
+        hasVideo,
+        onReady: () => {
+          if (faceDetectionStartedRef.current) return;
+          faceDetectionStartedRef.current = true;
+          setTimeout(() => {
+            startFaceDetection().catch((err) => {
+              console.error("Failed to start face detection:", err);
+              setFaceValidationMessage("Face detection failed to initialize");
+            });
+          }, 500);
+        },
+      });
+    },
+    [startFaceDetection, videoRef]
+  );
+
+  /**
+   * The other half of the race: the element mounting after the stream arrived. The callback
+   * ref below covers the mount itself; this covers a stream that lands while the element is
+   * already on screen, and re-attaches if anything detaches srcObject underneath us.
+   */
+  useEffect(() => {
+    if (cameraStream) attachStreamToVideo(cameraStream);
+  }, [cameraStream, attachStreamToVideo, mobileAssessmentGate, deviceAccessDenied]);
+
   // Test devices
   const testDevices = useCallback(async () => {
     setChecking(true);
@@ -260,42 +320,10 @@ export default function DeviceCheckPage({
       const hasAudio =
         audioTracks.length > 0 && audioTracks[0].readyState === "live";
 
-      // Set video element source and start face detection
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play().then(() => {
-          // Start face detection once video is playing and has metadata
-          if (hasVideo && videoRef.current) {
-            const checkVideoReady = () => {
-              if (
-                videoRef.current &&
-                videoRef.current.readyState >= 2 &&
-                videoRef.current.videoWidth > 0 &&
-                videoRef.current.videoHeight > 0
-              ) {
-                // Video is ready, start face detection
-                setTimeout(() => {
-                  startFaceDetection().catch((err) => {
-                    console.error("Failed to start face detection:", err);
-                    setFaceValidationMessage("Face detection failed to initialize");
-                  });
-                }, 500);
-              } else {
-                // Wait a bit more and check again
-                setTimeout(checkVideoReady, 200);
-              }
-            };
-            checkVideoReady();
-          }
-        }).catch((err: unknown) => {
-          const name = (err as { name?: string })?.name;
-          // AbortError fires when the element is removed from the DOM
-          // mid-play (e.g. user navigates away); NotAllowedError fires
-          // when autoplay is blocked. Neither needs surfacing.
-          if (name === "AbortError" || name === "NotAllowedError") return;
-          console.error("Failed to play video:", err);
-        });
-      }
+      // Hand the stream to the <video>. attachStreamToVideo is deliberately order-independent:
+      // the element may not exist yet (see the comment on that function).
+      setCameraStream(stream);
+      attachStreamToVideo(stream, hasVideo);
 
       setDeviceStatus({
         camera: hasVideo,
@@ -466,6 +494,7 @@ export default function DeviceCheckPage({
           streamRef.current.getTracks().forEach((track) => track.stop());
           streamRef.current = null;
         }
+        faceDetectionStartedRef.current = false;
         if (videoRef.current) {
           videoRef.current.srcObject = null;
         }
@@ -988,7 +1017,14 @@ export default function DeviceCheckPage({
 
                 <Box
                   component="video"
-                  ref={videoRef}
+                  // A callback ref, not `ref={videoRef}`, so the stream is attached at the
+                  // exact moment this element enters the DOM. The element can mount well
+                  // after getUserMedia resolved (the page renders a spinner until the
+                  // mobile gate clears), and an effect would not fire until after paint.
+                  ref={(el: HTMLVideoElement | null) => {
+                    videoRef.current = el;
+                    if (el) attachStreamToVideo(streamRef.current);
+                  }}
                   autoPlay
                   playsInline
                   muted
