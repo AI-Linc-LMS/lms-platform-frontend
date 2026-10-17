@@ -14,6 +14,28 @@ const LIVE_SESSIONS_FEATURE = "live_sessions";
 /** How close (ms) to a status boundary the coarse 60s safety-net poll runs. */
 const NEAR_BOUNDARY_MS = 15 * 60 * 1000;
 const SAFETY_POLL_MS = 60_000;
+/**
+ * Spread the safety-net poll so a class start is not a thundering herd.
+ *
+ * `near` flips true at exactly T-15:00 for EVERY page that is already open, so without this
+ * every one of them arms a 60s interval on the same tick and asks for the same 232 KB payload
+ * on the same second, for the whole quarter hour before a class. On 2026-10-16 the 20:00 start
+ * produced 506 ELB 5xx and took the backend to one healthy host; on 2026-10-17 the 07:00 start
+ * still made this endpoint 90.5% of all backend worker time.
+ *
+ * +/-40% of the interval, drawn once per mount, turns one spike a minute into a flat rate. No
+ * client waits longer than ~84s for a refresh, and the boundary `setTimeout` above - the thing
+ * that actually flips a card to LIVE on time - is untouched, so nothing a learner is waiting
+ * for gets slower.
+ */
+const SAFETY_POLL_JITTER = 0.4;
+
+/** A poll delay for THIS client: the interval, spread so clients do not align. */
+const jitteredPollMs = (): number =>
+  Math.round(SAFETY_POLL_MS * (1 + (Math.random() * 2 - 1) * SAFETY_POLL_JITTER));
+
+/** Test seam only: the jitter is pure, so it is worth asserting its bounds directly. */
+export const __test__ = { jitteredPollMs };
 /** A tab returning to view refetches only if its snapshot is older than this. */
 const STALE_ON_FOCUS_MS = 60_000;
 /** setTimeout overflows (and fires IMMEDIATELY) past ~24.8 days; clamp far boundaries well below
@@ -178,7 +200,7 @@ export function useLiveSessions() {
     }
     let interval: ReturnType<typeof setInterval> | null = null;
     if (near) {
-      interval = setInterval(() => void loadSessions({ background: true }), SAFETY_POLL_MS);
+      interval = setInterval(() => void loadSessions({ background: true }), jitteredPollMs());
     }
     return () => {
       if (timer) clearTimeout(timer);
