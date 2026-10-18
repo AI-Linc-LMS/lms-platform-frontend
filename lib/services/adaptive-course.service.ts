@@ -276,6 +276,16 @@ export interface PracticeUsage {
   by_kind: { quiz: number; coding: number; article: number };
 }
 
+/**
+ * Where a practice item's content came from.
+ *
+ * Practice draws from the Verified Content Library first and only asks a model to write what
+ * the library could not supply, so a single set is often part one and part the other. The
+ * learner is told which, per set — "7 from the question bank · 3 newly written" — rather than
+ * everything being presented as freshly generated.
+ */
+export type PracticeSource = "bank" | "ai" | "mixed";
+
 export interface PracticeItem {
   id: string;
   kind: PracticeKind;
@@ -285,6 +295,20 @@ export interface PracticeItem {
   config_id?: number;
   problem_id?: number | null;
   article_id?: number;
+  /**
+   * Optional across all three: a server that predates the library returns none of them, and
+   * the UI must fall back to saying nothing rather than guessing. Never assume `source` is
+   * present — `undefined` means "this server cannot tell us", not "AI".
+   */
+  source?: PracticeSource;
+  from_bank?: number;
+  from_ai?: number;
+  /**
+   * True when the library had nothing on this exact topic and the set was filled from the
+   * wider module. Worth surfacing: the learner should know the material is adjacent to the
+   * lesson rather than drawn from it.
+   */
+  related_topic?: boolean;
 }
 
 export interface PracticeState {
