@@ -14,6 +14,7 @@ import {
 import { PHONE } from "@/components/common/mobile/phone";
 import { topicHref } from "@/lib/adaptive/courseFlow";
 import { withFrom } from "@/lib/utils/return-to";
+import { PracticeSourceBadge } from "@/components/adaptive-journey/PracticeSourceBadge";
 
 const KIND_CARDS: { kind: PracticeKind; icon: string; title: string; sub: string }[] = [
   { kind: "article", icon: "mdi:file-document-outline", title: "Article", sub: "Explainer at your level" },
@@ -105,7 +106,7 @@ export function AdditionalPractice({
         detail ||
           (timedOut
             ? "That took longer than we can wait for. Anything that finished has been saved - reopen this panel to see it before generating again."
-            : "Couldn't generate practice right now. Please try again."),
+            : "Couldn't get practice right now. Please try again."),
       );
     } finally {
       setGenerating(false);
@@ -120,25 +121,28 @@ export function AdditionalPractice({
       <Box sx={{ p: { xs: 2, md: 2.5 }, background: "linear-gradient(180deg, #faf5ff 0%, #f5f3ff 100%)", borderBottom: open ? "1px solid #ede9fe" : "none" }}>
         <Stack direction="row" alignItems="flex-start" spacing={1.5}>
           <Box sx={{ width: 44, height: 44, borderRadius: "50%", flexShrink: 0, display: "grid", placeItems: "center", color: "white", background: "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)", boxShadow: "0 8px 20px -8px rgba(124,58,237,0.6)" }}>
-            <Icon icon="mdi:auto-fix" width={24} />
+            {/* Not the AI wand: this panel no longer promises that everything in it was
+              * written by a model. Each ITEM says where it came from instead. */}
+            <Icon icon="mdi:dumbbell" width={24} />
           </Box>
           <Box sx={{ flex: 1, minWidth: 0 }}>
             <Stack direction="row" alignItems="center" spacing={1} flexWrap="wrap">
               <Typography sx={{ fontWeight: 800, fontSize: "1.15rem", color: "#1e1b4b" }}>Additional Practice</Typography>
               <Stack direction="row" spacing={0.3} alignItems="center" sx={{ px: 1, py: 0.3, borderRadius: 999, color: "white", background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)" }}>
                 <Icon icon="mdi:plus" width={12} />
-                <Typography sx={{ fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800 }}>Generate</Typography>
+                <Typography sx={{ fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800 }}>Practice</Typography>
               </Stack>
             </Stack>
             <Typography sx={{ fontSize: "0.84rem", color: "#475569", mt: 0.25 }}>
-              Want more reps on this topic? Generate extra content tuned to your level.{" "}
+              Want more reps on this topic? We pull from our verified question bank first, and write
+              anything it doesn&apos;t cover.{" "}
               <Box component="span" sx={{ fontWeight: 800, color: "#1e293b" }}>Practice only - these don&apos;t earn points.</Box>
             </Typography>
           </Box>
           {/* Quota meter */}
           <Box sx={{ minWidth: 150, textAlign: "right", flexShrink: 0, display: { xs: "none", sm: "block" } }}>
             <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: "#1e1b4b" }}>
-              <Box component="span" sx={{ color: "#7c3aed", fontWeight: 900 }}>{used}</Box> / {limit} generated
+              <Box component="span" sx={{ color: "#7c3aed", fontWeight: 900 }}>{used}</Box> / {limit} added
             </Typography>
             <Box sx={{ height: 6, borderRadius: 999, bgcolor: "#ede9fe", mt: 0.5, overflow: "hidden" }}>
               <Box sx={{ height: "100%", width: `${pct}%`, borderRadius: 999, background: "linear-gradient(90deg, #7c3aed 0%, #ec4899 100%)", transition: "width .3s" }} />
@@ -153,8 +157,8 @@ export function AdditionalPractice({
 
       {open && (
         <Box sx={{ p: { xs: 2, md: 2.5 } }}>
-          {/* Step 1 - what to generate */}
-          <StepLabel n={1} text="WHAT DO YOU WANT TO GENERATE?" />
+          {/* Step 1 - what kind of practice */}
+          <StepLabel n={1} text="WHAT DO YOU WANT TO PRACTISE?" />
           <Box sx={{ display: "grid", gridTemplateColumns: { xs: "1fr", sm: "repeat(3, 1fr)" }, gap: 1.5, mb: 2.5 }}>
             {KIND_CARDS.map((c) => {
               const active = kind === c.kind;
@@ -243,8 +247,8 @@ export function AdditionalPractice({
               background: canGenerate ? "linear-gradient(135deg, var(--module-cta-from, #7c3aed) 0%, var(--module-cta-to, #ec4899) 100%)" : "#cbd5e1",
               boxShadow: canGenerate ? "0 12px 28px -14px var(--module-cta-shadow, rgba(124,58,237,0.7))" : "none",
             }}>
-              {generating ? <CircularProgress size={16} sx={{ color: "white" }} /> : <Icon icon="mdi:auto-fix" width={18} />}
-              {generating ? "Generating…" : exhausted ? "Topic limit reached" : `Generate ${btnUnit}`}
+              {generating ? <CircularProgress size={16} sx={{ color: "white" }} /> : <Icon icon="mdi:play-circle-outline" width={18} />}
+              {generating ? "Finding practice…" : exhausted ? "Topic limit reached" : `Get ${btnUnit}`}
             </ButtonBase>
           </Stack>
 
@@ -253,7 +257,7 @@ export function AdditionalPractice({
           <Stack direction="row" spacing={0.6} alignItems="flex-start">
             <Icon icon="mdi:information-outline" width={14} style={{ color: "#94a3b8", marginTop: 2, flexShrink: 0 }} />
             <Typography sx={{ fontSize: "0.74rem", [PHONE]: { fontSize: "0.75rem" }, color: "#94a3b8", lineHeight: 1.5 }}>
-              Generated practice is unlimited to retry but capped at{" "}
+              Practice is unlimited to retry but capped at{" "}
               <Box component="span" sx={{ fontWeight: 800, color: "#475569" }}>{limit} new items per topic</Box>{" "}
               to keep your path focused. Resets if the topic is re-published.
             </Typography>
@@ -264,7 +268,7 @@ export function AdditionalPractice({
             <Box sx={{ mt: 2.5, pt: 2.5, borderTop: "1px solid #f1f5f9" }}>
               <Stack direction="row" justifyContent="space-between" alignItems="center" sx={{ mb: 1.25 }}>
                 <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: 0.6, color: "#64748b" }}>
-                  YOUR GENERATED PRACTICE ({items.length})
+                  YOUR PRACTICE ({items.length})
                 </Typography>
                 <Stack direction="row" spacing={0.75} alignItems="center">
                   <Box sx={{ px: 1, py: 0.3, borderRadius: 999, bgcolor: "#f1f5f9", fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, color: "#475569" }}>Practice · no points</Box>
@@ -309,6 +313,7 @@ export function AdditionalPractice({
                         <Typography sx={{ fontSize: "0.72rem", [PHONE]: { fontSize: "0.75rem" }, color: "#94a3b8", textTransform: "capitalize" }}>
                           {it.kind} · {it.item_count} {it.kind === "article" ? "explainer" : it.kind === "coding" ? "problem" + (it.item_count > 1 ? "s" : "") : "MCQ" + (it.item_count > 1 ? "s" : "")}
                         </Typography>
+                        <PracticeSourceBadge item={it} />
                       </Box>
                       <ButtonBase onClick={() => openItem(it)} sx={{ flexShrink: 0, alignSelf: "center", px: 1.75, py: 0.7, borderRadius: 999, fontWeight: 800, fontSize: "0.8rem", color: m.color, border: `1px solid ${m.color}`, gap: 0.4, [PHONE]: { minHeight: 44 } }}>
                         Open <Icon icon="mdi:arrow-right" width={14} />
