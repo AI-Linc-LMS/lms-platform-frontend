@@ -83,12 +83,22 @@ export function getLiveSessionErrorMessage(
 
   if (status === 400 && lower.includes("scope")) return msg;
 
+  // A 409 from the live-session API is NOT one thing. views_zoom.py returns five, each with a
+  // message written for the admin: a host already booked (and which other host is free), a
+  // series with no dates left on Zoom, a date with no occurrence id, history that deleting
+  // would destroy, attendance Zoom has not published yet. Mapping the status alone sent all of
+  // them to "Meeting has not ended in Zoom yet" - so an admin who double-booked a Zoom host was
+  // told to end a meeting that had not started, and the guard built to name the free host for
+  // them reached nobody.
+  //
+  // So: trust the message, and keep the canned line for the one case it describes.
   if (
-    status === 409 ||
     lower.includes("not finalized") ||
     (context === "sync_attendance" && lower.includes("finalized"))
   )
     return MEETING_NOT_FINALIZED_MESSAGE;
+
+  if (status === 409) return msg || MEETING_NOT_FINALIZED_MESSAGE;
 
   if (
     context === "sync_recording" &&
@@ -110,8 +120,9 @@ export function getZoomApiErrorMessage(
   const lower = message.toLowerCase();
   if (lower.includes("not configured") || (lower.includes("credential") && lower.includes("zoom")))
     return ZOOM_CREDENTIALS_MESSAGE;
-  if (lower.includes("not finalized") || lower.includes("409"))
-    return MEETING_NOT_FINALIZED_MESSAGE;
+  // Not `lower.includes("409")`: the host-conflict refusal can legitimately contain the number
+  // (a session id, a time), and matching on it rewrote the whole message.
+  if (lower.includes("not finalized")) return MEETING_NOT_FINALIZED_MESSAGE;
   if (context === "sync_recording" && (lower.includes("processing") || lower.includes("still")))
     return RECORDING_PROCESSING_MESSAGE;
   return message;

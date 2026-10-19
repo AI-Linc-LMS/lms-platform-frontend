@@ -28,6 +28,7 @@ import { liveClassService, LiveClassSession } from "@/lib/services/live-class.se
 import {
   adminLiveActivitiesService,
   MeetingPreset,
+  ZoomHost,
   MeetingTemplate,
   LiveSessionRecurrence,
 } from "@/lib/services/admin/admin-live-activities.service";
@@ -91,6 +92,14 @@ export default function CreateLiveSessionPage() {
   const [selectedPresetId, setSelectedPresetId] = useState<number | "">("");
   const [selectedTemplateId, setSelectedTemplateId] = useState("");
   const [loadingTemplates, setLoadingTemplates] = useState(false);
+  // Which Zoom user hosts this session. A Zoom user can host one live session at a time, so a
+  // tenant running two batches at the same hour needs a second licensed host AND a session
+  // pointed at it. Agileology had the licence for a week and every session stayed on the
+  // default, because this form could not send one.
+  const [hosts, setHosts] = useState<ZoomHost[]>([]);
+  const [defaultHost, setDefaultHost] = useState("");
+  const [selectedHost, setSelectedHost] = useState("");
+  const [loadingHosts, setLoadingHosts] = useState(false);
   const [webinarPasscode, setWebinarPasscode] = useState("");
   const [registrationRequired, setRegistrationRequired] = useState(false);
 
@@ -211,8 +220,13 @@ export default function CreateLiveSessionPage() {
     const templatePromise = isWebinar
       ? adminLiveActivitiesService.getWebinarTemplates()
       : adminLiveActivitiesService.getMeetingTemplates();
-    Promise.allSettled([adminLiveActivitiesService.listPresets(), templatePromise])
-      .then(([presetRes, templateRes]) => {
+    setLoadingHosts(true);
+    Promise.allSettled([
+      adminLiveActivitiesService.listPresets(),
+      templatePromise,
+      adminLiveActivitiesService.getZoomHosts(),
+    ])
+      .then(([presetRes, templateRes, hostRes]) => {
         if (cancelled) return;
         if (presetRes.status === "fulfilled") {
           setPresets(presetRes.value);
@@ -220,10 +234,25 @@ export default function CreateLiveSessionPage() {
           if (def) setSelectedPresetId(def.id);
         }
         if (templateRes.status === "fulfilled") setTemplates(templateRes.value);
+        if (hostRes.status === "fulfilled") {
+          setHosts(hostRes.value.hosts);
+          setDefaultHost(hostRes.value.default_host);
+        }
       })
-      .finally(() => { if (!cancelled) setLoadingTemplates(false); });
+      .finally(() => {
+        if (cancelled) return;
+        setLoadingTemplates(false);
+        setLoadingHosts(false);
+      });
     return () => { cancelled = true; };
   }, [isMeet, isWebinar]);
+
+  /** How many sessions this tenant can genuinely run at once. `null` probes are excluded, so
+   *  this is a lower bound - better to understate the ceiling than to promise one that fails. */
+  const webinarCapableCount = useMemo(
+    () => hosts.filter((h) => h.can_host_webinar === true).length,
+    [hosts]
+  );
 
   const getValidInstructorId = (): number | undefined => {
     const trimmed = instructorId.trim();
@@ -393,6 +422,9 @@ export default function CreateLiveSessionPage() {
         passcode: isWebinar && webinarPasscode.trim() ? webinarPasscode.trim() : undefined,
         registration_required: isWebinar ? registrationRequired : undefined,
         recurrence: recurrence ?? undefined,
+        // Blank means "the tenant default", which is what the backend already does with an
+        // absent value - so only send a real choice.
+        zoom_host_user: selectedHost || undefined,
       });
 
       if (result.status === "error") {
@@ -706,6 +738,49 @@ export default function CreateLiveSessionPage() {
                       ))}
                     </TextField>
                   )}
+                  {/* A Zoom user hosts ONE live session at a time, so two batches at the same
+                      hour need two licensed hosts. The list comes from Zoom, so a newly-bought
+                      licence shows up without a deploy. Set here or not at all: Zoom cannot
+                      re-host a webinar once it exists. */}
+                  <TextField
+                    select
+                    label={t("adminLiveSessions.zoomHost", "Host (Zoom user)")}
+                    value={selectedHost}
+                    onChange={(e) => setSelectedHost(e.target.value)}
+                    fullWidth size="small"
+                    disabled={loadingHosts || hosts.length === 0}
+                    helperText={
+                      loadingHosts
+                        ? t("adminLiveSessions.loadingHosts", "Reading your Zoom users…")
+                        : hosts.length === 0
+                          ? t("adminLiveSessions.noHosts", "Could not read the Zoom users on your account. The session will use your institution's default host.")
+                          : webinarCapableCount > 0
+                            ? t("adminLiveSessions.hostHelper", `A Zoom user can host one live session at a time. You can run ${webinarCapableCount} at once.`)
+                            : t("adminLiveSessions.hostHelperNoWebinar", "Choose which Zoom user runs this session.")
+                    }
+                  >
+                    <MenuItem value="">
+                      {defaultHost
+                        ? t("adminLiveSessions.hostDefaultNamed", `Institution default (${defaultHost})`)
+                        : t("adminLiveSessions.hostDefault", "Institution default")}
+                    </MenuItem>
+                    {hosts.map((h) => {
+                      // A Basic user cannot host a webinar at all; offering it would produce a
+                      // Zoom rejection the admin has no way to interpret. `null` means Zoom
+                      // would not say, so it stays selectable with the caveat shown.
+                      const blocked = isWebinar && h.can_host_webinar === false;
+                      return (
+                        <MenuItem key={h.email || h.user_id} value={h.email} disabled={blocked}>
+                          {h.name ? `${h.name} — ${h.email}` : h.email}
+                          {blocked
+                            ? ` (${h.licence}, no webinar licence)`
+                            : h.can_host_webinar === null && isWebinar
+                              ? ` (${h.licence}, webinar support unverified)`
+                              : ` (${h.licence})`}
+                        </MenuItem>
+                      );
+                    })}
+                  </TextField>
                   <TextField
                     select
                     label={isWebinar ? t("adminLiveSessions.webinarTemplate", "Zoom webinar template (optional)") : t("adminLiveSessions.meetingTemplate", "Zoom template (optional)")}
@@ -770,6 +845,7 @@ export default function CreateLiveSessionPage() {
                       {adaptiveCourseId != null && <ReviewRow label={t("adminLiveSessions.course")} value={adaptiveCourses.find((c) => c.id === adaptiveCourseId)?.title ?? String(adaptiveCourseId)} />}
                       {isMeet && <ReviewRow label={t("adminLiveSessions.meetMode", "Google Meet mode")} value={isAutoMeet ? t("adminLiveSessions.meetModeAuto", "Auto-create (recommended)") : t("adminLiveSessions.meetModeManual", "Paste my own link")} />}
                       {isMeet && meetMode === "manual" && <ReviewRow label={t("adminLiveSessions.meetLink")} value={meetLink.trim() || "-"} />}
+                      {!isMeet && <ReviewRow label={t("adminLiveSessions.zoomHost", "Host (Zoom user)")} value={selectedHost || (defaultHost ? `${defaultHost} (institution default)` : t("adminLiveSessions.hostDefault", "Institution default"))} />}
                       {!isMeet && selectedTemplateId && <ReviewRow label={t("adminLiveSessions.meetingTemplate", "Template")} value={templates.find((tp) => tp.id === selectedTemplateId)?.name ?? selectedTemplateId} />}
                       {!isMeet && selectedPresetId !== "" && <ReviewRow label={t("adminLiveSessions.meetingPreset", "Preset")} value={presets.find((p) => p.id === selectedPresetId)?.name ?? String(selectedPresetId)} />}
                       {isWebinar && <ReviewRow label={t("adminLiveSessions.requireRegistration", "Registration")} value={registrationRequired ? t("liveSessions.yes", "Yes") : t("liveSessions.no", "No")} />}
