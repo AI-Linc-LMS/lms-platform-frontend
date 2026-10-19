@@ -113,14 +113,20 @@ function SetPasswordInner() {
           </Typography>
         </Box>
 
+        {/* Field names are new_password / confirm_password because that is what
+            resetPasswordNewOnlySchema validates. Renaming them to camelCase makes
+            Yup validate two fields the form does not render: validation then fails
+            on every submit, Formik never calls onSubmit, and the errors attach to
+            inputs nobody can see - so the button silently does nothing. That was
+            shipped once and reported from a phone. */}
         <Formik
-          initialValues={{ password: "", confirmPassword: "" }}
+          initialValues={{ new_password: "", confirm_password: "" }}
           validationSchema={resetPasswordNewOnlySchema}
           onSubmit={async (values, { setSubmitting }) => {
             try {
               const res = await accountsService.setPasswordFromOnboarding(
                 token,
-                values.password
+                values.new_password
               );
               setSignInEmail(res.email ?? null);
               setDone(true);
@@ -143,7 +149,7 @@ function SetPasswordInner() {
           {({ errors, touched, isSubmitting }) => (
             <Form noValidate>
               <Stack spacing={2}>
-                <Field name="password">
+                <Field name="new_password">
                   {({ field }: { field: FieldInputProps<string> }) => (
                     <TextField
                       {...field}
@@ -153,13 +159,13 @@ function SetPasswordInner() {
                       autoFocus
                       fullWidth
                       sx={fieldSx}
-                      error={touched.password && Boolean(errors.password)}
-                      helperText={touched.password ? errors.password : " "}
+                      error={touched.new_password && Boolean(errors.new_password)}
+                      helperText={touched.new_password ? errors.new_password : " "}
                     />
                   )}
                 </Field>
 
-                <Field name="confirmPassword">
+                <Field name="confirm_password">
                   {({ field }: { field: FieldInputProps<string> }) => (
                     <TextField
                       {...field}
@@ -168,8 +174,8 @@ function SetPasswordInner() {
                       autoComplete="new-password"
                       fullWidth
                       sx={fieldSx}
-                      error={touched.confirmPassword && Boolean(errors.confirmPassword)}
-                      helperText={touched.confirmPassword ? errors.confirmPassword : " "}
+                      error={touched.confirm_password && Boolean(errors.confirm_password)}
+                      helperText={touched.confirm_password ? errors.confirm_password : " "}
                     />
                   )}
                 </Field>
