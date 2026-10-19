@@ -90,6 +90,41 @@ describe("the set-password form", () => {
     expect(showToast.mock.calls[0][0]).toMatch(/no longer valid/i);
   });
 
+  /**
+   * A toast is gone in three seconds. Browser-checking this flow on a phone, the 400 for
+   * "password is too similar to the username" showed for a moment and then left a form that
+   * looked exactly as it had before the tap - indistinguishable from the field-name bug this
+   * page already shipped once. The refusal has to stay on the page.
+   */
+  it("keeps the server's refusal on the page after the toast is gone", async () => {
+    setPasswordFromOnboarding.mockRejectedValue({
+      response: { data: { detail: "The password is too similar to the username." } },
+    });
+    await renderPage();
+    fill("Str0ngPassw0rd");
+    fireEvent.click(screen.getByRole("button", { name: /set password/i }));
+
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent(/too similar to the username/i);
+  });
+
+  it("clears the previous refusal when the learner tries again", async () => {
+    setPasswordFromOnboarding.mockRejectedValueOnce({
+      response: { data: { detail: "The password is too similar to the username." } },
+    });
+    await renderPage();
+    fill("Str0ngPassw0rd");
+    fireEvent.click(screen.getByRole("button", { name: /set password/i }));
+    await screen.findByRole("alert");
+
+    setPasswordFromOnboarding.mockResolvedValue({ detail: "ok", email: "asha@school.test" });
+    fill("An0therPassw0rd");
+    fireEvent.click(screen.getByRole("button", { name: /set password/i }));
+
+    expect(await screen.findByText(/your password is set/i)).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+
   it("does not call the API when the two passwords differ", async () => {
     await renderPage();
     fill("Str0ngPassw0rd", "Different0ne");
