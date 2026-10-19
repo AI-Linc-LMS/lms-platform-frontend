@@ -172,6 +172,23 @@ export const accountsService = {
     return response.data;
   },
 
+  /**
+   * Redeem the single-use link an admin-added learner was emailed.
+   *
+   * No auth header: the learner has no password yet, so the token IS the credential. The
+   * backend scopes it to this tenant and marks it spent in the same transaction as the write.
+   */
+  setPasswordFromOnboarding: async (
+    token: string,
+    password: string
+  ): Promise<{ detail: string; email?: string }> => {
+    const response = await apiClient.post<{ detail: string; email?: string }>(
+      `/accounts/clients/${config.clientId}/user/set-password/`,
+      { token, password }
+    );
+    return response.data;
+  },
+
   resendPasswordResetOtp: async (email: string): Promise<{ detail: string }> => {
     const response = await apiClient.post<{ detail: string }>(
       `/accounts/clients/${config.clientId}/user/resend-password-reset-otp/`,
