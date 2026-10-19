@@ -438,6 +438,37 @@ export interface CreateZoomOptions {
   passcode?: string;
   registration_required?: boolean;
   recurrence?: LiveSessionRecurrence;
+  /**
+   * Which Zoom user hosts this session. Blank keeps the tenant default.
+   *
+   * A Zoom user can host one live session at a time, so a tenant running two batches at the
+   * same hour needs two licensed hosts AND a session pointed at each. Agileology bought the
+   * second licence and every session stayed on the default, because nothing in this UI could
+   * send a host - the backend has accepted one since #1003.
+   *
+   * It is set at CREATION or not at all: Zoom cannot re-host a webinar afterwards.
+   */
+  zoom_host_user?: string;
+}
+
+/** A Zoom user the tenant can create sessions under (GET zoom/hosts/). */
+export interface ZoomHost {
+  email: string;
+  name: string;
+  user_id: string;
+  /** "Licensed", "Basic", ... as Zoom reports it. */
+  licence: string;
+  /** true / false / null, where null means Zoom would not say - offer it with a caveat. */
+  can_host_webinar: boolean | null;
+  detail: string;
+}
+
+export interface ZoomHostList {
+  hosts: ZoomHost[];
+  /** TenantZoomConfig.zoom_host_user - what a session with no host of its own will use. */
+  default_host: string;
+  /** How many sessions this tenant can run at once. A lower bound when a probe was undetermined. */
+  webinar_host_count: number;
 }
 
 /** Native Zoom webinar template (GET zoom/webinar-templates/). */
@@ -1057,6 +1088,19 @@ export const adminLiveActivitiesService = {
       input
     );
     return response.data;
+  },
+
+  /**
+   * The Zoom users this tenant can host under. Read from Zoom rather than configured, so a
+   * newly-bought licence appears without a deploy and a lapsed one stops being offered.
+   */
+  getZoomHosts: async (refresh = false): Promise<ZoomHostList> => {
+    const response = await apiClient.get<ZoomApiResponse<ZoomHostList>>(
+      `${BASE}/zoom/hosts/${refresh ? "?refresh=1" : ""}`
+    );
+    return (
+      response.data.data ?? { hosts: [], default_host: "", webinar_host_count: 0 }
+    );
   },
 
   // ── Webinar management ─────────────────────────────────────────────────────
