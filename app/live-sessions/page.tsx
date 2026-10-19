@@ -294,10 +294,25 @@ export default function LiveSessionsPage() {
     });
   }, [instances]);
 
+  /**
+   * EVERY session that is live right now, not just the first one.
+   *
+   * This used to be a `.find()`, and `upcoming` below keeps only `meeting_status === "scheduled"`
+   * - so a SECOND simultaneous class was neither the hero nor in the list, and disappeared from
+   * the page completely. Seen on Agileology: two 18:00 webinars on two different Zoom hosts (the
+   * whole point of having two licences), and a student could only ever reach one of them.
+   *
+   * Two at once is not an edge case here. It is what a tenant with two licensed hosts buys.
+   */
+  const liveList = useMemo(
+    () => instances.filter((s) => s.meeting_status === "live" && s.notice_type !== "cancelled"),
+    [instances],
+  );
+
   const live = useMemo(() => {
     // A cancelled session must never drive the LIVE hero: the meeting still exists and is
     // joinable, so without this the student is offered "Join now" for a class that is off.
-    const reallyLive = instances.find((s) => s.meeting_status === "live" && s.notice_type !== "cancelled");
+    const reallyLive = liveList[0];
     if (reallyLive) return reallyLive;
     // Belt and braces: the wall clock is inside a session's window but this snapshot of the list
     // still says "scheduled" (it was fetched before the flip). Promote it to the hero so Join
@@ -317,7 +332,7 @@ export default function LiveSessionsPage() {
       if (Number.isNaN(start)) return false;
       return start <= now && now <= start + (s.duration_minutes || 60) * 60_000;
     });
-  }, [instances]);
+  }, [instances, liveList]);
 
   // This calendar shows live sessions and nothing else - it is the Live Sessions page, and the
   // assessment/interview dots it also carried belonged to other modules' surfaces. Built from the
@@ -424,11 +439,19 @@ export default function LiveSessionsPage() {
     return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
   }, [selectedDay]);
 
+  /** Every live class gets its own hero. Normally one; two when two batches run at once. */
+  const heroes = useMemo(() => {
+    const out = [...liveList];
+    // The clock-promoted session (still "scheduled" in this payload) is not in liveList.
+    if (live && !out.includes(live)) out.unshift(live);
+    return out;
+  }, [liveList, live]);
+
   const upcoming = useMemo(
     // `s !== live` matters only for a clock-promoted hero (still "scheduled" in the payload):
     // a session shown as LIVE NOW must not also be listed as upcoming.
-    () => instances.filter((s) => s.meeting_status === "scheduled" && s !== live && matchesSelectedDay(s)).sort((a, b) => (a.class_datetime || "").localeCompare(b.class_datetime || "")),
-    [instances, live, matchesSelectedDay],
+    () => instances.filter((s) => s.meeting_status === "scheduled" && !heroes.includes(s) && matchesSelectedDay(s)).sort((a, b) => (a.class_datetime || "").localeCompare(b.class_datetime || "")),
+    [instances, heroes, matchesSelectedDay],
   );
   // The "STARTS NEXT" crown belongs to the first date that is actually going ahead — a cancelled
   // series sorted to the top used to take it and run a live countdown under its own red banner.
@@ -531,8 +554,10 @@ export default function LiveSessionsPage() {
       ) : (
         <>
           {/* LIVE NOW hero */}
-          {live && (
-            <Box sx={{ borderRadius: 4, overflow: "hidden", color: "#fff", mb: 2.5,
+          {/* One per live class. `live` is shadowed by the map parameter, so the card
+              body below is unchanged - it already renders exactly one session. */}
+          {heroes.map((live) => (
+            <Box key={live.occurrence_id ?? live.id} sx={{ borderRadius: 4, overflow: "hidden", color: "#fff", mb: 2.5,
               background: "radial-gradient(120% 140% at 90% 0%, #14532d 0%, #052e16 55%, #022c22 100%)",
               // Without this a long agenda line gives the grid child a min-content floor wider than
               // the screen, and the whole page starts sliding sideways.
@@ -617,7 +642,7 @@ export default function LiveSessionsPage() {
                 )}
               </Box>
             </Box>
-          )}
+          ))}
 
           {/* KPI cards */}
           {stats && (
