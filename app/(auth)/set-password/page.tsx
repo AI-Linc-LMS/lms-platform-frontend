@@ -14,6 +14,7 @@ import { LoadingButton } from "@/components/common/LoadingButton";
 import {
   AUTH,
   CONTROL_HEIGHT,
+  EASE,
   FONT,
   RADIUS,
   TYPE,
@@ -40,13 +41,34 @@ const primaryBtnSx = {
   "&:disabled": { background: AUTH.violet, color: "#ffffff", opacity: 0.45 },
 } as const;
 
+/**
+ * Copied from the forgot-password field, which is this page's nearest sibling.
+ *
+ * `hairlineRing` and `focusRing` are FUNCTIONS. Spreading one (`...hairlineRing`) contributes
+ * nothing and assigning one as a style value is dropped, so the first version of this page
+ * silently fell back to MUI's own outline - which looks close enough that it shipped. Call them.
+ */
 const fieldSx = {
   "& .MuiOutlinedInput-root": {
-    height: CONTROL_HEIGHT,
-    borderRadius: RADIUS,
+    minHeight: CONTROL_HEIGHT,
+    borderRadius: `${RADIUS}px`,
+    backgroundColor: AUTH.surface,
     fontFamily: FONT,
-    ...hairlineRing,
-    "&.Mui-focused": focusRing,
+    fontSize: { xs: 16, sm: 15 },
+    color: AUTH.ink,
+    boxShadow: hairlineRing(),
+    transition: `box-shadow 160ms ${EASE}`,
+    "& fieldset": { border: "none" },
+    "&:hover": { boxShadow: hairlineRing("#d5d8e3") },
+    "&.Mui-focused": { boxShadow: focusRing() },
+    "&.Mui-error": { boxShadow: hairlineRing(AUTH.error) },
+  },
+  "& .MuiOutlinedInput-input": { padding: "11px 14px" },
+  "& .MuiFormHelperText-root": {
+    marginLeft: 0,
+    marginTop: 0.75,
+    fontFamily: FONT,
+    fontSize: "0.75rem",
   },
 } as const;
 
@@ -57,6 +79,10 @@ function SetPasswordInner() {
   const token = (params.get("token") || "").trim();
   const [done, setDone] = useState(false);
   const [signInEmail, setSignInEmail] = useState<string | null>(null);
+  // A toast is gone in three seconds. On a phone that leaves a form that looks untouched,
+  // which reads as "the button did nothing" - the same complaint the field-name bug produced.
+  // So the server's refusal also stays on the page until the next attempt.
+  const [serverError, setServerError] = useState<string | null>(null);
 
   // A visit with no token is someone who opened the bare URL, or a mail client that mangled
   // the link. Say so here rather than letting them type a password into a form that cannot
@@ -123,6 +149,7 @@ function SetPasswordInner() {
           initialValues={{ new_password: "", confirm_password: "" }}
           validationSchema={resetPasswordNewOnlySchema}
           onSubmit={async (values, { setSubmitting }) => {
+            setServerError(null);
             try {
               const res = await accountsService.setPasswordFromOnboarding(
                 token,
@@ -134,13 +161,12 @@ function SetPasswordInner() {
               // The server's own message is the useful one: it distinguishes a spent or
               // expired link ("ask your administrator for a new one") from a weak password,
               // and a generic "something went wrong" would send the learner nowhere.
-              showToast(
-                getAxiosErrorDetail(
-                  err,
-                  "That did not work. Try the link again, or use Forgot password."
-                ),
-                "error"
+              const detail = getAxiosErrorDetail(
+                err,
+                "That did not work. Try the link again, or use Forgot password."
               );
+              setServerError(detail);
+              showToast(detail, "error");
             } finally {
               setSubmitting(false);
             }
@@ -179,6 +205,25 @@ function SetPasswordInner() {
                     />
                   )}
                 </Field>
+
+                {serverError ? (
+                  <Box
+                    role="alert"
+                    sx={{
+                      borderRadius: `${RADIUS}px`,
+                      backgroundColor: AUTH.errorSoft,
+                      boxShadow: hairlineRing(AUTH.error),
+                      px: 1.75,
+                      py: 1.25,
+                    }}
+                  >
+                    <Typography
+                      sx={{ ...TYPE.body, color: AUTH.error, fontSize: "0.85rem" }}
+                    >
+                      {serverError}
+                    </Typography>
+                  </Box>
+                ) : null}
 
                 <LoadingButton
                   type="submit"
