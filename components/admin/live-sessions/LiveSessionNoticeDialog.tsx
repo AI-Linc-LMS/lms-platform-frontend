@@ -9,8 +9,10 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
+  FormControlLabel,
   MenuItem,
   Stack,
+  Switch,
   TextField,
   ToggleButton,
   ToggleButtonGroup,
@@ -56,6 +58,10 @@ const REASON_PRESETS = [
 export function LiveSessionNoticeDialog({ open, session, onClose, onSaved }: Props) {
   const [mode, setMode] = useState<"cancelled" | "rescheduled">("cancelled");
   const [reason, setReason] = useState("");
+  // Mail cannot be recalled, so this is a decision made in the moment: a class called off
+  // two minutes after a typo does not want 400 emails; one called off the night before does.
+  // Defaults ON so the behaviour anyone relies on today is the behaviour they keep.
+  const [notifyByEmail, setNotifyByEmail] = useState(true);
   const [when, setWhen] = useState("");
   const [tz, setTz] = useState("");
   const [duration, setDuration] = useState<number | "">("");
@@ -67,6 +73,7 @@ export function LiveSessionNoticeDialog({ open, session, onClose, onSaved }: Pro
     if (!open || !session) return;
     setMode(session.notice_type === "rescheduled" ? "rescheduled" : "cancelled");
     setReason(session.notice_reason || "");
+    setNotifyByEmail(true);
     const zone = session.timezone || tenantTz;
     setWhen(toLocalInputInZone(session.class_datetime, zone));
     // The session's own zone is authoritative; only fall back to the viewer's when it has none.
@@ -87,6 +94,7 @@ export function LiveSessionNoticeDialog({ open, session, onClose, onSaved }: Pro
       await adminLiveActivitiesService.postSessionNotice(session.id, {
         notice_type: mode,
         reason: reason.trim(),
+        notify_students: notifyByEmail,
         ...(mode === "rescheduled"
           ? {
               class_datetime: when,
@@ -174,6 +182,33 @@ export function LiveSessionNoticeDialog({ open, session, onClose, onSaved }: Pro
                 </Button>
               ))}
             </Stack>
+          </Box>
+
+          {/* The banner and the in-app notice are NOT part of this choice - a student must always
+              be able to find out the class is off. Only the email is optional. */}
+          <Box sx={{ borderRadius: 2, border: "1px solid", borderColor: "divider", px: 1.75, py: 1.25 }}>
+            <FormControlLabel
+              sx={{ m: 0, alignItems: "flex-start" }}
+              control={
+                <Switch
+                  checked={notifyByEmail}
+                  onChange={(e) => setNotifyByEmail(e.target.checked)}
+                  sx={{ mr: 1 }}
+                />
+              }
+              label={
+                <Box>
+                  <Typography sx={{ fontWeight: 700, fontSize: "0.88rem" }}>
+                    Email the students
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.78rem", color: "text.secondary" }}>
+                    {notifyByEmail
+                      ? "Everyone on this session gets an email as well as the notice on their Live Sessions screen."
+                      : "No email is sent. Students still see the notice and the reason on their Live Sessions screen."}
+                  </Typography>
+                </Box>
+              }
+            />
           </Box>
 
           {mode === "rescheduled" && (

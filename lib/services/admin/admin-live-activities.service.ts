@@ -619,6 +619,11 @@ export const adminLiveActivitiesService = {
       class_datetime?: string;
       timezone?: string;
       duration_minutes?: number;
+      /**
+       * Email the audience as well as showing them the notice. Omitted means true, so an older
+       * client keeps today's behaviour; the in-app notice is sent either way.
+       */
+      notify_students?: boolean;
     }
   ): Promise<LiveActivity> => {
     const response = await apiClient.post<LiveActivity>(
