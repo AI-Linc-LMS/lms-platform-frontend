@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef } from "react";
 import { Box } from "@mui/material";
 import { createRoot, type Root } from "react-dom/client";
 import { sanitizeHtml } from "./sanitizeHtml";
@@ -46,7 +46,111 @@ function slugify(text: string, i: number): string {
  *  - optionally reveals the prose word-by-word.
  * All DOM-walked so it never corrupts the HTML.
  */
-export function AdaptiveArticleBody({ html, explainTerms, onExplain, reveal = false, onHeadings, onSegments }: AdaptiveArticleBodyProps) {
+// The body's styling is a ~70-property static block with no closure variable in it, so it
+// lives at module scope. Inline, it was a fresh object on every render, and emotion
+// re-serialised the whole thing on every scroll frame while the reading-progress bar was
+// re-rendering the page. See the memo below for the other half of that fix.
+const BODY_SX = {
+        color: "var(--font-secondary)",
+        lineHeight: 1.85,
+        fontSize: "1.02rem",
+        // Cap prose to a comfortable measure; let media/code break out to full width.
+        // Aligned left, NOT centred: the capped prose and the full-width code/table blocks have to
+        // share one left edge. `mx: "auto"` centred the 824px prose inside a ~1150px column while
+        // code and tables started at 0, so the body read as two different margins.
+        "& .article-content > *": { maxWidth: { xs: "100%", md: 824 }, ml: 0, mr: "auto" },
+        "& .article-content > figure, & .article-content > .article-code-mount, & .article-content > pre, & .article-content > .article-table-wrap":
+          { maxWidth: "100%" },
+        "& h1, & h2, & h3, & h4": { color: "var(--font-primary)", fontWeight: 800, lineHeight: 1.3 },
+        "& h2": { mt: 4, mb: 1.5, fontSize: "1.5rem" },
+        "& h3": { mt: 3, mb: 1, fontSize: "1.2rem" },
+        "& p": { mb: 1.6 },
+        "& ul, & ol": { pl: 3, mb: 1.6 },
+        "& li": { mb: 0.5 },
+        "& a": { color: "var(--accent-indigo, #6366f1)" },
+        "& code": {
+          fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
+          fontSize: "0.88em",
+          bgcolor: "color-mix(in srgb, #6366f1 12%, transparent)",
+          px: 0.5,
+          py: "1px",
+          borderRadius: 0.75,
+        },
+        "& pre": { borderRadius: 2, overflowX: "auto" },
+        "& pre code": { bgcolor: "transparent", px: 0, py: 0 },
+        // Tables carried no borders, padding or header treatment, so a real <table> rendered as
+        // bare columns of text and read as "the table did not render".
+        "& .article-table-wrap": {
+          my: 3,
+          overflowX: "auto",
+          borderRadius: 2,
+          border: "1px solid var(--border-default)",
+        },
+        "& table": {
+          width: "100%",
+          borderCollapse: "collapse",
+          fontSize: "0.95rem",
+          // Keep columns readable rather than letting one long cell crush the rest; the wrapper
+          // scrolls instead of the page.
+          minWidth: 420,
+        },
+        "& thead th, & th": {
+          textAlign: "left",
+          fontWeight: 800,
+          color: "var(--font-primary)",
+          bgcolor: "color-mix(in srgb, #6366f1 10%, transparent)",
+          px: 1.75,
+          py: 1.25,
+          whiteSpace: "nowrap",
+          borderBottom: "1px solid var(--border-default)",
+        },
+        "& td": {
+          px: 1.75,
+          py: 1.15,
+          verticalAlign: "top",
+          borderBottom: "1px solid color-mix(in srgb, var(--border-default) 60%, transparent)",
+        },
+        "& tbody tr:last-of-type td": { borderBottom: "none" },
+        "& tbody tr:hover td": { bgcolor: "color-mix(in srgb, #6366f1 4%, transparent)" },
+        "& figure": { my: 3 },
+        "& figcaption": {
+          mt: 1,
+          fontSize: "0.82rem",
+          color: "var(--font-secondary)",
+          opacity: 0.85,
+          lineHeight: 1.5,
+        },
+        "& img": {
+          maxWidth: "100%",
+          height: "auto",
+          borderRadius: 3,
+          display: "block",
+          border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
+        },
+        "& .reveal-unit": { transition: "opacity 0.32s ease" },
+        // The block Read aloud is speaking. Background and an inset rule only - no border,
+        // no padding, no margin - so the highlight moving down the article can never
+        // reflow the text under the learner's eyes.
+        "& [data-narrating='true']": {
+          backgroundColor: "color-mix(in srgb, #6366f1 13%, transparent)",
+          boxShadow: "inset 3px 0 0 0 color-mix(in srgb, #6366f1 85%, transparent)",
+          borderRadius: "6px",
+          transition: "background-color 0.25s ease, box-shadow 0.25s ease",
+          "@media (prefers-reduced-motion: reduce)": { transition: "none" },
+        },
+        "& .explain-term": {
+          cursor: "pointer",
+          textDecoration: "underline dotted",
+          textUnderlineOffset: "3px",
+          textDecorationColor: "color-mix(in srgb, #a855f7 70%, transparent)",
+          bgcolor: "color-mix(in srgb, #a855f7 8%, transparent)",
+          borderRadius: 0.5,
+          px: 0.25,
+          "&:hover": { bgcolor: "color-mix(in srgb, #a855f7 18%, transparent)" },
+        },
+} as const;
+
+function AdaptiveArticleBodyInner({ html, explainTerms, onExplain, reveal = false, onHeadings, onSegments }: AdaptiveArticleBodyProps) {
   const ref = useRef<HTMLDivElement | null>(null);
   const onExplainRef = useRef(onExplain);
   const onHeadingsRef = useRef(onHeadings);
@@ -220,105 +324,21 @@ export function AdaptiveArticleBody({ html, explainTerms, onExplain, reveal = fa
   return (
     <Box
       ref={ref}
-      sx={{
-        color: "var(--font-secondary)",
-        lineHeight: 1.85,
-        fontSize: "1.02rem",
-        // Cap prose to a comfortable measure; let media/code break out to full width.
-        // Aligned left, NOT centred: the capped prose and the full-width code/table blocks have to
-        // share one left edge. `mx: "auto"` centred the 824px prose inside a ~1150px column while
-        // code and tables started at 0, so the body read as two different margins.
-        "& .article-content > *": { maxWidth: { xs: "100%", md: 824 }, ml: 0, mr: "auto" },
-        "& .article-content > figure, & .article-content > .article-code-mount, & .article-content > pre, & .article-content > .article-table-wrap":
-          { maxWidth: "100%" },
-        "& h1, & h2, & h3, & h4": { color: "var(--font-primary)", fontWeight: 800, lineHeight: 1.3 },
-        "& h2": { mt: 4, mb: 1.5, fontSize: "1.5rem" },
-        "& h3": { mt: 3, mb: 1, fontSize: "1.2rem" },
-        "& p": { mb: 1.6 },
-        "& ul, & ol": { pl: 3, mb: 1.6 },
-        "& li": { mb: 0.5 },
-        "& a": { color: "var(--accent-indigo, #6366f1)" },
-        "& code": {
-          fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
-          fontSize: "0.88em",
-          bgcolor: "color-mix(in srgb, #6366f1 12%, transparent)",
-          px: 0.5,
-          py: "1px",
-          borderRadius: 0.75,
-        },
-        "& pre": { borderRadius: 2, overflowX: "auto" },
-        "& pre code": { bgcolor: "transparent", px: 0, py: 0 },
-        // Tables carried no borders, padding or header treatment, so a real <table> rendered as
-        // bare columns of text and read as "the table did not render".
-        "& .article-table-wrap": {
-          my: 3,
-          overflowX: "auto",
-          borderRadius: 2,
-          border: "1px solid var(--border-default)",
-        },
-        "& table": {
-          width: "100%",
-          borderCollapse: "collapse",
-          fontSize: "0.95rem",
-          // Keep columns readable rather than letting one long cell crush the rest; the wrapper
-          // scrolls instead of the page.
-          minWidth: 420,
-        },
-        "& thead th, & th": {
-          textAlign: "left",
-          fontWeight: 800,
-          color: "var(--font-primary)",
-          bgcolor: "color-mix(in srgb, #6366f1 10%, transparent)",
-          px: 1.75,
-          py: 1.25,
-          whiteSpace: "nowrap",
-          borderBottom: "1px solid var(--border-default)",
-        },
-        "& td": {
-          px: 1.75,
-          py: 1.15,
-          verticalAlign: "top",
-          borderBottom: "1px solid color-mix(in srgb, var(--border-default) 60%, transparent)",
-        },
-        "& tbody tr:last-of-type td": { borderBottom: "none" },
-        "& tbody tr:hover td": { bgcolor: "color-mix(in srgb, #6366f1 4%, transparent)" },
-        "& figure": { my: 3 },
-        "& figcaption": {
-          mt: 1,
-          fontSize: "0.82rem",
-          color: "var(--font-secondary)",
-          opacity: 0.85,
-          lineHeight: 1.5,
-        },
-        "& img": {
-          maxWidth: "100%",
-          height: "auto",
-          borderRadius: 3,
-          display: "block",
-          border: "1px solid color-mix(in srgb, var(--border-default) 70%, transparent)",
-        },
-        "& .reveal-unit": { transition: "opacity 0.32s ease" },
-        // The block Read aloud is speaking. Background and an inset rule only - no border,
-        // no padding, no margin - so the highlight moving down the article can never
-        // reflow the text under the learner's eyes.
-        "& [data-narrating='true']": {
-          backgroundColor: "color-mix(in srgb, #6366f1 13%, transparent)",
-          boxShadow: "inset 3px 0 0 0 color-mix(in srgb, #6366f1 85%, transparent)",
-          borderRadius: "6px",
-          transition: "background-color 0.25s ease, box-shadow 0.25s ease",
-          "@media (prefers-reduced-motion: reduce)": { transition: "none" },
-        },
-        "& .explain-term": {
-          cursor: "pointer",
-          textDecoration: "underline dotted",
-          textUnderlineOffset: "3px",
-          textDecorationColor: "color-mix(in srgb, #a855f7 70%, transparent)",
-          bgcolor: "color-mix(in srgb, #a855f7 8%, transparent)",
-          borderRadius: 0.5,
-          px: 0.25,
-          "&:hover": { bgcolor: "color-mix(in srgb, #a855f7 18%, transparent)" },
-        },
-      }}
+      sx={BODY_SX}
     />
   );
 }
+
+/**
+ * Only `html`, `explainTerms` and `reveal` are compared, because those are exactly the
+ * dependencies of the effect that rebuilds the article DOM. The three callbacks are read
+ * through refs inside the component, so a caller passing an inline arrow (which is what the
+ * article page does) cannot silently defeat this and drag the whole article subtree back into
+ * every parent render.
+ *
+ * Why this matters: the reading-progress bar calls setState on every scroll event, so the
+ * article page re-renders continuously while the learner scrolls. Without this, each of those
+ * renders walked the article body too.
+ */
+export const AdaptiveArticleBody = React.memo(AdaptiveArticleBodyInner, (a, b) =>
+  a.html === b.html && a.explainTerms === b.explainTerms && a.reveal === b.reveal);
