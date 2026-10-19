@@ -117,6 +117,10 @@ export function proxy(request: NextRequest) {
     "/login",
     "/forgot-password",
     "/reset-password",
+    // An added learner arrives here from an email with no session and no password. Without
+    // this the route 307s to /login and the redirect DROPS the token, so the only way into
+    // the account is lost at the door.
+    "/set-password",
     "/auth/handoff",
     // Public credential verification pages — anyone (incl. LinkedIn's crawler) can open these.
     "/credentials",
