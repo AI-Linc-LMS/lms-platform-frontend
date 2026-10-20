@@ -46,9 +46,35 @@ export function nodeLabel(n: JourneyNodeView): { main: string; sub?: string; ai?
   return { main: "STEP" };
 }
 
-export const NODE_STYLE: Record<string, { color: string; bg: string; icon: string }> = {
-  topic: { color: "#6366f1", bg: "#eef2ff", icon: "mdi:book-open-page-variant" },
-  checkpoint: { color: "#a855f7", bg: "#f5f3ff", icon: "mdi:shield-check" },
-  week_final: { color: "#f59e0b", bg: "#fff7ed", icon: "mdi:flag-checkered" },
-  interview: { color: "#db2777", bg: "#fdf2f8", icon: "mdi:account-voice" },
+/**
+ * How each kind of step is coloured.
+ *
+ * `bg` tints the small icon tile. `surface` and `border` tint the CARD, which until now was
+ * white for every kind - so a checkpoint, an interview and a resume nudge were distinguishable
+ * only by a 4px stripe down the left edge, and on a near-white page they all read as one
+ * undifferentiated stack. Each kind now carries its own hue at card scale: indigo for a topic,
+ * violet for a checkpoint, amber for a week-final, pink for the interview, emerald for the
+ * resume and blue for the roles.
+ *
+ * The tints are deliberately shallow (roughly a 4% wash). They have to separate the cards from
+ * the page and from each other without competing with the text on them, and anything stronger
+ * turns a list of ten steps into a paint chart.
+ */
+export const NODE_STYLE: Record<
+  string,
+  { color: string; bg: string; icon: string; surface: string; border: string }
+> = {
+  topic: { color: "#6366f1", bg: "#eef2ff", icon: "mdi:book-open-page-variant",
+           surface: "#f8f9ff", border: "#e0e4fb" },
+  checkpoint: { color: "#a855f7", bg: "#f5f3ff", icon: "mdi:shield-check",
+                surface: "#fbf8ff", border: "#ebe1fb" },
+  week_final: { color: "#f59e0b", bg: "#fff7ed", icon: "mdi:flag-checkered",
+                surface: "#fffaf3", border: "#fae8d2" },
+  interview: { color: "#db2777", bg: "#fdf2f8", icon: "mdi:account-voice",
+               surface: "#fff7fb", border: "#fbdcea" },
+  /** The two career halves. Not node types - the station reads them by name. */
+  resume: { color: "#0d9488", bg: "#ecfdf7", icon: "mdi:file-account-outline",
+            surface: "#f4fdfa", border: "#cdeee4" },
+  jobs: { color: "#2563eb", bg: "#eff6ff", icon: "mdi:briefcase-outline",
+          surface: "#f5f9ff", border: "#d8e6fd" },
 };
