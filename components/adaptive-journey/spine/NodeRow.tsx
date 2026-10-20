@@ -105,7 +105,7 @@ export function NodeRow({
   // A mock interview is painted dark, like the calibration card at the top of the page: it is
   // an event rather than another row of the course. Everything that writes on the card takes
   // its colour from here, so adding a dark kind never leaves grey-on-navy text behind.
-  const { dark, ink, accent, background, baseColor } = nodeInk(node.type);
+  const { dark, ink, accent, background, baseColor } = nodeInk(node.type, node.status === "locked");
   const done = node.status === "done";
   const current = node.status === "current";
   const locked = node.status === "locked";
@@ -150,7 +150,11 @@ export function NodeRow({
           boxShadow: dark
             ? "0 18px 40px -22px rgba(15,23,42,0.7)"
             : current ? `0 4px 14px -14px ${ns.color}` : "0 1px 2px rgba(16,24,40,0.04)",
-          opacity: locked ? 0.72 : 1,
+          // A dark card cannot be dimmed with `opacity`: over a white page that composites it
+          // toward white and washes the hue out, which is what made the locked career station
+          // read as grey mud. A dark card carries locked COLOURS instead (see nodeInk); only
+          // the pale cards fade.
+          opacity: locked && !dark ? 0.72 : 1,
           cursor: navigable ? "pointer" : "default",
           transition: "border-color .15s",
           "&:hover": navigable ? { borderColor: dark ? "rgba(255,255,255,0.22)" : "#cbd5e1" } : {},

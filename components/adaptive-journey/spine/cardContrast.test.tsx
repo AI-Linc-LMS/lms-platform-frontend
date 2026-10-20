@@ -18,6 +18,9 @@
  * luminance threshold that only describes one of the two.
  */
 
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
@@ -29,6 +32,8 @@ vi.mock("next/link", () => ({
     <a href={href}>{children}</a>
   ),
 }));
+
+const read = (p: string) => readFileSync(join(__dirname, "..", "..", "..", p), "utf8");
 
 const KINDS = ["topic", "checkpoint", "week_final", "interview", "resume", "jobs"] as const;
 /** The three the reporter named: they must read as a different kind of thing from a lesson. */
@@ -200,6 +205,72 @@ describe("the card palette", () => {
       expect(contrastRatio(accent, baseOf(k)), `${k} accent`).toBeGreaterThanOrEqual(
         MIN_TEXT_RATIO,
       );
+    }
+  });
+});
+
+/**
+ * Locked is the state almost every learner is in.
+ *
+ * The stations sit at 33%, 66% and 100%, so until a learner is a third of the way through the
+ * course all three are locked - locked IS the default appearance of this feature, not an edge
+ * case. The first cut drew it with `opacity: 0.72`, which does not dim a dark card: over a
+ * white page it composites it toward white. `#0b3330` rendered as `#4f6c6a` and `#13295a` as
+ * `#556588` - two muddy greys, barely distinguishable from each other, with the hue gone.
+ * Every assertion here exists because looking at the unlocked state alone missed all of it.
+ */
+describe("a locked station still looks like itself", () => {
+  it("stays dark instead of fading toward the page", () => {
+    for (const k of DARK_KINDS) {
+      const locked = nodeInk(k, true);
+      expect(locked.dark, k).toBe(true);
+      expect(luminance(locked.baseColor), `${k} locked base`).toBeLessThan(0.1);
+    }
+  });
+
+  it("never expresses locked as transparency on a dark card", () => {
+    // The mechanism, not the symptom: an opacity on a dark card over a white page is the bug.
+    const station = read("components/adaptive-journey/spine/CareerStation.tsx");
+    expect(station).not.toMatch(/opacity:\s*locked/);
+    const row = read("components/adaptive-journey/spine/NodeRow.tsx");
+    // NodeRow still fades the PALE cards, which is correct - but only those.
+    expect(row).toMatch(/opacity:\s*locked\s*&&\s*!dark/);
+  });
+
+  it("keeps each kind its own colour when locked", () => {
+    for (let i = 0; i < DARK_KINDS.length; i += 1) {
+      for (let j = i + 1; j < DARK_KINDS.length; j += 1) {
+        const [a, b] = [DARK_KINDS[i], DARK_KINDS[j]];
+        expect(
+          deltaE(nodeInk(a, true).baseColor, nodeInk(b, true).baseColor),
+          `locked ${a} vs locked ${b}`,
+        ).toBeGreaterThanOrEqual(MIN_PAIR_DE);
+      }
+    }
+  });
+
+  it("still reads as locked — different from the same card unlocked", () => {
+    for (const k of DARK_KINDS) {
+      expect(
+        deltaE(nodeInk(k, true).baseColor, nodeInk(k, false).baseColor),
+        `${k} locked vs unlocked`,
+      ).toBeGreaterThanOrEqual(5);
+    }
+  });
+
+  it("keeps its ink legible in both states", () => {
+    for (const k of DARK_KINDS) {
+      for (const lock of [false, true]) {
+        const { ink, accent, baseColor } = nodeInk(k, lock);
+        const label = `${k}${lock ? " locked" : ""}`;
+        expect(
+          contrastRatio(composite(ink.body, baseColor), baseColor),
+          `${label} body`,
+        ).toBeGreaterThanOrEqual(MIN_TEXT_RATIO);
+        expect(contrastRatio(accent, baseColor), `${label} accent`).toBeGreaterThanOrEqual(
+          MIN_TEXT_RATIO,
+        );
+      }
     }
   });
 });
