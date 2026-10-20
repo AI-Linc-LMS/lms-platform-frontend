@@ -1776,3 +1776,19 @@ body:has(.jobs-scope) .MuiAutocomplete-paper {
 .MuiInputBase-root:has(.MuiInputAdornment-positionEnd) input::-ms-clear {
   display: none;
 }
+
+/* A sticky side rail needs an ancestor chain that is not a dead scroll container.
+   -------------------------------------------------------------------------------
+   `.app-scroll-column` carries `overflow: auto` on the app shell. That is deliberate and
+   load-bearing - dropping it is what forced the #1148 revert, because then no ancestor was a
+   scroll container and content past the viewport became unreachable. But `overflow` of
+   anything other than `visible` also makes the element a scroll container, and a
+   `position: sticky` child is offset against its NEAREST scroll container. Those columns are
+   auto-height, so they never scroll, so a sticky child of them never sticks. Measured in
+   Chromium on the real geometry: the rail scrolled away to -820px instead of holding at 80px.
+
+   So the columns are relaxed only on a page that actually has a sticky rail. Every other
+   route keeps `overflow: auto` exactly as before. */
+body:has([data-sticky-rail]) .app-scroll-column {
+  overflow: visible;
+}

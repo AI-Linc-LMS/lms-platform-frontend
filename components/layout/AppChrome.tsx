@@ -121,6 +121,7 @@ function ChromeShell({ children }: { children: React.ReactNode }) {
     <ChromeProvider value={true}>
       <MobileMenuProvider>
       <Box
+        className="app-scroll-column"
         sx={{
           // Scroll-container geometry copied EXACTLY from MainLayout's
           // non-fullPage path. Omitting `overflow`/`height` here is the bug
@@ -151,6 +152,7 @@ function ChromeShell({ children }: { children: React.ReactNode }) {
         </Box>
         <Box
           component="main"
+          className="app-scroll-column"
           sx={{
             order: rtl ? 1 : 0,
             direction: rtl ? "rtl" : "ltr",

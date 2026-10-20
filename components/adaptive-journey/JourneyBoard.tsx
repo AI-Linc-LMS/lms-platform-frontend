@@ -194,7 +194,34 @@ export function JourneyBoard({ courseId }: { courseId: number; showHeader?: bool
           />
         </Box>
 
-        <Box>
+        {/* Sticky from `lg` up, where the rail is its own column. A long course scrolls for
+            several screens and the rail used to leave an empty gutter behind it.
+
+            `data-sticky-rail` is load-bearing, not a test hook: the app's scroll columns are
+            `overflow: auto`, which makes each one a scroll container that - being auto-height -
+            never actually scrolls, and a sticky child of a scroll container that never scrolls
+            never sticks. Measured in Chromium: with those columns as they are, this rail
+            scrolls away to -820px; with them `visible` it holds at its offset. The attribute
+            drives a scoped rule in globals.css that relaxes them for THIS page only, so the
+            scroll-container geometry every other route depends on (the #1148 revert) is
+            untouched.
+
+            `alignSelf: start` matters too - a grid item stretches to the row height by
+            default, and a full-height item has nothing to stick within. */}
+        <Box
+          data-sticky-rail
+          sx={{
+            position: { lg: "sticky" },
+            top: { lg: 80 },
+            alignSelf: { lg: "start" },
+            // If the panels are taller than the viewport they scroll inside the rail rather
+            // than pushing its bottom off-screen where the leaderboard cannot be read.
+            maxHeight: { lg: "calc(100vh - 96px)" },
+            overflowY: { lg: "auto" },
+            overscrollBehavior: "contain",
+            scrollbarWidth: "thin",
+          }}
+        >
           <JourneySidePanels courseId={courseId} board={board} />
         </Box>
       </Box>
