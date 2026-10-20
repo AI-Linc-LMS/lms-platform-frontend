@@ -60,6 +60,40 @@ export interface CareerJobCard {
   salary: string;
 }
 
+/** One career station on the spine. */
+export interface CareerMilestone {
+  kind: "career";
+  /** 33, 66 or 100 - how far through the course this station sits. */
+  atPercent: number;
+  /** The week it is drawn after. Null only when the course has no weeks. */
+  weekNo: number | null;
+  /** The learner has not reached this point yet. The card still renders, greyed. */
+  locked: boolean;
+  reachedAt: number | null;
+  resume: {
+    title: string;
+    body: string;
+    hasResume: boolean;
+    resumeCount: number;
+    lastSavedAt: string | null;
+    /** "Build resume" when they have none, "Update resume" when they do. */
+    cta: string;
+    href: string;
+  };
+  /** ABSENT when the tenant holds no jobs. Never render an empty jobs card. */
+  jobs?: {
+    title: string;
+    body: string;
+    /** The rail's own wording. Never "matched" - see CareerPanel. */
+    label: string;
+    openCount: number;
+    related: CareerJobCard[];
+    open: CareerJobCard[];
+    cta: string;
+    href: string;
+  };
+}
+
 /**
  * Where the course leads. Note what is NOT here: a relevance score.
  *
@@ -164,6 +198,16 @@ export interface JourneyBoard {
   moduleOnlyStructure?: boolean;
   /** Optional: a board served before the career rail shipped does not carry it. */
   career?: CareerPanel;
+  /**
+   * The career rail's two ideas, placed ON the spine at a third, two thirds and the end.
+   *
+   * `jobs` is ABSENT, not empty, when the tenant has no jobs - Agileology holds zero
+   * JobDescription rows and an empty "roles open to you" card there would sit on every
+   * learner's rail for ever. Render the resume half alone in that case.
+   *
+   * Optional for the same reason `career` is: an older board does not carry it.
+   */
+  careerMilestones?: CareerMilestone[];
   course: {
     id: number;
     title: string;

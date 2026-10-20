@@ -20,6 +20,7 @@ import { SpineRow } from "./SpineRow";
 import { WeekBand } from "./WeekBand";
 import { railEnds, sameRung } from "./railEnds";
 import { Milestones } from "./Milestones";
+import { CareerStation } from "./CareerStation";
 import { courseMilestones } from "./milestoneRules";
 import type { JourneyBoard as JourneyBoardData } from "@/lib/types/adaptive-journey";
 
@@ -74,6 +75,14 @@ export function Spine({
   // A milestone at the end takes over as the rail's bottom end, so the line runs through the
   // last module and into the destination rather than stopping short of it.
   const hasMilestones = courseMilestones(board).length > 0;
+  // Career stations, keyed by the week they are drawn AFTER. The server places them at a third,
+  // two thirds and the end, and guarantees one per week - a course short enough that a third and
+  // two thirds land together keeps only the furthest-along one, so this map cannot lose a card.
+  const stationsByWeek = new Map<number, typeof board.careerMilestones>();
+  for (const m of board.careerMilestones ?? []) {
+    if (m.weekNo === null) continue;
+    stationsByWeek.set(m.weekNo, [...(stationsByWeek.get(m.weekNo) ?? []), m]);
+  }
   const lastStepRung = hasMilestones ? undefined : last;
 
   return (
@@ -108,6 +117,17 @@ export function Spine({
                 />
               );
             })}
+            {(stationsByWeek.get(week.weekNo) ?? []).map((m) => (
+              <SpineRow
+                key={`career-${m.atPercent}`}
+                marker={null}
+                tone={m.locked ? "ahead" : "active"}
+                first={false}
+                last={false}
+              >
+                <CareerStation milestone={m} />
+              </SpineRow>
+            ))}
           </Box>
         );
       })}
