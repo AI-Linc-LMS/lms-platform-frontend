@@ -68,6 +68,7 @@ function MainLayoutContent({
 }: MainLayoutProps) {
   return (
     <Box
+      className="app-scroll-column"
       sx={{
         flexGrow: 1,
         p: fullPage ? 0 : { xs: 2, sm: 3, md: 4 },
@@ -190,6 +191,7 @@ const StandaloneMainLayout: React.FC<MainLayoutProps> = memo(({
           <Box sx={{ minHeight: { xs: "56px", sm: "64px" }, flexShrink: 0 }} />
         )}
         <Box
+          className="app-scroll-column"
           sx={{
             flexGrow: 1,
             p: fullPage ? 0 : { xs: 2, sm: 3, md: 4 },
