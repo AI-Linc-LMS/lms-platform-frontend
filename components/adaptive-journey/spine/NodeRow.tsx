@@ -18,7 +18,7 @@ import { PHONE } from "@/components/common/mobile/phone";
 import type { JourneyNodeView } from "@/lib/types/adaptive-journey";
 import { nodeHref } from "../nodeHref";
 import { journeyScoreDisplay, journeyAvailabilityLine } from "../journeyScoreDisplay";
-import { contentSummary, isAssessmentNode, nodeLabel, NODE_STYLE } from "./nodeVisuals";
+import { contentSummary, isAssessmentNode, nodeInk, nodeLabel, NODE_STYLE } from "./nodeVisuals";
 import { TutorAction } from "./TutorAction";
 import { InterviewAction } from "./InterviewAction";
 import { SpineRow, type RailTone } from "./SpineRow";
@@ -102,6 +102,10 @@ export function NodeRow({
   const [open, setOpen] = useState(false);
   const l = nodeLabel(node);
   const ns = NODE_STYLE[node.type] ?? NODE_STYLE.topic;
+  // A mock interview is painted dark, like the calibration card at the top of the page: it is
+  // an event rather than another row of the course. Everything that writes on the card takes
+  // its colour from here, so adding a dark kind never leaves grey-on-navy text behind.
+  const { dark, ink, accent, background, baseColor } = nodeInk(node.type);
   const done = node.status === "done";
   const current = node.status === "current";
   const locked = node.status === "locked";
@@ -139,13 +143,17 @@ export function NodeRow({
           // Tinted per kind, not white for all of them. The 4px stripe alone was the only
           // thing separating a checkpoint from an interview, and a stripe is invisible once a
           // card is one of ten on a near-white page.
-          borderColor: current ? ns.color + "55" : ns.border,
-          bgcolor: ns.surface,
-          boxShadow: current ? `0 4px 14px -14px ${ns.color}` : "0 1px 2px rgba(16,24,40,0.04)",
+          borderColor: current ? (dark ? ink.hairline : ns.color + "55") : ns.border,
+          backgroundColor: baseColor,
+          backgroundImage: dark ? background : "none",
+          color: dark ? ink.title : undefined,
+          boxShadow: dark
+            ? "0 18px 40px -22px rgba(15,23,42,0.7)"
+            : current ? `0 4px 14px -14px ${ns.color}` : "0 1px 2px rgba(16,24,40,0.04)",
           opacity: locked ? 0.72 : 1,
           cursor: navigable ? "pointer" : "default",
           transition: "border-color .15s",
-          "&:hover": navigable ? { borderColor: "#cbd5e1" } : {},
+          "&:hover": navigable ? { borderColor: dark ? "rgba(255,255,255,0.22)" : "#cbd5e1" } : {},
           // Phone: the row is a thumb target, so it is never shorter than 56px, and it gives up
           // the type tile (the rail marker and the coloured edge already say what it is) so the
           // title keeps the width instead of wrapping every other word.
@@ -166,7 +174,9 @@ export function NodeRow({
                 ? locked
                   ? { color: "#94a3b8", bgcolor: "#f1f5f9" }
                   : { color: "white", background: "linear-gradient(135deg, var(--module-tile-from, #6366f1) 0%, var(--module-tile-to, #a855f7) 100%)" }
-                : { color: ns.color, bgcolor: ns.bg }),
+                : dark
+                  ? { color: accent, bgcolor: ink.tile, border: `1px solid ${ink.hairline}` }
+                  : { color: ns.color, bgcolor: ns.bg }),
               [PHONE]: { display: "none" },
             }}
           >
@@ -176,13 +186,13 @@ export function NodeRow({
           </Box>
           <Box sx={{ minWidth: 0, flex: 1 }}>
             <Stack direction="row" spacing={0.75} alignItems="center" flexWrap="wrap">
-              <Typography sx={{ fontSize: "0.64rem", fontWeight: 800, letterSpacing: 0.6, color: ns.color, [PHONE]: { fontSize: "0.75rem", letterSpacing: 0.4 } }}>{l.main}</Typography>
-              {l.sub && <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.5, color: "#a855f7", [PHONE]: { fontSize: "0.75rem", letterSpacing: 0.3 } }}>· {l.sub}</Typography>}
-              {l.ai && <Chip label="+AI" size="small" sx={{ height: 16, fontSize: "0.56rem", fontWeight: 800, color: "#7c3aed", bgcolor: "#ede9fe", [PHONE]: { height: 20, fontSize: "0.75rem" } }} />}
+              <Typography sx={{ fontSize: "0.64rem", fontWeight: 800, letterSpacing: 0.6, color: accent, [PHONE]: { fontSize: "0.75rem", letterSpacing: 0.4 } }}>{l.main}</Typography>
+              {l.sub && <Typography sx={{ fontSize: "0.6rem", fontWeight: 800, letterSpacing: 0.5, color: dark ? accent : "#a855f7", [PHONE]: { fontSize: "0.75rem", letterSpacing: 0.3 } }}>· {l.sub}</Typography>}
+              {l.ai && <Chip label="+AI" size="small" sx={{ height: 16, fontSize: "0.56rem", fontWeight: 800, color: dark ? ink.title : "#7c3aed", bgcolor: dark ? "rgba(255,255,255,0.14)" : "#ede9fe", [PHONE]: { height: 20, fontSize: "0.75rem" } }} />}
             </Stack>
-            <Typography sx={{ fontWeight: 700, fontSize: "0.95rem", color: "#0f172a", mt: 0.25, [PHONE]: { fontSize: "1rem", lineHeight: 1.35, overflowWrap: "anywhere" } }}>{node.title}</Typography>
+            <Typography sx={{ fontWeight: 700, fontSize: "0.95rem", color: ink.title, mt: 0.25, [PHONE]: { fontSize: "1rem", lineHeight: 1.35, overflowWrap: "anywhere" } }}>{node.title}</Typography>
             {summary && (
-              <Typography sx={{ fontSize: "0.76rem", color: "#64748b", mt: 0.25, [PHONE]: { fontSize: "0.8rem" } }}>{summary}</Typography>
+              <Typography sx={{ fontSize: "0.76rem", color: ink.body, mt: 0.25, [PHONE]: { fontSize: "0.8rem" } }}>{summary}</Typography>
             )}
           </Box>
           <Box sx={{ display: "flex", alignItems: "flex-start", gap: 0.5, flexShrink: 0 }}>
@@ -193,14 +203,14 @@ export function NodeRow({
               // this whole class of bug keeps recurring.
               const sd = journeyScoreDisplay(node.score, done);
               return sd.mode === "earned" ? (
-                <Typography sx={{ fontWeight: 800, fontSize: "0.9rem", color: done ? "#15803d" : "#7c3aed" }}>
-                  {sd.earned}<span style={{ color: "#64748b", fontWeight: 600 }}>/{sd.total}</span>
-                  <Typography component="span" sx={{ fontSize: "0.66rem", color: "#64748b", display: "block", fontWeight: 600, [PHONE]: { fontSize: "0.75rem" } }}>{sd.label}</Typography>
+                <Typography sx={{ fontWeight: 800, fontSize: "0.9rem", color: dark ? ink.title : done ? "#15803d" : "#7c3aed" }}>
+                  {sd.earned}<span style={{ color: dark ? "rgba(255,255,255,0.6)" : "#64748b", fontWeight: 600 }}>/{sd.total}</span>
+                  <Typography component="span" sx={{ fontSize: "0.66rem", color: ink.dim, display: "block", fontWeight: 600, [PHONE]: { fontSize: "0.75rem" } }}>{sd.label}</Typography>
                 </Typography>
               ) : (
-                <Typography sx={{ fontWeight: 800, fontSize: "0.9rem", color: "#475569" }}>
-                  {sd.total}<Box component="span" sx={{ fontSize: "0.66rem", color: "#64748b", fontWeight: 600, [PHONE]: { fontSize: "0.75rem" } }}> pts</Box>
-                  <Typography component="span" sx={{ fontSize: "0.66rem", color: "#64748b", display: "block", fontWeight: 600, [PHONE]: { fontSize: "0.75rem" } }}>{sd.label}</Typography>
+                <Typography sx={{ fontWeight: 800, fontSize: "0.9rem", color: dark ? ink.title : "#475569" }}>
+                  {sd.total}<Box component="span" sx={{ fontSize: "0.66rem", color: ink.dim, fontWeight: 600, [PHONE]: { fontSize: "0.75rem" } }}> pts</Box>
+                  <Typography component="span" sx={{ fontSize: "0.66rem", color: ink.dim, display: "block", fontWeight: 600, [PHONE]: { fontSize: "0.75rem" } }}>{sd.label}</Typography>
                 </Typography>
               );
             })()}
@@ -234,8 +244,8 @@ export function NodeRow({
         {current && (
           <Stack direction={{ xs: "column", sm: "row" }} spacing={1} justifyContent="space-between" alignItems={{ sm: "center" }} sx={{ mt: 1.5 }}>
             <Stack direction="row" spacing={0.6} alignItems="center" sx={{ minWidth: 0 }}>
-              <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: "#15803d", flexShrink: 0 }} />
-              <Typography sx={{ fontSize: "0.74rem", color: "#15803d", fontWeight: 600, [PHONE]: { fontSize: "0.8rem" } }}>
+              <Box sx={{ width: 7, height: 7, borderRadius: "50%", bgcolor: ink.good, flexShrink: 0 }} />
+              <Typography sx={{ fontSize: "0.74rem", color: ink.good, fontWeight: 600, [PHONE]: { fontSize: "0.8rem" } }}>
                 {journeyAvailabilityLine(node.score)}{dueAt ? ` before ${fmtDate(dueAt)}` : ""}
               </Typography>
             </Stack>
@@ -288,8 +298,8 @@ export function NodeRow({
         )}
         {locked && node.lockReason && (
           <Stack direction="row" spacing={0.5} alignItems="center" sx={{ mt: 1 }}>
-            <Icon icon="mdi:lock-outline" width={12} color="#64748b" style={{ flexShrink: 0 }} />
-            <Typography sx={{ fontSize: "0.72rem", color: "#64748b", [PHONE]: { fontSize: "0.78rem" } }}>{node.lockReason}</Typography>
+            <Icon icon="mdi:lock-outline" width={12} color={dark ? "rgba(255,255,255,0.55)" : "#64748b"} style={{ flexShrink: 0 }} />
+            <Typography sx={{ fontSize: "0.72rem", color: ink.dim, [PHONE]: { fontSize: "0.78rem" } }}>{node.lockReason}</Typography>
           </Stack>
         )}
       </Box>
