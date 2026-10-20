@@ -5,6 +5,7 @@ import NextLink from "next/link";
 
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { CareerMilestone } from "@/lib/types/adaptive-journey";
+import { NODE_STYLE } from "./nodeVisuals";
 
 /**
  * A career station on the spine: update your resume, and the roles now open to you.
@@ -60,6 +61,9 @@ function StationCta({ locked, href, label }: { locked: boolean; href: string; la
   );
 }
 
+const RESUME = NODE_STYLE.resume;
+const JOBS = NODE_STYLE.jobs;
+
 export function CareerStation({ milestone }: { milestone: CareerMilestone }) {
   const { locked, atPercent, resume, jobs } = milestone;
 
@@ -70,25 +74,34 @@ export function CareerStation({ milestone }: { milestone: CareerMilestone }) {
       data-at-percent={atPercent}
       sx={{
         borderRadius: 3,
+        overflow: "hidden",
         border: "1px solid",
-        borderColor: locked ? "divider" : "rgba(124,58,237,0.28)",
-        bgcolor: locked ? "transparent" : "rgba(124,58,237,0.04)",
-        p: { xs: 1.75, sm: 2.25 },
+        borderColor: locked ? "#e7ecf3" : RESUME.border,
         opacity: locked ? 0.72 : 1,
-        // The grid collapses to one column on a phone. `minWidth: 0` on the children is what
-        // stops a long job title giving the track a min-content floor wider than the screen.
+        // Two tinted halves meeting at a seam, rather than one white box. A career station is a
+        // different KIND of thing from a lesson or a paper, and on a near-white page it read as
+        // just another row - the complaint that prompted this.
         display: "grid",
         gridTemplateColumns: { xs: "1fr", md: jobs ? "1fr 1fr" : "1fr" },
-        gap: { xs: 1.75, md: 2.5 },
+        // `minWidth: 0` or a long job title gives the track a min-content floor wider than the
+        // screen and the whole page starts sliding sideways.
         "& > *": { minWidth: 0 },
       }}
     >
-      <Box sx={{ minWidth: 0 }}>
+      <Box
+        sx={{
+          minWidth: 0,
+          bgcolor: locked ? "#fbfcfd" : RESUME.surface,
+          borderLeft: "4px solid",
+          borderLeftColor: locked ? "#dde3ea" : RESUME.color,
+          p: { xs: 1.75, sm: 2.25 },
+        }}
+      >
         <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
           <IconWrapper icon="mdi:file-account-outline" size={16} />
           <Typography
             sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: 1, textTransform: "uppercase",
-                  color: "text.secondary",
+                  color: locked ? "text.secondary" : RESUME.color,
                   '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" } }}
           >
             {atPercent}% · Resume
@@ -105,12 +118,20 @@ export function CareerStation({ milestone }: { milestone: CareerMilestone }) {
       </Box>
 
       {jobs && (
-        <Box sx={{ minWidth: 0 }}>
+        <Box
+          sx={{
+            minWidth: 0,
+            bgcolor: locked ? "#fbfcfd" : JOBS.surface,
+            borderLeft: "4px solid",
+            borderLeftColor: locked ? "#dde3ea" : JOBS.color,
+            p: { xs: 1.75, sm: 2.25 },
+          }}
+        >
           <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 0.75 }}>
             <IconWrapper icon="mdi:briefcase-outline" size={16} />
             <Typography
               sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: 1, textTransform: "uppercase",
-                    color: "text.secondary",
+                    color: locked ? "text.secondary" : JOBS.color,
                     '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" } }}
             >
               {/* The server's label, verbatim. It is a claim the data supports; anything

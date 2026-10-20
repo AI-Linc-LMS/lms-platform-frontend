@@ -136,8 +136,11 @@ export function NodeRow({
         sx={{
           mb: 1.5, p: 1.75, borderRadius: 3, border: "1px solid",
           borderLeft: "4px solid", borderLeftColor: ns.color,
-          borderColor: current ? "#c7d2fe" : "#eef2f7",
-          bgcolor: current ? "#fbfbff" : "#fff",
+          // Tinted per kind, not white for all of them. The 4px stripe alone was the only
+          // thing separating a checkpoint from an interview, and a stripe is invisible once a
+          // card is one of ten on a near-white page.
+          borderColor: current ? ns.color + "55" : ns.border,
+          bgcolor: ns.surface,
           boxShadow: current ? `0 4px 14px -14px ${ns.color}` : "0 1px 2px rgba(16,24,40,0.04)",
           opacity: locked ? 0.72 : 1,
           cursor: navigable ? "pointer" : "default",
