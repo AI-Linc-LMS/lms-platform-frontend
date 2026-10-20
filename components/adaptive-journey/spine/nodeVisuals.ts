@@ -53,8 +53,8 @@ export const STRIPES =
 /** Ink for a card painted dark, and for one painted as a pale wash. */
 export const DARK_INK = {
   title: "#ffffff",
-  body: "rgba(255,255,255,0.72)",
-  dim: "rgba(255,255,255,0.55)",
+  body: "rgba(255,255,255,0.78)",
+  dim: "rgba(255,255,255,0.62)",
   tile: "rgba(255,255,255,0.08)",
   hairline: "rgba(255,255,255,0.12)",
   good: "#4ade80",
@@ -105,6 +105,8 @@ export const NODE_STYLE: Record<
   {
     color: string; bg: string; icon: string; surface: string; border: string;
     tone: NodeTone; surfaceTo?: string; onDark?: string; onLight?: string;
+    /** A dark card's locked colours. It must NOT be expressed with `opacity` - see nodeInk. */
+    lockedSurface?: string; lockedTo?: string;
   }
 > = {
   topic: { color: "#6366f1", bg: "#eef2ff", icon: "mdi:book-open-page-variant",
@@ -114,19 +116,38 @@ export const NODE_STYLE: Record<
   week_final: { color: "#f59e0b", bg: "#fff7ed", icon: "mdi:flag-checkered",
                 surface: "#fef9f0", border: "#fde8c4", tone: "light", onLight: "#b45309" },
   interview: { color: "#db2777", bg: "#fdf2f8", icon: "mdi:account-voice",
-               surface: "#0f172a", surfaceTo: "#3b0f2e", border: "rgba(255,255,255,0.08)",
-               tone: "dark", onDark: "#f9a8d4" },
+               surface: "#2b0a24", surfaceTo: "#5a1246", border: "rgba(255,255,255,0.10)",
+               tone: "dark", onDark: "#fbcfe8",
+               lockedSurface: "#1d132a", lockedTo: "#321639" },
   /** The two career halves. Not node types - the station reads them by name. */
   resume: { color: "#0d9488", bg: "#ecfdf7", icon: "mdi:file-account-outline",
-            surface: "#0f172a", surfaceTo: "#0b3330", border: "rgba(255,255,255,0.08)",
-            tone: "dark", onDark: "#5eead4" },
+            surface: "#052e2a", surfaceTo: "#0a5a50", border: "rgba(255,255,255,0.10)",
+            tone: "dark", onDark: "#5eead4",
+            lockedSurface: "#0c232c", lockedTo: "#0e373d" },
   jobs: { color: "#2563eb", bg: "#eff6ff", icon: "mdi:briefcase-outline",
-          surface: "#0f172a", surfaceTo: "#13295a", border: "rgba(255,255,255,0.08)",
-          tone: "dark", onDark: "#93c5fd" },
+          surface: "#0a1f4f", surfaceTo: "#163a8a", border: "rgba(255,255,255,0.10)",
+          tone: "dark", onDark: "#93c5fd",
+          lockedSurface: "#0e1c3d", lockedTo: "#132857" },
 };
 
-/** The ink that goes on a given kind's card, and the accent that stays visible on it. */
-export function nodeInk(kind: string) {
+type Style = (typeof NODE_STYLE)[string];
+
+const darkFrom = (ns: Style, locked: boolean) =>
+  (locked ? ns.lockedSurface : undefined) ?? ns.surface;
+const darkTo = (ns: Style, locked: boolean) =>
+  (locked ? (ns.lockedTo ?? ns.lockedSurface) : undefined) ?? ns.surfaceTo ?? ns.surface;
+
+/**
+ * The ink that goes on a given kind's card, and the accent that stays visible on it.
+ *
+ * **`locked` is a colour, never an opacity.** `opacity` on a dark card does not dim it - it
+ * composites it toward whatever is behind it, and the page behind it is white. The first cut
+ * drew a locked station at `opacity: 0.72`, which turned `#0b3330` into `#4f6c6a` and
+ * `#13295a` into `#556588`: two muddy greys with the hue washed out of them. That is the state
+ * EVERY learner sees until they reach 33%, so it was the default appearance of the feature.
+ * A locked card now mixes toward slate instead, staying dark and keeping its own hue.
+ */
+export function nodeInk(kind: string, locked = false) {
   const ns = NODE_STYLE[kind] ?? NODE_STYLE.topic;
   const dark = ns.tone === "dark";
   return {
@@ -140,10 +161,10 @@ export function nodeInk(kind: string) {
     // The flat colour under the gradient. It is the kind's OWN dark hue rather than the shared
     // `#0f172a`, so two dark cards side by side differ even where a gradient is not painted -
     // a printed page, a forced-colours mode, or a test reading computed `backgroundColor`.
-    baseColor: dark ? (ns.surfaceTo ?? ns.surface) : ns.surface,
+    baseColor: dark ? darkTo(ns, locked) : ns.surface,
     /** The full background for the card: a flat wash, or the calibration treatment. */
     background: dark
-      ? `${STRIPES}, linear-gradient(135deg, ${ns.surface} 0%, ${ns.surfaceTo ?? ns.surface} 100%)`
+      ? `${STRIPES}, linear-gradient(135deg, ${darkFrom(ns, locked)} 0%, ${darkTo(ns, locked)} 100%)`
       : ns.surface,
   };
 }

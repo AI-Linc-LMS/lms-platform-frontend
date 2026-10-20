@@ -34,9 +34,6 @@ import { nodeInk } from "./nodeVisuals";
  * A locked station still renders, dimmed: a learner should be able to see what is coming.
  */
 
-const RESUME = nodeInk("resume");
-const JOBS = nodeInk("jobs");
-
 /**
  * A call to action that is a LINK when it can be followed and a dead button when it cannot.
  *
@@ -55,10 +52,12 @@ function StationCta({ locked, href, label }: { locked: boolean; href: string; la
         disabled
         sx={{
           ...base,
-          // MUI greys a disabled button against a light theme; on this ground that is invisible.
+          // MUI greys a disabled button against a light theme; on this ground that is a ghost.
+          // It still has to be READ - it names what the station will let them do.
           "&.Mui-disabled": {
-            color: "rgba(255,255,255,0.45)",
-            borderColor: "rgba(255,255,255,0.18)",
+            color: "rgba(255,255,255,0.88)",
+            borderColor: "rgba(255,255,255,0.42)",
+            backgroundColor: "rgba(255,255,255,0.12)",
           },
         }}
       >
@@ -94,6 +93,7 @@ function Half({
   locked: boolean;
   children: React.ReactNode;
 }) {
+  void locked;
   return (
     <Box
       sx={{
@@ -101,7 +101,9 @@ function Half({
         backgroundColor: tone.baseColor,
         backgroundImage: tone.background,
         borderLeft: "4px solid",
-        borderLeftColor: locked ? "rgba(255,255,255,0.22)" : tone.accent,
+        // The accent edge stays lit when locked, only quieter. It is where the half's identity
+        // lives, and a grey edge on a grey card is how the two halves became one slab.
+        borderLeftColor: locked ? `${tone.accent}99` : tone.accent,
         color: tone.ink.title,
         p: { xs: 1.75, sm: 2.25 },
       }}
@@ -113,6 +115,11 @@ function Half({
 
 export function CareerStation({ milestone }: { milestone: CareerMilestone }) {
   const { locked, atPercent, resume, jobs } = milestone;
+  // Locked is a different set of COLOURS, not a transparency. See nodeInk: `opacity` on a dark
+  // card over a white page composites it toward white, which is what turned both halves into
+  // the same muddy grey.
+  const RESUME = nodeInk("resume", locked);
+  const JOBS = nodeInk("jobs", locked);
 
   return (
     <Box
@@ -122,9 +129,8 @@ export function CareerStation({ milestone }: { milestone: CareerMilestone }) {
       sx={{
         borderRadius: 3,
         overflow: "hidden",
-        border: "1px solid rgba(255,255,255,0.08)",
+        border: "1px solid rgba(255,255,255,0.10)",
         boxShadow: "0 18px 40px -22px rgba(15,23,42,0.7)",
-        opacity: locked ? 0.72 : 1,
         display: "grid",
         gridTemplateColumns: { xs: "1fr", md: jobs ? "1fr 1fr" : "1fr" },
         // `minWidth: 0` or a long job title gives the track a min-content floor wider than the
@@ -137,7 +143,7 @@ export function CareerStation({ milestone }: { milestone: CareerMilestone }) {
           <IconWrapper icon="mdi:file-account-outline" size={16} />
           <Typography
             sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: 1, textTransform: "uppercase",
-                  color: locked ? RESUME.ink.dim : RESUME.accent,
+                  color: RESUME.accent,
                   '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" } }}
           >
             {atPercent}% · Resume
@@ -166,7 +172,7 @@ export function CareerStation({ milestone }: { milestone: CareerMilestone }) {
             <IconWrapper icon="mdi:briefcase-outline" size={16} />
             <Typography
               sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: 1, textTransform: "uppercase",
-                    color: locked ? JOBS.ink.dim : JOBS.accent,
+                    color: JOBS.accent,
                     '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" } }}
             >
               {/* The server's label, verbatim. It is a claim the data supports; anything
