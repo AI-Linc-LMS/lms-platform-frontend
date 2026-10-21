@@ -64,11 +64,41 @@ describe("building the ladder", () => {
     expect(levels[1].topics.map((t) => t.title)).toEqual(["Arrays", "Strings"]);
   });
 
-  it("counts articles and problems from the course payload, not a stored total", () => {
+  it("counts problems from the course payload, not a stored total", () => {
     const [first] = buildLevels(course());
-    expect(first.topics[0].articles).toBe(2);
     expect(first.topics[0].problems).toBe(2);
     expect(first.topics[0].solved).toBe(1);
+  });
+
+  it("admits ONLY topics that carry coding problems", () => {
+    // This ladder is the practice surface. Admitting any submodule with articles made it a
+    // second rendering of the journey tab - the same modules, drawn as a tree - which gave a
+    // learner two maps of one course and no reason to prefer either.
+    const c = course() as never as { modules: { submodules: unknown[] }[] };
+    c.modules[1].submodules.push({
+      id: 23, order: 2, title: "Reading only", description: "",
+      articles: [{ id: 9 }, { id: 10 }], quizzes: [], coding_sets: [],
+    });
+    const levels = buildLevels(c as never);
+    expect(levels[1].topics.map((t) => t.title)).toEqual(["Arrays", "Strings"]);
+    expect(levels[1].topics.map((t) => t.title)).not.toContain("Reading only");
+  });
+
+  it("drops a module whose topics are all reading", () => {
+    const c = course() as never as { modules: unknown[] };
+    c.modules = [{
+      id: 3, weekno: 1, title: "All reading",
+      submodules: [{ id: 31, order: 0, title: "Theory", description: "",
+                     articles: [{ id: 1 }], quizzes: [], coding_sets: [] }],
+    }];
+    expect(buildLevels(c as never)).toEqual([]);
+  });
+
+  it("carries the buckets themselves, not just how many there are", () => {
+    // The card names the techniques; a count only said how many groups existed.
+    const [first] = buildLevels(course());
+    expect(first.topics[0].bucketRows.map((b) => b.name)).toEqual(["Basic primer", "Math"]);
+    expect(first.topics[0].bucketRows.map((b) => b.satisfied)).toEqual([true, false]);
   });
 
   it("carries bucket coverage and takes the bonus from the server", () => {
