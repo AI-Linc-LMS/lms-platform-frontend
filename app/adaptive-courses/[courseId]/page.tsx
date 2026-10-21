@@ -36,7 +36,7 @@ const FLATTEN_SHELL_ON_PHONE = {
 };
 
 export default function AdaptiveCourseDetailPage() {
-  const { push } = useInstantNavigation();
+  const { push, prefetch } = useInstantNavigation();
   const params = useParams();
   const courseId = Number(params.courseId);
   // NOTE: there used to be a getCourse() fetch here to populate an instructor chip. It was dead:
@@ -52,17 +52,41 @@ export default function AdaptiveCourseDetailPage() {
   return (
     <MainLayout fullWidthContent>
       <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 }, [PHONE]: { px: 0, pt: 0, pb: 1 } }}>
-        <ButtonBase
-          onClick={() => push("/adaptive-courses")}
-          sx={{
-            mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem",
-            // A 22px text link was the smallest target on the page; on a phone it gets a 44px row.
-            [PHONE]: { minHeight: 44, mb: 1, pr: 1.5, borderRadius: 2 },
-          }}
-        >
-          <Icon icon="mdi:arrow-left" width={18} />
-          Back to Adaptive Courses
-        </ButtonBase>
+        <Box sx={{
+          mb: 2, display: "flex", alignItems: "center", justifyContent: "space-between",
+          gap: 1, flexWrap: "wrap", [PHONE]: { mb: 1 },
+        }}>
+          <ButtonBase
+            onClick={() => push("/adaptive-courses")}
+            sx={{
+              color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem",
+              // A 22px text link was the smallest target on the page; on a phone it gets a 44px row.
+              [PHONE]: { minHeight: 44, pr: 1.5, borderRadius: 2 },
+            }}
+          >
+            <Icon icon="mdi:arrow-left" width={18} />
+            Back to Adaptive Courses
+          </ButtonBase>
+
+          {/* The practice ladder. A separate route rather than a panel here, because it reads
+              the whole course tree - the fetch this page deliberately dropped for being an N+1
+              on every visit. Behind a click it costs that once, for a learner who asked. */}
+          <ButtonBase
+            onClick={() => push(`/adaptive-courses/${courseId}/track`)}
+            onMouseEnter={() => prefetch(`/adaptive-courses/${courseId}/track`)}
+            data-testid="open-practice-track"
+            sx={{
+              px: 1.75, py: 0.85, borderRadius: 2, gap: 0.6,
+              color: "#6366f1", fontWeight: 700, fontSize: "0.85rem",
+              border: "1px solid #dcd9fb", backgroundColor: "#f7f6ff",
+              "&:hover": { backgroundColor: "#efedff" },
+              [PHONE]: { minHeight: 44, borderRadius: 2.5 },
+            }}
+          >
+            <Icon icon="mdi:stairs-up" width={17} />
+            Practice track
+          </ButtonBase>
+        </Box>
 
         <Box sx={FLATTEN_SHELL_ON_PHONE}>
           <AdaptiveSectionShell meshOpacity={0.18}>
