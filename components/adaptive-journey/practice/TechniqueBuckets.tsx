@@ -17,14 +17,24 @@
  *
  * Renders nothing when the set has no buckets. 2,776 live sets are in that state, and the page
  * keeps drawing the flat deck it has always drawn.
+ *
+ * LAYOUT. Buckets are lists inside a balanced two-column masonry, not a grid of cards. A bucket
+ * holds one problem or eight, and a uniform grid has to pick between stretching the small ones
+ * across a row and stranding the large ones; columns packed by `balanceColumns` let a bucket be
+ * exactly as tall as it is. The rows themselves are `BucketProblemRow` rather than
+ * `PracticeCard` because the choice inside a bucket is "which ONE of these", which wants four
+ * comparable lines, not four cards each with its own call to action.
  */
 
 import { useMemo } from "react";
-import { Box, Stack, Typography } from "@mui/material";
+import { Box, Stack, Typography, useMediaQuery } from "@mui/material";
 import { Icon } from "@iconify/react";
 
+import { AdaptiveInfoTip } from "@/components/adaptive-quiz/shared/AdaptiveInfoTip";
 import { PHONE } from "@/components/common/mobile/phone";
-import { PracticeCard, type PracticeCardItem } from "./PracticeCard";
+import type { PracticeCardItem } from "./PracticeCard";
+import { BucketProblemRow } from "./BucketProblemRow";
+import { balanceColumns } from "./balanceColumns";
 import { P, RADIUS, hairline } from "./practiceTokens";
 
 export interface TechniqueBucket {
@@ -42,21 +52,96 @@ export interface TechniqueBucket {
 /** A practice card plus the bucket it belongs to. */
 export type BucketedItem = PracticeCardItem & { bucketId: number | null };
 
-/** The ring that carries `solved/total`, lit once the bucket is satisfied. */
+/**
+ * `solved/total`, lit once the bucket is satisfied.
+ *
+ * A plain circle, and deliberately not a progress arc sweeping towards `total`: the rule is one
+ * problem per bucket, so an arc at 1-of-8 would draw a learner who has FINISHED this bucket as
+ * one eighth done. The ring turning green at the first solve is the honest picture of a rule
+ * that only ever asks for one.
+ */
 function CountRing({ solved, total, satisfied }: { solved: number; total: number; satisfied: boolean }) {
   return (
     <Box
       aria-hidden
       sx={{
-        width: 42, height: 42, flexShrink: 0, borderRadius: "50%",
+        width: 38, height: 38, flexShrink: 0, borderRadius: "50%",
         display: "grid", placeItems: "center",
-        fontSize: "0.72rem", fontWeight: 700, fontVariantNumeric: "tabular-nums",
+        fontSize: "0.7rem", fontWeight: 600, fontVariantNumeric: "tabular-nums",
         color: satisfied ? "#047857" : P.inkFaint,
-        backgroundColor: satisfied ? "#ecfdf5" : P.surface,
-        boxShadow: satisfied ? "0 0 0 1px #a7f3d0" : hairline,
+        backgroundColor: satisfied ? "#ecfdf5" : "transparent",
+        border: `1.5px solid ${satisfied ? "#6ee7b7" : P.hairline}`,
       }}
     >
       {solved}/{total}
+    </Box>
+  );
+}
+
+/** What a bucket is, behind the (i). `description` is authored per bucket and is often blank. */
+function BucketTip({ name, description }: { name: string; description: string }) {
+  return (
+    <AdaptiveInfoTip title="Buckets" ariaLabel={`What the ${name} bucket is for`} placement="left">
+      {description ? <p>{description}</p> : null}
+      <p>
+        Problems in a topic are grouped by the technique they drill. Solving <strong>any one</strong>{" "}
+        problem in a bucket covers that technique, and covering every bucket completes the topic.
+      </p>
+    </AdaptiveInfoTip>
+  );
+}
+
+function BucketCard({ bucket, members }: { bucket: TechniqueBucket; members: BucketedItem[] }) {
+  return (
+    <Box
+      data-testid="technique-bucket"
+      data-satisfied={bucket.satisfied ? "true" : "false"}
+      sx={{
+        borderRadius: `${RADIUS.card}px`,
+        backgroundColor: P.surface,
+        boxShadow: hairline,
+        // The rows run to the card's own edges, so the card clips them to its radius.
+        overflow: "hidden",
+      }}
+    >
+      <Stack
+        direction="row"
+        alignItems="center"
+        gap={1.25}
+        sx={{ px: { xs: 1.5, sm: 2 }, py: 1.5 }}
+      >
+        <CountRing solved={bucket.solved} total={bucket.total} satisfied={bucket.satisfied} />
+        <Typography
+          sx={{
+            flex: 1, minWidth: 0,
+            fontSize: "0.98rem", fontWeight: 600, color: P.ink, lineHeight: 1.3,
+          }}
+        >
+          {bucket.name}
+        </Typography>
+        <BucketTip name={bucket.name} description={bucket.description} />
+      </Stack>
+
+      <Box sx={{ px: { xs: 0.5, sm: 0.75 }, pb: 0.75 }}>
+        {members.length === 0 ? (
+          <Typography sx={{ px: 1.25, py: 1, fontSize: "0.8rem", color: P.inkFaint }}>
+            No problems in this bucket yet.
+          </Typography>
+        ) : (
+          members.map((item, i) => (
+            <Box
+              key={item.key}
+              sx={{
+                // borderTop on all but the first, never borderBottom on all but the last: the
+                // rule then cannot land on the card's own bottom edge when a bucket is clipped.
+                borderTop: i === 0 ? "none" : `1px solid ${P.hairline}`,
+              }}
+            >
+              <BucketProblemRow item={item} />
+            </Box>
+          ))
+        )}
+      </Box>
     </Box>
   );
 }
@@ -65,13 +150,10 @@ export function TechniqueBuckets({
   buckets,
   items,
   bonusUnlocked,
-  firstStep,
 }: {
   buckets: TechniqueBucket[];
   items: BucketedItem[];
   bonusUnlocked: boolean;
-  /** Step number of the first card, so numbering continues from the lessons above. */
-  firstStep: number;
 }) {
   const grouped = useMemo(() => {
     const byBucket = new Map<number, BucketedItem[]>();
@@ -84,15 +166,24 @@ export function TechniqueBuckets({
     return byBucket;
   }, [items]);
 
-  // Numbering follows the authored order across the whole set, not the position inside a
-  // bucket - otherwise regrouping the problems would renumber the course.
-  const stepOf = useMemo(() => {
-    const n = new Map<string, number>();
-    items.forEach((item, i) => n.set(item.key, firstStep + i));
-    return n;
-  }, [items, firstStep]);
+  // The column COUNT has to be known in JS, not only in CSS. Two balanced columns read down
+  // then across; collapsing them with a media query leaves two stacked lists whose flattened
+  // order is no longer the server's - with buckets of 1, 8 and 1 the packer yields [1,1] and
+  // [8], which stacks as 1,1,8 against an authored 1,8,1. So narrow renders ONE column, which
+  // `balanceColumns` returns untouched. 900px is the same breakpoint RoadmapSpine branches on.
+  //
+  // `useMediaQuery` is false during SSR and the first client paint, so the first frame is the
+  // single column. That is the right way round: its order is correct at every width, and only
+  // a wide viewport reflows - a phone never sees the two-column frame at all.
+  const wide = useMediaQuery("(min-width:900px)");
+  const columns = useMemo(
+    () => balanceColumns(buckets, (b) => grouped.get(b.id)?.length ?? 0, wide ? 2 : 1),
+    [buckets, grouped, wide],
+  );
 
   if (buckets.length === 0) return null;
+
+  const covered = buckets.filter((b) => b.satisfied).length;
 
   return (
     <Box data-testid="technique-buckets" sx={{ mt: 3 }}>
@@ -103,65 +194,36 @@ export function TechniqueBuckets({
           Practice
         </Typography>
         <Typography sx={{ fontSize: "0.8rem", color: P.inkFaint, fontVariantNumeric: "tabular-nums" }}>
-          {buckets.filter((b) => b.satisfied).length} of {buckets.length} techniques covered
+          {covered} of {buckets.length} techniques covered
         </Typography>
       </Stack>
 
-      <Stack spacing={2}>
-        {buckets.map((bucket) => {
-          const members = grouped.get(bucket.id) ?? [];
-          return (
-            <Box
-              key={bucket.id}
-              data-testid="technique-bucket"
-              data-satisfied={bucket.satisfied ? "true" : "false"}
-              sx={{
-                borderRadius: `${RADIUS.card}px`,
-                backgroundColor: P.surface,
-                boxShadow: hairline,
-                p: { xs: 1.5, sm: 2 },
-                [PHONE]: { p: 1.5 },
-              }}
-            >
-              <Stack direction="row" alignItems="center" gap={1.25} sx={{ mb: members.length ? 1.5 : 0 }}>
-                <CountRing solved={bucket.solved} total={bucket.total} satisfied={bucket.satisfied} />
-                <Box sx={{ minWidth: 0 }}>
-                  <Typography sx={{ fontSize: "1rem", fontWeight: 600, color: P.ink }}>
-                    {bucket.name}
-                  </Typography>
-                  {bucket.description ? (
-                    <Typography sx={{ fontSize: "0.8rem", color: P.inkFaint }}>
-                      {bucket.description}
-                    </Typography>
-                  ) : null}
-                </Box>
-              </Stack>
-
-              {/* `auto-FILL`, not `auto-fit`. Both avoid a fixed column count, which would
-                  strand a card alone on a second row - but auto-fit collapses the empty tracks,
-                  so a bucket holding one problem stretched that card across the full width
-                  while its four-problem neighbour showed a tidy row of four. auto-fill keeps
-                  the tracks, so every card is the same width whatever the bucket holds. */}
-              <Box sx={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fill, minmax(215px, 1fr))",
-                gap: 1.5,
-                [PHONE]: { gridTemplateColumns: "1fr" },
-              }}>
-                {members.map((item) => (
-                  <PracticeCard key={item.key} item={item} index={stepOf.get(item.key) ?? 0} />
-                ))}
-              </Box>
-            </Box>
-          );
-        })}
-      </Stack>
+      {/* Two real columns rather than CSS `columns`, which is free until a bucket is taller than
+          the column and then splits it across the gutter in spite of `break-inside: avoid`. */}
+      <Box
+        data-testid="bucket-columns"
+        sx={{
+          display: "grid",
+          gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))`,
+          alignItems: "start",
+          gap: 2,
+          [PHONE]: { gap: 1.5 },
+        }}
+      >
+        {columns.map((col, i) => (
+          <Stack key={i} spacing={2} sx={{ minWidth: 0, [PHONE]: { gap: 1.5 } }}>
+            {col.map((bucket) => (
+              <BucketCard key={bucket.id} bucket={bucket} members={grouped.get(bucket.id) ?? []} />
+            ))}
+          </Stack>
+        ))}
+      </Box>
 
       <Box
         data-testid="topic-bonus"
         data-unlocked={bonusUnlocked ? "true" : "false"}
         sx={{
-          mt: 2, p: { xs: 1.75, sm: 2 },
+          mt: 2, px: { xs: 1.5, sm: 2 }, py: 1.5,
           borderRadius: `${RADIUS.card}px`,
           display: "flex", alignItems: "center", gap: 1.5,
           backgroundColor: bonusUnlocked ? "#ecfdf5" : "#f8fafc",
@@ -169,18 +231,18 @@ export function TechniqueBuckets({
         }}
       >
         <Box sx={{
-          width: 38, height: 38, flexShrink: 0, borderRadius: "50%",
+          width: 34, height: 34, flexShrink: 0, borderRadius: "50%",
           display: "grid", placeItems: "center",
           backgroundColor: bonusUnlocked ? "#d1fae5" : "#eef2f7",
           color: bonusUnlocked ? "#047857" : P.inkFaint,
         }}>
-          <Icon icon={bonusUnlocked ? "mdi:trophy-outline" : "mdi:lock-outline"} width={19} />
+          <Icon icon={bonusUnlocked ? "mdi:trophy-outline" : "mdi:lock-outline"} width={18} />
         </Box>
         <Box sx={{ minWidth: 0 }}>
-          <Typography sx={{ fontSize: "0.95rem", fontWeight: 600, color: P.ink }}>
+          <Typography sx={{ fontSize: "0.92rem", fontWeight: 600, color: P.ink }}>
             Topic bonus
           </Typography>
-          <Typography sx={{ fontSize: "0.82rem", color: P.inkMuted }}>
+          <Typography sx={{ fontSize: "0.8rem", color: P.inkMuted }}>
             {bonusUnlocked
               ? "Unlocked — you have covered every technique in this topic."
               : "Unlocks once you solve at least one problem from each bucket."}

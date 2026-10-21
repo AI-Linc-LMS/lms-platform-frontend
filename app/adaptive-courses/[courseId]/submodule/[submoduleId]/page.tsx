@@ -397,7 +397,6 @@ export default function AdaptiveCourseSubmodulePage() {
                     buckets={bucketed.buckets}
                     items={practiceItems as BucketedItem[]}
                     bonusUnlocked={bucketed.bonusUnlocked}
-                    firstStep={lessonItems.length + 1}
                   />
                 ) : (
                   <PracticeDeck items={practiceItems} firstStep={lessonItems.length + 1} />
