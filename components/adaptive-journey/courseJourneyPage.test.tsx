@@ -171,7 +171,7 @@ describe("the course's sections", () => {
   it("offers one tab per thing the course actually has", async () => {
     render(<JourneyBoard courseId={7} />);
     await waitFor(() => expect(screen.getByRole("tab", { name: /Journey/ })).toBeTruthy());
-    for (const name of [/Journey/, /AI Tutor/, /Assessments/, /Level Check/, /Jobs & Resume/, /Certificate/]) {
+    for (const name of [/Journey/, /AI Tutor/, /Assessments/, /Interview/, /Jobs & Resume/, /Certificate/]) {
       expect(screen.getByRole("tab", { name })).toBeTruthy();
     }
   });
@@ -188,7 +188,7 @@ describe("the course's sections", () => {
     // again. Two rows of section navigation, one above the other, is one row too many.
     render(<JourneyBoard courseId={7} />);
     await waitFor(() => expect(screen.getByRole("tab", { name: /Journey/ })).toBeTruthy());
-    for (const name of [/Journey/, /AI Tutor/, /Assessments/, /Level Check/, /Jobs & Resume/, /Certificate/]) {
+    for (const name of [/Journey/, /AI Tutor/, /Assessments/, /Interview/, /Jobs & Resume/, /Certificate/]) {
       expect(screen.getAllByRole("tab", { name })).toHaveLength(1);
     }
   });

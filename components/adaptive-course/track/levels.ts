@@ -18,12 +18,22 @@ import type {
   AdaptiveCourseSubModule,
 } from "@/lib/services/adaptive-course.service";
 
+/** One technique bucket as the ladder draws it. The server decides `satisfied`. */
+export interface TrackBucket {
+  id: number;
+  name: string;
+  total: number;
+  solved: number;
+  /** At least one solved. The rule is one PER bucket, never solved === total. */
+  satisfied: boolean;
+}
+
 export interface TrackTopic {
   submoduleId: number;
   title: string;
-  articles: number;
   problems: number;
   /** Technique buckets on this topic's coding set; empty when it has not been bucketed. */
+  bucketRows: TrackBucket[];
   buckets: number;
   bucketsCovered: number;
   /** Server-authored. The bonus is never recomputed from the bucket rows. */
@@ -51,8 +61,10 @@ function topicOf(sub: AdaptiveCourseSubModule): TrackTopic {
   return {
     submoduleId: sub.id,
     title: sub.title,
-    articles: (sub.articles ?? []).length,
     problems,
+    bucketRows: buckets.map((b) => ({
+      id: b.id, name: b.name, total: b.total, solved: b.solved, satisfied: b.satisfied,
+    })),
     buckets: buckets.length,
     bucketsCovered: buckets.filter((b) => b.satisfied).length,
     bonusUnlocked: Boolean(bucketed?.bonus_unlocked),
@@ -61,18 +73,23 @@ function topicOf(sub: AdaptiveCourseSubModule): TrackTopic {
 }
 
 /**
- * Levels in course order, with the empty ones dropped.
+ * Levels in course order, with everything that is not coding practice dropped.
  *
- * A module that teaches no coding at all still appears if it has articles - it is part of the
- * path - but a module with neither is not a level, it is an artefact, and drawing it leaves a
- * gap in the ladder that a learner reads as something missing.
+ * This ladder is the PRACTICE surface: a topic earns a place on it by having coding problems,
+ * and nothing else does. It used to admit any submodule carrying articles, which made it a
+ * second rendering of the journey - the same 28 modules, drawn as a tree. The journey tab
+ * already does that, and doing it twice gave a learner two maps of one course and no reason to
+ * prefer either.
+ *
+ * So a topic with no problems is not a level here even when it has plenty of reading. A module
+ * left with no coding topics at all is dropped entirely rather than drawn empty.
  */
 export function buildLevels(course: AdaptiveCourseDetail | undefined | null): TrackLevel[] {
   const modules: AdaptiveCourseModule[] = course?.modules ?? [];
   const levels: TrackLevel[] = [];
   modules.forEach((m) => {
     const topics = (m.submodules ?? []).map(topicOf)
-      .filter((t) => t.problems > 0 || t.articles > 0);
+      .filter((t) => t.problems > 0);
     if (topics.length === 0) return;
     levels.push({
       level: levels.length + 1,
