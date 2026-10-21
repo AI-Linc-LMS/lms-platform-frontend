@@ -27,8 +27,14 @@ ignore = '[ "$CONTEXT" = "deploy-preview" ] && [ "$SITE_NAME" != "democlientaili
 #
 # Raise the ceiling instead of shrinking the program: the type-check is the deploy gate for the
 # whole repo (see next.config.ts), and it should not be the thing that decides how much code fits.
+#
+# Raised again on 2026-10-21, for the same reason and the same symptom. `feat/coding-buckets-ui`
+# added ~370 lines of typed component and the build died as "exit code 2" twice in a row, while
+# the identical commit built clean locally at 6144 - which is the signature of this ceiling and
+# not of a code defect. The container has ~11 GB and 6 CPUs, so 6144 leaves ample room; the
+# program had simply grown back up against 4096 in the four weeks since it was set.
 [build.environment]
-  NODE_OPTIONS = "--max-old-space-size=4096"
+  NODE_OPTIONS = "--max-old-space-size=6144"
 
 [[plugins]]
 package = "@netlify/plugin-nextjs"
