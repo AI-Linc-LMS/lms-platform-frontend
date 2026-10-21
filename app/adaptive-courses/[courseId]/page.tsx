@@ -52,17 +52,23 @@ export default function AdaptiveCourseDetailPage() {
   return (
     <MainLayout fullWidthContent>
       <Box sx={{ maxWidth: 1760, mx: "auto", px: { xs: 2, md: 3 }, py: { xs: 3, md: 5 }, [PHONE]: { px: 0, pt: 0, pb: 1 } }}>
-        <ButtonBase
-          onClick={() => push("/adaptive-courses")}
-          sx={{
-            mb: 2, color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem",
-            // A 22px text link was the smallest target on the page; on a phone it gets a 44px row.
-            [PHONE]: { minHeight: 44, mb: 1, pr: 1.5, borderRadius: 2 },
-          }}
-        >
-          <Icon icon="mdi:arrow-left" width={18} />
-          Back to Adaptive Courses
-        </ButtonBase>
+        <Box sx={{
+          mb: 2, display: "flex", alignItems: "center", justifyContent: "space-between",
+          gap: 1, flexWrap: "wrap", [PHONE]: { mb: 1 },
+        }}>
+          <ButtonBase
+            onClick={() => push("/adaptive-courses")}
+            sx={{
+              color: "#6366f1", fontWeight: 700, gap: 0.5, fontSize: "0.9rem",
+              // A 22px text link was the smallest target on the page; on a phone it gets a 44px row.
+              [PHONE]: { minHeight: 44, pr: 1.5, borderRadius: 2 },
+            }}
+          >
+            <Icon icon="mdi:arrow-left" width={18} />
+            Back to Adaptive Courses
+          </ButtonBase>
+
+        </Box>
 
         <Box sx={FLATTEN_SHELL_ON_PHONE}>
           <AdaptiveSectionShell meshOpacity={0.18}>

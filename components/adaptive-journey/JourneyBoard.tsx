@@ -24,6 +24,7 @@ import { Spine } from "./spine/Spine";
 import { CareerRail } from "./CareerRail";
 import { useIsAiVoiceTutorEnabled } from "@/lib/contexts/ClientInfoContext";
 import { CourseTabBar } from "./tabs/CourseTabBar";
+import { LevelsPanel } from "./tabs/LevelsPanel";
 import { AssessmentsPanel } from "./tabs/AssessmentsPanel";
 import { InterviewPanel } from "./tabs/InterviewPanel";
 import { TutorPanel } from "./tabs/TutorPanel";
@@ -130,6 +131,7 @@ export function JourneyBoard({ courseId }: { courseId: number; showHeader?: bool
       />
 
       <Box role="tabpanel" id={`course-panel-${active}`} aria-labelledby={`course-tab-${active}`}>
+        {active === "levels" && <LevelsPanel courseId={courseId} />}
         {active === "tutor" && <TutorPanel board={board} />}
         {active === "assessments" && <AssessmentsPanel board={board} courseId={courseId} />}
         {active === "interview" && <InterviewPanel board={board} courseId={courseId} />}

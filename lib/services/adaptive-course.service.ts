@@ -123,6 +123,8 @@ export interface AdaptiveCourseCodingProblemSummary {
    * backend does not send it.
    */
   requires_upcoming?: string[];
+  /** The technique this problem drills. Null or absent while the set is unbucketed. */
+  bucket_id?: number | null;
   /**
    * Whole minutes, measured from real attempts at this problem. ABSENT when too few learners
    * have finished it to publish a median (see adaptive_coding/solve_times.py) - the backend
@@ -133,6 +135,23 @@ export interface AdaptiveCourseCodingProblemSummary {
   typical_minutes?: number;
 }
 
+/** A technique inside a coding set: "Search answer", "Key formation", "Bit tricks". */
+export interface AdaptiveCourseCodingBucket {
+  id: number;
+  name: string;
+  slug: string;
+  description: string;
+  order: number;
+  total: number;
+  solved: number;
+  /**
+   * At least ONE problem in this bucket is solved. Deliberately not `solved === total`: the
+   * completion rule is one problem per bucket, and a client that re-derived this would
+   * eventually disagree with the server about whether a module was finished.
+   */
+  satisfied: boolean;
+}
+
 export interface AdaptiveCourseCodingSet {
   config_id: number;
   title: string;
@@ -140,6 +159,15 @@ export interface AdaptiveCourseCodingSet {
   default_language: string;
   hint_layers: number;
   problems: AdaptiveCourseCodingProblemSummary[];
+  /**
+   * Technique groups. EMPTY for a set that has not been bucketed - the great majority today -
+   * and the page then draws the flat practice deck it has always drawn.
+   */
+  buckets?: AdaptiveCourseCodingBucket[];
+  /** `count` (a number of problems) or `one_per_bucket`. Absent on an older backend. */
+  completion_rule?: "count" | "one_per_bucket";
+  /** Server-authored. Never recomputed on the client. */
+  bonus_unlocked?: boolean;
 }
 
 export interface AdaptiveCourseVideoCompanionSummary {

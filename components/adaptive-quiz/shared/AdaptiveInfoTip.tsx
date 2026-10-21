@@ -101,6 +101,9 @@ export function AdaptiveInfoTip({
               letterSpacing: "0.06em",
               textTransform: "uppercase",
               color: "#a855f7",
+              // Arabic: letter-spacing breaks the cursive joins and uppercase is a no-op
+              // (DESIGN.md §4). Every caller of this tip inherited the missing guard.
+              '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" },
             }}
           >
             {title}

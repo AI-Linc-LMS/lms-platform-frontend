@@ -28,6 +28,19 @@ describe("which tabs a course has", () => {
     expect(courseTabs(board(), false).map((t) => t.id)).toEqual(["journey"]);
   });
 
+  it("offers the levels ladder only when there is more than one level", () => {
+    // One week drawn as a tree is the journey tab with a line down the middle. `weeks` IS the
+    // module list, so this decision needs no second request.
+    expect(courseTabs(board(), false).map((t) => t.id)).not.toContain("levels");
+    const two = board({ weeks: [{ weekNo: 1, nodes: [node()] }, { weekNo: 2, nodes: [node({ id: 2 })] }] });
+    expect(courseTabs(two, false).map((t) => t.id)).toContain("levels");
+  });
+
+  it("puts the levels ladder straight after the journey", () => {
+    const two = board({ weeks: [{ weekNo: 1, nodes: [node()] }, { weekNo: 2, nodes: [node({ id: 2 })] }] });
+    expect(courseTabs(two, true).map((t) => t.id).slice(0, 2)).toEqual(["journey", "levels"]);
+  });
+
   it("offers the tutor only to a tenant that has it", () => {
     expect(courseTabs(board(), true).map((t) => t.id)).toContain("tutor");
     expect(courseTabs(board(), false).map((t) => t.id)).not.toContain("tutor");
