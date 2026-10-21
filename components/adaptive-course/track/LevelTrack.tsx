@@ -27,10 +27,11 @@ import { Box, ButtonBase, Stack, Tooltip, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
 
 import { PHONE } from "@/components/common/mobile/phone";
-import { P, RADIUS, hairline } from "@/components/adaptive-journey/practice/practiceTokens";
+import { P, RADIUS } from "@/components/adaptive-journey/practice/practiceTokens";
+import { T, WEAVE } from "./trackTokens";
 import { topicProgress, type TrackLevel, type TrackTopic } from "./levels";
 
-const RAIL = "#e2e8f0";
+const RAIL = T.rail;
 const CARD_MAX = 340;
 
 /** The faint digits across a card's header, as in the reference. Decorative only. */
@@ -42,7 +43,7 @@ function HeaderTexture() {
         position: "absolute", inset: 0, overflow: "hidden",
         fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace",
         fontSize: "0.68rem", lineHeight: 1.15, letterSpacing: "0.04em",
-        color: "rgba(255,255,255,0.14)", userSelect: "none", pointerEvents: "none",
+        color: "rgba(255,255,255,0.16)", userSelect: "none", pointerEvents: "none",
         whiteSpace: "pre", textAlign: "right", pr: 0.5,
       }}
     >
@@ -75,11 +76,15 @@ function TopicCard({
         sx={{
           display: "block", textAlign: "left", width: "100%",
           borderRadius: `${RADIUS.card}px`,
-          backgroundColor: P.surface,
-          boxShadow: hairline,
+          // Dark on a light page, matching the course tab bar above it. A pale card here read as
+          // a different product sitting under the platform's own chrome.
+          background: `linear-gradient(160deg, ${T.bodyFrom} 0%, ${T.bodyTo} 100%)`,
+          boxShadow: "0 10px 30px -18px rgba(27,16,56,0.85), 0 0 0 1px rgba(255,255,255,0.06)",
           overflow: "hidden",
-          transition: "box-shadow .15s",
-          "&:hover": { boxShadow: `0 0 0 1px ${P.violet}33, 0 6px 20px -12px rgba(15,23,42,.35)` },
+          transition: "box-shadow .15s, transform .15s",
+          "&:hover": {
+            boxShadow: "0 16px 38px -18px rgba(27,16,56,0.95), 0 0 0 1px rgba(167,139,250,0.45)",
+          },
           "&:focus-visible": { boxShadow: `0 0 0 2px ${P.canvas}, 0 0 0 4px ${P.violet}` },
           [PHONE]: { minHeight: 44 },
         }}
@@ -88,9 +93,10 @@ function TopicCard({
           position: "relative",
           px: 2, pt: 1.75, pb: 2.25,
           background: started
-            ? "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)"
-            : "linear-gradient(135deg, #818cf8 0%, #a5b4fc 100%)",
-          color: "#fff",
+            ? `linear-gradient(135deg, ${T.headFromActive} 0%, ${T.headToActive} 100%)`
+            : `linear-gradient(135deg, ${T.headFrom} 0%, ${T.headTo} 100%)`,
+          color: T.title,
+          borderBottom: `1px solid ${T.hairline}`,
         }}>
           <HeaderTexture />
           <Typography sx={{
@@ -108,21 +114,21 @@ function TopicCard({
           position: "absolute", right: 16, top: 0, transform: "translateY(38px)",
           width: 44, height: 44, borderRadius: "50%",
           backgroundColor: P.surface,
-          border: `1px solid ${done ? "#a7f3d0" : "#e2e8f0"}`,
-          color: done ? "#047857" : P.violet,
+          border: `1px solid ${done ? "#a7f3d0" : "rgba(255,255,255,0.35)"}`,
+          color: done ? "#047857" : "#4527a0",
           display: "grid", placeItems: "center",
-          boxShadow: "0 4px 12px -6px rgba(15,23,42,.35)",
+          boxShadow: "0 6px 16px -6px rgba(10,6,24,.7)",
         }}>
           <Icon icon={done ? "mdi:check" : "mdi:play"} width={21} />
         </Box>
 
         <Box sx={{ px: 2, pt: 1.75, pb: 1.5 }}>
           <Stack direction="row" alignItems="baseline" gap={0.75} sx={{ mb: 1.25, pr: 6 }}>
-            <Typography sx={{ fontSize: "1.1rem", fontWeight: 700, color: P.ink,
+            <Typography sx={{ fontSize: "1.1rem", fontWeight: 700, color: T.title,
                               fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>
               {topic.problems}
             </Typography>
-            <Typography sx={{ fontSize: "0.72rem", color: P.inkFaint }}>
+            <Typography sx={{ fontSize: "0.72rem", color: T.body }}>
               {topic.problems === 1 ? "Problem" : "Problems"}
             </Typography>
           </Stack>
@@ -140,20 +146,20 @@ function TopicCard({
                   <Box aria-hidden sx={{
                     width: 14, height: 14, flexShrink: 0, borderRadius: "50%",
                     display: "grid", placeItems: "center",
-                    border: `1.5px solid ${b.satisfied ? "#6ee7b7" : P.hairline}`,
-                    backgroundColor: b.satisfied ? "#ecfdf5" : "transparent",
-                    color: "#047857",
+                    border: `1.5px solid ${b.satisfied ? T.goodEdge : T.hairline}`,
+                    backgroundColor: b.satisfied ? "rgba(74,222,128,0.16)" : "transparent",
+                    color: T.good,
                   }}>
                     {b.satisfied ? <Icon icon="mdi:check" width={9} /> : null}
                   </Box>
                   <Typography sx={{
                     flex: 1, minWidth: 0, fontSize: "0.78rem", lineHeight: 1.35,
-                    color: b.satisfied ? P.inkMuted : P.ink,
+                    color: b.satisfied ? T.body : T.strong,
                     overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                   }}>
                     {b.name}
                   </Typography>
-                  <Typography sx={{ fontSize: "0.72rem", color: P.inkFaint, flexShrink: 0,
+                  <Typography sx={{ fontSize: "0.72rem", color: T.dim, flexShrink: 0,
                                     fontVariantNumeric: "tabular-nums" }}>
                     {b.solved}/{b.total}
                   </Typography>
@@ -162,13 +168,13 @@ function TopicCard({
             </Stack>
           ) : null}
 
-          <Box aria-hidden sx={{ height: 5, borderRadius: 3, backgroundColor: "#eef2f7", mb: 0.75 }}>
+          <Box aria-hidden sx={{ height: 5, borderRadius: 3, backgroundColor: T.tile, mb: 0.75 }}>
             <Box sx={{
               width: `${pct}%`, height: "100%", borderRadius: 3,
-              background: started ? "linear-gradient(90deg, #6366f1, #8b5cf6)" : "transparent",
+              background: started ? "linear-gradient(90deg, #a78bfa, #22d3ee)" : "transparent",
             }} />
           </Box>
-          <Typography sx={{ fontSize: "0.74rem", color: P.inkFaint,
+          <Typography sx={{ fontSize: "0.74rem", color: T.dim,
                             fontVariantNumeric: "tabular-nums" }}>
             {topic.solved}/{topic.problems} solved
           </Typography>
@@ -238,9 +244,11 @@ export function LevelTrack({
             <Stack alignItems="center">
               <Box sx={{
                 px: 2.25, py: 0.6, borderRadius: 999,
-                backgroundColor: P.surface, boxShadow: hairline,
+                backgroundColor: T.pillInk,
+                boxShadow: "0 6px 16px -10px rgba(27,16,56,0.9)",
               }}>
-                <Typography sx={{ fontSize: "0.84rem", fontWeight: 600, color: P.ink }}>
+                <Typography sx={{ fontSize: "0.84rem", fontWeight: 600, color: T.title,
+                                  letterSpacing: "0.01em" }}>
                   Level {lvl.level}
                 </Typography>
               </Box>
@@ -281,10 +289,10 @@ export function LevelTrack({
                     aria-label={`Scroll to Level ${next.level}`}
                     sx={{
                       px: 2, gap: 0.75, height: 38, borderRadius: 999,
-                      backgroundColor: "#fff7ed",
-                      boxShadow: "0 0 0 1px #fed7aa",
-                      color: "#9a3412", fontSize: "0.84rem", fontWeight: 600,
-                      "&:hover": { backgroundColor: "#ffedd5" },
+                      backgroundColor: "#ffffff",
+                      boxShadow: `0 0 0 1px ${T.rail}, 0 6px 16px -12px rgba(27,16,56,0.6)`,
+                      color: "#4527a0", fontSize: "0.84rem", fontWeight: 600,
+                      "&:hover": { backgroundColor: "#f6f3ff" },
                       "&:focus-visible": { boxShadow: `0 0 0 2px ${P.canvas}, 0 0 0 4px ${P.violet}` },
                     }}
                   >
