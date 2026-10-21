@@ -52,8 +52,8 @@ export default function AdaptiveCourseTrackPage() {
           Practice track
         </Typography>
         <Typography sx={{ color: P.inkFaint, fontSize: "0.92rem", mb: 3 }}>
-          Every topic in this course, level by level. Each one groups its problems by technique,
-          and covering all of them unlocks the topic bonus.
+          Every topic in this course, level by level. Each one groups its problems by the technique
+          they drill, so you can see what a topic teaches before you open it.
         </Typography>
 
         {isLoading ? (
