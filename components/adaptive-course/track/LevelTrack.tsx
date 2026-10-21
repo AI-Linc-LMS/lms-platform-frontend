@@ -114,26 +114,50 @@ function TopicCard({
         </Box>
 
         <Box sx={{ px: 2, pt: 1.75, pb: 1.5 }}>
-          <Stack direction="row" gap={3} sx={{ mb: 1.25, pr: 6 }}>
-            <Box>
-              <Typography sx={{ fontSize: "1.1rem", fontWeight: 700, color: P.ink,
-                                fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>
-                {topic.articles}
-              </Typography>
-              <Typography sx={{ fontSize: "0.72rem", color: P.inkFaint }}>
-                {topic.articles === 1 ? "Article" : "Articles"}
-              </Typography>
-            </Box>
-            <Box>
-              <Typography sx={{ fontSize: "1.1rem", fontWeight: 700, color: P.ink,
-                                fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>
-                {topic.problems}
-              </Typography>
-              <Typography sx={{ fontSize: "0.72rem", color: P.inkFaint }}>
-                {topic.problems === 1 ? "Problem" : "Problems"}
-              </Typography>
-            </Box>
+          <Stack direction="row" alignItems="baseline" gap={0.75} sx={{ mb: 1.25, pr: 6 }}>
+            <Typography sx={{ fontSize: "1.1rem", fontWeight: 700, color: P.ink,
+                              fontVariantNumeric: "tabular-nums", lineHeight: 1.1 }}>
+              {topic.problems}
+            </Typography>
+            <Typography sx={{ fontSize: "0.72rem", color: P.inkFaint }}>
+              {topic.problems === 1 ? "Problem" : "Problems"}
+            </Typography>
           </Stack>
+
+          {/* The techniques themselves, not a count of them. The count told a learner how many
+              buckets there were; the names tell them what the topic actually teaches, which is
+              the whole claim this grouping makes. A tick marks a bucket COVERED - one problem
+              solved, which is the rule - and never solved === total. */}
+          {topic.bucketRows.length > 0 ? (
+            <Stack gap={0.4} sx={{ mb: 1.25 }}>
+              {topic.bucketRows.map((b) => (
+                <Stack key={b.id} direction="row" alignItems="center" gap={0.75}
+                       data-testid="track-bucket"
+                       data-satisfied={b.satisfied ? "true" : "false"}>
+                  <Box aria-hidden sx={{
+                    width: 14, height: 14, flexShrink: 0, borderRadius: "50%",
+                    display: "grid", placeItems: "center",
+                    border: `1.5px solid ${b.satisfied ? "#6ee7b7" : P.hairline}`,
+                    backgroundColor: b.satisfied ? "#ecfdf5" : "transparent",
+                    color: "#047857",
+                  }}>
+                    {b.satisfied ? <Icon icon="mdi:check" width={9} /> : null}
+                  </Box>
+                  <Typography sx={{
+                    flex: 1, minWidth: 0, fontSize: "0.78rem", lineHeight: 1.35,
+                    color: b.satisfied ? P.inkMuted : P.ink,
+                    overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  }}>
+                    {b.name}
+                  </Typography>
+                  <Typography sx={{ fontSize: "0.72rem", color: P.inkFaint, flexShrink: 0,
+                                    fontVariantNumeric: "tabular-nums" }}>
+                    {b.solved}/{b.total}
+                  </Typography>
+                </Stack>
+              ))}
+            </Stack>
+          ) : null}
 
           <Box aria-hidden sx={{ height: 5, borderRadius: 3, backgroundColor: "#eef2f7", mb: 0.75 }}>
             <Box sx={{
@@ -143,7 +167,7 @@ function TopicCard({
           </Box>
           <Typography sx={{ fontSize: "0.74rem", color: P.inkFaint,
                             fontVariantNumeric: "tabular-nums" }}>
-            {topic.problems > 0 ? `${topic.solved}/${topic.problems} solved` : "Reading only"}
+            {topic.solved}/{topic.problems} solved
           </Typography>
         </Box>
       </ButtonBase>

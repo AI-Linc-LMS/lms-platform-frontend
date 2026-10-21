@@ -28,6 +28,13 @@ describe("which tabs a course has", () => {
     expect(courseTabs(board(), false).map((t) => t.id)).toEqual(["journey"]);
   });
 
+  it("calls the entry interview \"Interview\"", () => {
+    // Product decision 2026-10-21. It was "Level Check"; the node and its id are unchanged.
+    const b = board({ interview: { card: { configured: true, templateId: 7 } } });
+    const tab = courseTabs(b, false).find((t) => t.id === "interview");
+    expect(tab?.label).toBe("Interview");
+  });
+
   it("offers the levels ladder only when there is more than one level", () => {
     // One week drawn as a tree is the journey tab with a line down the middle. `weeks` IS the
     // module list, so this decision needs no second request.
