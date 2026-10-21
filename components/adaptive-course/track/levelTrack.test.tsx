@@ -6,7 +6,7 @@
  * every count comes from the same payload the course page counts, so the two cannot drift.
  */
 
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { buildLevels, topicProgress } from "./levels";
@@ -140,5 +140,42 @@ describe("drawing the ladder", () => {
   it("says so rather than drawing an empty ladder", () => {
     render(<LevelTrack levels={[]} onOpenTopic={() => {}} />);
     expect(screen.getByText(/no practice topics yet/i)).toBeTruthy();
+  });
+});
+
+describe("the ladder's own chrome", () => {
+  it("offers a jump between levels, and none after the last one", () => {
+    // Eight levels is a long scroll; the jump is the one honest thing a reader wants. It must
+    // not appear after the final level, where it would point at nothing.
+    render(
+      <LevelTrack levels={buildLevels(course())} onOpenTopic={() => {}} />,
+    );
+    const levels = screen.getAllByTestId("track-level");
+    const jumps = screen.getAllByTestId("jump-to-level");
+    expect(jumps).toHaveLength(levels.length - 1);
+    expect(jumps[0].getAttribute("aria-label")).toBe("Scroll to Level 2");
+  });
+
+  it("renders no jump at all for a single-level course", () => {
+    const one = buildLevels(course()).slice(0, 1);
+    render(<LevelTrack levels={one} onOpenTopic={() => {}} />);
+    expect(screen.queryByTestId("jump-to-level")).toBeNull();
+  });
+
+  it("keeps the play disc decorative - the card is the only control", () => {
+    // A button inside a button is a nested-interactive a11y fault, and the disc does nothing
+    // the card does not already do.
+    render(<LevelTrack levels={buildLevels(course())} onOpenTopic={() => {}} />);
+    const card = screen.getAllByTestId("track-topic")[0];
+    expect(card.tagName).toBe("BUTTON");
+    expect(within(card).queryByRole("button")).toBeNull();
+  });
+
+  it("shows the bonus badge only for a topic that HAS buckets", () => {
+    // A topic with no buckets has no bonus to win, so a locked gift there promises nothing.
+    render(<LevelTrack levels={buildLevels(course())} onOpenTopic={() => {}} />);
+    const badges = screen.getAllByTestId("track-topic-bonus");
+    const topics = buildLevels(course()).flatMap((l) => l.topics);
+    expect(badges).toHaveLength(topics.filter((t) => t.buckets > 0).length);
   });
 });

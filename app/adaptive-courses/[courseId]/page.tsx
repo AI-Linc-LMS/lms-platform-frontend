@@ -36,7 +36,7 @@ const FLATTEN_SHELL_ON_PHONE = {
 };
 
 export default function AdaptiveCourseDetailPage() {
-  const { push, prefetch } = useInstantNavigation();
+  const { push } = useInstantNavigation();
   const params = useParams();
   const courseId = Number(params.courseId);
   // NOTE: there used to be a getCourse() fetch here to populate an instructor chip. It was dead:
@@ -68,24 +68,6 @@ export default function AdaptiveCourseDetailPage() {
             Back to Adaptive Courses
           </ButtonBase>
 
-          {/* The practice ladder. A separate route rather than a panel here, because it reads
-              the whole course tree - the fetch this page deliberately dropped for being an N+1
-              on every visit. Behind a click it costs that once, for a learner who asked. */}
-          <ButtonBase
-            onClick={() => push(`/adaptive-courses/${courseId}/track`)}
-            onMouseEnter={() => prefetch(`/adaptive-courses/${courseId}/track`)}
-            data-testid="open-practice-track"
-            sx={{
-              px: 1.75, py: 0.85, borderRadius: 2, gap: 0.6,
-              color: "#6366f1", fontWeight: 700, fontSize: "0.85rem",
-              border: "1px solid #dcd9fb", backgroundColor: "#f7f6ff",
-              "&:hover": { backgroundColor: "#efedff" },
-              [PHONE]: { minHeight: 44, borderRadius: 2.5 },
-            }}
-          >
-            <Icon icon="mdi:stairs-up" width={17} />
-            Practice track
-          </ButtonBase>
         </Box>
 
         <Box sx={FLATTEN_SHELL_ON_PHONE}>

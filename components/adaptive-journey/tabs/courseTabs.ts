@@ -15,6 +15,7 @@ import type { JourneyBoard } from "@/lib/types/adaptive-journey";
 
 export type CourseTabId =
   | "journey"
+  | "levels"
   | "tutor"
   | "assessments"
   | "interview"
@@ -43,6 +44,13 @@ export function courseTabs(board: JourneyBoard, tutorEnabled: boolean): CourseTa
   const tabs: CourseTab[] = [
     { id: "journey", label: "Journey", icon: "mdi:target" },
   ];
+
+  // The ladder of levels. Two or more weeks is what makes it a ladder rather than a restatement
+  // of the journey tab: a one-week course drawn as a tree is the same list with a line down it.
+  // `weeks` IS the module list, so this needs no extra request to decide.
+  if (board.weeks.length >= 2) {
+    tabs.push({ id: "levels", label: "Levels", icon: "mdi:stairs" });
+  }
 
   if (tutorEnabled) {
     tabs.push({ id: "tutor", label: "AI Tutor", icon: "mdi:robot-happy-outline" });
