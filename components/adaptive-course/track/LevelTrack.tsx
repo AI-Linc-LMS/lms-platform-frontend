@@ -60,6 +60,9 @@ function TopicCard({
 }) {
   const pct = Math.round(topicProgress(topic) * 100);
   const started = topic.solved > 0;
+  // No gift badge. It showed `bucketsCovered/buckets` under a gift icon labelled "Topic bonus",
+  // and no bonus exists to win - the bucket rows below already carry a tick each, which is the
+  // same information without the promise.
   const done = topic.problems > 0 && topic.solved >= topic.problems;
 
   return (
@@ -172,43 +175,6 @@ function TopicCard({
         </Box>
       </ButtonBase>
 
-      {/* The bonus badge hangs on the card's bottom edge, as in the reference - it belongs to
-          the topic but is not part of the card's own surface. Silent when the topic has no
-          buckets, because then there is no bonus to win. */}
-      {topic.buckets > 0 ? (
-        <Tooltip
-          arrow
-          enterTouchDelay={0}
-          title={
-            topic.bonusUnlocked
-              ? "Topic bonus unlocked - you have covered every technique here."
-              : `Topic bonus: ${topic.bucketsCovered} of ${topic.buckets} techniques covered. ` +
-                "Solve one problem from each bucket."
-          }
-        >
-          <Stack
-            direction="row" alignItems="center" gap={0.4}
-            data-testid="track-topic-bonus"
-            data-unlocked={topic.bonusUnlocked ? "true" : "false"}
-            sx={{
-              position: "absolute", left: "50%", bottom: 0, transform: "translateX(-50%)",
-              px: 0.9, height: 26, borderRadius: 999, cursor: "help",
-              backgroundColor: topic.bonusUnlocked ? "#ecfdf5" : P.surface,
-              boxShadow: topic.bonusUnlocked ? "0 0 0 1px #a7f3d0" : hairline,
-            }}
-          >
-            <Icon
-              icon={topic.bonusUnlocked ? "mdi:gift-open-outline" : "mdi:gift-outline"}
-              width={15}
-              color={topic.bonusUnlocked ? "#047857" : P.inkFaint}
-            />
-            <Typography sx={{ fontSize: "0.7rem", fontVariantNumeric: "tabular-nums",
-                              color: topic.bonusUnlocked ? "#047857" : P.inkFaint }}>
-              {topic.bucketsCovered}/{topic.buckets}
-            </Typography>
-          </Stack>
-        </Tooltip>
-      ) : null}
     </Box>
   );
 }
