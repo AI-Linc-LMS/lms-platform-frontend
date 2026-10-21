@@ -15,6 +15,10 @@ import { displayEarned, displayTopicEarned, pointsFactors } from "@/lib/adaptive
 import { MainLayout } from "@/components/layout/MainLayout";
 import { AdditionalPractice } from "@/components/adaptive-journey/AdditionalPractice";
 import { PracticeDeck } from "@/components/adaptive-journey/practice/PracticeDeck";
+import {
+  TechniqueBuckets,
+  type BucketedItem,
+} from "@/components/adaptive-journey/practice/TechniqueBuckets";
 import type { PracticeCardItem } from "@/components/adaptive-journey/practice/PracticeCard";
 import { PointsInfo } from "@/components/common/PointsInfo";
 import { AdaptiveSubmoduleSkeleton } from "@/components/courses/CourseSkeletons";
@@ -48,7 +52,11 @@ interface FlowItem {
    * Coding-only facts the deck renders as its own controls rather than as chip text. Reading
    * them back out of `chips` would mean parsing a sentence we had just formatted.
    */
-  practice?: { difficulty: string; requiresUpcoming: string[]; typicalMinutes?: number };
+  practice?: {
+    difficulty: string; requiresUpcoming: string[]; typicalMinutes?: number;
+    /** The technique group this problem belongs to, or null while the set is unbucketed. */
+    bucketId: number | null;
+  };
 }
 
 const VERB: Record<FlowKind, string> = { video: "watch", article: "read", quiz: "quiz", coding: "practice" };
@@ -130,6 +138,7 @@ function buildItems(
             difficulty: step.source.difficulty_level,
             requiresUpcoming: asStringList(step.source.requires_upcoming),
             typicalMinutes: step.source.typical_minutes,
+            bucketId: step.source.bucket_id ?? null,
           },
         };
       }
@@ -221,7 +230,7 @@ export default function AdaptiveCourseSubmodulePage() {
   // order). So splitting here changes what the steps LOOK like and not what order they are in,
   // and the deck can keep numbering from where the rows stopped.
   const lessonItems = useMemo(() => items.filter((i) => i.kind !== "coding"), [items]);
-  const practiceItems: PracticeCardItem[] = useMemo(
+  const practiceItems: BucketedItem[] = useMemo(
     () =>
       items
         .filter((i) => i.kind === "coding")
@@ -238,10 +247,20 @@ export default function AdaptiveCourseSubmodulePage() {
             onOffer: pts?.on_offer,
             earned: pts ? displayEarned(pts) : undefined,
             typicalMinutes: i.practice?.typicalMinutes,
+            bucketId: i.practice?.bucketId ?? null,
           };
         }),
     [items, pointsByKey, prefetch],
   );
+
+  // Buckets come from the coding SET, and a topic has at most one live set. When the set has
+  // none - which is most of them - this stays empty and the flat deck renders as before.
+  const bucketed = useMemo(() => {
+    const set = (submodule?.coding_sets ?? []).find((s) => (s.buckets?.length ?? 0) > 0);
+    return set
+      ? { buckets: set.buckets ?? [], bonusUnlocked: Boolean(set.bonus_unlocked) }
+      : null;
+  }, [submodule]);
   const allDone = items.length > 0 && firstIncomplete < 0;
   const resumeIdx = allDone ? 0 : firstIncomplete;
 
@@ -373,7 +392,16 @@ export default function AdaptiveCourseSubmodulePage() {
                   ))}
                 </Box>
 
-                <PracticeDeck items={practiceItems} firstStep={lessonItems.length + 1} />
+                {bucketed ? (
+                  <TechniqueBuckets
+                    buckets={bucketed.buckets}
+                    items={practiceItems as BucketedItem[]}
+                    bonusUnlocked={bucketed.bonusUnlocked}
+                    firstStep={lessonItems.length + 1}
+                  />
+                ) : (
+                  <PracticeDeck items={practiceItems} firstStep={lessonItems.length + 1} />
+                )}
               </Box>
             )}
 
