@@ -18,6 +18,13 @@
  * Renders nothing when the set has no buckets. 2,776 live sets are in that state, and the page
  * keeps drawing the flat deck it has always drawn.
  *
+ * NO "Topic bonus" panel. It said "Unlocks once you solve at least one problem from each bucket",
+ * and nothing in the platform unlocks: the only bonuses that exist are `video_no_skip_bonus` and
+ * the mock interview's `bonus_seconds`. Nothing reads `bonus_unlocked` to award anything. It was
+ * a promise of a reward that does not exist, and on every set still using the `count` rule it
+ * also described a completion rule that set does not use. The header's "N of M techniques
+ * covered" says the true half of what it was trying to say.
+ *
  * LAYOUT. Buckets are lists inside a balanced two-column masonry, not a grid of cards. A bucket
  * holds one problem or eight, and a uniform grid has to pick between stretching the small ones
  * across a row and stranding the large ones; columns packed by `balanceColumns` let a bucket be
@@ -28,7 +35,6 @@
 
 import { useMemo } from "react";
 import { Box, Stack, Typography, useMediaQuery } from "@mui/material";
-import { Icon } from "@iconify/react";
 
 import { AdaptiveInfoTip } from "@/components/adaptive-quiz/shared/AdaptiveInfoTip";
 import { PHONE } from "@/components/common/mobile/phone";
@@ -149,11 +155,9 @@ function BucketCard({ bucket, members }: { bucket: TechniqueBucket; members: Buc
 export function TechniqueBuckets({
   buckets,
   items,
-  bonusUnlocked,
 }: {
   buckets: TechniqueBucket[];
   items: BucketedItem[];
-  bonusUnlocked: boolean;
 }) {
   const grouped = useMemo(() => {
     const byBucket = new Map<number, BucketedItem[]>();
@@ -219,36 +223,6 @@ export function TechniqueBuckets({
         ))}
       </Box>
 
-      <Box
-        data-testid="topic-bonus"
-        data-unlocked={bonusUnlocked ? "true" : "false"}
-        sx={{
-          mt: 2, px: { xs: 1.5, sm: 2 }, py: 1.5,
-          borderRadius: `${RADIUS.card}px`,
-          display: "flex", alignItems: "center", gap: 1.5,
-          backgroundColor: bonusUnlocked ? "#ecfdf5" : "#f8fafc",
-          boxShadow: bonusUnlocked ? "0 0 0 1px #a7f3d0" : hairline,
-        }}
-      >
-        <Box sx={{
-          width: 34, height: 34, flexShrink: 0, borderRadius: "50%",
-          display: "grid", placeItems: "center",
-          backgroundColor: bonusUnlocked ? "#d1fae5" : "#eef2f7",
-          color: bonusUnlocked ? "#047857" : P.inkFaint,
-        }}>
-          <Icon icon={bonusUnlocked ? "mdi:trophy-outline" : "mdi:lock-outline"} width={18} />
-        </Box>
-        <Box sx={{ minWidth: 0 }}>
-          <Typography sx={{ fontSize: "0.92rem", fontWeight: 600, color: P.ink }}>
-            Topic bonus
-          </Typography>
-          <Typography sx={{ fontSize: "0.8rem", color: P.inkMuted }}>
-            {bonusUnlocked
-              ? "Unlocked — you have covered every technique in this topic."
-              : "Unlocks once you solve at least one problem from each bucket."}
-          </Typography>
-        </Box>
-      </Box>
     </Box>
   );
 }

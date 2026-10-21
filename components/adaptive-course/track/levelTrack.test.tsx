@@ -101,13 +101,6 @@ describe("building the ladder", () => {
     expect(first.topics[0].bucketRows.map((b) => b.satisfied)).toEqual([true, false]);
   });
 
-  it("carries bucket coverage and takes the bonus from the server", () => {
-    const [first] = buildLevels(course());
-    expect(first.topics[0].buckets).toBe(2);
-    expect(first.topics[0].bucketsCovered).toBe(1);
-    // Server said locked; nothing here may overrule it.
-    expect(first.topics[0].bonusUnlocked).toBe(false);
-  });
 
   it("reports no buckets for a topic that has not been bucketed", () => {
     const [, second] = buildLevels(course());
@@ -159,12 +152,14 @@ describe("drawing the ladder", () => {
     expect(onOpen).toHaveBeenCalledWith(11);
   });
 
-  it("shows bucket coverage only where the topic has buckets", () => {
+  it("shows coverage on the bucket rows themselves", () => {
+    // Where the gift badge used to summarise `covered/total`, each bucket now carries its own
+    // count and its own tick, which says the same thing per technique instead of per topic.
     render(<LevelTrack levels={buildLevels(course())} onOpenTopic={() => {}} />);
-    const badges = screen.getAllByTestId("track-topic-bonus");
-    expect(badges).toHaveLength(1);
-    expect(badges[0].dataset.unlocked).toBe("false");
-    expect(screen.getByText("1/2")).toBeTruthy();
+    const rows = screen.getAllByTestId("track-bucket");
+    expect(rows.map((r) => r.dataset.satisfied)).toContain("true");
+    expect(rows.map((r) => r.dataset.satisfied)).toContain("false");
+    expect(screen.getByText("1/1")).toBeTruthy();
   });
 
   it("says so rather than drawing an empty ladder", () => {
@@ -192,6 +187,16 @@ describe("the ladder's own chrome", () => {
     expect(screen.queryByTestId("jump-to-level")).toBeNull();
   });
 
+  it("shows NO bonus badge, because no bonus exists to win", () => {
+    // The badge read `covered/total` under a gift icon labelled "Topic bonus". Nothing in the
+    // platform awards anything for covering every bucket - the only bonuses that exist are
+    // video_no_skip_bonus and the interview's bonus_seconds - so it promised a reward that
+    // never arrives. The bucket rows carry a tick each, which is the same fact without it.
+    render(<LevelTrack levels={buildLevels(course())} onOpenTopic={() => {}} />);
+    expect(screen.queryByTestId("track-topic-bonus")).toBeNull();
+    expect(screen.getAllByTestId("track-bucket").length).toBeGreaterThan(0);
+  });
+
   it("keeps the play disc decorative - the card is the only control", () => {
     // A button inside a button is a nested-interactive a11y fault, and the disc does nothing
     // the card does not already do.
@@ -201,11 +206,4 @@ describe("the ladder's own chrome", () => {
     expect(within(card).queryByRole("button")).toBeNull();
   });
 
-  it("shows the bonus badge only for a topic that HAS buckets", () => {
-    // A topic with no buckets has no bonus to win, so a locked gift there promises nothing.
-    render(<LevelTrack levels={buildLevels(course())} onOpenTopic={() => {}} />);
-    const badges = screen.getAllByTestId("track-topic-bonus");
-    const topics = buildLevels(course()).flatMap((l) => l.topics);
-    expect(badges).toHaveLength(topics.filter((t) => t.buckets > 0).length);
-  });
 });

@@ -60,7 +60,7 @@ describe("practice grouped by technique", () => {
       <TechniqueBuckets
         buckets={[bucket(), bucket({ id: 2, name: "Simple binary search", total: 1 })]}
         items={[item("Allocate Books", 1), item("Red Zone", 1), item("Sorted Insert", 2)]}
-        bonusUnlocked={false}
+
       />,
     );
     expect(screen.getAllByTestId("technique-bucket")).toHaveLength(2);
@@ -75,43 +75,19 @@ describe("practice grouped by technique", () => {
       <TechniqueBuckets
         buckets={[bucket({ total: 3, solved: 1, satisfied: true })]}
         items={[item("a", 1, { completed: true }), item("b", 1), item("c", 1)]}
-        bonusUnlocked={false}
+
       />,
     );
     expect(screen.getByTestId("technique-bucket").dataset.satisfied).toBe("true");
     expect(screen.getByText("1/3")).toBeTruthy();
   });
 
-  it("takes the bonus state from the server rather than recomputing it", () => {
-    // Deliberately inconsistent input: every bucket satisfied but the server says locked.
-    // The client must not overrule it, or the two will disagree about finishing a module.
-    render(
-      <TechniqueBuckets
-        buckets={[bucket({ satisfied: true, solved: 2 })]}
-        items={[item("a", 1, { completed: true })]}
-        bonusUnlocked={false}
-      />,
-    );
-    expect(screen.getByTestId("topic-bonus").dataset.unlocked).toBe("false");
-    expect(screen.getByText(/at least one problem from each bucket/i)).toBeTruthy();
-  });
 
-  it("says the bonus is unlocked when the server says so", () => {
-    render(
-      <TechniqueBuckets
-        buckets={[bucket({ satisfied: true, solved: 1 })]}
-        items={[item("a", 1, { completed: true })]}
-        bonusUnlocked
-      />,
-    );
-    expect(screen.getByTestId("topic-bonus").dataset.unlocked).toBe("true");
-    expect(screen.getByText(/covered every technique/i)).toBeTruthy();
-  });
 
   it("renders nothing at all when the set has no buckets", () => {
     // 2,776 live sets are in this state; the page falls back to the flat deck.
     const { container } = render(
-      <TechniqueBuckets buckets={[]} items={[item("a", null)]} bonusUnlocked={false} />,
+      <TechniqueBuckets buckets={[]} items={[item("a", null)]} />,
     );
     expect(container.firstChild).toBeNull();
   });
@@ -121,7 +97,7 @@ describe("practice grouped by technique", () => {
       <TechniqueBuckets
         buckets={[bucket({ total: 1 })]}
         items={[item("in a bucket", 1), item("stray", null)]}
-        bonusUnlocked={false}
+
       />,
     );
     expect(screen.getByText("in a bucket")).toBeTruthy();
@@ -133,7 +109,7 @@ describe("practice grouped by technique", () => {
       <TechniqueBuckets
         buckets={[bucket({ satisfied: true }), bucket({ id: 2, name: "B" }), bucket({ id: 3, name: "C" })]}
         items={[item("a", 1, { completed: true })]}
-        bonusUnlocked={false}
+
       />,
     );
     expect(screen.getByText(/1 of 3 techniques covered/i)).toBeTruthy();
@@ -148,7 +124,7 @@ describe("the dense problem row", () => {
       <TechniqueBuckets
         buckets={[bucket({ total: 1 })]}
         items={[item("Allocate Books", 1)]}
-        bonusUnlocked={false}
+
       />,
     );
     const row = screen.getByTestId("bucket-problem-row");
@@ -162,7 +138,7 @@ describe("the dense problem row", () => {
       <TechniqueBuckets
         buckets={[bucket({ total: 1 })]}
         items={[item("Allocate Books", 1, { onOpen })]}
-        bonusUnlocked={false}
+
       />,
     );
     await userEvent.click(screen.getByTestId("bucket-problem-row"));
@@ -174,7 +150,7 @@ describe("the dense problem row", () => {
       <TechniqueBuckets
         buckets={[bucket({ total: 1 })]}
         items={[item("Allocate Books", 1, { difficulty: "Hard", typicalMinutes: 31, onOffer: 200 })]}
-        bonusUnlocked={false}
+
       />,
     );
     const row = screen.getByTestId("bucket-problem-row");
@@ -190,7 +166,7 @@ describe("the dense problem row", () => {
       <TechniqueBuckets
         buckets={[bucket({ total: 1 })]}
         items={[item("Allocate Books", 1)]}
-        bonusUnlocked={false}
+
       />,
     );
     const row = screen.getByTestId("bucket-problem-row");
@@ -204,7 +180,7 @@ describe("the dense problem row", () => {
       <TechniqueBuckets
         buckets={[bucket({ total: 1, solved: 1, satisfied: true })]}
         items={[item("Allocate Books", 1, { completed: true, onOffer: 200, earned: 150 })]}
-        bonusUnlocked={false}
+
       />,
     );
     const row = screen.getByTestId("bucket-problem-row");
@@ -219,7 +195,7 @@ describe("the dense problem row", () => {
       <TechniqueBuckets
         buckets={[bucket({ total: 1 })]}
         items={[item("Log Analysis", 1, { requiresUpcoming: ["Hash Tables"] })]}
-        bonusUnlocked={false}
+
       />,
     );
     expect(screen.getByText(/Hash Tables · taught later/)).toBeTruthy();
@@ -233,7 +209,7 @@ describe("the dense problem row", () => {
         items={[item("Log Analysis", 1, {
           difficulty: "Hard", typicalMinutes: 31, onOffer: 200, requiresUpcoming: ["Hash Tables"],
         })]}
-        bonusUnlocked={false}
+
       />,
     );
     const label = screen.getByTestId("bucket-problem-row").getAttribute("aria-label") ?? "";
@@ -258,7 +234,7 @@ describe("the bucket layout", () => {
           item("a", 1), item("b", 1), item("c", 1), item("d", 1),
           item("e", 2), item("f", 3),
         ]}
-        bonusUnlocked={false}
+
       />,
     );
     const cols = screen.getByTestId("bucket-columns").children;
@@ -284,7 +260,7 @@ describe("the bucket layout", () => {
           ...Array.from({ length: 8 }, (_, i) => item(`b${i}`, 2)),
           item("c", 3),
         ]}
-        bonusUnlocked={false}
+
       />,
     );
     const cols = screen.getByTestId("bucket-columns").children;
@@ -299,7 +275,7 @@ describe("the bucket layout", () => {
       <TechniqueBuckets
         buckets={[bucket({ total: 1 })]}
         items={[item("a", 1)]}
-        bonusUnlocked={false}
+
       />,
     );
     expect(screen.queryByText(/Solving/)).toBeNull();
@@ -310,7 +286,7 @@ describe("the bucket layout", () => {
       <TechniqueBuckets
         buckets={[bucket({ total: 1, description: "Problems where the answer is searched for." })]}
         items={[item("a", 1)]}
-        bonusUnlocked={false}
+
       />,
     );
     await userEvent.click(screen.getByRole("button", { name: /What the Search answer bucket is for/i }));
