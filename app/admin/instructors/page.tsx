@@ -63,10 +63,28 @@ import {
   useIsPhone,
 } from "@/components/admin/adminPhone";
 
+/**
+ * A course offered in the assign dialog. `kind` matters because classic and adaptive courses
+ * come from different tables with independent id spaces: id 14 is a different course in each.
+ * Selection is therefore keyed by `courseKey`, never by the bare id.
+ */
 interface CourseOption {
   id: number;
   title: string;
+  kind: "classic" | "adaptive";
 }
+
+const courseKey = (c: { id: number; kind: CourseOption["kind"] }) => `${c.kind}:${c.id}`;
+
+/**
+ * Everything assigned to an instructor, across both course tables, for display.
+ * The adaptive half was missing entirely, so a tenant with only adaptive courses showed an
+ * empty ASSIGNED COURSES column however many courses its instructors had.
+ */
+const assignedForDisplay = (row: InstructorRow) => [
+  ...(row.assigned_courses ?? []).map((c) => ({ ...c, kind: "classic" as const })),
+  ...(row.assigned_adaptive_courses ?? []).map((c) => ({ ...c, kind: "adaptive" as const })),
+];
 
 type ApiErrorShape = { response?: { data?: { detail?: string; error?: string } } };
 
@@ -148,7 +166,7 @@ export default function InstructorsPage() {
   const [assignRow, setAssignRow] = useState<InstructorRow | null>(null);
   const [allCourses, setAllCourses] = useState<CourseOption[]>([]);
   const [coursesLoading, setCoursesLoading] = useState(false);
-  const [selectedCourseIds, setSelectedCourseIds] = useState<number[]>([]);
+  const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   const [courseSearch, setCourseSearch] = useState("");
 
 
@@ -205,15 +223,34 @@ export default function InstructorsPage() {
   const refreshCourses = useCallback(async () => {
     try {
       setCoursesLoading(true);
-      const raw = await adminCourseBuilderService.getCourses();
-      const list = Array.isArray(raw) ? raw : raw?.results ?? raw?.courses ?? [];
-      const options: CourseOption[] = list
-        .map((c: { id?: number; title?: string }) =>
-          c && typeof c.id === "number" && typeof c.title === "string"
-            ? { id: c.id, title: c.title }
-            : null
-        )
-        .filter((c: CourseOption | null): c is CourseOption => c !== null);
+      // Two catalogues, because a tenant's courses can live in either table. Loading only
+      // the classic one is what made this dialog read "no courses available yet" on the five
+      // tenants that have no classic courses at all.
+      const normalise = (raw: unknown, kind: CourseOption["kind"]): CourseOption[] => {
+        const r = raw as { results?: unknown[]; courses?: unknown[] } | unknown[];
+        const list = Array.isArray(r) ? r : r?.results ?? r?.courses ?? [];
+        return (list as { id?: number; title?: string }[])
+          .map((c) =>
+            c && typeof c.id === "number" && typeof c.title === "string"
+              ? { id: c.id, title: c.title, kind }
+              : null
+          )
+          .filter((c): c is CourseOption => c !== null);
+      };
+
+      // One catalogue failing must not empty the other, so they settle independently.
+      const [classic, adaptive] = await Promise.allSettled([
+        adminCourseBuilderService.getCourses(),
+        adminInstructorsService.getAssignableAdaptiveCourses(),
+      ]);
+      const options = [
+        ...(classic.status === "fulfilled" ? normalise(classic.value, "classic") : []),
+        ...(adaptive.status === "fulfilled" ? normalise(adaptive.value, "adaptive") : []),
+      ];
+      if (classic.status === "rejected" && adaptive.status === "rejected") {
+        throw classic.reason;
+      }
+      options.sort((a, b) => a.title.localeCompare(b.title));
       setAllCourses(options);
     } catch (err: unknown) {
       showToast(readApiError(err, t("adminInstructors.errors.coursesLoadFailed")), "error");
@@ -306,7 +343,12 @@ export default function InstructorsPage() {
 
   const openAssignDialog = async (row: InstructorRow) => {
     setAssignRow(row);
-    setSelectedCourseIds((row.assigned_courses ?? []).map((c) => c.id));
+    setSelectedKeys([
+      ...(row.assigned_courses ?? []).map((c) => courseKey({ id: c.id, kind: "classic" })),
+      ...(row.assigned_adaptive_courses ?? []).map((c) =>
+        courseKey({ id: c.id, kind: "adaptive" })
+      ),
+    ]);
     setCourseSearch("");
     closeMenu();
     if (allCourses.length === 0) {
@@ -322,16 +364,16 @@ export default function InstructorsPage() {
 
   const allFilteredSelected =
     filteredAssignCourses.length > 0 &&
-    filteredAssignCourses.every((c) => selectedCourseIds.includes(c.id));
+    filteredAssignCourses.every((c) => selectedKeys.includes(courseKey(c)));
 
   const toggleAllFiltered = () => {
     if (allFilteredSelected) {
-      const remove = new Set(filteredAssignCourses.map((c) => c.id));
-      setSelectedCourseIds((prev) => prev.filter((id) => !remove.has(id)));
+      const remove = new Set(filteredAssignCourses.map(courseKey));
+      setSelectedKeys((prev) => prev.filter((k) => !remove.has(k)));
     } else {
-      const add = new Set(selectedCourseIds);
-      filteredAssignCourses.forEach((c) => add.add(c.id));
-      setSelectedCourseIds(Array.from(add));
+      const add = new Set(selectedKeys);
+      filteredAssignCourses.forEach((c) => add.add(courseKey(c)));
+      setSelectedKeys(Array.from(add));
     }
   };
 
@@ -340,10 +382,19 @@ export default function InstructorsPage() {
     if (!row) return;
     try {
       setBusyId(row.id);
+      // Split back into the two id spaces the API expects. Sending everything as
+      // `course_ids` would be rejected as invalid ids, or worse, match the wrong course.
+      const classicIds = selectedKeys
+        .filter((k) => k.startsWith("classic:"))
+        .map((k) => Number(k.slice("classic:".length)));
+      const adaptiveIds = selectedKeys
+        .filter((k) => k.startsWith("adaptive:"))
+        .map((k) => Number(k.slice("adaptive:".length)));
       const res = await adminInstructorsService.assignCoursesToInstructor(
         row.id,
-        selectedCourseIds,
-        "set"
+        classicIds,
+        "set",
+        adaptiveIds
       );
       showToast(res.detail || t("adminInstructors.toasts.coursesAssigned"), "success");
       setAssignRow(null);
@@ -632,11 +683,11 @@ export default function InstructorsPage() {
               )}
               {activeTab === "approved" && (
                 <CardFact label={t("adminInstructors.columns.assignedCourses")}>
-                  {row.assigned_courses && row.assigned_courses.length > 0 ? (
+                  {assignedForDisplay(row).length > 0 ? (
                     <Box sx={{ display: "flex", flexWrap: "wrap", gap: 0.5, alignItems: "center" }}>
-                      {row.assigned_courses.slice(0, 3).map((c) => (
+                      {assignedForDisplay(row).slice(0, 3).map((c) => (
                         <Chip
-                          key={c.id}
+                          key={courseKey(c)}
                           label={c.title}
                           size="small"
                           sx={{
@@ -648,13 +699,13 @@ export default function InstructorsPage() {
                           }}
                         />
                       ))}
-                      {row.assigned_courses.length > 3 && (
+                      {assignedForDisplay(row).length > 3 && (
                         <Button
                           size="small"
                           onClick={() => setViewCoursesRow(row)}
                           sx={{ minHeight: TAP, textTransform: "none", fontWeight: 700 }}
                         >
-                          {t("adminPeoplePhone.moreCourses", { count: row.assigned_courses.length - 3 })}
+                          {t("adminPeoplePhone.moreCourses", { count: assignedForDisplay(row).length - 3 })}
                         </Button>
                       )}
                     </Box>
@@ -842,7 +893,7 @@ export default function InstructorsPage() {
         >
           <Typography variant="caption" sx={{ color: "var(--font-secondary)" }}>
             {t("adminInstructors.assignDialog.selectedCount", {
-              count: selectedCourseIds.length,
+              count: selectedKeys.length,
             })}
           </Typography>
           <Button
@@ -884,18 +935,17 @@ export default function InstructorsPage() {
             </Typography>
           ) : (
             filteredAssignCourses.map((c) => {
-              const checked = selectedCourseIds.includes(c.id);
+              const key = courseKey(c);
+              const checked = selectedKeys.includes(key);
               return (
                 <FormControlLabel
-                  key={c.id}
+                  key={key}
                   control={
                     <Checkbox
                       checked={checked}
                       onChange={(_, v) => {
-                        setSelectedCourseIds((prev) =>
-                          v
-                            ? [...prev, c.id]
-                            : prev.filter((id) => id !== c.id)
+                        setSelectedKeys((prev) =>
+                          v ? [...prev, key] : prev.filter((k) => k !== key)
                         );
                       }}
                     />
@@ -920,11 +970,11 @@ export default function InstructorsPage() {
 
   const viewBody = (
     <>
-    {viewCoursesRow?.assigned_courses && viewCoursesRow.assigned_courses.length > 0 ? (
+    {viewCoursesRow && assignedForDisplay(viewCoursesRow).length > 0 ? (
       <Stack direction="row" spacing={0.5} flexWrap="wrap" useFlexGap sx={{ rowGap: 0.5 }}>
-        {viewCoursesRow.assigned_courses.map((c) => (
+        {assignedForDisplay(viewCoursesRow).map((c) => (
           <Chip
-            key={c.id}
+            key={courseKey(c)}
             label={c.title}
             size="small"
             sx={{
@@ -1334,7 +1384,7 @@ export default function InstructorsPage() {
                     </TableCell>
                     {activeTab === "approved" && (
                       <TableCell>
-                        {row.assigned_courses && row.assigned_courses.length > 0 ? (
+                        {assignedForDisplay(row).length > 0 ? (
                           <Stack
                             direction="row"
                             spacing={0.5}
@@ -1342,9 +1392,9 @@ export default function InstructorsPage() {
                             useFlexGap
                             sx={{ rowGap: 0.5 }}
                           >
-                            {row.assigned_courses.slice(0, 3).map((c) => (
+                            {assignedForDisplay(row).slice(0, 3).map((c) => (
                               <Chip
-                                key={c.id}
+                                key={courseKey(c)}
                                 label={c.title}
                                 size="small"
                                 sx={{
@@ -1356,11 +1406,11 @@ export default function InstructorsPage() {
                                 }}
                               />
                             ))}
-                            {row.assigned_courses.length > 3 && (
+                            {assignedForDisplay(row).length > 3 && (
                               <Chip
                                 size="small"
                                 variant="outlined"
-                                label={`+${row.assigned_courses.length - 3}`}
+                                label={`+${assignedForDisplay(row).length - 3}`}
                                 onClick={() => setViewCoursesRow(row)}
                                 sx={{ cursor: "pointer" }}
                               />
