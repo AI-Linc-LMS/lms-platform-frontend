@@ -258,7 +258,7 @@ export default function AdaptiveCourseSubmodulePage() {
   const bucketed = useMemo(() => {
     const set = (submodule?.coding_sets ?? []).find((s) => (s.buckets?.length ?? 0) > 0);
     return set
-      ? { buckets: set.buckets ?? [], bonusUnlocked: Boolean(set.bonus_unlocked) }
+      ? { buckets: set.buckets ?? [] }
       : null;
   }, [submodule]);
   const allDone = items.length > 0 && firstIncomplete < 0;
@@ -396,7 +396,6 @@ export default function AdaptiveCourseSubmodulePage() {
                   <TechniqueBuckets
                     buckets={bucketed.buckets}
                     items={practiceItems as BucketedItem[]}
-                    bonusUnlocked={bucketed.bonusUnlocked}
                   />
                 ) : (
                   <PracticeDeck items={practiceItems} firstStep={lessonItems.length + 1} />
