@@ -21,6 +21,13 @@ export interface InstructorRow {
   pending_reviewed_at?: string | null;
   pending_rejection_reason?: string | null;
   assigned_courses?: InstructorAssignedCourse[];
+  /**
+   * Adaptive course assignments, which live in a different table with its own id space.
+   * Deliberately NOT merged with `assigned_courses`: id 14 is a different course in each,
+   * and these ids are fed straight back as the assign dialog's pre-selection.
+   * Optional because an older backend does not send it.
+   */
+  assigned_adaptive_courses?: InstructorAssignedCourse[];
   /** Presigned S3 URL to the instructor's uploaded CV, when one was provided at signup. */
   instructor_cv_url?: string | null;
 }
@@ -28,6 +35,7 @@ export interface InstructorRow {
 export interface InstructorCoursesPayload {
   managed_courses: InstructorAssignedCourse[];
   assigned_courses: InstructorAssignedCourse[];
+  assigned_adaptive_courses?: InstructorAssignedCourse[];
   all_scoped: InstructorAssignedCourse[];
 }
 
@@ -134,14 +142,38 @@ export const adminInstructorsService = {
     return response.data;
   },
 
+  /**
+   * Assign courses to an instructor.
+   *
+   * Classic and adaptive courses go in separate lists because their ids come from different
+   * tables. Sending `adaptive_course_ids` is what makes the assignment reach
+   * `AdaptiveCourseStaff`, which is the table the instructor workspace and the RBAC gates
+   * read; omitting it leaves adaptive courses unassignable, which is what five tenants with
+   * no classic courses were hitting.
+   */
+  /**
+   * Adaptive courses the caller may assign, from the admin catalogue endpoint that already
+   * backs every other "pick a course" dropdown. It scopes by tenant and by what the caller
+   * owns, so there is no need to pass a client id.
+   */
+  getAssignableAdaptiveCourses: async () => {
+    const response = await apiClient.get("/adaptive-quiz/api/admin/courses/");
+    return response.data;
+  },
+
   assignCoursesToInstructor: async (
     profileId: number,
     courseIds: number[],
-    mode: AssignCoursesMode = "set"
+    mode: AssignCoursesMode = "set",
+    adaptiveCourseIds: number[] = []
   ): Promise<MutationResponse> => {
     const response = await apiClient.post<MutationResponse>(
       `${baseUrl()}/${profileId}/assign-courses/`,
-      { course_ids: courseIds, mode }
+      {
+        course_ids: courseIds,
+        adaptive_course_ids: adaptiveCourseIds,
+        mode,
+      }
     );
     return response.data;
   },
