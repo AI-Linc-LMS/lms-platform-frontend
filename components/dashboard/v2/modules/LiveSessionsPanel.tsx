@@ -4,51 +4,56 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Box, ButtonBase, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
-import { nextSitting, studentLiveSessionsService, type NextSitting, type StudentLiveSession } from "@/lib/services/live-sessions";
+import { studentLiveSessionsService, type UpcomingSession } from "@/lib/services/live-sessions";
 import { ModuleEmpty, ModuleHeader, ModulePanel, ModuleRowsSkeleton, Pill, fmtDateTime, timeUntil } from "./shared";
 import { phoneText } from "@/components/common/mobile/phoneText";
 
 const GRADIENT = "linear-gradient(135deg, #06b6d4, #3b82f6)";
 
-function joinUrl(s: StudentLiveSession): string | null {
-  return (s.is_google_meet ? s.join_link : s.zoom_join_url) ?? null;
-}
+/** Rows on the card. It asks for a couple more than it shows, so a sitting that ends between the
+ *  fetch and the render does not leave a gap in the rail. */
+const ROWS = 3;
+export const FETCH_LIMIT = 5;
+const DEFAULT_DURATION_MIN = 60;
 
-/** One row of the card: the session plus the sitting it is actually about. */
+/** One row of the card: the sitting, and whether it is running at the card's current tick. */
 interface SessionRow {
-  session: StudentLiveSession;
-  next: NextSitting;
+  session: UpcomingSession;
+  live: boolean;
+  startMs: number;
 }
 
 /**
  * Live sittings first, then soonest.
  *
- * Everything here is ranked and labelled by the resolved NEXT SITTING, never by the series'
- * `class_datetime` - that field is frozen at occurrence #1, so ordering by it ordered series by
- * when they STARTED and pushed the genuinely imminent session to the bottom (and, past three rows,
- * off the card). A session with no sitting left to come, or one cancelled by notice, drops out:
- * this is a "what's next" rail, and the live-sessions page carries the cancellation banner and its
- * reason.
+ * `upcoming/` has already resolved every series the learner may see to its NEXT sitting and
+ * ordered the page by that start, so the card no longer walks each occurrence of each series
+ * itself. What is left to decide here is time-dependent and so belongs to the minute tick: a
+ * sitting that has ended since the fetch drops out, and one whose start has passed is LIVE. The
+ * server's own `started` flag is honoured too, so a host who opens the room early is joinable
+ * before the clock says so.
  */
-function selectSessions(list: StudentLiveSession[], now: number): SessionRow[] {
+export function selectSessions(list: UpcomingSession[], now: number): SessionRow[] {
   const rows: SessionRow[] = [];
   for (const s of list) {
-    if (s.meeting_status !== "live" && s.meeting_status !== "scheduled") continue;
-    const next = nextSitting(s, now);
-    if (next) rows.push({ session: s, next });
+    if (s.notice_type === "cancelled") continue;
+    const startMs = new Date(s.starts_at).getTime();
+    if (Number.isNaN(startMs)) continue;
+    const endMs = startMs + (s.duration_minutes || DEFAULT_DURATION_MIN) * 60_000;
+    if (now > endMs) continue;
+    rows.push({ session: s, startMs, live: startMs <= now || (s.started && !s.ended) });
   }
   return rows
     .sort((a, b) => {
-      const rank = (r: SessionRow) => (r.next.live ? 0 : 1);
-      if (rank(a) !== rank(b)) return rank(a) - rank(b);
-      return a.next.startMs - b.next.startMs;
+      if (a.live !== b.live) return a.live ? -1 : 1;
+      return a.startMs - b.startMs;
     })
-    .slice(0, 3);
+    .slice(0, ROWS);
 }
 
 export function LiveSessionsPanel() {
   const router = useRouter();
-  const [sessions, setSessions] = useState<StudentLiveSession[] | null>(null);
+  const [sessions, setSessions] = useState<UpcomingSession[] | null>(null);
   const [hidden, setHidden] = useState(false);
   // The labels are relative, so they go stale where nothing re-renders: the card used to fetch
   // once on mount and freeze, never counting down or flipping to LIVE.
@@ -56,9 +61,12 @@ export function LiveSessionsPanel() {
 
   useEffect(() => {
     let cancelled = false;
+    // The lean endpoint: the next sitting per series, one small page, nothing about the archive.
+    // The rich list this card used to load carried every occurrence of every series the learner
+    // could see, on every visit to the dashboard, to show three rows.
     studentLiveSessionsService
-      .getSessions()
-      .then((list) => { if (!cancelled) setSessions(list ?? []); })
+      .getUpcoming({ limit: FETCH_LIMIT })
+      .then((page) => { if (!cancelled) setSessions(page.sessions ?? []); })
       .catch(() => { if (!cancelled) setHidden(true); });
     return () => { cancelled = true; };
   }, []);
@@ -84,15 +92,13 @@ export function LiveSessionsPanel() {
         <ModuleEmpty icon="mdi:calendar-blank-outline" message="No live sessions scheduled right now." />
       ) : (
         <Stack spacing={1}>
-          {items.map(({ session: s, next: n }) => {
-            // LIVE comes from the resolved sitting, not the series status: those disagreed, so a
-            // row could be styled LIVE while its own label read "in 3d".
-            const live = n.live;
-            const url = joinUrl(s);
-            const t = timeUntil(n.startIso, n.durationMin);
+          {items.map(({ session: s, live }) => {
+            // The server already chose between the Meet link and the Zoom link for this sitting.
+            const url = s.join_url;
+            const t = timeUntil(s.starts_at, s.duration_minutes);
             return (
               <ButtonBase
-                key={`${s.id}:${n.id ?? 0}`}
+                key={`${s.session_id}:${s.occurrence_id}`}
                 onClick={() => router.push("/live-sessions")}
                 sx={{ width: "100%", justifyContent: "flex-start", textAlign: "left", p: 1, borderRadius: 2.5, border: "1px solid", borderColor: live ? "#a5f3fc" : "#eef2f7", bgcolor: live ? "#ecfeff" : "transparent", "&:hover": { bgcolor: live ? "#cffafe" : "#f0f9ff" } }}
               >
@@ -101,15 +107,15 @@ export function LiveSessionsPanel() {
                     <Icon icon={s.is_google_meet ? "mdi:google" : "mdi:video"} width={19} />
                   </Box>
                   <Box sx={{ flex: 1, minWidth: 0 }}>
-                    <Typography noWrap sx={{ fontWeight: 700, fontSize: "0.86rem", color: "#0f172a" }}>{s.topic_name || s.name || "Live session"}</Typography>
+                    <Typography noWrap sx={{ fontWeight: 700, fontSize: "0.86rem", color: "#0f172a" }}>{s.title || "Live session"}</Typography>
                     <Stack direction="row" spacing={0.75} alignItems="center" sx={{ mt: 0.4 }}>
                       {live ? (
                         <Pill icon="mdi:circle" color="#dc2626" bg="#fef2f2">LIVE NOW</Pill>
                       ) : (
-                        <Pill icon="mdi:calendar-clock" color="#0e7490" bg="#ecfeff">{t?.text ?? fmtDateTime(n.startIso)}</Pill>
+                        <Pill icon="mdi:calendar-clock" color="#0e7490" bg="#ecfeff">{t?.text ?? fmtDateTime(s.starts_at)}</Pill>
                       )}
-                      {s.course_detail?.title && (
-                        <Typography noWrap sx={{ fontSize: phoneText(0.68), color: "#94a3b8", fontWeight: 600, maxWidth: 120 }}>{s.course_detail.title}</Typography>
+                      {s.course && (
+                        <Typography noWrap sx={{ fontSize: phoneText(0.68), color: "#94a3b8", fontWeight: 600, maxWidth: 120 }}>{s.course}</Typography>
                       )}
                     </Stack>
                   </Box>
