@@ -50,11 +50,16 @@ describe("the recordings module", () => {
   });
 
   it("is translated in every locale the sidebar renders", () => {
-    for (const [name, bundle] of [["en", en], ["ar", ar]] as const) {
-      const nav = (bundle as Record<string, Record<string, string>>).nav;
-      const desc = (bundle as Record<string, Record<string, string>>).navDesc;
-      expect(nav?.recordings, `nav.recordings missing in ${name}`).toBeTruthy();
-      expect(desc?.recordings, `navDesc.recordings missing in ${name}`).toBeTruthy();
+    // Through `unknown`: the imported JSON has a precise literal type whose other branches
+    // (string[] for daysOfWeek, nested month objects) do not overlap a flat string record, so a
+    // direct cast is rejected. The shape this test cares about is two string lookups.
+    const locales: ReadonlyArray<readonly [string, Record<string, Record<string, string>>]> = [
+      ["en", en as unknown as Record<string, Record<string, string>>],
+      ["ar", ar as unknown as Record<string, Record<string, string>>],
+    ];
+    for (const [name, bundle] of locales) {
+      expect(bundle.nav?.recordings, `nav.recordings missing in ${name}`).toBeTruthy();
+      expect(bundle.navDesc?.recordings, `navDesc.recordings missing in ${name}`).toBeTruthy();
     }
   });
 
