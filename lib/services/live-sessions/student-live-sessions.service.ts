@@ -101,6 +101,10 @@ export interface RecordingSession {
   title: string;
   course: string | null;
   batch: string | null;
+  /** The ids behind `course` and `batch`, so a row can be matched to the toolbar's selects. Null
+   *  for a class on a legacy course (which the `course` filter cannot address) or with no batch. */
+  course_id: number | null;
+  batch_id: number | null;
   instructor: string | null;
   held_at: string;
   duration_minutes: number;
@@ -111,16 +115,65 @@ export interface RecordingSession {
   has_transcript: boolean;
   has_summary: boolean;
   has_materials: boolean;
+  /** The AI summary as plain text, cut at a word boundary near 160 characters; null whenever
+   *  `has_summary` is false. The full summary and the transcript never ride in the list: the
+   *  reader fetches them per occurrence at the moment a student opens it. */
+  notes_preview: string | null;
   attended: boolean;
   my_attendance: { attended?: boolean; duration_seconds?: number } | null;
 }
 
+/** The filters `recordings/` accepts. Flags travel as "1" and are left out when false. */
+export interface RecordingsQuery {
+  limit?: number;
+  offset?: number;
+  /** Free text over the class, series, course and batch names. Trimmed; the server caps it at 100. */
+  q?: string;
+  /** Adaptive course id. Composes with the viewer's scope: it narrows, never widens. */
+  course?: number;
+  /** Cohort id, same rule. */
+  batch?: number;
+  has_recording?: boolean;
+  has_notes?: boolean;
+  /** An ISO date (local YYYY-MM-DD) or datetime; a bare date is midnight in the tenant's timezone. */
+  since?: string;
+  until?: string;
+  /** Ask for the `facets` block: sent with every first page, never with Load more. */
+  facets?: boolean;
+}
+
+export interface RecordingsFacets {
+  /** Computed over the whole viewer-visible archive, not the filtered page, so the controls hold
+   *  still while a student narrows the list. */
+  courses: { id: number; title: string; count: number }[];
+  batches: { id: number; name: string; count: number }[];
+  /** Under the current q/course/batch/since/until but NOT the view, so the two view badges agree
+   *  with the list beneath them. */
+  totals: { all: number; recordings: number; notes: number };
+}
+
+/** What the server actually applied. Junk is dropped and echoed as null rather than silently
+ *  widening the list, so the page (and a test) can see the difference. */
+export interface RecordingsAppliedFilters {
+  q: string | null;
+  course: number | null;
+  batch: number | null;
+  has_recording: boolean;
+  has_notes: boolean;
+  since: string | null;
+  until: string | null;
+}
+
 export interface RecordingsPayload {
   sessions: RecordingSession[];
+  /** The total matching the filters, so "Showing N of count" stays truthful. */
   count: number;
   limit: number;
   offset: number;
   has_more: boolean;
+  /** Present only when `facets` was asked for. */
+  facets?: RecordingsFacets;
+  filters?: RecordingsAppliedFilters;
 }
 
 function toStudentSession(item: LiveActivityListItem): StudentLiveSession {
@@ -289,21 +342,47 @@ export const studentLiveSessionsService = {
     };
   },
 
-  /** The archive, newest first and paginated. Opened deliberately, never polled. */
-  getRecordings: async (opts?: {
-    limit?: number;
-    offset?: number;
-  }): Promise<RecordingsPayload> => {
+  /**
+   * The archive, newest first, filtered on the server and paginated. Opened deliberately, never
+   * polled.
+   *
+   * Only the filters that are set travel: a false flag is left out rather than sent as "0" (the
+   * server has no negative form), an empty search is not sent at all, and `facets` goes with the
+   * first page only. What is not in `params` cannot widen or slow the query.
+   */
+  getRecordings: async (opts?: RecordingsQuery): Promise<RecordingsPayload> => {
+    const params: Record<string, string | number> = { limit: opts?.limit ?? 20 };
+    if (opts?.offset) params.offset = opts.offset;
+    const q = opts?.q?.trim();
+    if (q) params.q = q;
+    if (typeof opts?.course === "number" && Number.isFinite(opts.course)) params.course = opts.course;
+    if (typeof opts?.batch === "number" && Number.isFinite(opts.batch)) params.batch = opts.batch;
+    if (opts?.has_recording) params.has_recording = "1";
+    if (opts?.has_notes) params.has_notes = "1";
+    if (opts?.since) params.since = opts.since;
+    if (opts?.until) params.until = opts.until;
+    if (opts?.facets) params.facets = "1";
     const response = await apiClient.get<RecordingsPayload>(
       `${BASE}/live-activities/recordings/`,
-      { params: { limit: opts?.limit ?? 20, ...(opts?.offset ? { offset: opts.offset } : {}) } }
+      { params }
     );
+    const body = response.data;
+    // A backend that predates the preview and the ids (most of the fleet on any given day) sends
+    // neither. Normalise here so one shape reaches the page: "nothing to show", never a crash.
+    const sessions = (body?.sessions ?? []).map((s) => ({
+      ...s,
+      course_id: s.course_id ?? null,
+      batch_id: s.batch_id ?? null,
+      notes_preview: s.notes_preview ?? null,
+    }));
     return {
-      sessions: response.data?.sessions ?? [],
-      count: response.data?.count ?? 0,
-      limit: response.data?.limit ?? 20,
-      offset: response.data?.offset ?? 0,
-      has_more: Boolean(response.data?.has_more),
+      sessions,
+      count: body?.count ?? 0,
+      limit: body?.limit ?? 20,
+      offset: body?.offset ?? 0,
+      has_more: Boolean(body?.has_more),
+      ...(body?.facets ? { facets: body.facets } : {}),
+      ...(body?.filters ? { filters: body.filters } : {}),
     };
   },
 
@@ -346,7 +425,7 @@ export const studentLiveSessionsService = {
   },
 
   /** Current live participant count from Zoom (while the session is live). `count` is null when
-   *  Zoom's dashboard metrics aren't available for this tenant — caller falls back to attendance. */
+   *  Zoom's dashboard metrics aren't available for this tenant: the caller falls back to attendance. */
   getLiveCount: async (activityId: number): Promise<LiveJoinedCount> => {
     const response = await apiClient.get<LiveJoinedCount>(
       `${BASE}/live-activities/${activityId}/live-count/`
@@ -423,7 +502,7 @@ export async function getMyLiveSessionFeedback(
   return data;
 }
 
-/** Create or update — the backend upserts, so re-submitting edits rather than duplicating. */
+/** Create or update: the backend upserts, so re-submitting edits rather than duplicating. */
 export async function submitLiveSessionFeedback(
   liveClassId: number,
   payload: SubmitFeedbackPayload

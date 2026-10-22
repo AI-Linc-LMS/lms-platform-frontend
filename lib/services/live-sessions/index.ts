@@ -9,5 +9,8 @@ export type {
   UpcomingPayload,
   RecordingSession,
   RecordingsPayload,
+  RecordingsQuery,
+  RecordingsFacets,
+  RecordingsAppliedFilters,
 } from "./student-live-sessions.service";
 export { nextSitting, type NextSitting } from "./next-sitting";
