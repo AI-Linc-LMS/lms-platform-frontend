@@ -142,6 +142,53 @@ export function useLiveSessions() {
       setLoadStamp((n) => n + 1);
     }
   };
+  /**
+   * The cheap poll. It does NOT reload the list - it asks whether anything actually changed.
+   *
+   * The safety-net poll used to re-fetch the whole list every 60 seconds while a class was near:
+   * every session the tenant has ever held, with attendance, materials, recordings, transcripts
+   * and AI summaries, for a page that only wanted to know whether a class had started. On
+   * 2026-10-22 that put single requests at 125 SECONDS for Agileology and the load balancer
+   * answered 504 at its 60s idle timeout, so the students who could not get in were the ones
+   * trying to join a class about to start.
+   *
+   * `join-now/` answers the same question in a few hundred bytes - one indexed range scan, no
+   * history joins. So the poll reads that, digests the handful of flags the page's status
+   * machinery actually reacts to, and only pays for the full reload when one of them moves.
+   * A quiet quarter-hour before a class now costs ~15 probes instead of ~15 full reloads.
+   */
+  const probeSignalRef = useRef<string | null>(null);
+  const probeForChange = async () => {
+    try {
+      const { sessions: live } = await studentLiveSessionsService.getJoinNow();
+      const signal = live
+        .map(
+          (s) =>
+            `${s.occurrence_id}.${s.status}.${s.started ? 1 : 0}.${s.ended ? 1 : 0}.${
+              s.join_url ? 1 : 0
+            }`,
+        )
+        .sort()
+        .join("|");
+      if (probeSignalRef.current === null) {
+        // First probe of this mount: adopt the signal without reloading. The list we are holding
+        // was fetched moments ago, so a reload here would be a guaranteed duplicate of it.
+        probeSignalRef.current = signal;
+        return;
+      }
+      if (signal === probeSignalRef.current) return;
+      probeSignalRef.current = signal;
+      await loadImplRef.current({ background: true });
+    } catch {
+      // A failed probe does nothing this tick, deliberately. The boundary `setTimeout` below is
+      // what actually flips a card to LIVE on time; this poll is only the net under it. Falling
+      // back to the heaviest request on the platform at the moment the cheapest one is failing is
+      // how a blip becomes an outage - which is the exact shape of 2026-10-22.
+    }
+  };
+  const probeRef = useRef(probeForChange);
+  probeRef.current = probeForChange;
+
   // Stable identity so consumers (and the effects below) can list it as a dependency without
   // re-arming - and re-firing - their fetches on every render.
   const loadImplRef = useRef(loadSessionsImpl);
@@ -200,7 +247,9 @@ export function useLiveSessions() {
     }
     let interval: ReturnType<typeof setInterval> | null = null;
     if (near) {
-      interval = setInterval(() => void loadSessions({ background: true }), jitteredPollMs());
+      // The probe, not the reload. See probeForChange above for why that distinction is the
+      // whole fix rather than an optimisation.
+      interval = setInterval(() => void probeRef.current(), jitteredPollMs());
     }
     return () => {
       if (timer) clearTimeout(timer);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Box, Button, CircularProgress, Stack, Typography } from "@mui/material";
 import { Icon } from "@iconify/react";
@@ -538,15 +539,28 @@ export default function LiveSessionsPage() {
             </Typography>
           </Box>
         </Stack>
-        {/* The natural action for this header on a phone, so it spans the width rather than
-            floating as a 150px pill under a three-line paragraph. */}
-        <Button onClick={syncAll}
-          startIcon={<Icon icon="mdi:calendar-sync" width={18} />}
-          sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2.5, px: 2, py: 1,
-            width: { xs: "100%", sm: "auto" }, minHeight: { xs: 48, sm: "auto" },
-            border: "1px solid var(--border-default)", color: "var(--font-primary)", bgcolor: "var(--card-bg)" }}>
-          Sync to calendar
-        </Button>
+        {/* The natural actions for this header on a phone, so they span the width rather than
+            floating as 150px pills under a three-line paragraph. */}
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1}
+          sx={{ width: { xs: "100%", sm: "auto" } }}>
+          {/* A direct route to the one page that stays light under load. This page is rich and
+              answers everything; when a class is starting and everyone arrives at once, that is
+              exactly the wrong moment to need all of it. See app/live-sessions/join/page.tsx. */}
+          <Button component={Link} href="/live-sessions/join"
+            startIcon={<Icon icon="mdi:video-outline" width={18} />}
+            sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2.5, px: 2, py: 1,
+              width: { xs: "100%", sm: "auto" }, minHeight: { xs: 48, sm: "auto" },
+              border: "1px solid var(--border-default)", color: "var(--font-primary)", bgcolor: "var(--card-bg)" }}>
+            Join now
+          </Button>
+          <Button onClick={syncAll}
+            startIcon={<Icon icon="mdi:calendar-sync" width={18} />}
+            sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2.5, px: 2, py: 1,
+              width: { xs: "100%", sm: "auto" }, minHeight: { xs: 48, sm: "auto" },
+              border: "1px solid var(--border-default)", color: "var(--font-primary)", bgcolor: "var(--card-bg)" }}>
+            Sync to calendar
+          </Button>
+        </Stack>
       </Stack>
 
       {sessions.length === 0 ? (
@@ -739,15 +753,31 @@ export default function LiveSessionsPage() {
                 )
               )}
               {tab === "recordings" && (
-                recordings.length === 0 ? <Empty text="No recordings yet. They appear here automatically after a session ends." /> : (
-                  <Stack spacing={1.5}>
-                    {recordings.map((s) => (
-                      <RecordingCard key={s.occurrence_id ?? s.id} s={s} watching={watchingRecordingId === s.id}
-                        onWatch={() => handleWatchRecording(s)}
-                        onSummary={() => setSummarySession(s)} />
-                    ))}
+                <>
+                  {recordings.length === 0
+                    ? <Empty text="No recent recordings. They appear here automatically after a session ends." />
+                    : (
+                      <Stack spacing={1.5}>
+                        {recordings.map((s) => (
+                          <RecordingCard key={s.occurrence_id ?? s.id} s={s} watching={watchingRecordingId === s.id}
+                            onWatch={() => handleWatchRecording(s)}
+                            onSummary={() => setSummarySession(s)} />
+                        ))}
+                      </Stack>
+                    )}
+                  {/* This tab shows what is in the window this page already loaded. The COMPLETE
+                      archive lives on its own paginated route, because loading all of it here is
+                      what made this page grow heavier every week it existed - and it was being
+                      re-loaded every 60 seconds whenever a class was near. */}
+                  <Stack alignItems="center" sx={{ mt: recordings.length ? 2.5 : 1.5 }}>
+                    <Button component={Link} href="/live-sessions/recordings"
+                      endIcon={<Icon icon="mdi:arrow-right" width={18} />}
+                      sx={{ textTransform: "none", fontWeight: 700, minHeight: 44, px: 2.5,
+                        borderRadius: 2, border: "1px solid var(--border-default)" }}>
+                      Browse all recordings
+                    </Button>
                   </Stack>
-                )
+                </>
               )}
               {tab === "history" && (
                 history.length === 0 ? <Empty text="No past sessions yet." /> : (

@@ -39,6 +39,88 @@ interface LiveActivityListItem {
   [key: string]: unknown;
 }
 
+/** The envelope the list returns when `?limit=` is sent; a bare array when it is not. */
+interface LiveActivityListPage {
+  count?: number;
+  limit?: number;
+  offset?: number;
+  has_more?: boolean;
+  results?: LiveActivityListItem[];
+}
+
+/** One row of `join-now/` - deliberately tiny. */
+export interface JoinNowSession {
+  occurrence_id: number;
+  session_id: number;
+  title: string;
+  course: string | null;
+  starts_at: string;
+  duration_minutes: number;
+  status: string;
+  join_url: string | null;
+  started: boolean;
+  /** For the page's poll, not for the card: without it a class ENDING goes unnoticed. */
+  ended: boolean;
+  starts_in_seconds: number;
+}
+
+export interface JoinNowPayload {
+  now: string;
+  sessions: JoinNowSession[];
+}
+
+/** One row of `upcoming/` - no archive fields, by design. */
+export interface UpcomingSession extends JoinNowSession {
+  batch: string | null;
+  instructor: string | null;
+  timezone: string;
+  is_zoom: boolean;
+  is_google_meet: boolean;
+  notice_type: string | null;
+  notice_reason: string;
+  agenda: string[];
+  prep_items: string[];
+  reminder_enabled: boolean;
+  my_prep: boolean;
+}
+
+export interface UpcomingPayload {
+  now: string;
+  sessions: UpcomingSession[];
+  count: number;
+  limit: number;
+  offset: number;
+}
+
+/** One row of `recordings/` - flags, not URLs. Playback goes through the signed stream endpoint. */
+export interface RecordingSession {
+  occurrence_id: number;
+  session_id: number;
+  title: string;
+  course: string | null;
+  batch: string | null;
+  instructor: string | null;
+  held_at: string;
+  duration_minutes: number;
+  timezone: string;
+  is_zoom: boolean;
+  is_google_meet: boolean;
+  has_recording: boolean;
+  has_transcript: boolean;
+  has_summary: boolean;
+  has_materials: boolean;
+  attended: boolean;
+  my_attendance: { attended?: boolean; duration_seconds?: number } | null;
+}
+
+export interface RecordingsPayload {
+  sessions: RecordingSession[];
+  count: number;
+  limit: number;
+  offset: number;
+  has_more: boolean;
+}
+
 function toStudentSession(item: LiveActivityListItem): StudentLiveSession {
   return {
     id: item.id,
@@ -117,11 +199,109 @@ export function mapStudentLiveSessions(items: LiveActivityListItem[]): StudentLi
 }
 
 export const studentLiveSessionsService = {
-  getSessions: async (): Promise<StudentLiveSession[]> => {
-    const response = await apiClient.get<LiveActivityListItem[]>(
-      `${BASE}/live-activities/`
+  /**
+   * The rich list: every session, every field, the whole history.
+   *
+   * `limit` turns on the backend's pagination and makes the response an envelope. Pass it. The
+   * unpaginated form returns the tenant's ENTIRE session history, which grows monotonically - so
+   * the cost of the page a student opens grows with the tenant's age. On 2026-10-22 that reached
+   * 125 seconds for Agileology and the load balancer answered 504 at its 60s idle timeout.
+   *
+   * For the three questions students actually ask, prefer the lean endpoints below:
+   * `getJoinNow` (what do I join now), `getUpcoming` (what is coming), `getRecordings` (what did
+   * I miss). They exist so this one's cost is not on the path of someone trying to join a class.
+   */
+  getSessions: async (opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<StudentLiveSession[]> => {
+    const params = opts?.limit
+      ? { limit: opts.limit, ...(opts.offset ? { offset: opts.offset } : {}) }
+      : undefined;
+    const response = await apiClient.get<LiveActivityListItem[] | LiveActivityListPage>(
+      `${BASE}/live-activities/`,
+      params ? { params } : undefined
     );
-    return mapStudentLiveSessions(response.data);
+    // The backend keeps the bare-array shape when no `limit` is sent and returns an envelope when
+    // one is, so both have to be read here. Guessing from `opts` instead would break the moment a
+    // caller and the server disagreed about whether a page was requested.
+    const body = response.data as LiveActivityListItem[] | LiveActivityListPage;
+    const items = Array.isArray(body) ? body : (body?.results ?? []);
+    return mapStudentLiveSessions(items);
+  },
+
+  /** The same call, keeping the envelope so a caller can page through. */
+  getSessionsPage: async (opts: {
+    limit: number;
+    offset?: number;
+  }): Promise<{ sessions: StudentLiveSession[]; count: number; hasMore: boolean }> => {
+    const response = await apiClient.get<LiveActivityListPage>(`${BASE}/live-activities/`, {
+      params: { limit: opts.limit, ...(opts.offset ? { offset: opts.offset } : {}) },
+    });
+    const body = response.data;
+    const items = Array.isArray(body) ? body : (body?.results ?? []);
+    return {
+      sessions: mapStudentLiveSessions(items),
+      count: Array.isArray(body) ? items.length : (body?.count ?? items.length),
+      hasMore: Array.isArray(body) ? false : Boolean(body?.has_more),
+    };
+  },
+
+  /**
+   * What is startable right now - a few hundred bytes, bounded to ten rows.
+   *
+   * The smallest surface on the platform and the only one safe to poll hard. It is what the join
+   * page lives on: no attendance history, no materials, no recordings, no prep state, so it still
+   * answers when the rich list is struggling.
+   */
+  getJoinNow: async (): Promise<JoinNowPayload> => {
+    const response = await apiClient.get<JoinNowPayload>(
+      `${BASE}/live-activities/join-now/`
+    );
+    return {
+      now: response.data?.now ?? new Date().toISOString(),
+      sessions: response.data?.sessions ?? [],
+    };
+  },
+
+  /**
+   * Future dates only, with the state the upcoming cards render and nothing else.
+   *
+   * This is what the page polls, in place of re-fetching the archive every 60 seconds.
+   */
+  getUpcoming: async (opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<UpcomingPayload> => {
+    const response = await apiClient.get<UpcomingPayload>(
+      `${BASE}/live-activities/upcoming/`,
+      { params: { limit: opts?.limit ?? 50, ...(opts?.offset ? { offset: opts.offset } : {}) } }
+    );
+    return {
+      now: response.data?.now ?? new Date().toISOString(),
+      sessions: response.data?.sessions ?? [],
+      count: response.data?.count ?? 0,
+      limit: response.data?.limit ?? 50,
+      offset: response.data?.offset ?? 0,
+    };
+  },
+
+  /** The archive, newest first and paginated. Opened deliberately, never polled. */
+  getRecordings: async (opts?: {
+    limit?: number;
+    offset?: number;
+  }): Promise<RecordingsPayload> => {
+    const response = await apiClient.get<RecordingsPayload>(
+      `${BASE}/live-activities/recordings/`,
+      { params: { limit: opts?.limit ?? 20, ...(opts?.offset ? { offset: opts.offset } : {}) } }
+    );
+    return {
+      sessions: response.data?.sessions ?? [],
+      count: response.data?.count ?? 0,
+      limit: response.data?.limit ?? 20,
+      offset: response.data?.offset ?? 0,
+      has_more: Boolean(response.data?.has_more),
+    };
   },
 
   /**
