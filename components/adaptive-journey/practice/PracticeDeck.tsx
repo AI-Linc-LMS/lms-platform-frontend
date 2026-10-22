@@ -13,12 +13,12 @@
  * or nine, and a hardcoded three-up leaves one card stranded alone on a second row.
  */
 
-import { useMemo, useState } from "react";
-import { Box, ButtonBase, Stack, Typography } from "@mui/material";
+import { useMemo } from "react";
+import { Box, Stack, Typography } from "@mui/material";
 import { PHONE } from "@/components/common/mobile/phone";
 import { PracticeCard, type PracticeCardItem } from "./PracticeCard";
-import { P, RADIUS, focusRing, hairline } from "./practiceTokens";
-import { BUDGETS, hiddenByBudget, splitByReadiness, type TimeBudget } from "./readiness";
+import { P, RADIUS } from "./practiceTokens";
+import { splitByReadiness } from "./readiness";
 
 export function PracticeDeck({
   items,
@@ -28,18 +28,10 @@ export function PracticeDeck({
   /** The step number of the first card, so numbering continues from the lessons above. */
   firstStep: number;
 }) {
-  const [budget, setBudget] = useState<TimeBudget>(null);
-  const buckets = useMemo(
-    () => splitByReadiness(items, budget, firstStep),
-    [items, budget, firstStep],
-  );
-  const hidden = useMemo(() => hiddenByBudget(items, budget), [items, budget]);
+  const buckets = useMemo(() => splitByReadiness(items, firstStep), [items, firstStep]);
 
   if (items.length === 0) return null;
   const solved = items.filter((i) => i.completed).length;
-  // Offered only when a measured minute figure exists to filter on. A control that cannot
-  // change anything is worse than no control.
-  const canFilterByTime = items.some((i) => i.typicalMinutes != null);
 
   return (
     <Box data-testid="practice-deck" sx={{ mt: 3 }}>
@@ -62,51 +54,6 @@ export function PracticeDeck({
           {solved} of {items.length} solved
         </Typography>
       </Stack>
-
-      {canFilterByTime && (
-        <Stack
-          direction="row"
-          alignItems="center"
-          gap={1}
-          sx={{ mb: 2, flexWrap: "wrap" }}
-          data-testid="practice-budget"
-        >
-          <Typography sx={{ fontSize: "0.8rem", color: P.inkFaint }}>I have</Typography>
-          <Stack
-            direction="row"
-            role="group"
-            aria-label="How long you have"
-            sx={{ bgcolor: P.surface, borderRadius: 999, p: 0.4, boxShadow: hairline }}
-          >
-            {BUDGETS.map((b) => {
-              const on = b.value === budget;
-              return (
-                <ButtonBase
-                  key={b.label}
-                  onClick={() => setBudget(b.value)}
-                  aria-pressed={on}
-                  sx={{
-                    px: 1.5, py: 0.6, borderRadius: 999,
-                    fontSize: "0.79rem", fontWeight: 500,
-                    color: on ? "#fff" : P.inkMuted,
-                    bgcolor: on ? P.violet : "transparent",
-                    "&:focus-visible": { outline: "none", boxShadow: focusRing },
-                    [PHONE]: { minHeight: 44, px: 1.75 },
-                  }}
-                >
-                  {b.label}
-                </ButtonBase>
-              );
-            })}
-          </Stack>
-          {hidden > 0 && (
-            // Never a silent cap: a filter that quietly removes work reads as a thinner topic.
-            <Typography sx={{ fontSize: "0.78rem", color: P.inkFaint }}>
-              {hidden} longer {hidden === 1 ? "one" : "ones"} hidden
-            </Typography>
-          )}
-        </Stack>
-      )}
 
       {buckets.map((bucket) => (
         <Box key={bucket.key} sx={{ mb: 2.5, "&:last-of-type": { mb: 0 } }}>
@@ -152,30 +99,6 @@ export function PracticeDeck({
           </Box>
         </Box>
       ))}
-
-      {buckets.length === 0 && (
-        <Box
-          sx={{
-            p: 3, textAlign: "center", borderRadius: `${RADIUS.card}px`,
-            bgcolor: P.surface, boxShadow: hairline,
-          }}
-        >
-          <Typography sx={{ fontSize: "0.88rem", color: P.inkMuted }}>
-            Nothing here fits {BUDGETS.find((b) => b.value === budget)?.label.toLowerCase()}.
-          </Typography>
-          <ButtonBase
-            onClick={() => setBudget(null)}
-            sx={{
-              mt: 1, px: 1.5, py: 0.75, borderRadius: `${RADIUS.control}px`,
-              fontSize: "0.82rem", fontWeight: 500, color: P.violet,
-              "&:focus-visible": { outline: "none", boxShadow: focusRing },
-              [PHONE]: { minHeight: 44 },
-            }}
-          >
-            Show everything
-          </ButtonBase>
-        </Box>
-      )}
     </Box>
   );
 }
