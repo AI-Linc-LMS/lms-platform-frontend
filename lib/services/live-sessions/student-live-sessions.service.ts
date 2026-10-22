@@ -87,9 +87,11 @@ export interface UpcomingSession extends JoinNowSession {
 export interface UpcomingPayload {
   now: string;
   sessions: UpcomingSession[];
+  /** The TOTAL number of upcoming dates, not the page size. Same meaning as on RecordingsPayload. */
   count: number;
   limit: number;
   offset: number;
+  has_more: boolean;
 }
 
 /** One row of `recordings/` - flags, not URLs. Playback goes through the signed stream endpoint. */
@@ -283,6 +285,7 @@ export const studentLiveSessionsService = {
       count: response.data?.count ?? 0,
       limit: response.data?.limit ?? 50,
       offset: response.data?.offset ?? 0,
+      has_more: Boolean(response.data?.has_more),
     };
   },
 
