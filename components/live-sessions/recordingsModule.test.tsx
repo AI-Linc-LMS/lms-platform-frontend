@@ -1,3 +1,5 @@
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 /**
@@ -66,5 +68,16 @@ describe("the recordings module", () => {
   it("declares the i18n keys it actually uses", () => {
     expect(recordings?.labelKey).toBe("nav.recordings");
     expect(recordings?.descKey).toBe("navDesc.recordings");
+  });
+
+  it("its page copy carries no em dashes", () => {
+    // House style: a comma, a colon or a full stop, never U+2014, and never an en dash doing an
+    // em dash's job between two words. The page's description is what a learner reads.
+    const root = path.join(__dirname, "..", "..");
+    for (const rel of ["app/recordings/page.tsx", "lib/services/live-sessions/student-live-sessions.service.ts"]) {
+      const text = readFileSync(path.join(root, rel), "utf8");
+      expect(text, `${rel} contains an em dash`).not.toMatch(/\u2014/);
+      expect(text, `${rel} uses an en dash as an em dash`).not.toMatch(/\w \u2013 \w/);
+    }
   });
 });
