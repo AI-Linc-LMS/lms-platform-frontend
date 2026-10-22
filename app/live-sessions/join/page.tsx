@@ -198,7 +198,7 @@ export default function JoinNowPage() {
               </Button>
               <Button
                 component={Link}
-                href="/live-sessions/recordings"
+                href="/recordings"
                 sx={{ textTransform: "none", fontWeight: 700, minHeight: 44 }}
               >
                 Catch up on recordings
