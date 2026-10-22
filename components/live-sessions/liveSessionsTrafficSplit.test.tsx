@@ -37,6 +37,36 @@ vi.mock("@/components/common/PageShell", () => ({
 }));
 vi.mock("@/components/common/ModulePageHeader", () => ({
   ModulePageHeader: ({ title }: { title: string }) => <h1>{title}</h1>,
+  HeaderActionButton: ({ children }: { children: React.ReactNode }) => (
+    <button type="button">{children}</button>
+  ),
+}));
+vi.mock("@/lib/hooks/useInstantNavigation", () => ({
+  useInstantNavigation: () => ({ push: vi.fn(), replace: vi.fn(), prefetch: vi.fn(), isPending: false }),
+}));
+// The recordings page's Recordings | Notes switch is a shared component with its own tests, and
+// its phone branch is a row of BUTTONS named "Recordings" and "Notes". Rendered here, the "Notes"
+// chip would collide with the row's "Notes" action that these cases query by role. A bare
+// tablist keeps the cases below exactly as they were written; recordingsPage.test.tsx renders
+// the real switch.
+vi.mock("@/components/assessment/AssessmentStatusFilter", () => ({
+  AssessmentStatusFilter: ({
+    tabs,
+    value,
+    onChange,
+  }: {
+    tabs: { value: string; label: string }[];
+    value: string;
+    onChange: (v: string) => void;
+  }) => (
+    <div role="tablist">
+      {tabs.map((t) => (
+        <div key={t.value} role="tab" aria-selected={t.value === value} onClick={() => onChange(t.value)}>
+          {t.label}
+        </div>
+      ))}
+    </div>
+  ),
 }));
 vi.mock("next/link", () => ({
   default: ({ children, href }: { children: React.ReactNode; href: string }) => (
