@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { useParams } from "next/navigation";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
@@ -29,6 +29,12 @@ import {
   type ReadingTier,
 } from "@/lib/services/adaptive-course.service";
 import { PHONE } from "@/components/common/mobile/phone";
+
+// Stable identities. `explainTerms` is a dependency of the effect in AdaptiveArticleBody
+// that rebuilds the article DOM and mounts a React root per code block, so an inline `[]`
+// made that rebuild run on every render of this page.
+const NO_EXPLAIN_TERMS: string[] = [];
+const noop = () => {};
 
 const TIER_BLURB: Record<ReadingTier, string> = {
   Beginner: "ELI5",
@@ -179,18 +185,40 @@ export default function AdaptiveArticleReaderPage() {
   }, [headings]);
 
   // Reading-progress bar. Capture-phase scroll so it works whichever ancestor scrolls.
+  //
+  // This handler used to call setProgress with the raw 0..1 fraction on every scroll event.
+  // Scroll fires once per frame at best and far more often on a trackpad, and every event
+  // produced a different float, so the whole article page re-rendered continuously for the
+  // entire time a learner was scrolling. On an article carrying figures and runnable code
+  // blocks that is what read as the page "glitching and re-rendering".
+  //
+  // Two things fix it, and both are lossless:
+  //   * coalesce to one reading per animation frame, so a burst of scroll events costs one
+  //     measurement instead of twenty;
+  //   * store whole percent. The bar renders `Math.round(progress * 100)%`, so every
+  //     sub-percent change was already invisible and is now also free. That is the dead zone
+  //     a self-measuring layout needs: quantise state to the resolution actually rendered.
   useEffect(() => {
-    const onScroll = () => {
+    let frame = 0;
+    const measure = () => {
+      frame = 0;
       const el = bodyWrapRef.current;
       if (!el) return;
       const rect = el.getBoundingClientRect();
       const total = rect.height - window.innerHeight;
-      setProgress(total > 0 ? Math.min(1, Math.max(0, -rect.top / total)) : 0);
+      const next = total > 0 ? Math.min(100, Math.max(0, Math.round((-rect.top / total) * 100))) : 0;
+      // Bail before setState, not after: an unchanged percent must not re-render the page.
+      setProgress((prev) => (prev === next ? prev : next));
     };
-    onScroll();
-    window.addEventListener("scroll", onScroll, true);
-    window.addEventListener("resize", onScroll);
+    const onScroll = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(measure);
+    };
+    measure();
+    window.addEventListener("scroll", onScroll, { capture: true, passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
     return () => {
+      if (frame) cancelAnimationFrame(frame);
       window.removeEventListener("scroll", onScroll, true);
       window.removeEventListener("resize", onScroll);
     };
@@ -234,16 +262,25 @@ export default function AdaptiveArticleReaderPage() {
     void switchTier(next);
   }
 
-  async function openExplain(term: string, anchor: HTMLElement, context: string) {
+  // AdaptiveArticleBody is memoised and captures `onExplain` in a ref, refreshing it only when
+  // it actually re-renders. So this callback has to be BOTH identity-stable and current: stable
+  // or the memo is pointless, and reading `tier` from a ref rather than a closure or the first
+  // render's tier would be the one explaining terms forever.
+  const tierRef = useRef(tier);
+  useEffect(() => { tierRef.current = tier; }, [tier]);
+
+  const openExplain = useCallback(async (term: string, anchor: HTMLElement, context: string) => {
     setExplain({ anchor, term, loading: true, result: null, view: "explanation" });
     try {
-      const result = await adaptiveCourseService.explainTerm(articleId, { term, context, tier });
+      const result = await adaptiveCourseService.explainTerm(articleId, {
+        term, context, tier: tierRef.current,
+      });
       setExplain((s) => (s && s.term === term ? { ...s, loading: false, result } : s));
     } catch {
       setExplain((s) => (s ? { ...s, loading: false } : s));
       showToast("Couldn't explain that right now.", "error");
     }
-  }
+  }, [articleId, showToast]);
 
   async function handleSummarise() {
     setSummary({ open: true, loading: true, html: "", bullets: [] });
@@ -267,7 +304,7 @@ export default function AdaptiveArticleReaderPage() {
       ) : (
         <Box sx={{ fontSize: "0.9rem" }}>
           {/* word-by-word reveal of the recap */}
-          <AdaptiveArticleBody html={summary.html} explainTerms={[]} onExplain={() => {}} reveal />
+          <AdaptiveArticleBody html={summary.html} explainTerms={NO_EXPLAIN_TERMS} onExplain={noop} reveal />
           {summary.bullets.length > 0 && (
             <Box sx={{ display: "flex", flexDirection: "column", gap: 0.85, mt: 2 }}>
               <Typography sx={{ fontSize: "0.66rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 800, letterSpacing: "0.1em", textTransform: "uppercase", color: "text.secondary" }}>Key takeaways</Typography>
@@ -292,7 +329,7 @@ export default function AdaptiveArticleReaderPage() {
     <MainLayout fullWidthContent>
       {/* Reading-progress bar */}
       <Box sx={{ position: "fixed", top: 0, left: 0, right: 0, height: 3, zIndex: 1300, pointerEvents: "none" }}>
-        <Box sx={{ height: "100%", width: `${Math.round(progress * 100)}%`,
+        <Box sx={{ height: "100%", width: `${progress}%`,
           background: "linear-gradient(90deg, #6366f1, #a855f7, #ec4899)", transition: "width 0.1s linear" }} />
       </Box>
 
