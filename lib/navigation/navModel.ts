@@ -307,6 +307,21 @@ export const STUDENT_NAV_ITEMS: NavigationItem[] = [
     descKey: "navDesc.liveSessions",
   },
   {
+    // Its own module, not a tab on Live Sessions. The archive answers a different question from
+    // the schedule - "what did I miss" rather than "where do I go next" - and it is also the
+    // only surface that reaches a class held before a learner joined their batch, which is
+    // precisely what nobody finds behind a tab on a page about today.
+    //
+    // Keeping it separate is a load decision too: the live page polls and the archive never
+    // does, so sharing one page made the growing half ride on the busy half.
+    label: "Recordings",
+    labelKey: "nav.recordings",
+    path: "/recordings",
+    icon: "mdi:play-box-outline",
+    featureName: "live_sessions",
+    descKey: "navDesc.recordings",
+  },
+  {
     label: "Community",
     labelKey: "nav.community",
     path: "/community",

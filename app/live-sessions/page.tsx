@@ -31,7 +31,10 @@ import {
 
 /* --------------------------------- helpers -------------------------------- */
 
-type Tab = "upcoming" | "recordings" | "history";
+// Recordings is its own module now (/recordings), not a tab here: the archive answers a
+// different question from the schedule, it only grows, and this page polls while it does
+// not - so sharing one page made the growing half ride on the busy half.
+type Tab = "upcoming" | "history";
 const PAST = new Set(["ended", "expired"]);
 
 /**
@@ -519,7 +522,6 @@ export default function LiveSessionsPage() {
 
   const TABS: { key: Tab; label: string; icon: string; count: number }[] = [
     { key: "upcoming", label: "Upcoming", icon: "mdi:calendar-blank-outline", count: upcoming.length },
-    { key: "recordings", label: "Recordings", icon: "mdi:play-circle-outline", count: recordings.length },
     { key: "history", label: "History", icon: "mdi:history", count: history.length },
   ];
 
@@ -546,6 +548,13 @@ export default function LiveSessionsPage() {
           {/* A direct route to the one page that stays light under load. This page is rich and
               answers everything; when a class is starting and everyone arrives at once, that is
               exactly the wrong moment to need all of it. See app/live-sessions/join/page.tsx. */}
+          <Button component={Link} href="/recordings"
+            startIcon={<Icon icon="mdi:play-box-outline" width={18} />}
+            sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2.5, px: 2, py: 1,
+              width: { xs: "100%", sm: "auto" }, minHeight: { xs: 48, sm: "auto" },
+              border: "1px solid var(--border-default)", color: "var(--font-primary)", bgcolor: "var(--card-bg)" }}>
+            Recordings
+          </Button>
           <Button component={Link} href="/live-sessions/join"
             startIcon={<Icon icon="mdi:video-outline" width={18} />}
             sx={{ textTransform: "none", fontWeight: 700, borderRadius: 2.5, px: 2, py: 1,
@@ -751,33 +760,6 @@ export default function LiveSessionsPage() {
                     ))}
                   </Stack>
                 )
-              )}
-              {tab === "recordings" && (
-                <>
-                  {recordings.length === 0
-                    ? <Empty text="No recent recordings. They appear here automatically after a session ends." />
-                    : (
-                      <Stack spacing={1.5}>
-                        {recordings.map((s) => (
-                          <RecordingCard key={s.occurrence_id ?? s.id} s={s} watching={watchingRecordingId === s.id}
-                            onWatch={() => handleWatchRecording(s)}
-                            onSummary={() => setSummarySession(s)} />
-                        ))}
-                      </Stack>
-                    )}
-                  {/* This tab shows what is in the window this page already loaded. The COMPLETE
-                      archive lives on its own paginated route, because loading all of it here is
-                      what made this page grow heavier every week it existed - and it was being
-                      re-loaded every 60 seconds whenever a class was near. */}
-                  <Stack alignItems="center" sx={{ mt: recordings.length ? 2.5 : 1.5 }}>
-                    <Button component={Link} href="/live-sessions/recordings"
-                      endIcon={<Icon icon="mdi:arrow-right" width={18} />}
-                      sx={{ textTransform: "none", fontWeight: 700, minHeight: 44, px: 2.5,
-                        borderRadius: 2, border: "1px solid var(--border-default)" }}>
-                      Browse all recordings
-                    </Button>
-                  </Stack>
-                </>
               )}
               {tab === "history" && (
                 history.length === 0 ? <Empty text="No past sessions yet." /> : (
