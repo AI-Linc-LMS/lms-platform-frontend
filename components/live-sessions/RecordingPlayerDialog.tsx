@@ -51,6 +51,9 @@ interface RecordingPlayerDialogProps {
  * the auth header), then streams the Zoom MP4 through the backend proxy - the recording plays inside
  * the platform rather than opening Zoom's page. The Zoom OAuth token never reaches the browser.
  */
+/** One re-mint per this window; a second failure inside it surfaces the error instead of looping. */
+const REMINT_COOLDOWN_MS = 30_000;
+
 export function RecordingPlayerDialog({
   liveClassId,
   occurrenceId,
@@ -136,6 +139,24 @@ export function RecordingPlayerDialog({
     }
   }, []);
 
+  /**
+   * Mint a fresh signed stream URL for this occurrence, or null when there is nothing to play.
+   *
+   * The token the server mints is bound to the occurrence, and the stream proxy serves what that
+   * token authorised - so the id has to be on BOTH calls or they disagree. Shared by the mount
+   * effect and by the re-mint below, so the two can never drift in which URL they build.
+   */
+  const mintStreamUrl = useCallback(async (): Promise<string | null> => {
+    if (liveClassId == null) return null;
+    const occQs = occurrenceId ? `?occurrence_id=${occurrenceId}` : "";
+    const res = await apiClient.get<{ token?: string }>(
+      `/live-class/api/clients/${config.clientId}/live-activities/${liveClassId}/recording/playback/${occQs}`
+    );
+    const token = res.data?.token;
+    if (!token) return null;
+    return `${config.apiBaseUrl}/live-class/api/clients/${config.clientId}/live-activities/${liveClassId}/recording/stream/?t=${encodeURIComponent(token)}`;
+  }, [liveClassId, occurrenceId]);
+
   useEffect(() => {
     if (!open || liveClassId == null) {
       setStreamUrl(null);
@@ -147,21 +168,13 @@ export function RecordingPlayerDialog({
       setLoading(true);
       setError(null);
       try {
-        // The token the server mints is bound to the occurrence, and the stream proxy serves what
-        // that token authorised — so the id has to be on BOTH calls or they disagree.
-        const occQs = occurrenceId ? `?occurrence_id=${occurrenceId}` : "";
-        const res = await apiClient.get<{ token?: string }>(
-          `/live-class/api/clients/${config.clientId}/live-activities/${liveClassId}/recording/playback/${occQs}`
-        );
+        const url = await mintStreamUrl();
         if (cancelled) return;
-        const token = res.data?.token;
-        if (!token) {
+        if (!url) {
           setError(t("liveSessions.recordingNotAvailable", "Recording is not available yet."));
           return;
         }
-        setStreamUrl(
-          `${config.apiBaseUrl}/live-class/api/clients/${config.clientId}/live-activities/${liveClassId}/recording/stream/?t=${encodeURIComponent(token)}`
-        );
+        setStreamUrl(url);
       } catch {
         if (!cancelled) setError(t("liveSessions.recordingLoadError", "Could not load the recording."));
       } finally {
@@ -171,7 +184,37 @@ export function RecordingPlayerDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, liveClassId, occurrenceId, t]);
+  }, [open, liveClassId, mintStreamUrl, t]);
+
+  // ── re-mint when playback breaks mid-recording ─────────────────────────────
+  //
+  // The stream URL now answers with a 302 to Zoom's pre-signed CDN URL (backend #1026) instead of
+  // proxying the bytes. Chromium re-targets EVERY later Range request at that destination and
+  // never comes back to our origin - so if the CDN URL expires before a long recording ends (the
+  // mean is 118 minutes and the lifetime is unmeasured), the next seek or resume fails and the
+  // <video> fires `error` with no way back. One re-mint gets a fresh URL and resumes at the same
+  // second. Capped to one attempt per REMINT_COOLDOWN_MS: a genuinely broken recording must show
+  // the error, not loop.
+  const lastRemintAtRef = useRef(0);
+  const resumeAtRef = useRef<{ time: number; playing: boolean } | null>(null);
+  const handleVideoError = useCallback(async () => {
+    const el = videoRef.current;
+    const now = Date.now();
+    if (now - lastRemintAtRef.current < REMINT_COOLDOWN_MS) {
+      setError(t("liveSessions.recordingLoadError", "Could not load the recording."));
+      return;
+    }
+    lastRemintAtRef.current = now;
+    resumeAtRef.current = { time: el?.currentTime ?? 0, playing: el ? !el.paused : true };
+    try {
+      const url = await mintStreamUrl();
+      if (!url) throw new Error("no token");
+      setStreamUrl(url);
+    } catch {
+      resumeAtRef.current = null;
+      setError(t("liveSessions.recordingLoadError", "Could not load the recording."));
+    }
+  }, [mintStreamUrl, t]);
 
   return (
     <Dialog
@@ -254,8 +297,18 @@ export function RecordingPlayerDialog({
                 if (el.paused) void el.play().catch(() => undefined);
                 else el.pause();
               }}
+              onError={() => void handleVideoError()}
               onLoadedMetadata={(e) => {
-                (e.currentTarget as HTMLVideoElement).playbackRate = rateRef.current;
+                const el = e.currentTarget as HTMLVideoElement;
+                el.playbackRate = rateRef.current;
+                // After a re-mint the new <video src> starts at 0; put the learner back where the
+                // old URL failed them.
+                const resume = resumeAtRef.current;
+                if (resume) {
+                  resumeAtRef.current = null;
+                  el.currentTime = resume.time;
+                  if (resume.playing) void el.play().catch(() => undefined);
+                }
               }}
               // NO `controls`, and therefore no `controlsList`.
               //
