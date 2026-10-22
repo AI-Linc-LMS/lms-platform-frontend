@@ -45,7 +45,7 @@ vi.mock("next/link", () => ({
 }));
 
 import JoinNowPage from "@/app/live-sessions/join/page";
-import RecordingsPage from "@/app/live-sessions/recordings/page";
+import RecordingsPage from "@/app/recordings/page";
 
 const joinRow = (over: Record<string, unknown> = {}) => ({
   occurrence_id: 70,
@@ -149,7 +149,7 @@ describe("the join page", () => {
     await waitFor(() => expect(screen.getByText(/nothing starting right now/i)).toBeTruthy());
     const hrefs = screen.getAllByRole("link").map((a) => a.getAttribute("href"));
     expect(hrefs).toContain("/live-sessions");
-    expect(hrefs).toContain("/live-sessions/recordings");
+    expect(hrefs).toContain("/recordings");
   });
 });
 

@@ -8,6 +8,7 @@
     "jobsV2": "الوظائف",
     "attendance": "الحضور",
     "liveSessions": "الجلسات المباشرة",
+    "recordings": "التسجيلات",
     "community": "المجتمع",
     "profile": "الملف الشخصي",
     "insights": "الرؤى",
@@ -2730,7 +2731,8 @@
     "admin_certificates": "صمّم الشهادات، وحدّد ما يستحقها، وأدر كل بيانات الاعتماد التي تصدرها.",
     "adminInterviewSessions": "Review realtime interview sittings, grades and integrity flags.",
     "adminInterviewSetup": "أنشئ المقابلات وحدد مواعيدها واطلع على المرشحين ونتائجهم.",
-    "projectLibrary": "مشاريع عملية ينفذها المتعلمون داخل المتصفح."
+    "projectLibrary": "مشاريع عملية ينفذها المتعلمون داخل المتصفح.",
+    "recordings": "شاهد أي حصة فاتتك، مع الملاحظات والمواد الدراسية."
   },
   "learningPlayerMobile": {
     "workspaceTabs": "مساحة البرمجة",
