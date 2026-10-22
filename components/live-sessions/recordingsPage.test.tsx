@@ -260,9 +260,12 @@ describe("the recordings module page", () => {
     expect(lastCall()).toMatchObject({ course: 10, offset: 0, facets: true });
     expect(screen.queryByText("First")).toBeNull();
     expect(screen.queryByText("Second")).toBeNull();
-    // The count line says it is a filtered view, and the chip row names the filter.
+    // The count line says it is a filtered view, and the chip row names the filter. The select
+    // now shows the bare course title too (the archive-wide count was dropped from the option
+    // label because it overstated a filtered view), so the chip has to be found as a chip.
     expect(screen.getByTestId("recordings-count").textContent).toMatch(/1 of 1 matching/);
-    expect(screen.getByText("Algorithms")).toBeTruthy();
+    const chipLabels = [...document.querySelectorAll(".MuiChip-label")].map((el) => el.textContent ?? "");
+    expect(chipLabels.some((t) => /Algorithms/.test(t))).toBe(true);
   });
 
   it("carries the same filters on Load more", async () => {

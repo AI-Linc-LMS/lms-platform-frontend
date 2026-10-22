@@ -197,7 +197,7 @@ export default function RecordingsPage() {
       key: "course",
       label: "Course",
       value: course,
-      options: (facets?.courses ?? []).map((c) => ({ value: String(c.id), label: `${c.title} · ${c.count}` })),
+      options: (facets?.courses ?? []).map((c) => ({ value: String(c.id), label: c.title })),
       onChange: setCourse,
     });
   }
@@ -206,7 +206,7 @@ export default function RecordingsPage() {
       key: "batch",
       label: "Batch",
       value: batch,
-      options: (facets?.batches ?? []).map((b) => ({ value: String(b.id), label: `${b.name} · ${b.count}` })),
+      options: (facets?.batches ?? []).map((b) => ({ value: String(b.id), label: b.name })),
       onChange: setBatch,
     });
   }
@@ -249,7 +249,7 @@ export default function RecordingsPage() {
         title="Recordings"
         description="Every class that left something behind: a recording, a transcript or AI notes. This is also where to find a class held before you joined your batch."
         accent="indigo"
-        icon="mdi:play-circle-outline"
+        icon="mdi:play-box-outline"
         action={
           // `display: contents` keeps this wrapper out of the layout; it only carries the
           // phone-only 44px height for a pill that is 38px tall.
@@ -519,10 +519,10 @@ function RecordingRow({
           <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mt: 1 }}>
             {s.has_summary && (
               <Pill tone="ai" icon="mdi:star-four-points">
-                {notesView ? "AI summary" : "AI notes"}
+                AI summary
               </Pill>
             )}
-            {s.has_transcript && (
+            {s.has_transcript && (s.has_summary || !notesView) && (
               <Pill tone="transcript" icon="mdi:text-box-outline">
                 Transcript
               </Pill>
@@ -580,6 +580,11 @@ function RecordingRow({
       >
         {notesView ? (
           <>
+            {s.has_recording && (
+              <Button onClick={onWatch} startIcon={<IconWrapper icon="mdi:play" size={16} />} sx={quietSx}>
+                Watch
+              </Button>
+            )}
             {hasNotes && (
               <Button
                 onClick={onRead}
@@ -587,12 +592,7 @@ function RecordingRow({
                 startIcon={<IconWrapper icon="mdi:text-box-outline" size={16} />}
                 sx={actionSx}
               >
-                Read notes
-              </Button>
-            )}
-            {s.has_recording && (
-              <Button onClick={onWatch} startIcon={<IconWrapper icon="mdi:play" size={16} />} sx={quietSx}>
-                Watch
+                {s.has_summary ? "Read notes" : "Read transcript"}
               </Button>
             )}
           </>
