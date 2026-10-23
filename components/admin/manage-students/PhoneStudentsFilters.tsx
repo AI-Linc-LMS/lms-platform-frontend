@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { ResponsiveDialog } from "@/components/common/mobile/ResponsiveDialog";
 import { SHEET_BUTTON_SX } from "./mobile";
+import type { MembershipView } from "./membership";
 
 /* ==========================================================================
  * The directory filters on a phone.
@@ -39,6 +40,8 @@ export interface PhoneStudentsFiltersProps {
   onStatusChange: (value: string) => void;
   onResumeFilterChange: (value: "all" | "yes" | "no") => void;
   onSearchChange: (value: string) => void;
+  /** See StudentsFilters: the Removed view carries no status or saved-resume select. */
+  view?: MembershipView;
 }
 
 export function PhoneStudentsFilters({
@@ -52,17 +55,23 @@ export function PhoneStudentsFilters({
   onStatusChange,
   onResumeFilterChange,
   onSearchChange,
+  view = "members",
 }: PhoneStudentsFiltersProps) {
   const { t } = useTranslation("common");
   const [open, setOpen] = useState(false);
+  const showAccountFilters = view !== "removed";
+  // The view is a tab, not a filter, so it never counts; the two selects it hides do not count
+  // either, because the page does not apply them in the Removed view.
   const activeCount =
-    (selectedCourses.length > 0 ? 1 : 0) + (status !== "all" ? 1 : 0) + (resumeFilter !== "all" ? 1 : 0);
+    (selectedCourses.length > 0 ? 1 : 0) +
+    (showAccountFilters && status !== "all" ? 1 : 0) +
+    (showAccountFilters && resumeFilter !== "all" ? 1 : 0);
   const filtersLabel = t("adminManageStudents.mobile.filters", "Filters");
 
   const clearAll = () => {
     if (selectedCourses.length > 0) onCourseChange([]);
-    if (status !== "all") onStatusChange("all");
-    if (resumeFilter !== "all") onResumeFilterChange("all");
+    if (showAccountFilters && status !== "all") onStatusChange("all");
+    if (showAccountFilters && resumeFilter !== "all") onResumeFilterChange("all");
   };
 
   return (
@@ -158,6 +167,7 @@ export function PhoneStudentsFilters({
             </Select>
           </FormControl>
 
+          {showAccountFilters && (
           <FormControl fullWidth>
             <InputLabel id="phone-status-filter-label">{t("adminManageStudents.status")}</InputLabel>
             <Select
@@ -171,7 +181,9 @@ export function PhoneStudentsFilters({
               <MenuItem value="inactive" sx={{ minHeight: 48 }}>{t("adminManageStudents.inactive")}</MenuItem>
             </Select>
           </FormControl>
+          )}
 
+          {showAccountFilters && (
           <FormControl fullWidth>
             <InputLabel id="phone-resume-filter-label">{t("adminManageStudents.filterSavedResume")}</InputLabel>
             <Select
@@ -185,6 +197,7 @@ export function PhoneStudentsFilters({
               <MenuItem value="no" sx={{ minHeight: 48 }}>{t("adminManageStudents.resumeNo")}</MenuItem>
             </Select>
           </FormControl>
+          )}
         </Box>
       </ResponsiveDialog>
     </Box>

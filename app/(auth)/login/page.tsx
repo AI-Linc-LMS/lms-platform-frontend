@@ -16,6 +16,8 @@ import Link from "next/link";
 import { Formik, Form, Field } from "formik";
 import Cookies from "js-cookie";
 import { useAuth } from "@/lib/auth/auth-context";
+import { NOT_PERMITTED_REASON } from "@/lib/auth/tenant-status";
+import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { resolvePostLoginPath } from "@/lib/auth/role-utils";
 import { useToast } from "@/components/common/Toast";
 import { GoogleSignIn } from "@/components/auth/GoogleSignIn";
@@ -79,6 +81,12 @@ export default function LoginPage() {
       : new URLSearchParams(window.location.search).get(key);
   const [googleAuthError, setGoogleAuthError] = useState("");
   useEffect(() => {
+    // Sent here by the API client after the server stopped honouring the session (an admin
+    // removed this person, or the institution now admits only people an admin added).
+    if (getSearchParam("reason") === NOT_PERMITTED_REASON) {
+      setGoogleAuthError(t("auth.signedOutNotPermitted"));
+      return;
+    }
     const code = getSearchParam("auth_error");
     if (!code) return;
     // An unknown code still deserves a message: a silent bounce back to a blank login page reads
@@ -98,6 +106,11 @@ export default function LoginPage() {
     celebrating,
   } = useAuth();
   const { showToast } = useToast();
+  // A restricted tenant creates accounts itself, so the page must not offer a sign-up that can
+  // only fail. Read unauthenticated off client-info, the same way the signup page reads the
+  // instructor flag; while it is still loading, the link is offered as before.
+  const { clientInfo } = useClientInfo();
+  const restrictedSignIn = Boolean(clientInfo?.restrict_login_to_added_members);
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
@@ -419,17 +432,29 @@ export default function LoginPage() {
               </LoadingButton>
 
               <Box sx={{ textAlign: "center", mt: 3 }}>
-                <Typography
-                  component="span"
-                  sx={{ ...TYPE.body, fontFamily: FONT, color: AUTH.inkFaint }}
-                >
-                  {t("auth.noAccount")}{" "}
-                </Typography>
-                <Link href="/signup" style={{ textDecoration: "none" }}>
-                  <Typography component="span" sx={{ ...TYPE.body, ...authLinkSx }}>
-                    {t("auth.signUp")}
+                {restrictedSignIn ? (
+                  <Typography
+                    component="p"
+                    data-testid="restricted-sign-in"
+                    sx={{ ...TYPE.body, fontFamily: FONT, color: AUTH.inkFaint, m: 0 }}
+                  >
+                    {t("auth.restrictedSignIn")}
                   </Typography>
-                </Link>
+                ) : (
+                  <>
+                    <Typography
+                      component="span"
+                      sx={{ ...TYPE.body, fontFamily: FONT, color: AUTH.inkFaint }}
+                    >
+                      {t("auth.noAccount")}{" "}
+                    </Typography>
+                    <Link href="/signup" style={{ textDecoration: "none" }}>
+                      <Typography component="span" sx={{ ...TYPE.body, ...authLinkSx }}>
+                        {t("auth.signUp")}
+                      </Typography>
+                    </Link>
+                  </>
+                )}
               </Box>
             </Form>
           )}

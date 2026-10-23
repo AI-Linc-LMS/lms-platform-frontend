@@ -10,6 +10,8 @@ export interface SegmentedTab<T extends string = string> {
   icon?: string;
   /** Optional trailing count badge. */
   count?: number;
+  /** Optional data-testid for the tab, so a test can address one tab without matching its label. */
+  testId?: string;
 }
 
 interface SegmentedTabsProps<T extends string> {
@@ -54,6 +56,7 @@ export function SegmentedTabs<T extends string>({
             key={tab.value}
             role="tab"
             aria-selected={active}
+            data-testid={tab.testId}
             tabIndex={0}
             onClick={() => onChange(tab.value)}
             onKeyDown={(e) => {
