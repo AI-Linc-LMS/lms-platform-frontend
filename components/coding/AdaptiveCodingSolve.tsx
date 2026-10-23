@@ -282,7 +282,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
           setCode(codeFor(lang));
         }
       } catch (e) {
-        if (!cancelled) setError(e instanceof Error ? e.message : "Couldn't load this problem.");
+        if (!cancelled) setError(getAxiosErrorDetail(e, "Couldn't load this problem."));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -307,7 +307,10 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
       setAllowClipboard(Boolean(session.allow_clipboard));
       setStarted(true);
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Couldn't start the session.", "error");
+      // The server explains a refusal in `detail`; `e.message` is Axios's own "Request failed
+      // with status code 403", which is what a learner on ticket #626 was shown while the real
+      // reason sat unread in the response.
+      showToast(getAxiosErrorDetail(e, "Couldn't start the session."), "error");
     } finally {
       setStarting(false);
     }
@@ -369,7 +372,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
         showToast("All visible tests passed - hit Submit to grade it.", "success");
       }
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Run failed.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't run your code against the tests."), "error");
     } finally {
       setRunning(false);
     }
@@ -449,7 +452,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
       // A graded submit counts as a completion (server scores it) - fire the streak celebration.
       if (!res.detail) notifyContentCompleted();
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "Submit failed.", "error");
+      showToast(getAxiosErrorDetail(e, "Couldn't submit that for grading."), "error");
     } finally {
       setSubmitting(false);
     }
@@ -467,7 +470,7 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
         return [...prev, hint].sort((a, b) => a.layer - b.layer);
       });
     } catch (e) {
-      showToast(e instanceof Error ? e.message : "The mentor couldn't write a hint just now.", "error");
+      showToast(getAxiosErrorDetail(e, "The mentor couldn't write a hint just now."), "error");
     } finally {
       setHintLoading(false);
     }
