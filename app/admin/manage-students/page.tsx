@@ -43,6 +43,14 @@ import {
   ResponsiveConfirm,
   useIsPhone,
 } from "../../../components/admin/manage-students/mobile";
+import {
+  studentStatusLabel,
+  type MembershipView,
+} from "../../../components/admin/manage-students/membership";
+import {
+  SegmentedTabs,
+  type SegmentedTab,
+} from "@/components/admin/assessment/shared/SegmentedTabs";
 
 type SortOption =
   | "name"
@@ -82,6 +90,12 @@ type DirectoryState = {
    */
   riskCourse: number | null;
   searchTerm: string;
+  /**
+   * Members (the directory) or the people removed from the organisation. A tab rather than a
+   * filter: the Removed view is a different listing (`?status=removed` on the server), with
+   * its own hint, empty state and row actions. Persisted as `?view=removed`; absent = members.
+   */
+  view: MembershipView;
   page: number;
   limit: number;
   sortBy: SortOption;
@@ -95,6 +109,7 @@ const DEFAULT_DIRECTORY_STATE: DirectoryState = {
   segment: "all",
   riskCourse: null,
   searchTerm: "",
+  view: "members",
   page: 1,
   limit: 10,
   sortBy: "name",
@@ -135,6 +150,8 @@ function parseDirectoryState(
     riskCourse:
       Number.isInteger(riskCourseRaw) && riskCourseRaw > 0 ? riskCourseRaw : null,
     searchTerm: params.get("q") || "",
+    // Whitelisted like `status` above; anything but "removed" is the members view.
+    view: params.get("view") === "removed" ? "removed" : "members",
     page: num("page", DEFAULT_DIRECTORY_STATE.page),
     limit: num("limit", DEFAULT_DIRECTORY_STATE.limit),
     sortBy:
@@ -158,6 +175,7 @@ function serializeDirectoryState(state: DirectoryState): string {
     params.set("segment", state.segment);
   if (state.riskCourse != null) params.set("riskCourse", String(state.riskCourse));
   if (state.searchTerm.trim()) params.set("q", state.searchTerm.trim());
+  if (state.view !== DEFAULT_DIRECTORY_STATE.view) params.set("view", state.view);
   if (state.page !== DEFAULT_DIRECTORY_STATE.page)
     params.set("page", String(state.page));
   if (state.limit !== DEFAULT_DIRECTORY_STATE.limit)
@@ -208,12 +226,25 @@ export default function ManageStudentsPage() {
   // the user's scope, so this only exposes the UI.
   const showOrgAdminEnrollmentTools =
     isClientOrgAdminRole(user?.role) || courseManagerUser;
-  const canDeleteStudents = isClientOrgAdminRole(user?.role);
+  // Removing, adding back and deleting permanently are the org admin's levers; the server 403s
+  // scoped roles with an explanation, and instructors / course managers see neither the
+  // Removed tab nor those actions here.
+  const canManageMembership = isClientOrgAdminRole(user?.role);
   const isPhone = useIsPhone();
 
-  // Permanent-delete confirm state.
+  // Permanent-delete confirm state (reachable from the Removed view only).
   const [deleteTarget, setDeleteTarget] = useState<Student | null>(null);
   const [deleting, setDeleting] = useState(false);
+  // Remove-from-organisation confirm state, and the add-back in flight (no confirm for that
+  // one: it is the reversible direction, and it undoes the other).
+  const [removeTarget, setRemoveTarget] = useState<Student | null>(null);
+  const [removing, setRemoving] = useState(false);
+  const [restoringId, setRestoringId] = useState<number | null>(null);
+  // Tenant-wide Members / Removed headcounts from the last listing. Undefined until a response
+  // carries them (an older server never does), and then the tabs show no badge rather than a 0.
+  const [membershipCounts, setMembershipCounts] = useState<
+    ManageStudentsResponse["membership_counts"] | undefined
+  >(undefined);
 
   // State - Original data from API
   const [allStudents, setAllStudents] = useState<Student[]>([]);
@@ -253,6 +284,10 @@ export default function ManageStudentsPage() {
   const [searchTerm, setSearchTerm] = useState<string>(
     initialDirectoryState.current.searchTerm
   );
+  const [view, setView] = useState<MembershipView>(
+    initialDirectoryState.current.view
+  );
+  const inRemovedView = view === "removed";
 
   // Pagination & Sorting
   const [page, setPage] = useState(initialDirectoryState.current.page);
@@ -326,6 +361,10 @@ export default function ManageStudentsPage() {
   const loadStudents = useCallback(async () => {
     const seq = ++loadStudentsSeqRef.current;
     const courseManager = courseManagerUser;
+    // The server lists members unless told otherwise, which is what every other consumer of
+    // this endpoint wants; only this page's Removed tab asks for the other population. Spread,
+    // not `status: undefined`, so the members view sends exactly what it sent before.
+    const listing = inRemovedView ? { status: "removed" as const } : {};
 
     // Empty course selection = all courses (load full student list; API scopes by role).
     if (selectedCourses.length === 0) {
@@ -337,9 +376,11 @@ export default function ManageStudentsPage() {
           sort_by: "name",
           sort_order: "asc",
           risk_course_id: riskCourse ?? undefined,
+          ...listing,
         });
         if (seq !== loadStudentsSeqRef.current) return;
         setAllStudents(response?.students ?? []);
+        setMembershipCounts(response?.membership_counts);
 
         setLoadingStats(true);
         try {
@@ -472,6 +513,7 @@ export default function ManageStudentsPage() {
               sort_by: "name",
               sort_order: "asc",
               risk_course_id: riskCourse ?? undefined,
+              ...listing,
             })
           )
         );
@@ -503,6 +545,8 @@ export default function ManageStudentsPage() {
           setAllStudents(
             Array.from(mergeStudentResponsesIntoMap(fulfilledResponses).values())
           );
+          // Counted tenant-wide by the server whatever the course filter, so any response will do.
+          setMembershipCounts(fulfilledResponses[0]?.membership_counts);
 
           setLoadingStats(true);
           try {
@@ -533,6 +577,7 @@ export default function ManageStudentsPage() {
               sort_by: "name",
               sort_order: "asc",
               risk_course_id: riskCourse ?? undefined,
+              ...listing,
             })
           )
         );
@@ -542,6 +587,7 @@ export default function ManageStudentsPage() {
         setAllStudents(
           Array.from(mergeStudentResponsesIntoMap(studentResponses).values())
         );
+        setMembershipCounts(studentResponses[0]?.membership_counts);
 
         setLoadingStats(true);
         try {
@@ -571,7 +617,7 @@ export default function ManageStudentsPage() {
         setLoading(false);
       }
     }
-  }, [selectedCourses, showToast, t, courseManagerUser, riskCourse]);
+  }, [selectedCourses, showToast, t, courseManagerUser, riskCourse, inRemovedView]);
 
   // Load students when course filter changes or on mount
   useEffect(() => {
@@ -589,6 +635,7 @@ export default function ManageStudentsPage() {
       segment,
       riskCourse,
       searchTerm,
+      view,
       page,
       limit,
       sortBy,
@@ -608,6 +655,7 @@ export default function ManageStudentsPage() {
     segment,
     riskCourse,
     searchTerm,
+    view,
     page,
     limit,
     sortBy,
@@ -617,11 +665,14 @@ export default function ManageStudentsPage() {
 
   // Client-side filtering, sorting, and pagination
   // This runs entirely in the browser - no API calls for search, status, sort, or pagination changes
+  // The Removed view hides the status, saved-resume and segment controls, and a hidden filter
+  // that still narrowed the list would make removed people vanish for no visible reason, so
+  // those three apply to the members view only. Their state is kept, and comes back with the tab.
+  const accountFiltersApply = !inRemovedView;
   const hasFilter = Boolean(
     selectedCourses.length > 0 ||
-      status !== "all" ||
-      resumeFilter !== "all" ||
-      segment !== "all" ||
+      (accountFiltersApply &&
+        (status !== "all" || resumeFilter !== "all" || segment !== "all")) ||
       (searchTerm && searchTerm.trim())
   );
   const {
@@ -642,17 +693,17 @@ export default function ManageStudentsPage() {
         );
       }
 
-      // Step 2: Filter by status
-      if (status === "active") {
+      // Step 2: Filter by status (members view only, see accountFiltersApply)
+      if (accountFiltersApply && status === "active") {
         filtered = filtered.filter((s) => s.is_active);
-      } else if (status === "inactive") {
+      } else if (accountFiltersApply && status === "inactive") {
         filtered = filtered.filter((s) => !s.is_active);
       }
 
-      // Step 2b: Filter by saved resume
-      if (resumeFilter === "yes") {
+      // Step 2b: Filter by saved resume (members view only)
+      if (accountFiltersApply && resumeFilter === "yes") {
         filtered = filtered.filter((s) => s.has_saved_resume === true);
-      } else if (resumeFilter === "no") {
+      } else if (accountFiltersApply && resumeFilter === "no") {
         filtered = filtered.filter((s) => !s.has_saved_resume);
       }
 
@@ -665,7 +716,7 @@ export default function ManageStudentsPage() {
 
       // Step 2d: Engagement-health segment. One segment at a time - the chips are a single
       // choice, so there is no AND/OR across overlapping signals to get wrong.
-      if (segment !== "all") {
+      if (accountFiltersApply && segment !== "all") {
         filtered = filtered.filter((s) =>
           matchesSegment(segment, s, completionStatsFor(completionStats, s))
         );
@@ -749,6 +800,7 @@ export default function ManageStudentsPage() {
       status,
       resumeFilter,
       segment,
+      accountFiltersApply,
       sortBy,
       sortOrder,
       page,
@@ -798,6 +850,40 @@ export default function ManageStudentsPage() {
     setSearchTerm(value);
     setPage(1);
     // Client-side filter, no API call
+  };
+
+  const handleViewChange = (next: MembershipView) => {
+    if (next === view) return;
+    setView(next);
+    setPage(1);
+    // The bulk toolbar acts on members only; a selection carried across the tabs would act on
+    // rows the admin can no longer see. The reload itself follows from loadStudents' dependency
+    // on the view, unlike the status and search filters, which are client-side.
+    setSelectedIds(new Set());
+  };
+
+  /** What the toasts call a student: the name, or the address when the name is blank. */
+  const displayName = (student: Student) =>
+    student.name || student.email || t("adminManageStudents.na");
+
+  const handleRestore = async (student: Student) => {
+    if (restoringId !== null) return;
+    setRestoringId(student.id);
+    try {
+      await adminStudentService.restoreToOrganisation(student.id);
+      showToast(
+        t("adminManageStudents.membership.addedBackToast", { name: displayName(student) }),
+        "success"
+      );
+      await loadStudents();
+    } catch (error: unknown) {
+      showToast(
+        apiErrorMessage(error) || t("adminManageStudents.membership.addBackFailed"),
+        "error"
+      );
+    } finally {
+      setRestoringId(null);
+    }
   };
 
   const handlePageChange = (newPage: number) => {
@@ -910,7 +996,7 @@ export default function ManageStudentsPage() {
       return [
         escapeCsvValue(student.name ?? ""),
         escapeCsvValue(student.email ?? ""),
-        student.is_active ? t("adminManageStudents.active") : t("adminManageStudents.inactive"),
+        studentStatusLabel(t, student),
         escapeCsvValue(student.enrollment_count ?? 0),
         escapeCsvValue(student.most_active_course ?? t("adminManageStudents.noActivity")),
         stats ? escapeCsvValue(stats.completion_percentage.toFixed(1)) : t("adminManageStudents.na"),
@@ -936,6 +1022,23 @@ export default function ManageStudentsPage() {
     URL.revokeObjectURL(url);
   };
 
+  const membershipTabs: SegmentedTab<MembershipView>[] = [
+    {
+      value: "members",
+      icon: "mdi:account-group-outline",
+      label: t("adminManageStudents.membership.tabMembers"),
+      count: membershipCounts?.active,
+      testId: "membership-tab-members",
+    },
+    {
+      value: "removed",
+      icon: "mdi:account-off-outline",
+      label: t("adminManageStudents.membership.tabRemoved"),
+      count: membershipCounts?.removed,
+      testId: "membership-tab-removed",
+    },
+  ];
+
   return (
     <PageShell>
       <ModulePageHeader
@@ -956,6 +1059,18 @@ export default function ManageStudentsPage() {
         }
       />
 
+        {/* Members / Removed, the cohorts page's Archived pattern. Org admins only: the server
+            refuses remove and add back to scoped roles, so they get no tab to find them under. */}
+        {canManageMembership && (
+          <Box data-testid="membership-tabs" sx={{ mb: 2.5 }}>
+            <SegmentedTabs<MembershipView>
+              tabs={membershipTabs}
+              value={view}
+              onChange={handleViewChange}
+            />
+          </Box>
+        )}
+
         <Box data-tour-id="students-filters">
           <StudentsFilters
             courses={courses}
@@ -968,11 +1083,13 @@ export default function ManageStudentsPage() {
             onStatusChange={handleStatusChange}
             onResumeFilterChange={handleResumeFilterChange}
             onSearchChange={handleSearchChange}
+            view={view}
           />
         </Box>
 
-        {/* Engagement-health quick segments - set the (URL-persisted) filters */}
-        {isPhone ? (
+        {/* Engagement-health quick segments - set the (URL-persisted) filters. Not in the
+            Removed view: a segment is a question about current learners. */}
+        {!inRemovedView && (isPhone ? (
           <PhoneStudentSegments
             segment={segment}
             // No number until the data behind it is in: a chip that says 0 and then 127 is the
@@ -1062,7 +1179,7 @@ export default function ManageStudentsPage() {
             );
           })}
         </Box>
-        )}
+        ))}
 
         {/* The dashboard's "View all" for a course-filtered "Needs attention" list lands here:
             at-risk is then judged for that adaptive course only, so both lists are one set. */}
@@ -1106,7 +1223,10 @@ export default function ManageStudentsPage() {
             }}
             aria-hidden
           >
-            <IconWrapper icon="mdi:view-list-outline" size={24} />
+            <IconWrapper
+              icon={inRemovedView ? "mdi:account-off-outline" : "mdi:view-list-outline"}
+              size={24}
+            />
           </Box>
           <Box sx={{ minWidth: 0 }}>
             <Typography
@@ -1125,12 +1245,14 @@ export default function ManageStudentsPage() {
                 lineHeight: 1.5,
               }}
             >
-              {t("adminManageStudents.studentDirectoryHint")}
+              {inRemovedView
+                ? t("adminManageStudents.membership.removedHint")
+                : t("adminManageStudents.studentDirectoryHint")}
             </Typography>
           </Box>
         </Box>
 
-        {showOrgAdminEnrollmentTools && (
+        {showOrgAdminEnrollmentTools && !inRemovedView && (
           <BulkActionToolbar
             selected={selectedStudents}
             courses={courses}
@@ -1171,13 +1293,18 @@ export default function ManageStudentsPage() {
             sortOrder={sortOrder}
             onSort={handleSort}
             wrapInPaper={false}
-            selectable={showOrgAdminEnrollmentTools}
+            selectable={showOrgAdminEnrollmentTools && !inRemovedView}
             selectedIds={selectedIds}
             onToggleSelect={handleToggleSelect}
             onToggleSelectAll={handleToggleSelectAll}
             allSelected={allFilteredSelected}
             someSelected={someFilteredSelected}
-            onDelete={canDeleteStudents ? (s) => setDeleteTarget(s) : undefined}
+            view={view}
+            filtered={hasFilter}
+            onRemove={canManageMembership ? (s) => setRemoveTarget(s) : undefined}
+            onRestore={canManageMembership ? handleRestore : undefined}
+            restoringId={restoringId}
+            onDelete={canManageMembership ? (s) => setDeleteTarget(s) : undefined}
           />
           <StudentsPagination
             totalPages={totalPages}
@@ -1290,15 +1417,62 @@ export default function ManageStudentsPage() {
           onSuccess={handleQuickEnrollSuccess}
         />
 
+        {/* Remove from organisation: reversible. The sign-in sentence is shown on every tenant,
+            gated or not, because the server refuses a removed member at every door everywhere. */}
+        <ResponsiveConfirm
+          busy={removing}
+          open={!!removeTarget}
+          title={t("adminManageStudents.membership.removeTitle", {
+            name: removeTarget ? displayName(removeTarget) : "",
+          })}
+          message={t("adminManageStudents.membership.removeBody")}
+          confirmText={
+            removing
+              ? t("adminManageStudents.membership.removing")
+              : t("adminManageStudents.membership.removeConfirm")
+          }
+          cancelText={t("adminManageStudents.cancel")}
+          confirmColor="error"
+          onCancel={() => (removing ? undefined : setRemoveTarget(null))}
+          onConfirm={async () => {
+            if (!removeTarget) return;
+            setRemoving(true);
+            try {
+              await adminStudentService.removeFromOrganisation(removeTarget.id);
+              showToast(
+                t("adminManageStudents.membership.removedToast", {
+                  name: displayName(removeTarget),
+                }),
+                "success"
+              );
+              setRemoveTarget(null);
+              await loadStudents();
+            } catch (error: unknown) {
+              showToast(
+                apiErrorMessage(error) || t("adminManageStudents.membership.removeFailed"),
+                "error"
+              );
+            } finally {
+              setRemoving(false);
+            }
+          }}
+        />
+
+        {/* Delete permanently: irreversible, and offered from the Removed view only, so it is
+            always the second step after a removal that could still have been undone. */}
         <ResponsiveConfirm
           busy={deleting}
           open={!!deleteTarget}
-          title="Delete student permanently?"
-          message={
-            `This permanently removes ${deleteTarget?.name || "this student"} from your organization — their enrollments, submissions, community posts, progress and payment records here are erased. This can't be undone. (If they belong to another organization, their login there is unaffected.)`
+          title={t("adminManageStudents.membership.deleteTitle", {
+            name: deleteTarget ? displayName(deleteTarget) : "",
+          })}
+          message={t("adminManageStudents.membership.deleteBody")}
+          confirmText={
+            deleting
+              ? t("adminManageStudents.membership.deleting")
+              : t("adminManageStudents.membership.deleteConfirm")
           }
-          confirmText={deleting ? "Deleting…" : "Delete permanently"}
-          cancelText="Cancel"
+          cancelText={t("adminManageStudents.cancel")}
           confirmColor="error"
           onCancel={() => (deleting ? undefined : setDeleteTarget(null))}
           onConfirm={async () => {
@@ -1306,11 +1480,19 @@ export default function ManageStudentsPage() {
             setDeleting(true);
             try {
               await adminStudentService.deleteStudent(deleteTarget.id);
-              showToast(`${deleteTarget.name || "Student"} removed from your organization.`, "success");
+              showToast(
+                t("adminManageStudents.membership.deletedToast", {
+                  name: displayName(deleteTarget),
+                }),
+                "success"
+              );
               setDeleteTarget(null);
               await loadStudents();
-            } catch {
-              showToast("Couldn't delete this student.", "error");
+            } catch (error: unknown) {
+              showToast(
+                apiErrorMessage(error) || t("adminManageStudents.membership.deleteFailed"),
+                "error"
+              );
             } finally {
               setDeleting(false);
             }

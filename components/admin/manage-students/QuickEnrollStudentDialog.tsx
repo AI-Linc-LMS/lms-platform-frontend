@@ -145,9 +145,13 @@ export function QuickEnrollStudentDialog({
         res.legacy_already_enrolled.length +
         res.adaptive_enrolled +
         res.adaptive_already_enrolled;
-      const msg = res.created_account
-        ? t("adminManageStudents.quickEnroll.successCreated", { name: name.trim(), count: enrolledCount })
-        : t("adminManageStudents.quickEnroll.successExisting", { name: name.trim(), count: enrolledCount });
+      // A removed person added again is neither "created" nor merely "enrolled": their profile
+      // came back with everything on it, and the admin should hear that it did.
+      const msg = res.restored_profile
+        ? t("adminManageStudents.quickEnroll.successRestored", { name: name.trim(), count: enrolledCount })
+        : res.created_account
+          ? t("adminManageStudents.quickEnroll.successCreated", { name: name.trim(), count: enrolledCount })
+          : t("adminManageStudents.quickEnroll.successExisting", { name: name.trim(), count: enrolledCount });
       showToast(msg, "success");
       onSuccess?.();
       onClose();

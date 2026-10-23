@@ -184,6 +184,8 @@ function renderTable(over: Record<string, unknown> = {}) {
     selectedIds: new Set<number>(),
     onToggleSelect: vi.fn(),
     onToggleSelectAll: vi.fn(),
+    onRemove: vi.fn(),
+    onRestore: vi.fn(),
     onDelete: vi.fn(),
     ...over,
   };
@@ -214,8 +216,15 @@ describe("the student directory", () => {
     renderTable();
     expect(document.querySelector("table")).toBeTruthy();
     expect(screen.queryAllByTestId("student-card")).toHaveLength(0);
-    // The row actions are the original three icon buttons.
-    expect(screen.getAllByRole("button", { name: "Delete student" })).toHaveLength(2);
+    // The row actions are still three icon buttons. The third is "Remove from organisation"
+    // (this file's `t` returns the key); the permanent delete lives in the Removed view now,
+    // so it is never a neighbour of the everyday actions.
+    expect(
+      screen.getAllByRole("button", { name: "adminManageStudents.membership.removeAction" }),
+    ).toHaveLength(2);
+    expect(
+      screen.queryByRole("button", { name: "adminManageStudents.membership.deleteAction" }),
+    ).toBeNull();
   });
 
   it("keeps every row action on a phone, behind one menu", () => {
@@ -227,8 +236,33 @@ describe("the student directory", () => {
     expect(mocks.push).toHaveBeenCalledWith("/admin/profile/8");
 
     fireEvent.click(screen.getByRole("button", { name: "Actions for Omar Khan" }));
-    fireEvent.click(within(screen.getByRole("menu")).getByRole("menuitem", { name: /Delete student/ }));
-    expect(props.onDelete).toHaveBeenCalledWith(expect.objectContaining({ id: 8 }));
+    fireEvent.click(
+      within(screen.getByRole("menu")).getByRole("menuitem", { name: /membership\.removeAction/ }),
+    );
+    expect(props.onRemove).toHaveBeenCalledWith(expect.objectContaining({ id: 8 }));
+    expect(props.onDelete).not.toHaveBeenCalled();
+  });
+
+  it("keeps add back and delete permanently behind the same menu in the Removed view", () => {
+    viewport(PHONE);
+    const removed = student(9, "Riya Sen", {
+      membership: "removed",
+      removed_at: "2026-10-20T12:00:00Z",
+      removed_by: { id: 1, name: "Priya Admin" },
+    });
+    const props = renderTable({ view: "removed", students: [removed] });
+    fireEvent.click(screen.getByRole("button", { name: "Actions for Riya Sen" }));
+    const menu = screen.getByRole("menu");
+    // Removing is the members view's action; here it is gone.
+    expect(within(menu).queryByRole("menuitem", { name: /membership\.removeAction/ })).toBeNull();
+    fireEvent.click(within(menu).getByRole("menuitem", { name: /membership\.addBack/ }));
+    expect(props.onRestore).toHaveBeenCalledWith(expect.objectContaining({ id: 9 }));
+
+    fireEvent.click(screen.getByRole("button", { name: "Actions for Riya Sen" }));
+    fireEvent.click(
+      within(screen.getByRole("menu")).getByRole("menuitem", { name: /membership\.deleteAction/ }),
+    );
+    expect(props.onDelete).toHaveBeenCalledWith(expect.objectContaining({ id: 9 }));
   });
 
   it("opens the student from the card's title", () => {

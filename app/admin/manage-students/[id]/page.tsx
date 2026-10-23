@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useTranslation } from "react-i18next";
 import {
+  Alert,
   Box,
   Typography,
   Button,
@@ -15,6 +16,12 @@ import {
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { useAuth } from "@/lib/auth/auth-context";
+import { isClientOrgAdminRole } from "@/lib/auth/role-utils";
+import {
+  isRemoved,
+  removedByName,
+} from "@/components/admin/manage-students/membership";
 import {
   adminStudentService,
   StudentDetail,
@@ -55,9 +62,13 @@ export default function StudentDetailsPage() {
   const params = useParams();
   const { t } = useTranslation("common");
   const { showToast } = useToast();
+  const { user } = useAuth();
+  // Same gate as the directory: the server refuses add-back to scoped roles with an explanation.
+  const canManageMembership = isClientOrgAdminRole(user?.role);
   const studentId = params?.id ? Number(params.id) : null;
 
   const [student, setStudent] = useState<StudentDetail | null>(null);
+  const [restoring, setRestoring] = useState(false);
   const [journey, setJourney] = useState<StudentLearningJourney | null>(null);
   const [loading, setLoading] = useState(true);
   const [journeyLoading, setJourneyLoading] = useState(true);
@@ -72,10 +83,12 @@ export default function StudentDetailsPage() {
     email: "",
   });
 
-  const loadStudent = useCallback(async () => {
+  const loadStudent = useCallback(async (opts: { silent?: boolean } = {}) => {
     if (!studentId) return;
     try {
-      setLoading(true);
+      // A silent refetch keeps the page up: the add-back banner refreshes the record in place
+      // rather than swapping the whole profile for a spinner.
+      if (!opts.silent) setLoading(true);
       const data = await adminStudentService.getStudent(studentId);
       setStudent(data);
       setFormData({
@@ -138,6 +151,30 @@ export default function StudentDetailsPage() {
   const handleEnrollmentChange = async () => {
     // Refresh both the management view and the breakdown after enroll/unenroll.
     await Promise.all([loadStudent(), loadJourney()]);
+  };
+
+  const handleAddBack = async () => {
+    if (!student || !studentId || restoring) return;
+    const pi = student.personal_info;
+    const name = `${pi.first_name} ${pi.last_name}`.trim() || pi.username || pi.email;
+    try {
+      setRestoring(true);
+      await adminStudentService.restoreToOrganisation(studentId);
+      // Re-read rather than patch: the server is the source of the membership fields, and the
+      // record it returns is what proves the person is a member again.
+      await loadStudent({ silent: true });
+      showToast(t("adminManageStudents.membership.addedBackToast", { name }), "success");
+    } catch (error: unknown) {
+      showToast(
+        (error as { response?: { data?: { detail?: string; error?: string } } })?.response
+          ?.data?.detail ||
+          (error as { response?: { data?: { error?: string } } })?.response?.data?.error ||
+          t("adminManageStudents.membership.addBackFailed"),
+        "error"
+      );
+    } finally {
+      setRestoring(false);
+    }
   };
 
   const handleToggleActive = async () => {
@@ -246,6 +283,7 @@ export default function StudentDetailsPage() {
   const pi = student.personal_info;
   const name = `${pi.first_name} ${pi.last_name}`.trim() || pi.username;
   const summary = journey?.summary;
+  const removed = isRemoved(student);
 
   const kpis = [
     { label: "Courses", value: summary?.enrolled_courses_count ?? student.academic_summary.enrolled_courses_count, accent: ADAPTIVE.indigo },
@@ -286,6 +324,16 @@ export default function StudentDetailsPage() {
           iconBadge={{ icon: "mdi:account-school", gradient: ADAPTIVE.gradient }}
           rightSlot={
             <Box sx={{ display: "flex", alignItems: "center", gap: 1.5, [PHONE]: { flexWrap: "wrap", gap: 1 } }}>
+              {/* Removed outranks Active / Inactive: until they are added back, "cannot sign in
+                  here" is the state that matters, and is_active is the platform-wide switch. */}
+              {removed ? (
+                <Chip
+                  size="small"
+                  data-testid="removed-chip"
+                  label={t("adminManageStudents.membership.removedChip")}
+                  sx={{ fontWeight: 700, color: "#92400e", bgcolor: "#fef3c7" }}
+                />
+              ) : (
               <Chip
                 size="small"
                 label={pi.is_active ? "Active" : "Inactive"}
@@ -297,6 +345,7 @@ export default function StudentDetailsPage() {
                     : "color-mix(in srgb, #94a3b8 16%, transparent)",
                 }}
               />
+              )}
               {/* Offered only when there is one to view: the same fact the Manage Students
                   column shows, so the profile can never disagree with the row it came from. */}
               <StudentResumeButton
@@ -317,6 +366,34 @@ export default function StudentDetailsPage() {
             </Box>
           }
         />
+
+        {removed && (
+          <Alert
+            severity="warning"
+            data-testid="removed-banner"
+            icon={<IconWrapper icon="mdi:account-off-outline" size={22} />}
+            action={
+              canManageMembership ? (
+                <Button
+                  color="inherit"
+                  size="small"
+                  disabled={restoring}
+                  onClick={handleAddBack}
+                  startIcon={<IconWrapper icon="mdi:account-plus-outline" size={18} />}
+                  sx={{ fontWeight: 700, textTransform: "none", whiteSpace: "nowrap", ...PHONE_TAP }}
+                >
+                  {t("adminManageStudents.membership.addBack")}
+                </Button>
+              ) : undefined
+            }
+            sx={{ mb: 3, borderRadius: 2, alignItems: "center", fontWeight: 500 }}
+          >
+            {t("adminManageStudents.membership.detailBanner", {
+              date: formatDate(student.removed_at),
+              name: removedByName(t, student.removed_by),
+            })}
+          </Alert>
+        )}
 
         <KpiRail items={kpis} />
 
@@ -373,6 +450,7 @@ export default function StudentDetailsPage() {
               }
               onToggleActive={handleToggleActive}
               onEnrollmentChange={handleEnrollmentChange}
+              removed={removed}
             />
           ) : journeyPending ? (
             <Box sx={{ py: 8, display: "flex", justifyContent: "center" }}>
