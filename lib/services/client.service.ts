@@ -111,6 +111,10 @@ export interface ClientInfo {
   pwa_manifest?: Record<string, any>;
   /** When true, signup may offer instructor self-registration (from client-info API). */
   allow_instructor_self_signup?: boolean;
+  /** When true, only people an admin already added can sign in: self-signup and Google sign-in
+   *  refuse anyone else, so the auth pages hide "Sign up" and say to contact the administrator
+   *  rather than offering a form that can only fail. Read unauthenticated off client-info. */
+  restrict_login_to_added_members?: boolean;
   /** Enables admin live proctoring/monitoring features in UI. */
   live_proctoring_enabled?: boolean;
   /** When true, students only see enrolled courses; the "Available Courses" UI is hidden. */
