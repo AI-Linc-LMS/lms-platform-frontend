@@ -701,6 +701,7 @@
     "noAccount": "Don't have an account?",
     "restrictedSignIn": "Accounts here are created by your institution. If you should have access, contact your administrator.",
     "restrictedSignUpTitle": "Sign-up is by invitation here",
+    "signedOutNotPermitted": "Your account is no longer set up for this organisation. If you should have access, contact your administrator.",
     "loginSuccess": "Login successful!",
     "loginFailed": "Login failed. Please try again.",
     "profileInactiveTitle": "Your account isn’t active yet",

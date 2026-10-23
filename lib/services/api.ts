@@ -8,9 +8,18 @@ import Cookies from "js-cookie";
 import { config } from "../config";
 import { getClientDeviceClass } from "../utils/assessment-device";
 import {
+  LOGIN_NOT_PERMITTED_CODE,
   markTenantDeactivated,
+  signOutNotPermitted,
   TENANT_INACTIVE_CODE,
 } from "../auth/tenant-status";
+
+// The sign-in doors answer 403 `login_not_permitted` to the person typing into them, and their
+// own form shows that sentence; only an AUTHENTICATED request elsewhere means a live session has
+// stopped being honoured. (A stale cookie can put a Bearer header on a door request too, which is
+// why the URL is checked and not only the header.)
+const AUTH_DOOR =
+  /\/user\/(login(\/google)?|signup|verify-email|resend-verification-email)\/?(\?|$)/;
 
 // Create axios instance.
 // A request timeout is essential: without it a slow/hung prod endpoint (or a flaky network)
@@ -182,6 +191,24 @@ apiClient.interceptors.response.use(
     const body = error.response?.data as { code?: string } | undefined;
     if (error.response?.status === 403 && body?.code === TENANT_INACTIVE_CODE) {
       markTenantDeactivated();
+      return new Promise(() => {});
+    }
+
+    // The signed-in person is no longer a member of this institution: an admin removed them, or
+    // the institution now admits only people an admin added and they never were one. The backend
+    // answers every authenticated request with this code from now on, so as with tenant_inactive
+    // there is nothing to retry: drop the session, go to sign-in with the reason, and swallow the
+    // rejection so the in-flight widgets do not each toast the same sentence over the redirect.
+    if (
+      error.response?.status === 403 &&
+      body?.code === LOGIN_NOT_PERMITTED_CODE &&
+      Boolean(originalRequest?.headers?.Authorization) &&
+      !AUTH_DOOR.test(originalRequest?.url ?? "")
+    ) {
+      if (!isLoggingOut) {
+        setLoggingOut(true);
+        signOutNotPermitted();
+      }
       return new Promise(() => {});
     }
 

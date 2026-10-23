@@ -15,6 +15,12 @@ import { authUtils } from "./auth-utils";
 /** The backend's machine-readable code for "this institution has been deactivated". */
 export const TENANT_INACTIVE_CODE = "tenant_inactive";
 
+/** The backend's code for "this person is not a member of this institution" (accounts/login_gate.py). */
+export const LOGIN_NOT_PERMITTED_CODE = "login_not_permitted";
+
+/** The `reason` the login page is sent after a session the server stopped honouring is dropped. */
+export const NOT_PERMITTED_REASON = "not_permitted";
+
 let deactivated = false;
 const listeners = new Set<() => void>();
 
@@ -54,4 +60,22 @@ export function isTenantDeactivated() {
 
 export function useTenantDeactivated(): boolean {
   return useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
+}
+
+/**
+ * Drop a session the server has stopped honouring and send the person to sign in with the reason.
+ *
+ * Raised by the API client when an AUTHENTICATED request is answered 403 `login_not_permitted`:
+ * an admin removed this person from the institution, or the institution now admits only people an
+ * admin added and they never were one. The backend answers every request that way from then on,
+ * so, as with the deactivation latch above, the tokens are cleared here rather than at the call
+ * site: a shell that still looks signed in and fails on everything it touches is the failure mode
+ * this exists to prevent. Not raised on the sign-in page itself, whose own form explains the
+ * refusal.
+ */
+export function signOutNotPermitted() {
+  authUtils.clearTokens();
+  if (typeof window !== "undefined" && !window.location.pathname.startsWith("/login")) {
+    window.location.href = `/login?reason=${NOT_PERMITTED_REASON}`;
+  }
 }
