@@ -16,6 +16,7 @@ import Link from "next/link";
 import { Formik, Form, Field } from "formik";
 import Cookies from "js-cookie";
 import { useAuth } from "@/lib/auth/auth-context";
+import { NOT_PERMITTED_REASON } from "@/lib/auth/tenant-status";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { resolvePostLoginPath } from "@/lib/auth/role-utils";
 import { useToast } from "@/components/common/Toast";
@@ -80,6 +81,12 @@ export default function LoginPage() {
       : new URLSearchParams(window.location.search).get(key);
   const [googleAuthError, setGoogleAuthError] = useState("");
   useEffect(() => {
+    // Sent here by the API client after the server stopped honouring the session (an admin
+    // removed this person, or the institution now admits only people an admin added).
+    if (getSearchParam("reason") === NOT_PERMITTED_REASON) {
+      setGoogleAuthError(t("auth.signedOutNotPermitted"));
+      return;
+    }
     const code = getSearchParam("auth_error");
     if (!code) return;
     // An unknown code still deserves a message: a silent bounce back to a blank login page reads
