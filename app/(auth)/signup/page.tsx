@@ -151,6 +151,38 @@ export default function SignupPage() {
     }
   };
 
+  // A restricted tenant creates its accounts itself: the server refuses every self-signup, so a
+  // form here could only end in an error. Say what to do instead. Not while client-info is still
+  // loading, or every signup page would flash this for a moment.
+  if (!clientInfoLoading && clientInfo?.restrict_login_to_added_members) {
+    return (
+      <AuthLayout slogan={t("auth.slogan")}>
+        <Box sx={{ width: "100%", textAlign: "start" }} data-testid="restricted-signup">
+          <Typography
+            component="h1"
+            sx={{
+              ...TYPE.title,
+              fontFamily: FONT,
+              color: AUTH.ink,
+              mb: 0.75,
+              '[dir="rtl"] &': { letterSpacing: "normal" },
+            }}
+          >
+            {t("auth.restrictedSignUpTitle")}
+          </Typography>
+          <Typography sx={{ ...TYPE.body, fontFamily: FONT, color: AUTH.inkFaint, mb: 3 }}>
+            {t("auth.restrictedSignIn")}
+          </Typography>
+          <Link href="/login" style={{ textDecoration: "none" }}>
+            <Typography component="span" sx={{ ...TYPE.body, ...authLinkSx }}>
+              {t("auth.backToLogin", { defaultValue: "Back to sign in" })}
+            </Typography>
+          </Link>
+        </Box>
+      </AuthLayout>
+    );
+  }
+
   return (
     <AuthLayout slogan={t("auth.slogan")}>
       <Box sx={{ width: "100%", textAlign: "start" }}>

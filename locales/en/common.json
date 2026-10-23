@@ -699,6 +699,8 @@
     "signingIn": "Signing in...",
     "signingYouIn": "Signing you in...",
     "noAccount": "Don't have an account?",
+    "restrictedSignIn": "Accounts here are created by your institution. If you should have access, contact your administrator.",
+    "restrictedSignUpTitle": "Sign-up is by invitation here",
     "loginSuccess": "Login successful!",
     "loginFailed": "Login failed. Please try again.",
     "profileInactiveTitle": "Your account isn’t active yet",
