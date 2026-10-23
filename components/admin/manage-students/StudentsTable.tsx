@@ -31,6 +31,7 @@ import { attendanceCell, attendanceExplanation } from "@/lib/utils/attendanceCel
 import { StudentCards } from "./StudentCards";
 import { useIsPhone } from "./mobile";
 import { StudentResumeDialog } from "./StudentResumeDialog";
+import { isRemoved, RemovedChip, type MembershipView } from "./membership";
 
 type SortOption =
   | "name"
@@ -63,8 +64,27 @@ interface StudentsTableProps {
   /** Header checkbox state across the full (filtered) set. */
   allSelected?: boolean;
   someSelected?: boolean;
-  /** Per-row delete (permanent). When provided, a red delete action renders in the row. */
+  /**
+   * Which directory this is: current members, or the people removed from the organisation. The
+   * actions column follows it. Members get "Remove from organisation" (reversible); the Removed
+   * view gets "Add back" and, as the only place it is offered, "Delete permanently". The
+   * irreversible erase (55 CASCADE foreign keys sit behind it) is therefore always the second
+   * of two steps, never a neighbour of the everyday row actions.
+   */
+  view?: MembershipView;
+  /** Per-row remove from organisation (reversible). Members view only. */
+  onRemove?: (student: Student) => void;
+  /** Per-row add back. Removed view only. */
+  onRestore?: (student: Student) => void;
+  /** The row whose add-back is in flight, so its button cannot be pressed twice. */
+  restoringId?: number | null;
+  /** Per-row delete (permanent). Removed view only. */
   onDelete?: (student: Student) => void;
+  /**
+   * True while a search or filter narrows the list, so an empty Removed view says "no match"
+   * rather than "nobody has been removed" when somebody has.
+   */
+  filtered?: boolean;
 }
 
 const getSortIcon = (
@@ -109,10 +129,17 @@ export function StudentsTable({
   onToggleSelectAll,
   allSelected = false,
   someSelected = false,
+  view = "members",
+  onRemove,
+  onRestore,
+  restoringId = null,
   onDelete,
+  filtered = false,
 }: StudentsTableProps) {
   const router = useRouter();
   const { t } = useTranslation("common");
+  const removedView = view === "removed";
+  const removedEmptyState = removedView && !filtered;
   const colCount = selectable ? 8 : 7;
   const isPhone = useIsPhone();
   // The student whose saved resume is open. "Saved resume: Yes" used to be a dead label.
@@ -157,7 +184,12 @@ export function StudentsTable({
         onToggleSelectAll={onToggleSelectAll}
         allSelected={allSelected}
         someSelected={someSelected}
+        view={view}
+        onRemove={onRemove}
+        onRestore={onRestore}
+        restoringId={restoringId}
         onDelete={onDelete}
+        filtered={filtered}
       />
     );
   }
@@ -489,7 +521,9 @@ export function StudentsTable({
                         fontWeight: 500,
                       }}
                     >
-                      {t("adminManageStudents.noStudentsFound")}
+                      {removedEmptyState
+                        ? t("adminManageStudents.membership.emptyRemoved")
+                        : t("adminManageStudents.noStudentsFound")}
                     </Typography>
                     <Typography
                       variant="caption"
@@ -497,7 +531,9 @@ export function StudentsTable({
                         color: "#9ca3af",
                       }}
                     >
-                      {t("adminManageStudents.tryAdjustingFilters")}
+                      {removedEmptyState
+                        ? t("adminManageStudents.membership.emptyRemovedHint")
+                        : t("adminManageStudents.tryAdjustingFilters")}
                     </Typography>
                   </Box>
                 </TableCell>
@@ -588,7 +624,9 @@ export function StudentsTable({
                             >
                               {student.name || t("adminManageStudents.na")}
                             </Typography>
-                            {!student.is_active && (
+                            {isRemoved(student) ? (
+                              <RemovedChip student={student} />
+                            ) : !student.is_active ? (
                               <Chip
                                 label={t("adminManageStudents.inactive")}
                                 size="small"
@@ -602,7 +640,7 @@ export function StudentsTable({
                                   },
                                 }}
                               />
-                            )}
+                            ) : null}
                           </Box>
                           <Typography
                             variant="caption"
@@ -930,20 +968,60 @@ export function StudentsTable({
                         >
                           <IconWrapper icon="mdi:school-outline" size={18} />
                         </IconButton>
-                        {onDelete && (
-                          <IconButton
-                            size="small"
-                            onClick={() => onDelete(student)}
-                            title="Delete student"
-                            aria-label="Delete student"
-                            sx={{
-                              color: "#ef4444",
-                              "&:hover": { backgroundColor: "#fef2f2", transform: "scale(1.1)" },
-                              transition: "all 0.2s",
-                            }}
-                          >
-                            <IconWrapper icon="mdi:trash-can-outline" size={18} />
-                          </IconButton>
+                        {removedView ? (
+                          <>
+                            {onRestore && (
+                              <IconButton
+                                size="small"
+                                onClick={() => onRestore(student)}
+                                disabled={restoringId === student.id}
+                                title={t("adminManageStudents.membership.addBack")}
+                                aria-label={t("adminManageStudents.membership.addBack")}
+                                sx={{
+                                  color: "#16a34a",
+                                  "&:hover": { backgroundColor: "#f0fdf4", transform: "scale(1.1)" },
+                                  transition: "all 0.2s",
+                                }}
+                              >
+                                <IconWrapper icon="mdi:account-plus-outline" size={18} />
+                              </IconButton>
+                            )}
+                            {onDelete && (
+                              <IconButton
+                                size="small"
+                                onClick={() => onDelete(student)}
+                                title={t("adminManageStudents.membership.deleteAction")}
+                                aria-label={t("adminManageStudents.membership.deleteAction")}
+                                sx={{
+                                  color: "#ef4444",
+                                  "&:hover": { backgroundColor: "#fef2f2", transform: "scale(1.1)" },
+                                  transition: "all 0.2s",
+                                }}
+                              >
+                                <IconWrapper icon="mdi:trash-can-outline" size={18} />
+                              </IconButton>
+                            )}
+                          </>
+                        ) : (
+                          // No trash here. The permanent delete used to share this column with
+                          // the everyday actions, and its own toast said "removed from your
+                          // organization", so the reversible and the irreversible read as one
+                          // thing. Removal is the only destructive step offered to a member.
+                          onRemove && (
+                            <IconButton
+                              size="small"
+                              onClick={() => onRemove(student)}
+                              title={t("adminManageStudents.membership.removeAction")}
+                              aria-label={t("adminManageStudents.membership.removeAction")}
+                              sx={{
+                                color: "#ef4444",
+                                "&:hover": { backgroundColor: "#fef2f2", transform: "scale(1.1)" },
+                                transition: "all 0.2s",
+                              }}
+                            >
+                              <IconWrapper icon="mdi:account-off-outline" size={18} />
+                            </IconButton>
+                          )
                         )}
                       </Box>
                     </TableCell>

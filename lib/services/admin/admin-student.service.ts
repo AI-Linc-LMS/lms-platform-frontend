@@ -36,6 +36,23 @@ export interface ManagedStudentResumes {
   documents?: ManagedStudentResumeDocument[];
 }
 
+/**
+ * Whether a person is a member of THIS organisation or has been removed from it.
+ *
+ * Removal is per tenant and reversible: the server stamps `removed_at` / `removed_by` on the
+ * tenant profile and keeps every record (enrolments, progress, submissions, certificates), so
+ * "Add back" restores the very same profile. It is not `is_active`: that is the shared login's
+ * platform-wide switch, and "deactivate" flips it for every organisation the person belongs to.
+ * Absent on an older server, which reads as a member.
+ */
+export type MembershipState = "active" | "removed";
+
+/** The admin who removed a student, as the directory and the detail page name them. */
+export interface MembershipAdmin {
+  id: number;
+  name: string;
+}
+
 export interface Student {
   id: number;
   user_id: number;
@@ -46,6 +63,11 @@ export interface Student {
   username: string;
   profile_pic_url?: string | null;
   is_active: boolean;
+  membership?: MembershipState;
+  /** When they were removed from this organisation (ISO 8601); null or absent for a member. */
+  removed_at?: string | null;
+  /** Null when the removing admin's own profile has since been purged. */
+  removed_by?: MembershipAdmin | null;
   date_joined: string;
   last_login: string | null;
   total_marks: number;
@@ -113,6 +135,12 @@ export interface ManageStudentsParams {
   segment?: "at_risk";
   /** ADAPTIVE course id to evaluate the at-risk rule for (the dashboard's course filter). */
   risk_course_id?: number;
+  /**
+   * "removed" lists the people removed from this organisation; absent (or "active") lists
+   * members, which is what every other consumer of this listing (pickers, notifications, the
+   * scorecard) wants. Only the Manage Students page's Removed tab sends it.
+   */
+  status?: MembershipState;
 }
 
 export interface ManageStudentsResponse {
@@ -131,7 +159,15 @@ export interface ManageStudentsResponse {
     is_active?: string | null;
     sort_by?: string;
     sort_order?: string;
+    status?: string;
   };
+  /**
+   * Tenant-wide headcounts for the Members / Removed tabs. The server counts them on the
+   * caller's whole population, with no course, search or segment filter, so the badges stay put
+   * while the list under them is filtered. Absent on an older server: the tabs then carry no
+   * badge rather than a 0 that would read as "nobody".
+   */
+  membership_counts?: { active: number; removed: number };
   /** The at-risk rule text the server applied. */
   at_risk_definition?: {
     rules: Record<string, string>;
@@ -143,6 +179,10 @@ export interface ManageStudentsResponse {
 export interface StudentDetail {
   id: number;
   user_id: number;
+  /** See `MembershipState`. A removed student still loads, so the Removed tab can open them. */
+  membership?: MembershipState;
+  removed_at?: string | null;
+  removed_by?: MembershipAdmin | null;
   /**
    * The Manage Students column's own answer for this student, so the profile header offers
    * "View resume" only when there is one. Absent on an older server, which reads as "unknown" -
@@ -471,6 +511,28 @@ export interface BulkEnrolResponse {
   results: BulkEnrolResultRow[];
 }
 
+/**
+ * POST manage-student/<id>/ {action: "remove"}. Idempotent: a repeat answers 200 with the
+ * ORIGINAL stamp and `already_removed: true`, so a double click cannot rewrite who did it.
+ */
+export interface RemoveFromOrganisationResult {
+  message: string;
+  student_id: number;
+  membership: "removed";
+  removed_at: string;
+  removed_by: MembershipAdmin;
+  already_removed: boolean;
+}
+
+/** POST manage-student/<id>/ {action: "restore"}. On a member already: restored false. */
+export interface RestoreToOrganisationResult {
+  message: string;
+  student_id: number;
+  membership: "active";
+  restored: boolean;
+  already_member?: boolean;
+}
+
 export const adminStudentService = {
   /**
    * Preview a progress reset. Runs the same filters as the reset itself, so the confirmation
@@ -530,6 +592,7 @@ export const adminStudentService = {
     if (params?.segment) queryParams.append("segment", params.segment);
     if (params?.risk_course_id)
       queryParams.append("risk_course_id", params.risk_course_id.toString());
+    if (params?.status) queryParams.append("status", params.status);
 
     const queryString = queryParams.toString();
     const url = `/admin-dashboard/api/clients/${
@@ -627,8 +690,37 @@ export const adminStudentService = {
     return response.data;
   },
 
+  // Remove a student from THIS organisation. Reversible: the server stamps removed_at/removed_by
+  // on their tenant profile and keeps every record, and they cannot sign in here (through any
+  // door, gated tenant or not) until they are added back. Admin only; the server 403s scoped
+  // roles with an explanation. Never touches the shared login's is_active.
+  removeFromOrganisation: async (
+    studentId: number
+  ): Promise<RemoveFromOrganisationResult> => {
+    const response = await apiClient.post<RemoveFromOrganisationResult>(
+      `/admin-dashboard/api/clients/${config.clientId}/manage-student/${studentId}/`,
+      { action: "remove" }
+    );
+    return response.data;
+  },
+
+  // Add a removed student back. Clears the stamp on the SAME profile, so the enrolments, batch
+  // memberships, progress and certificates they had are simply live again; nothing is re-created
+  // and nothing re-enrols. Idempotent on a member. Admin only.
+  restoreToOrganisation: async (
+    studentId: number
+  ): Promise<RestoreToOrganisationResult> => {
+    const response = await apiClient.post<RestoreToOrganisationResult>(
+      `/admin-dashboard/api/clients/${config.clientId}/manage-student/${studentId}/`,
+      { action: "restore" }
+    );
+    return response.data;
+  },
+
   // Permanently delete a student from THIS org (?hard=true). Removes their per-tenant profile +
   // this org's data; the shared login survives if they belong to another org. Admin only.
+  // The reversible step is removeFromOrganisation above; the UI offers this one only from the
+  // Removed tab, so an irreversible erase is always the second of two steps.
   deleteStudent: async (studentId: number) => {
     const response = await apiClient.delete(
       `/admin-dashboard/api/clients/${config.clientId}/manage-student/${studentId}/?hard=true`
@@ -662,10 +754,10 @@ export const adminStudentService = {
     return response.data;
   },
 
-  // Manage student actions (enroll, unenroll, reset progress)
+  // Manage student actions (enroll, unenroll, reset progress, remove, restore)
   manageStudentAction: async (
     studentId: number,
-    action: "enroll_course" | "unenroll_course" | "reset_progress",
+    action: "enroll_course" | "unenroll_course" | "reset_progress" | "remove" | "restore",
     courseId?: number
   ) => {
     const body: { action: string; course_id?: number } = { action };

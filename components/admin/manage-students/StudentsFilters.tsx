@@ -18,6 +18,7 @@ import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { PhoneStudentsFilters } from "./PhoneStudentsFilters";
 import { useIsPhone } from "./mobile";
+import type { MembershipView } from "./membership";
 
 interface Course {
   id: number;
@@ -36,6 +37,12 @@ interface StudentsFiltersProps {
   onStatusChange: (value: string) => void;
   onResumeFilterChange: (value: "all" | "yes" | "no") => void;
   onSearchChange: (value: string) => void;
+  /**
+   * In the Removed view the status and saved-resume selects are left out: the page does not
+   * apply those filters there (a hidden filter that still narrowed the list would make removed
+   * people vanish for no visible reason), so offering the controls would be a lie either way.
+   */
+  view?: MembershipView;
 }
 
 export function StudentsFilters({
@@ -49,9 +56,11 @@ export function StudentsFilters({
   onStatusChange,
   onResumeFilterChange,
   onSearchChange,
+  view = "members",
 }: StudentsFiltersProps) {
   const { t } = useTranslation("common");
   const isPhone = useIsPhone();
+  const showAccountFilters = view !== "removed";
   if (isPhone) {
     return (
       <PhoneStudentsFilters
@@ -65,6 +74,7 @@ export function StudentsFilters({
         onStatusChange={onStatusChange}
         onResumeFilterChange={onResumeFilterChange}
         onSearchChange={onSearchChange}
+        view={view}
       />
     );
   }
@@ -122,7 +132,7 @@ export function StudentsFilters({
             xs: "1fr",
             sm: "1fr 1fr",
             md: "repeat(2, 1fr)",
-            lg: "repeat(4, 1fr)",
+            lg: showAccountFilters ? "repeat(4, 1fr)" : "repeat(2, 1fr)",
           },
           gap: { xs: 2, sm: 2 },
         }}
@@ -172,6 +182,7 @@ export function StudentsFilters({
         </FormControl>
 
         {/* Status Filter */}
+        {showAccountFilters && (
         <FormControl fullWidth>
           <InputLabel id="status-filter-label">{t("adminManageStudents.status")}</InputLabel>
           <Select
@@ -185,8 +196,10 @@ export function StudentsFilters({
             <MenuItem value="inactive">{t("adminManageStudents.inactive")}</MenuItem>
           </Select>
         </FormControl>
+        )}
 
         {/* Saved resume filter */}
+        {showAccountFilters && (
         <FormControl fullWidth>
           <InputLabel id="resume-filter-label">
             {t("adminManageStudents.filterSavedResume")}
@@ -204,6 +217,7 @@ export function StudentsFilters({
             <MenuItem value="no">{t("adminManageStudents.resumeNo")}</MenuItem>
           </Select>
         </FormControl>
+        )}
 
         {/* Search Term */}
         <TextField

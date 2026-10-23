@@ -90,6 +90,12 @@ export interface QuickEnrollResult {
   profile_id: number;
   created_account: boolean;
   created_profile: boolean;
+  /**
+   * True when the address belonged to someone REMOVED from this organisation: adding them again
+   * restores their profile (created_profile stays false) with every enrolment and record they
+   * had. They already have a password, so no onboarding email is sent. Absent on an older server.
+   */
+  restored_profile?: boolean;
   legacy_enrolled: number[];
   legacy_already_enrolled: number[];
   adaptive_enrolled: number;

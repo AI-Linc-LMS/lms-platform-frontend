@@ -25,6 +25,7 @@ import { completionStatsFor } from "@/lib/utils/student-risk";
 import { attendanceCell } from "@/lib/utils/attendanceCell";
 import { CardStat } from "./mobile";
 import { StudentResumeDialog } from "./StudentResumeDialog";
+import { isRemoved, RemovedChip, type MembershipView } from "./membership";
 
 /* ==========================================================================
  * The student directory on a phone: one card per student.
@@ -62,7 +63,13 @@ export interface StudentCardsProps {
   onToggleSelectAll?: () => void;
   allSelected?: boolean;
   someSelected?: boolean;
+  /** See StudentsTable: the kebab menu's destructive items follow the view. */
+  view?: MembershipView;
+  onRemove?: (student: Student) => void;
+  onRestore?: (student: Student) => void;
+  restoringId?: number | null;
   onDelete?: (student: Student) => void;
+  filtered?: boolean;
 }
 
 const getInitials = (name: string) => {
@@ -124,10 +131,17 @@ export function StudentCards({
   onToggleSelectAll,
   allSelected = false,
   someSelected = false,
+  view = "members",
+  onRemove,
+  onRestore,
+  restoringId = null,
   onDelete,
+  filtered = false,
 }: StudentCardsProps) {
   const router = useRouter();
   const { t } = useTranslation("common");
+  const removedView = view === "removed";
+  const removedEmptyState = removedView && !filtered;
   const [menu, setMenu] = useState<{ anchor: HTMLElement; student: Student } | null>(null);
   const [allBatches, setAllBatches] = useState<Set<number>>(new Set());
   const theme = useTheme();
@@ -205,8 +219,16 @@ export function StudentCards({
       {students.length === 0 ? (
         <Box sx={{ py: 5, display: "flex", flexDirection: "column", alignItems: "center", gap: 1, textAlign: "center" }}>
           <IconWrapper icon="mdi:account-off-outline" size={48} color="#d1d5db" />
-          <Typography sx={{ color: "#6b7280", fontWeight: 500 }}>{t("adminManageStudents.noStudentsFound")}</Typography>
-          <Typography sx={{ color: "#6b7280", fontSize: "0.8125rem" }}>{t("adminManageStudents.tryAdjustingFilters")}</Typography>
+          <Typography sx={{ color: "#6b7280", fontWeight: 500 }}>
+            {removedEmptyState
+              ? t("adminManageStudents.membership.emptyRemoved")
+              : t("adminManageStudents.noStudentsFound")}
+          </Typography>
+          <Typography sx={{ color: "#6b7280", fontSize: "0.8125rem" }}>
+            {removedEmptyState
+              ? t("adminManageStudents.membership.emptyRemovedHint")
+              : t("adminManageStudents.tryAdjustingFilters")}
+          </Typography>
         </Box>
       ) : (
         students.map((student) => {
@@ -280,13 +302,15 @@ export function StudentCards({
                       >
                         {name}
                       </Typography>
-                      {!student.is_active && (
+                      {isRemoved(student) ? (
+                        <RemovedChip student={student} variant="card" />
+                      ) : !student.is_active ? (
                         <Chip
                           label={t("adminManageStudents.inactive")}
                           size="small"
                           sx={{ flexShrink: 0, backgroundColor: "#fee2e2", color: "#991b1b", fontSize: "0.75rem", height: 22 }}
                         />
-                      )}
+                      ) : null}
                     </Box>
                     <Typography
                       component="span"
@@ -475,7 +499,41 @@ export function StudentCards({
             {t("adminManageStudents.resumeViewer.view", "View resume")}
           </MenuItem>
         )}
-        {onDelete && (
+        {/* The destructive items follow the view, exactly as the desktop actions column does:
+            a member can be removed (reversible); a removed person can be added back or, only
+            from here, deleted permanently. */}
+        {!removedView && onRemove && (
+          <MenuItem
+            sx={{ minHeight: 48, color: "#ef4444" }}
+            onClick={() => {
+              const s = menu?.student;
+              closeMenu();
+              if (s) onRemove(s);
+            }}
+          >
+            <ListItemIcon>
+              <IconWrapper icon="mdi:account-off-outline" size={20} color="#ef4444" />
+            </ListItemIcon>
+            {t("adminManageStudents.membership.removeAction")}
+          </MenuItem>
+        )}
+        {removedView && onRestore && (
+          <MenuItem
+            sx={{ minHeight: 48, color: "#16a34a" }}
+            disabled={menu ? restoringId === menu.student.id : false}
+            onClick={() => {
+              const s = menu?.student;
+              closeMenu();
+              if (s) onRestore(s);
+            }}
+          >
+            <ListItemIcon>
+              <IconWrapper icon="mdi:account-plus-outline" size={20} color="#16a34a" />
+            </ListItemIcon>
+            {t("adminManageStudents.membership.addBack")}
+          </MenuItem>
+        )}
+        {removedView && onDelete && (
           <MenuItem
             sx={{ minHeight: 48, color: "#ef4444" }}
             onClick={() => {
@@ -487,7 +545,7 @@ export function StudentCards({
             <ListItemIcon>
               <IconWrapper icon="mdi:trash-can-outline" size={20} color="#ef4444" />
             </ListItemIcon>
-            Delete student
+            {t("adminManageStudents.membership.deleteAction")}
           </MenuItem>
         )}
       </Menu>

@@ -11,6 +11,7 @@ import {
   Button,
   Divider,
 } from "@mui/material";
+import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import type { StudentDetail } from "@/lib/services/admin/admin-student.service";
@@ -37,6 +38,12 @@ interface ManageTabProps {
   onFormChange: (field: string, value: string) => void;
   onToggleActive: () => void;
   onEnrollmentChange: () => void;
+  /**
+   * The student has been removed from this organisation. The account-status switch is held:
+   * it writes the shared login's is_active across every tenant, and flipping it on a removed
+   * person would read as "let them back in" while doing nothing of the kind.
+   */
+  removed?: boolean;
 }
 
 function Panel({
@@ -148,7 +155,9 @@ export function ManageTab({
   onFormChange,
   onToggleActive,
   onEnrollmentChange,
+  removed = false,
 }: ManageTabProps) {
+  const { t } = useTranslation("common");
   const pi = student.personal_info;
   // The same predicate the directory's "Never logged in" chip uses, so the detail page and the
   // chip can never disagree about one student.
@@ -250,7 +259,10 @@ export function ManageTab({
               <Switch
                 checked={pi.is_active ?? false}
                 onChange={onToggleActive}
-                disabled={saving}
+                disabled={saving || removed}
+                // MUI v7: slotProps.input REPLACES the default { role: "switch" }, and the
+                // deprecated inputProps is overridden by it, so the role is restated here.
+                slotProps={{ input: { role: "switch", "aria-label": "Account status" } }}
                 sx={{
                   "& .MuiSwitch-switchBase.Mui-checked": { color: ADAPTIVE.green },
                   "& .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track": { backgroundColor: ADAPTIVE.green },
@@ -266,6 +278,14 @@ export function ManageTab({
               </Box>
             </Box>
           </Box>
+          {removed && (
+            <Typography
+              data-testid="account-status-removed-note"
+              sx={{ mt: 1.25, fontSize: "0.8rem", color: "#92400e" }}
+            >
+              {t("adminManageStudents.membership.switchDisabledRemoved")}
+            </Typography>
+          )}
         </Panel>
       </Box>
 
