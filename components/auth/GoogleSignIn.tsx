@@ -11,6 +11,7 @@ import { useToast } from "@/components/common/Toast";
 import { config } from "@/lib/config";
 import { SignInLoader } from "@/components/common/SignInLoader";
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
+import { isLoginNotPermitted } from "@/lib/auth/tenant-status";
 import {
   AUTH,
   FONT,
@@ -215,10 +216,12 @@ export const GoogleSignIn: React.FC<GoogleSignInProps> = ({
         // cookie-consume path, and a snackbar that expires on its own during a page load is
         // the kind nobody sees or screenshots.
         setReturnError(
-          getAxiosErrorDetail(
-            error,
-            reachedServer ? t("auth.googleRejected") : t("auth.googleUnreachable")
-          )
+          isLoginNotPermitted(error)
+            ? t("auth.notEnrolled")
+            : getAxiosErrorDetail(
+                error,
+                reachedServer ? t("auth.googleRejected") : t("auth.googleUnreachable")
+              )
         );
         setLeavingForGoogle(false);
       }
