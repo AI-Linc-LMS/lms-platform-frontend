@@ -18,6 +18,16 @@ export const TENANT_INACTIVE_CODE = "tenant_inactive";
 /** The backend's code for "this person is not a member of this institution" (accounts/login_gate.py). */
 export const LOGIN_NOT_PERMITTED_CODE = "login_not_permitted";
 
+/**
+ * True when a failed sign-in request was refused because this person is not a member of the
+ * organisation: never added by an admin, or removed by one. The two are deliberately one answer, so
+ * the page cannot be used to learn which applies to an address.
+ */
+export function isLoginNotPermitted(err: unknown): boolean {
+  const data = (err as { response?: { data?: { code?: unknown } } } | null)?.response?.data;
+  return data?.code === LOGIN_NOT_PERMITTED_CODE;
+}
+
 /** The `reason` the login page is sent after a session the server stopped honouring is dropped. */
 export const NOT_PERMITTED_REASON = "not_permitted";
 

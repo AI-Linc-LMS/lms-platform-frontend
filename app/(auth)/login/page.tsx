@@ -16,7 +16,11 @@ import Link from "next/link";
 import { Formik, Form, Field } from "formik";
 import Cookies from "js-cookie";
 import { useAuth } from "@/lib/auth/auth-context";
-import { NOT_PERMITTED_REASON } from "@/lib/auth/tenant-status";
+import {
+  isLoginNotPermitted,
+  LOGIN_NOT_PERMITTED_CODE,
+  NOT_PERMITTED_REASON,
+} from "@/lib/auth/tenant-status";
 import { useClientInfo } from "@/lib/contexts/ClientInfoContext";
 import { resolvePostLoginPath } from "@/lib/auth/role-utils";
 import { useToast } from "@/components/common/Toast";
@@ -84,11 +88,18 @@ export default function LoginPage() {
     // Sent here by the API client after the server stopped honouring the session (an admin
     // removed this person, or the institution now admits only people an admin added).
     if (getSearchParam("reason") === NOT_PERMITTED_REASON) {
-      setGoogleAuthError(t("auth.signedOutNotPermitted"));
+      setGoogleAuthError(t("auth.notEnrolled"));
       return;
     }
     const code = getSearchParam("auth_error");
     if (!code) return;
+    // The central Google sign-in (central-auth) refused a non-member. Without this the code fell
+    // through to "Google sign-in didn't complete. Please try again.", which sent removed and
+    // never-added students back to the Google button for a sign-in that could never succeed.
+    if (code === LOGIN_NOT_PERMITTED_CODE) {
+      setGoogleAuthError(t("auth.notEnrolled"));
+      return;
+    }
     // An unknown code still deserves a message: a silent bounce back to a blank login page reads
     // as the Google button simply not working.
     setGoogleAuthError(
@@ -228,7 +239,13 @@ export default function LoginPage() {
       // router.replace keeps navigation guaranteed here while staying idempotent with the effect.
       router.replace(target);
     } catch (err: unknown) {
-      showToast(getAxiosErrorDetail(err, t("auth.loginFailed")), "error");
+      // A non-member gets the page-level message, which stays on screen, instead of a toast that
+      // expires: there is nothing to retry, and "contact your administrator" is the whole answer.
+      if (isLoginNotPermitted(err)) {
+        setGoogleAuthError(t("auth.notEnrolled"));
+      } else {
+        showToast(getAxiosErrorDetail(err, t("auth.loginFailed")), "error");
+      }
       setLoading(false);
       setIsRedirecting(false);
       // Released so a second attempt, or an already-authenticated visit, can redirect normally.
