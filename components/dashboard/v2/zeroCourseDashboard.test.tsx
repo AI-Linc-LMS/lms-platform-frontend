@@ -74,7 +74,19 @@ vi.mock("@/lib/services/assessment.service", () => ({
   assessmentService: { getActiveAssessments: () => Promise.resolve([]) },
 }));
 vi.mock("@/lib/services/live-sessions", () => ({
-  studentLiveSessionsService: { getSessions: () => Promise.resolve([]) },
+  // The live-sessions card reads the lean upcoming/ page (#1817), not the rich list.
+  studentLiveSessionsService: {
+    getSessions: () => Promise.resolve([]),
+    getUpcoming: () =>
+      Promise.resolve({
+        now: new Date().toISOString(),
+        sessions: [],
+        count: 0,
+        limit: 3,
+        offset: 0,
+        has_more: false,
+      }),
+  },
   nextSitting: () => null,
 }));
 vi.mock("@/lib/services/adaptive-journey.service", () => ({
