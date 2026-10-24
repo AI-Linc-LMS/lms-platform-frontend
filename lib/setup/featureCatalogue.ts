@@ -147,14 +147,23 @@ export const WIZARD_FEATURE_CATALOGUE: WizardFeatureEntry[] = [
       "Threaded conversations where learners help each other between classes.",
     icon: "chat",
   },
+  // Retired, kept only so the key still resolves to a name for the 14 tenants that hold the row.
+  // The learner product behind it - the standalone mock interview - is switched off everywhere,
+  // so the wizard must stop offering a new tenant a switch with nothing behind it.
+  //
+  // It has no pairs any more, for the same reason `course` has none: the first parent to claim a
+  // key owns it (CHILD_TO_PARENT below), so while this hidden entry owned `admin_mock_interview`,
+  // switching the interview ADMIN tools on also switched this dead learner key on. Admin keeps
+  // its own card and now toggles alone - which is right, because the surviving interview ROUNDS
+  // are built in admin and governed by the course, never by this row.
   {
     key: "mock_interview",
     side: "learner",
-    label: "Mock interviews",
+    label: "Mock interviews (retired)",
     tagline:
-      "AI-powered practice interviews with feedback on every answer.",
+      "The standalone practice interview, withdrawn. Interview rounds now live inside a course.",
     icon: "interview",
-    pairsWithAdmin: ["admin_mock_interview"],
+    visibility: "deprecated",
   },
   {
     key: "proctoring",

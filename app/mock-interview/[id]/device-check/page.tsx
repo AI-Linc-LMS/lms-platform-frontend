@@ -1247,7 +1247,7 @@ export default function MockInterviewDeviceCheckPage() {
               // as "Failed" for the admin and frees the template to be retaken, rather than
               // lingering as a phantom in-progress/scheduled attempt.
               void mockInterviewService.abandonInterview(Number(params.id));
-              router.push("/mock-interview");
+              router.push("/mock-interview/courses");
             }}
             sx={{
               textTransform: "none",

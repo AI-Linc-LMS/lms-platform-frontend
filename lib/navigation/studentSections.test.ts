@@ -79,7 +79,26 @@ describe("the learner's sidebar", () => {
     // students on tenants that have the v2 flag and not the legacy one (Impacteers 434,
     // Agileology 396, Capabl Labs 2) held the feature with no way to reach it from the nav.
     expect(sectionFor("interview_realtime")).toBe("career");
-    expect(sectionFor("mock_interview")).toBe("career");
+  });
+
+  it("lists no section feature that no nav item carries, beyond the one known orphan", () => {
+    // The mirror of the homeless check above, and the half it cannot see. `mock_interview` sat
+    // in Career after the standalone mock interview was retired and its nav entry deleted: a
+    // section row for a product with no door, which reads as a live module to the next person
+    // editing this file.
+    //
+    // `course` is named rather than fixed: it is the retiring classic catalogue, whose learner
+    // nav entry went before this change, and taking it out of Learn is that retirement's call to
+    // make, not this one's. Naming it keeps the check live - a NEW orphan still fails here.
+    const owned = new Set(STUDENT_NAV_ITEMS.flatMap((i) => [i.featureName, ...(i.featureNamesAny ?? [])]));
+    const orphaned = STUDENT_SECTIONS.flatMap((s) => s.itemFeatures).filter((f) => !owned.has(f));
+    expect(orphaned.sort()).toEqual(["course"]);
+  });
+
+  it("keeps the retired standalone mock interview out of the learner's nav entirely", () => {
+    expect(sectionFor("mock_interview")).toBeUndefined();
+    expect(STUDENT_NAV_ITEMS.map((i) => i.featureName)).not.toContain("mock_interview");
+    expect(STUDENT_NAV_ITEMS.map((i) => i.path)).not.toContain("/mock-interview");
   });
 
   it("still houses everything it housed before the move", () => {
