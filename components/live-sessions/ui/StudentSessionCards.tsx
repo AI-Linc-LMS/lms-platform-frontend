@@ -348,13 +348,18 @@ export function HistoryRow({ s, watching, onWatch, onGiveFeedback }: {
   // those keep the two-state behaviour. A cancelled sitting keeps its own story too.
   const neverRan = !attended && s.occurrence_ran === false && !s.occurrence_cancelled
     && s.notice_type !== "cancelled";
+  // Held before this learner was added to the batch: never "Missed" (it was never theirs to
+  // attend), but listed, because its recording and study material are how a late joiner catches
+  // up. An attendance record wins over the flag: "added to the batch" is when the membership row
+  // was created, and some learners attended classes before being re-added.
+  const beforeJoining = !attended && !neverRan && Boolean(s.before_enrolment);
   // The chip says what this session belongs to, so the text line never repeats it.
   const courseText = cardCourseText(s);
   return (
     <Box data-testid="history-row" sx={{ borderRadius: 3, bgcolor: "var(--card-bg)", border: "1px solid var(--border-default)", p: { xs: 1.5, sm: 1.75 } }}>
     <Box sx={{ display: "flex", gap: { xs: 1.25, sm: 1.5 }, alignItems: { xs: "flex-start", sm: "center" }, flexWrap: "wrap" }}>
       <Icon
-        icon={attended ? "mdi:check-circle" : neverRan ? "mdi:calendar-remove-outline" : "mdi:close-circle-outline"}
+        icon={attended ? "mdi:check-circle" : neverRan ? "mdi:calendar-remove-outline" : beforeJoining ? "mdi:account-clock-outline" : "mdi:close-circle-outline"}
         width={22}
         style={{ color: attended ? "#10b981" : "#94a3b8", flexShrink: 0 }}
       />
@@ -380,7 +385,7 @@ export function HistoryRow({ s, watching, onWatch, onGiveFeedback }: {
         <Box sx={{ px: 1, py: { xs: 0.5, sm: 0.3 }, borderRadius: 999, whiteSpace: "nowrap",
           fontSize: { xs: "0.75rem", sm: "0.68rem" }, fontWeight: 800,
           color: attended ? "#059669" : "#64748b", bgcolor: attended ? "color-mix(in srgb,#10b981 12%,transparent)" : "color-mix(in srgb,#64748b 12%,transparent)" }}>
-          {attended ? "Attended" : neverRan ? "Didn't run" : "Missed"}
+          {attended ? "Attended" : neverRan ? "Didn't run" : beforeJoining ? "Before you joined" : "Missed"}
         </Box>
         {/* Pushes the two actions to the far edge of the phone row, clear of the status pill. */}
         <Box sx={{ flexGrow: 1, display: { xs: "block", sm: "none" } }} />
@@ -397,7 +402,8 @@ export function HistoryRow({ s, watching, onWatch, onGiveFeedback }: {
           </Tooltip>
         )}
         {/* Nothing to rate on a session that was called off — or one that never took place. */}
-        {onGiveFeedback && s.notice_type !== "cancelled" && !neverRan && (
+        {/* Nor on one held before they were in the batch: they were not there to rate it. */}
+        {onGiveFeedback && s.notice_type !== "cancelled" && !neverRan && !beforeJoining && (
           <Button onClick={onGiveFeedback} size="small" startIcon={<Icon icon="mdi:star-outline" width={16} />}
             sx={{ textTransform: "none", fontWeight: 700, color: "#7c3aed", minWidth: 0, flexShrink: 0,
               px: { xs: 1.5, sm: "5px" }, minHeight: { xs: 44, sm: "auto" } }}>
