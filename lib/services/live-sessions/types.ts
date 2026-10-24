@@ -135,8 +135,9 @@ export interface StudentLiveOccurrence {
    *  history must say "Didn't run", never "Missed". */
   ran?: boolean;
   /** True when this date ran BEFORE the viewer joined the audience. It was never theirs to
-   *  attend, so it stays out of History and out of the attendance framing — but its recording
-   *  remains reachable, because catching up is good and being blamed is not. */
+   *  attend, so it stays out of the attendance framing: History lists it as "Before you joined",
+   *  never "Missed", with its recording and study material, because catching up is good and
+   *  being blamed is not. The server leaves it out of the attendance denominator. */
   before_enrolment?: boolean;
   /** This date has at least one file attached (series-wide files count for every date). */
   has_materials?: boolean;

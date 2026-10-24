@@ -326,10 +326,9 @@ export function RecordingCard({ s, watching, onWatch, onSummary }: { s: StudentL
         )}
       </Stack>
       </Box>
-      {/* The trainer's files for this date. This tab is the ONLY one that keeps dates from
-          before a student joined the batch -- History drops them so nobody is stamped "Missed"
-          for a class that ran before they arrived. Without this the material for those dates
-          was reachable from nowhere, though the API served it to them perfectly well. */}
+      {/* The trainer's files for this date, beside its recording. Dates from before a student
+          joined the batch are listed here and in History, where they read "Before you joined"
+          rather than "Missed" (lib/live-sessions/history.ts). */}
       {/* Fails OPEN: only an explicit `false` hides it. A payload without the field -- an older
           cached response, a deploy skew -- keeps the toggle, because a wrong flag here would
           re-hide the very files this card exists to surface. */}
