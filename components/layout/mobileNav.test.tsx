@@ -139,10 +139,15 @@ describe("admin mode", () => {
   });
 });
 
-describe("a module replaced by a newer one", () => {
-  it("shows the rebuilt interview only, when a tenant holds both keys", () => {
-    // Four tenants hold mock_interview AND interview_realtime, and were offered two entries both
-    // called Interview, pointing at two different products.
+describe("the retired standalone mock interview", () => {
+  /**
+   * It is off for EVERY tenant now, so the phone has no door to it in any configuration. This
+   * used to be a `supersededBy` rule - hide the old entry when the rebuilt key is also on - which
+   * only ever hid it from the four tenants holding both. The entry is gone from the model
+   * instead, which is the only thing that also covers the 14 tenants holding the legacy row
+   * alone and the 5 holding no rows at all (no rows means default-allow: every entry shows).
+   */
+  it("is unreachable for a tenant holding both interview keys", () => {
     state.features = ["dashboard", "adaptive_quiz", "mock_interview", "interview_realtime"];
     render(<MobileNav />);
     const reachable = [...bar(), ...openMore()];
@@ -150,12 +155,22 @@ describe("a module replaced by a newer one", () => {
     expect(reachable).not.toContain("/mock-interview");
   });
 
-  it("still shows the old interview to a tenant that only has that one", () => {
+  it("is unreachable for a tenant holding ONLY the retired key", () => {
+    // The case that used to offer it. These are the 14 tenants that still hold the row.
     state.features = ["dashboard", "adaptive_quiz", "mock_interview"];
     render(<MobileNav />);
     const reachable = [...bar(), ...openMore()];
-    expect(reachable).toContain("/mock-interview");
+    expect(reachable).not.toContain("/mock-interview");
     expect(reachable).not.toContain("/interview");
+  });
+
+  it("is unreachable for a tenant with no features configured, which is default-allow", () => {
+    state.features = [];
+    render(<MobileNav />);
+    const reachable = [...bar(), ...openMore()];
+    // Default-allow puts every remaining module on the phone, so this is not vacuous.
+    expect(reachable).toContain("/dashboard");
+    expect(reachable).not.toContain("/mock-interview");
   });
 });
 

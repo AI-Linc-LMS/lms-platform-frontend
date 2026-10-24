@@ -189,6 +189,11 @@ export interface InterviewResponse {
   audio_url?: string;
 }
 
+/**
+ * The body the retired standalone create took. Nothing sends it any more - `createInterview` is
+ * gone and the backend refuses that POST - and it is kept only to describe the 1,456 historical
+ * attempts whose rows were made from it. Do not wire a new caller to it.
+ */
 export interface CreateMockInterviewRequest {
   job_role?: string;
   experience_level?: string;
@@ -230,18 +235,15 @@ const mockInterviewService = {
     return response.data;
   },
 
-  /**
-   * Create a new mock interview
-   */
-  createInterview: async (
-    data: CreateMockInterviewRequest
-  ): Promise<MockInterview> => {
-    const response = await apiClient.post(
-      `/mock-interview/api/clients/${config.clientId}/mock-interviews/`,
-      data
-    );
-    return response.data;
-  },
+  // `createInterview` lived here: POST .../mock-interviews/, the one call that started a
+  // STANDALONE attempt. Its only two callers were the retired Quick Start and Schedule pages,
+  // and the backend now refuses that POST, so a surviving caller could only ever have produced a
+  // raw error on a learner's screen. The call is gone rather than left unused, which is why no
+  // screen in this app can reach the refusal.
+  //
+  // The ROUNDS do not use it: a template-started attempt is created by `startTemplateInterview`
+  // below (POST .../interview-templates/<id>/start/), and everything after that - detail, start,
+  // next-question, rewind, submit, abandon - is shared with the historical attempts and stays.
 
   /**
    * Get mock interview details
@@ -340,8 +342,8 @@ const mockInterviewService = {
   /**
    * Student-side: lazy-claim a pending course interview. The backend creates a per-attempt
    * MockInterview instance from the template's topic/subtopic/difficulty/duration. The
-   * returned shape matches `createInterview()` so the caller can redirect into the existing
-   * device-check page using the returned interview.id.
+   * returned shape is the one the device-check page expects, so the caller can redirect
+   * straight into it using the returned interview.id.
    */
   startTemplateInterview: async (
     templateId: number,

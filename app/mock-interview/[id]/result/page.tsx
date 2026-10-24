@@ -213,7 +213,10 @@ export default function InterviewResultPage() {
       } catch (error) {
         if (cancelled) return;
         showToast("Failed to load interview result", "error");
-        router.push("/mock-interview");
+        // Not "/mock-interview": that hub is the retired standalone product and now redirects
+        // away from the interview area entirely. Someone finishing an attempt belongs on the
+        // list of interviews their course has set them.
+        router.push("/mock-interview/courses");
       }
     };
 
@@ -364,7 +367,7 @@ export default function InterviewResultPage() {
           >
             <Button
               variant="contained"
-              onClick={() => router.push("/mock-interview")}
+              onClick={() => router.push("/mock-interview/courses")}
               sx={{
                 px: 2.5,
                 py: 1.25,

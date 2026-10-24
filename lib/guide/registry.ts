@@ -2304,95 +2304,14 @@ export const PAGE_GUIDES: Record<string, PageGuideContent> = {
     ],
     tip: "Missed a class? Filter to Past, open the session, and use the transcript search box to jump to the exact topic you need instead of rewatching the whole recording.",
   },
-  "/mock-interview": {
-    tourSteps: [
-      {
-        targetId: "page-header",
-        title: "Interview overview",
-        narration: "Welcome to your AI-driven mock interview hub. Practice realistic interviews and get instant, rubric-based feedback to sharpen every answer.",
-        placement: "bottom",
-        icon: "mdi:account-voice",
-        color: "#ec4899",
-      },
-      {
-        targetId: "mock-stats",
-        title: "Your interview stats",
-        narration: "This strip tracks your progress at a glance - total interviews, how many you've completed, what's scheduled, and your average score.",
-        placement: "bottom",
-        icon: "mdi:chart-box-outline",
-        color: "#22c55e",
-      },
-      {
-        targetId: "mock-tabs",
-        title: "Switch between views",
-        narration: "Use these tabs to jump between a New Interview, your Previous attempts, assigned Courses interviews, and anything you've Scheduled. A badge flags pending items waiting for you.",
-        placement: "bottom",
-        icon: "mdi:tab",
-        color: "#6366f1",
-      },
-      {
-        targetId: "mock-modes",
-        title: "Pick an interview mode",
-        narration: "Choose how you want to practice here - select a mode to launch a fresh mock interview tailored to what you want to work on.",
-        placement: "top",
-        icon: "mdi:play-circle-outline",
-        color: "#a78bfa",
-      },
-      {
-        title: "You're all set",
-        narration: "That's the tour! Check your stats, pick a mode, and start practicing whenever you're ready to level up your interview skills.",
-        icon: "mdi:rocket-launch-outline",
-        color: "#f59e0b",
-      },
-    ],
-    headerTitle: "What you can do with Mock Interviews",
-    headerSubtitle: "Practice AI-driven mock interviews and get instant, rubric-based feedback to sharpen your answers.",
-    features: [
-      {
-        icon: "mdi:lightning-bolt",
-        color: "#22c55e",
-        title: "Quick Start an interview",
-        text: "Jump straight into an AI-driven interview with auto-generated questions and no setup - the recommended way to practice fast.",
-      },
-      {
-        icon: "mdi:calendar-clock",
-        color: "#6366f1",
-        title: "Schedule an interview",
-        text: "Plan ahead by tailoring questions to a resume or job description and picking a time that works for you.",
-      },
-      {
-        icon: "mdi:chart-line",
-        color: "#a78bfa",
-        title: "Track your progress",
-        text: "See your total interviews, how many you've completed and scheduled, and your average score at a glance.",
-      },
-      {
-        icon: "mdi:school-outline",
-        color: "#f59e0b",
-        title: "Interviews from your courses",
-        text: "Open the Courses tab to find interviews assigned by your enrolled courses, with a badge showing how many are waiting.",
-      },
-      {
-        icon: "mdi:history",
-        color: "#0ea5e9",
-        title: "Revisit previous interviews",
-        text: "Browse your completed interviews under the Previous tab to review answers, scores, and feedback.",
-      },
-      {
-        icon: "mdi:calendar-check-outline",
-        color: "#ec4899",
-        title: "See what's scheduled",
-        text: "Check the Scheduled tab to keep an eye on upcoming interviews you've booked.",
-      },
-      {
-        icon: "mdi:star-circle-outline",
-        color: "#fbbf24",
-        title: "Rubric-based feedback",
-        text: "Every completed interview is scored against a clear rubric so you know exactly what to improve next.",
-      },
-    ],
-    tip: "New to practicing? Hit Quick Start to jump straight in, then switch to Schedule mode when you want questions tailored to a specific resume or job description.",
-  },
+  // The "/mock-interview" guide lived here. It was the STANDALONE legacy mock interview's
+  // own guide - a tour anchored to that hub's stats strip and tab row, and a feature list
+  // about Quick Start and Schedule - and that product is retired. `resolveGuide` matches on
+  // the longest route prefix, so leaving it would have made it the guide for the surviving
+  // /mock-interview/courses and /mock-interview/previous as well: a '?' describing a dead
+  // product on a live page. Neither of those pages renders a ModulePageHeader, so neither
+  // loses a guide it was showing. The admin console keeps its own at
+  // "/admin/admin-mock-interview", where the rounds are built.
   "/tickets": {
     tourSteps: [
       {
