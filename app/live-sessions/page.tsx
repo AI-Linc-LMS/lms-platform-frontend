@@ -15,6 +15,7 @@ import { SessionFilterChips } from "@/components/live-sessions/ui/LiveSessionUI"
 import { StudentSessionSummaryDialog } from "@/components/live-sessions/StudentSessionSummaryDialog";
 import { LiveSessionFeedbackDialog } from "@/components/live-sessions/LiveSessionFeedbackDialog";
 import { COMMUNITY_FEATURE, HIDE_PARTICIPANT_COUNTS, useClientFeature, useClientOptIn } from "@/lib/hooks/useClientFeature";
+import { PAST_MEETING_STATES, selectHistory } from "@/lib/live-sessions/history";
 import { studentLiveSessionsService } from "@/lib/services/live-sessions";
 import type { StudentLiveSession, MyLiveStats } from "@/lib/services/live-sessions";
 import { ScheduleCalendar, dayKey, type CalendarEvent } from "@/components/live-sessions/ScheduleCalendar";
@@ -35,7 +36,8 @@ import {
 // different question from the schedule, it only grows, and this page polls while it does
 // not - so sharing one page made the growing half ride on the busy half.
 type Tab = "upcoming" | "history";
-const PAST = new Set(["ended", "expired"]);
+// One definition with the History selection (lib/live-sessions/history.ts), so the two cannot drift.
+const PAST = PAST_MEETING_STATES;
 
 /**
  * Every way this session is targeted, as namespaced facet keys ('c:' cohort, 'a:' adaptive
@@ -475,11 +477,10 @@ export default function LiveSessionsPage() {
     [instances, matchesSelectedDay],
   );
   const history = useMemo(
-    // A class held before this student joined the batch was never theirs to attend, so it is not
-    // part of their history and must never be stamped "Missed". The server flags it and clamps
-    // its own attendance denominator the same way, so the KPI ring and this list agree.
-    // Recordings (below) deliberately keep them: catching up is good, being blamed is not.
-    () => instances.filter((s) => PAST.has(s.meeting_status ?? "") && !s.before_enrolment && matchesSelectedDay(s)).sort((a, b) => (b.class_datetime || "").localeCompare(a.class_datetime || "")),
+    // Every past sitting, including those held before this learner was added to the batch: those
+    // are labelled "Before you joined" by HistoryRow (never "Missed"), and their recording and
+    // study material are how a late joiner catches up. See lib/live-sessions/history.ts.
+    () => selectHistory(instances, matchesSelectedDay),
     [instances, matchesSelectedDay],
   );
 
