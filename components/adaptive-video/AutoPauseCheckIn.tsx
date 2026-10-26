@@ -108,9 +108,14 @@ export function AutoPauseCheckIn({ checkIn, practice, onAnswer, onContinue, onRe
               {isPractice ? t("adaptiveVideoMode.practiceNote") : "auto · pauses video"}
             </Typography>
           </Box>
-          <Typography sx={{ fontWeight: 700, fontSize: "1.02rem", mb: 2 }}>
-            {checkIn.question_text}
-          </Typography>
+          {/* `question_text` is the FIRST entry in the backend's HTML_RENDERED_FIELDS, so leaving
+              it as a text node while the options below it format would have put the reported bug
+              back on this screen the other way up: a stem spelling out its tags above options
+              that render theirs. */}
+          <OptionText
+            text={checkIn.question_text}
+            sx={{ display: "block", fontWeight: 700, fontSize: "1.02rem", mb: 2 }}
+          />
 
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
             {OPTIONS.map(({ letter, key }) => {

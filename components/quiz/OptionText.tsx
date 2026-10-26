@@ -28,9 +28,42 @@ import RichHtml from "@/components/common/RichHtml";
  * only as good as which component a page happened to pick.
  */
 
-/** Does this string carry markup at all? */
+/**
+ * What counts as markup, and why it is not "`<` followed by a letter".
+ *
+ * That looser test reads `List<String>`, `Vector<int>`, `x<y implies f(x)<f(y) when y>0` and
+ * `<Tab> then <Enter>` as markup. The browser then parses `<String>` as an unknown element and
+ * SWALLOWS everything up to the next `>`, so the learner is shown `x0`, or `List is a generic`,
+ * with nothing on the page saying it is broken. Spelled-out tags are ugly and readable; that is
+ * silent and unanswerable, and a bank about generics, comparisons and keystrokes is full of such
+ * options.
+ *
+ * An allowlist of element names alone does not settle it either, because the single-letter tags
+ * ARE real: `a<b and b>c` contains `<b and b>`, and `T<U> where U>T` contains `<U>`.
+ *
+ * So the test is STRUCTURAL: real option markup always closes. Either a closing tag is present
+ * (`</code>`, `</p>`, `</strong>`) or a void element is (`<br>`, `<img …>`, `<hr/>`). Algebra and
+ * generics never close, and a lone unclosed `<p>` is shown as text -- which displays the author's
+ * stray tag rather than eating the option, the right way round to fail.
+ *
+ * The names mirror the vocabulary the backend's own converter escapes against (`TAG_TOKEN_RE` in
+ * lms_core/management/commands/convert_legacy_course_to_adaptive.py): where the two lists
+ * disagree, a string one side treats as prose is markup to the other.
+ */
+const CLOSING_TAG = new RegExp(
+  "</\\s*(?:a|abbr|article|aside|b|blockquote|body|button|code|dd|div|dl|dt|em|figcaption|figure|" +
+    "footer|form|h[1-6]|head|header|html|i|kbd|li|main|mark|nav|ol|p|pre|q|s|samp|script|section|" +
+    "small|span|strong|style|sub|summary|sup|table|tbody|td|tfoot|th|thead|title|tr|u|ul|var" +
+    ")\\s*>",
+  "i"
+);
+
+/** Elements that never have a closing tag, so their presence alone is the signal. */
+const VOID_TAG = /<\s*(?:br|hr|img|input|link|meta|col)\b[^>]*\/?>/i;
+
+/** Does this string carry real markup, as opposed to prose that merely contains `<`? */
 function hasHtml(value: unknown): value is string {
-  return typeof value === "string" && /<[a-zA-Z][^>]*\/?>|<[a-zA-Z][\s\S]*>/i.test(value);
+  return typeof value === "string" && (CLOSING_TAG.test(value) || VOID_TAG.test(value));
 }
 
 /**
@@ -58,11 +91,15 @@ export function OptionText({ text, sx, ...rest }: OptionTextProps) {
   if (hasHtml(value) && hasVisibleHtmlContent(value)) {
     // `inline`, because an option is a run of text inside a row, not a block of its own. It also
     // keeps `<pre>` on one wrapped line rather than opening a code block inside a radio button.
-    return <RichHtml inline html={value} sx={sx} {...rest} />;
+    return <RichHtml inline html={value} sx={[{ font: "inherit" }, ...(Array.isArray(sx) ? sx : [sx])]} {...rest} />;
   }
 
+  // `font: "inherit"` FIRST, so a caller that passes no typography keeps whatever the surface
+  // already established. Without it MUI's body1 is imposed, and the in-video check-in's options
+  // jumped 14px -> 16px and lost their weight, leaving the letter badge beside them a different
+  // size on a card whose height is capped to the video box.
   return (
-    <Typography component="span" sx={sx} {...rest}>
+    <Typography component="span" sx={[{ font: "inherit" }, ...(Array.isArray(sx) ? sx : [sx])]} {...rest}>
       {value}
     </Typography>
   );

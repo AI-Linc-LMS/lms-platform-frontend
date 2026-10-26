@@ -120,3 +120,46 @@ describe("option markup is sanitized on every path", () => {
     expect(container.textContent).not.toContain("<code>");
   });
 });
+
+describe("prose that merely contains an angle bracket", () => {
+  // These are the strings a detector keyed on "`<` then any letter" destroys: the browser parses
+  // `<String>` or `<y implies…>` as an unknown element and swallows everything to the next `>`.
+  // A question bank about generics, comparisons and keystrokes is full of them, and the failure
+  // is silent -- an option reading "x0" cannot be answered and nothing says it is broken.
+  it.each([
+    ["x<y implies f(x)<f(y) when y>0", "x<y implies f(x)<f(y) when y>0"],
+    ["List<String> is a generic", "List<String> is a generic"],
+    ["a<b and b>c, so a<c", "a<b and b>c, so a<c"],
+    ["if (a<b) return b>c;", "if (a<b) return b>c;"],
+    ["Vector<int> v; v.size()>0", "Vector<int> v; v.size()>0"],
+    ["T<U> where U>T", "T<U> where U>T"],
+    ["<Tab> then <Enter>", "<Tab> then <Enter>"],
+    ["<Enter> key", "<Enter> key"],
+  ])("keeps %j intact", (input, expected) => {
+    render(<OptionText text={input} data-testid="opt" />);
+    expect(screen.getByTestId("opt").textContent).toBe(expected);
+  });
+
+  it("an option about event handlers is not eaten by the attribute scrubber", () => {
+    // The scrubber used to run over the whole string, so prose naming `onerror` lost everything
+    // from there to the next ">". The reported bug is itself an `onclick` question.
+    render(
+      <OptionText
+        text="<code>img onerror = retry</code> fires when the file is missing"
+        data-testid="opt"
+      />
+    );
+    const el = screen.getByTestId("opt");
+    expect(el.textContent).toBe("img onerror = retry fires when the file is missing");
+    expect(el.querySelector("code")?.textContent).toBe("img onerror = retry");
+  });
+
+  it("but a real onerror ATTRIBUTE is still removed", () => {
+    // The control for the line above: scoping the scrubber to tags must not weaken it.
+    const { container } = render(
+      <OptionText text='<img src="x" onerror="window.__pwned=1" />caption' />
+    );
+    expect(container.querySelector("img")?.getAttribute("onerror")).toBeNull();
+    expect(container.textContent).toContain("caption");
+  });
+});
