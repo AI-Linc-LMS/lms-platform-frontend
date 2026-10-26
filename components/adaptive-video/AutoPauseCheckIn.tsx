@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Button, Typography } from "@mui/material";
+import { OptionText } from "@/components/quiz/OptionText";
 import { Icon } from "@iconify/react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -145,7 +146,9 @@ export function AutoPauseCheckIn({ checkIn, practice, onAnswer, onContinue, onRe
                   <Box component="span" sx={{ fontWeight: 800, mr: 1.25 }}>
                     {letter}
                   </Box>
-                  {checkIn[key] as string}
+                  {/* The same bank, so the same contract: an option here can carry markup too,
+                      and printing it raw spells the tags out mid-video. */}
+                  <OptionText text={checkIn[key] as string} />
                   {isCorrect && <Icon icon="mdi:check-circle" style={{ marginLeft: "auto", color: "#16a34a" }} />}
                 </Button>
               );
