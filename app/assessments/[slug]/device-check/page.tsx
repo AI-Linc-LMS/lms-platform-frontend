@@ -24,6 +24,7 @@ import {
   type AssessmentDetail,
 } from "@/lib/services/assessment.service";
 import { isCurrentDeviceAllowedForAssessment } from "@/lib/utils/assessment-device";
+import { canEnterFullscreen } from "@/lib/fullscreen/fullscreenSupport";
 import { AssessmentDeviceStatusPanel } from "@/components/assessment/AssessmentDeviceStatusPanel";
 import { useProctoring } from "@/lib/hooks/useProctoring";
 import { resetFaceModelCache } from "@/lib/services/face-model-loader";
@@ -71,6 +72,14 @@ export default function DeviceCheckPage({
     microphone: false,
     browserSupported: false,
   });
+  /**
+   * Whether this browser has a Fullscreen API at all. Read on the client only, so the first render
+   * matches the server's. Used for COPY and for the readiness row; it never gates `canProceed`.
+   */
+  const [fullscreenSupported, setFullscreenSupported] = useState(true);
+  useEffect(() => {
+    setFullscreenSupported(canEnterFullscreen());
+  }, []);
   const [cameraError, setCameraError] = useState<string | null>(null);
   const [micError, setMicError] = useState<string | null>(null);
   const [audioLevel, setAudioLevel] = useState<number>(0);
@@ -764,7 +773,18 @@ export default function DeviceCheckPage({
       : networkStatus === "poor"
       ? "warning"
       : "success";
-  const fsTone: ChipTone = deviceStatus.browserSupported ? "success" : "error";
+  /**
+   * The "Fullscreen support" row used to report `deviceStatus.browserSupported`, which is the
+   * getUserMedia check - nothing to do with fullscreen. On an iPhone it therefore said "Ready /
+   * Browser compatible" and the learner was then handed a fullscreen modal their browser cannot
+   * satisfy. It now reports the real capability, and reports it as information rather than a
+   * failure: this row has never gated entry and must not start.
+   */
+  const fsTone: ChipTone = !deviceStatus.browserSupported
+    ? "error"
+    : fullscreenSupported
+    ? "success"
+    : "neutral";
 
   const netSub =
     networkStatus === "testing"
@@ -828,11 +848,17 @@ export default function DeviceCheckPage({
       key: "fullscreen",
       icon: "mdi:fullscreen",
       name: "Fullscreen support",
-      sub: deviceStatus.browserSupported
+      sub: !deviceStatus.browserSupported
+        ? "Browser not supported"
+        : fullscreenSupported
         ? "Browser compatible"
-        : "Browser not supported",
+        : "This browser has no fullscreen mode - your assessment runs without it",
       tone: fsTone,
-      chip: deviceStatus.browserSupported ? "Ready" : "Unsupported",
+      chip: !deviceStatus.browserSupported
+        ? "Unsupported"
+        : fullscreenSupported
+        ? "Ready"
+        : "Not available",
     },
   ];
 
@@ -1299,8 +1325,9 @@ export default function DeviceCheckPage({
               <Box component="span" sx={{ fontWeight: 700 }}>
                 Tip:
               </Box>{" "}
-              find a quiet, well-lit spot. Once you start, leaving fullscreen or
-              switching tabs will be flagged and may pause your timer.
+              {fullscreenSupported
+                ? "find a quiet, well-lit spot. Once you start, leaving fullscreen or switching tabs will be flagged and may pause your timer."
+                : "find a quiet, well-lit spot. This browser has no fullscreen mode, so your assessment runs in the normal window - stay on this page, because leaving the app or switching tabs will be flagged and may pause your timer."}
             </Typography>
           </Box>
 
@@ -1340,7 +1367,7 @@ export default function DeviceCheckPage({
                 onClick={handleStartAssessment}
                 startIcon={
                   <IconWrapper
-                    icon="mdi:fullscreen"
+                    icon={fullscreenSupported ? "mdi:fullscreen" : "mdi:play"}
                     size={22}
                     color="var(--font-light)"
                   />
@@ -1361,7 +1388,9 @@ export default function DeviceCheckPage({
                   },
                 }}
               >
-                Enter fullscreen &amp; begin
+                {fullscreenSupported
+                  ? "Enter fullscreen & begin"
+                  : "Begin assessment"}
               </Button>
             ) : (
               <>

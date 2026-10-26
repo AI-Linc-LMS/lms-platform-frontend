@@ -9,21 +9,17 @@ import {
   hasNavigatorKeyboardLock,
   isFullscreenExitKeyEvent,
 } from "@/lib/fullscreen/fullscreenEscapePrompt";
+import {
+  canEnterFullscreen,
+  isDocumentFullscreen,
+} from "@/lib/fullscreen/fullscreenSupport";
 import { lockProctoringKeysInFullscreen } from "@/lib/utils/proctoring-keyboard-lock";
-
-function isDocumentFullscreen(): boolean {
-  return (
-    !!document.fullscreenElement ||
-    !!(document as any).webkitFullscreenElement ||
-    !!(document as any).mozFullScreenElement ||
-    !!(document as any).msFullscreenElement
-  );
-}
 
 interface UseFullscreenHandlerOptions {
   enabled: boolean;
   submitting: boolean;
-  enterFullscreen: () => Promise<void>;
+  /** Resolves to whether fullscreen is actually held afterwards. */
+  enterFullscreen: () => Promise<boolean | void>;
   /**
    * When true, leaving fullscreen shows a prompt (via `onLeftFullscreen`)
    * instead of the generic "re-enter fullscreen" dialog.
@@ -63,6 +59,16 @@ export function useFullscreenHandler({
   onBenignFullscreenLoss,
 }: UseFullscreenHandlerOptions) {
   const [showFullscreenWarning, setShowFullscreenWarning] = useState(false);
+  /**
+   * Can this browser enter fullscreen at all? Read once (it cannot change for the life of the
+   * page) and kept in state so the first client render matches the server's.
+   *
+   * Everything below is gated on it. On iPhone Safari there is no Fullscreen API, so demanding
+   * fullscreen cannot be satisfied: the warning must never be raised, the exit prompt must never
+   * fire, and Escape must not be intercepted. A requirement a device cannot meet is not a
+   * requirement, it is a trap.
+   */
+  const [fullscreenSupported, setFullscreenSupported] = useState(false);
   const onLeftFullscreenRef = useRef(onLeftFullscreen);
   const onEscapePressedRef = useRef(onEscapePressed);
   const onBenignFullscreenLossRef = useRef(onBenignFullscreenLoss);
@@ -80,7 +86,18 @@ export function useFullscreenHandler({
     onBenignFullscreenLossRef.current = onBenignFullscreenLoss;
   }, [onBenignFullscreenLoss]);
 
+  useEffect(() => {
+    setFullscreenSupported(canEnterFullscreen());
+  }, []);
+
   const handleReEnterFullscreen = useCallback(async () => {
+    // No Fullscreen API: the button in the warning dialog cannot do anything, so the dialog must
+    // not survive pressing it. This is the exact loop an iPhone learner was stuck in - tap, no-op,
+    // modal still there, clock still running.
+    if (!canEnterFullscreen()) {
+      setShowFullscreenWarning(false);
+      return;
+    }
     try {
       await enterFullscreen();
       if (isDocumentFullscreen()) {
@@ -94,9 +111,11 @@ export function useFullscreenHandler({
   // Fullscreen transitions: re-apply Escape lock in Chromium when entering FS;
   // if user leaves FS (F11, UI, long-press Escape, or no lock), show prompt.
   useEffect(() => {
-    if (!enabled) {
+    if (!enabled || !fullscreenSupported) {
       unlockEscapeRef.current?.();
       unlockEscapeRef.current = null;
+      // A device that cannot enter fullscreen must not be left holding a stale warning either.
+      if (!fullscreenSupported) setShowFullscreenWarning(false);
       return;
     }
 
@@ -186,11 +205,18 @@ export function useFullscreenHandler({
       );
       releaseEscapeLock();
     };
-  }, [enabled, submitting, promptOnFullscreenExit, skipNextFullscreenExitPromptRef]);
+  }, [
+    enabled,
+    fullscreenSupported,
+    submitting,
+    promptOnFullscreenExit,
+    skipNextFullscreenExitPromptRef,
+  ]);
 
   // Escape → modal while still in fullscreen (pairs with Keyboard Lock on Chrome).
   useEffect(() => {
-    if (!enabled || submitting || !promptOnFullscreenExit) return;
+    if (!enabled || !fullscreenSupported || submitting || !promptOnFullscreenExit)
+      return;
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (!isFullscreenExitKeyEvent(e)) return;
@@ -207,6 +233,7 @@ export function useFullscreenHandler({
     return () => document.removeEventListener("keydown", onKeyDown, true);
   }, [
     enabled,
+    fullscreenSupported,
     submitting,
     promptOnFullscreenExit,
     suppressEscapeInterceptor,
@@ -217,6 +244,8 @@ export function useFullscreenHandler({
     setShowFullscreenWarning,
     handleReEnterFullscreen,
     isDocumentFullscreen,
+    /** False where the browser has no Fullscreen API; callers must not demand it. */
+    fullscreenSupported,
   };
 }
 
