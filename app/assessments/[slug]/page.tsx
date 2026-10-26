@@ -24,6 +24,7 @@ import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { AssessmentDesktopOnlyDialog } from "@/components/assessment/AssessmentDesktopOnlyGate";
 import { LoadingButton } from "@/components/common/LoadingButton";
+import { canEnterFullscreen } from "@/lib/fullscreen/fullscreenSupport";
 import { isCurrentDeviceAllowedForAssessment, allowedDeviceLabels } from "@/lib/utils/assessment-device";
 import { AssessmentDeviceStatusPanel } from "@/components/assessment/AssessmentDeviceStatusPanel";
 import { AssessmentReadinessPanel } from "@/components/assessment/AssessmentReadinessPanel";
@@ -63,6 +64,13 @@ export default function AssessmentDetailPage({
   const { t } = useTranslation("common");
   const { slug } = use(params);
   const router = useRouter();
+  // Read after mount: the server has no browser to ask, and rendering "Fullscreen required" on
+  // the server and then swapping it on the client is the one visible flicker worth avoiding, so
+  // the honest default is the capable case until we know otherwise.
+  const [fullscreenAvailable, setFullscreenAvailable] = useState(true);
+  useEffect(() => {
+    setFullscreenAvailable(canEnterFullscreen());
+  }, []);
   /**
    * Where the learner came from, carried on to every hop below.
    *
@@ -353,7 +361,12 @@ export default function AssessmentDetailPage({
     { label: "Attempts", value: canReattempt ? "1 / 2" : "1", icon: "mdi:replay", tone: "var(--ai-pink)" },
   ];
 
-  // Rules built from the assessment's real settings.
+  // Rules built from the assessment's real settings AND this browser's real capabilities.
+  //
+  // This is the page the learner reads before they start, and it is the "as mentioned in the LMS"
+  // the report quotes. Promising a fullscreen lockdown here on a browser that has no Fullscreen
+  // API set the learner up for the trap on the next screen: iPhone Safari implements none for
+  // ordinary elements, so the rule could never be true there.
   const rules: AttemptRule[] = [];
   if (proctored) {
     rules.push({
@@ -362,12 +375,21 @@ export default function AssessmentDetailPage({
       description:
         "Your camera stays on for the attempt. We run a quick face check before you start and capture periodic snapshots as proof.",
     });
-    rules.push({
-      icon: "mdi:fullscreen",
-      title: "Fullscreen required",
-      description:
-        "The attempt runs in fullscreen. Leaving fullscreen is recorded - you'll be prompted to return or submit.",
-    });
+    rules.push(
+      fullscreenAvailable
+        ? {
+            icon: "mdi:fullscreen",
+            title: "Fullscreen required",
+            description:
+              "The attempt runs in fullscreen. Leaving fullscreen is recorded - you'll be prompted to return or submit.",
+          }
+        : {
+            icon: "mdi:cellphone-information",
+            title: "Fullscreen is not available on this device",
+            description:
+              "Your browser cannot lock the screen, so the attempt runs in an ordinary window. Everything else still applies, and your attempt will record that it was sat this way.",
+          }
+    );
   }
   if (assessment.tab_switch_limit_enabled || proctored) {
     rules.push({

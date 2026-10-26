@@ -82,6 +82,10 @@ import {
 } from "@/lib/services/assessment.service";
 import { captureViolationScreenshotFile } from "@/lib/utils/assessment-violation-screenshot.utils";
 import { isCurrentDeviceAllowedForAssessment } from "@/lib/utils/assessment-device";
+import {
+  canEnterFullscreen,
+  isDocumentFullscreen as isDocumentFullscreenShared,
+} from "@/lib/fullscreen/fullscreenSupport";
 import { AssessmentDesktopOnlyFullPage } from "@/components/assessment/AssessmentDesktopOnlyGate";
 
 /** Quiz section question row from merged assessment detail (MCQ / MSQ). */
@@ -221,6 +225,13 @@ export default function TakeAssessmentPage({
   const [mediaInterrupted, setMediaInterrupted] = useState(false);
   /** The camera-dropped notice is dismissible. It informs; it must never trap. */
   const [mediaNoticeDismissed, setMediaNoticeDismissed] = useState(false);
+  /**
+   * Said once, then dismissible: this browser has no fullscreen, so here is what still applies.
+   * It replaces a modal that could not be satisfied - the learner is told plainly what is expected
+   * of them instead of being asked to do something their device cannot do.
+   */
+  const [fullscreenNoticeDismissed, setFullscreenNoticeDismissed] =
+    useState(false);
   /** Face analysis could not start. The exam runs; the UI says so rather than pretending. */
   const [proctoringUnavailable, setProctoringUnavailable] = useState(false);
   /** Camera/mic missing on a proctored attempt: a real precondition, shown in place with a retry. */
@@ -1282,14 +1293,12 @@ export default function TakeAssessmentPage({
       filePickerSkipClearTimerRef.current = null;
     }
 
-    const isFs = () =>
-      !!document.fullscreenElement ||
-      !!(document as unknown as { webkitFullscreenElement?: Element })
-        .webkitFullscreenElement ||
-      !!(document as unknown as { mozFullScreenElement?: Element })
-        .mozFullScreenElement ||
-      !!(document as unknown as { msFullscreenElement?: Element })
-        .msFullscreenElement;
+    // Nothing to recover on a browser with no Fullscreen API. Running the recovery there ends in
+    // `setShowFullscreenWarning(true)` - the blocking modal - every time a subjective question's
+    // image picker opens.
+    if (!canEnterFullscreen()) return;
+
+    const isFs = () => isDocumentFullscreenShared();
 
     const tryReenter = async () => {
       if (submittingRef.current || !assessmentStartedRef.current) return;
@@ -1329,6 +1338,7 @@ export default function TakeAssessmentPage({
     setShowFullscreenWarning,
     handleReEnterFullscreen,
     isDocumentFullscreen,
+    fullscreenSupported,
   } = useFullscreenHandler({
     enabled: assessmentStarted,
     submitting,
@@ -1416,7 +1426,10 @@ export default function TakeAssessmentPage({
 
   const handleFullscreenExitCancel = useCallback(async () => {
     setShowFullscreenExitConfirm(false);
-    if (isDocumentFullscreen()) {
+    // "Continue test" must always return the learner to their paper. Where fullscreen cannot be
+    // entered, falling through to `setShowFullscreenWarning(true)` swapped this dialog for the
+    // blocking one, so the only escapable button was "Submit".
+    if (!canEnterFullscreen() || isDocumentFullscreen()) {
       return;
     }
     try {
@@ -1561,23 +1574,33 @@ export default function TakeAssessmentPage({
       // The clock is started by the effect that watches `assessmentStarted`, not here: on this
       // branch the bar holding the ref has not rendered yet, so a call here reaches a null ref.
 
-      void enterFullscreen()
-        .then(() => {
-          requestAnimationFrame(() => {
-            const isFS =
-              !!document.fullscreenElement ||
-              !!(document as any).webkitFullscreenElement ||
-              !!(document as any).mozFullScreenElement ||
-              !!(document as any).msFullscreenElement;
-
-            if (!isFS) {
-              setShowFullscreenWarning(true);
-            }
+      /**
+       * Fullscreen, where the device has it.
+       *
+       * On iPhone Safari there is no Fullscreen API for ordinary elements, so the old code's four
+       * `requestFullscreen` attempts all found `undefined`, nothing ran, nothing threw, and this
+       * `.then` saw a resolved promise - then the rAF found no `fullscreenElement` and raised the
+       * blocking "Fullscreen Mode Required" modal whose button ran the same no-op. The attempt had
+       * already started and the clock was already running, so the learner burned their time
+       * against a dialog that could not be satisfied.
+       *
+       * Where fullscreen is impossible it is not requested and not demanded; the learner is told
+       * what still applies by the banner below, and the attempt's record says fullscreen was not
+       * enforced.
+       */
+      if (canEnterFullscreen()) {
+        void enterFullscreen()
+          .then(() => {
+            requestAnimationFrame(() => {
+              if (!isDocumentFullscreenShared()) {
+                setShowFullscreenWarning(true);
+              }
+            });
+          })
+          .catch(() => {
+            setShowFullscreenWarning(true);
           });
-        })
-        .catch(() => {
-          setShowFullscreenWarning(true);
-        });
+      }
 
       isInitializingRef.current = false;
     } catch (error: any) {
@@ -2477,6 +2500,39 @@ export default function TakeAssessmentPage({
 
       {assessmentStarted && (
         <>
+          {/* This browser has no Fullscreen API (iPhone Safari, or an iframe that is not allowed
+              fullscreen). The learner used to get a modal saying "Fullscreen Mode Required ...
+              Press F11" with one button that silently did nothing, for ever, while their clock ran.
+              They now get this: said once, dismissible, and honest about what IS still watched. */}
+          {!fullscreenSupported &&
+            !fullscreenNoticeDismissed &&
+            !submitting && (
+              <Alert
+                severity="info"
+                onClose={() => setFullscreenNoticeDismissed(true)}
+                sx={{ borderRadius: 0 }}
+                data-testid="fullscreen-unavailable-notice"
+              >
+                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                  Fullscreen is not available on this device
+                </Typography>
+                <Typography variant="body2">
+                  {`Your answers are saved as you go and you can submit from here as normal. Please stay on this page until you submit: leaving the app or switching tabs is still recorded${
+                    assessment?.tab_switch_limit_enabled &&
+                    Number(assessment?.tab_switch_limit_count || 0) > 0
+                      ? ` and your attempt is submitted automatically after ${Number(
+                          assessment.tab_switch_limit_count
+                        )} switches`
+                      : ""
+                  }${
+                    assessment?.proctoring_enabled !== false
+                      ? ", and camera monitoring is running"
+                      : ""
+                  }.`}
+                </Typography>
+              </Alert>
+            )}
+
           {/* Face analysis is not running, but the paper is. Say so rather than let a student
               assume they are being monitored when they are not. */}
           {proctoringUnavailable &&
@@ -2806,14 +2862,17 @@ export default function TakeAssessmentPage({
               />
             )}
 
-            {showFullscreenWarning && !submitting && (
+            {/* Both of these dialogs are modal and unescapable by design, and both offer a way
+                back into fullscreen. Neither may render where fullscreen cannot be entered: there
+                the first is a dead end and the second's only working button is Submit. */}
+            {fullscreenSupported && showFullscreenWarning && !submitting && (
               <FullscreenWarningDialog
                 open={showFullscreenWarning}
                 onReEnterFullscreen={handleReEnterFullscreen}
               />
             )}
 
-            {showFullscreenExitConfirm && !submitting && (
+            {fullscreenSupported && showFullscreenExitConfirm && !submitting && (
               <FullscreenExitConfirmDialog
                 open={showFullscreenExitConfirm}
                 onCancel={handleFullscreenExitCancel}
