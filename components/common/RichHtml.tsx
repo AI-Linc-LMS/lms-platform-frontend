@@ -17,8 +17,16 @@ function sanitizeHtml(html: string): string {
   return html
     .replace(/<\s*(script|style|iframe|object|embed)\b[^>]*>[\s\S]*?<\s*\/\s*\1\s*>/gi, "")
     .replace(/<\s*(script|style|iframe|object|embed)\b[^>]*\/?\s*>/gi, "")
-    .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
-    .replace(/(href|src)\s*=\s*("\s*javascript:[^"]*"|'\s*javascript:[^']*')/gi, '$1="#"');
+    // Attribute scrubbing happens INSIDE a tag, never across the whole string. Run over prose it
+    // ate the content it was meant to protect: an option reading
+    // "<code>img onerror = retry</code> fires when the file is missing" came out as
+    // "img> fires when the file is missing", and the reported bug is itself a DOM-events question
+    // about `onclick`, so that is the exact content family this renders.
+    .replace(/<[^>]+>/g, (tag) =>
+      tag
+        .replace(/\son\w+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, "")
+        .replace(/(href|src)\s*=\s*("\s*javascript:[^"]*"|'\s*javascript:[^']*'|javascript:[^\s>]*)/gi, '$1="#"')
+    );
 }
 
 const BLOCK_SX = {
@@ -80,7 +88,13 @@ export default function RichHtml({ html, inline = false, sx, ...rest }: RichHtml
       component={inline ? "span" : "div"}
       {...rest}
       dangerouslySetInnerHTML={{ __html: sanitizeHtml(html || "") }}
-      sx={{ ...(inline ? INLINE_SX : BLOCK_SX), ...sx }}
+      // The ARRAY form, which MUI deep-merges by emitting each entry in order. A spread is
+      // shallow, so a caller passing `{"& code": {bgcolor}}` replaced the base `& code` rule
+      // WHOLESALE and silently took the monospace font, padding and radius with it -- the dark
+      // calibration card ended up with a code chip in the body font, disagreeing with the stem
+      // on the same screen. The array also preserves an `sx` that is itself an array or a
+      // callback, both of which `{...sx}` quietly discarded.
+      sx={[inline ? INLINE_SX : BLOCK_SX, ...(Array.isArray(sx) ? sx : [sx])]}
     />
   );
 }

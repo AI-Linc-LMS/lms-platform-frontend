@@ -9,6 +9,7 @@ import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service"
 import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import type { CalibrationResult } from "@/lib/types/adaptive-journey";
 import { QuestionTitle } from "@/components/quiz/QuestionTitle";
+import { OptionText } from "@/components/quiz/OptionText";
 import { QuestionImage } from "@/components/quiz/QuestionImage";
 import {
   QuestionPalette,
@@ -558,7 +559,19 @@ function CalibrationTakeInner() {
                       bgcolor: selected ? "#60a5fa" : "rgba(255,255,255,0.06)", color: selected ? "#0b1220" : "rgba(255,255,255,0.8)", fontWeight: 800, fontSize: "0.85rem" }}>
                       {L.toUpperCase()}
                     </Box>
-                    <Typography sx={{ fontSize: "0.95rem", color: "rgba(255,255,255,0.92)" }}>{text}</Typography>
+                    {/* Through the SAME renderer the stem above uses. Printing it as text was
+                        why a learner saw "<code>addEventListener</code>" spelled out while the
+                        question above it formatted correctly, on one screen. */}
+                    <OptionText
+                      text={text}
+                      sx={{
+                        fontSize: "0.95rem",
+                        color: "rgba(255,255,255,0.92)",
+                        // This card is dark (#0b1220); RichHtml's default code tint is pitched
+                        // for a light surface and all but disappears here.
+                        "& code": { bgcolor: "rgba(148,163,255,0.18)", color: "#e0e7ff" },
+                      }}
+                    />
                   </Box>
                 );
               })}

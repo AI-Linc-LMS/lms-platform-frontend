@@ -1,6 +1,7 @@
 "use client";
 
 import { Box, Button, Typography } from "@mui/material";
+import { OptionText } from "@/components/quiz/OptionText";
 import { Icon } from "@iconify/react";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -107,9 +108,14 @@ export function AutoPauseCheckIn({ checkIn, practice, onAnswer, onContinue, onRe
               {isPractice ? t("adaptiveVideoMode.practiceNote") : "auto · pauses video"}
             </Typography>
           </Box>
-          <Typography sx={{ fontWeight: 700, fontSize: "1.02rem", mb: 2 }}>
-            {checkIn.question_text}
-          </Typography>
+          {/* `question_text` is the FIRST entry in the backend's HTML_RENDERED_FIELDS, so leaving
+              it as a text node while the options below it format would have put the reported bug
+              back on this screen the other way up: a stem spelling out its tags above options
+              that render theirs. */}
+          <OptionText
+            text={checkIn.question_text}
+            sx={{ display: "block", fontWeight: 700, fontSize: "1.02rem", mb: 2 }}
+          />
 
           <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
             {OPTIONS.map(({ letter, key }) => {
@@ -145,7 +151,9 @@ export function AutoPauseCheckIn({ checkIn, practice, onAnswer, onContinue, onRe
                   <Box component="span" sx={{ fontWeight: 800, mr: 1.25 }}>
                     {letter}
                   </Box>
-                  {checkIn[key] as string}
+                  {/* The same bank, so the same contract: an option here can carry markup too,
+                      and printing it raw spells the tags out mid-video. */}
+                  <OptionText text={checkIn[key] as string} />
                   {isCorrect && <Icon icon="mdi:check-circle" style={{ marginLeft: "auto", color: "#16a34a" }} />}
                 </Button>
               );
