@@ -27,6 +27,12 @@ import { isCurrentDeviceAllowedForAssessment } from "@/lib/utils/assessment-devi
 import { canEnterFullscreen } from "@/lib/fullscreen/fullscreenSupport";
 import { AssessmentDeviceStatusPanel } from "@/components/assessment/AssessmentDeviceStatusPanel";
 import { useProctoring } from "@/lib/hooks/useProctoring";
+import {
+  pickAlternateCamera,
+  watchPictureLiveness,
+  watchVideoTrack,
+  type Stoppable,
+} from "@/lib/utils/cameraHealth";
 import { resetFaceModelCache } from "@/lib/services/face-model-loader";
 import { LoadingButton } from "@/components/common/LoadingButton";
 import { StatusChip, type ChipTone } from "@/components/admin/assessment/shared";
@@ -49,6 +55,20 @@ const ROW_TONE_COLOR: Record<ChipTone, string> = {
   proctored: "var(--tone-proctored)",
 };
 
+/**
+ * How long to wait for the camera/microphone grant before telling the student something.
+ *
+ * Not a verdict on the hardware: a prompt answered after this still completes the check. It is
+ * only the point at which an unanswered prompt stops looking like progress. Fifteen seconds is
+ * long enough to read a permission dialog and short enough that nobody concludes the page is
+ * dead -- which is what happened when there was no bound at all.
+ */
+const DEVICE_REQUEST_TIMEOUT_MS = 15000;
+
+const DEVICE_REQUEST_TIMEOUT_MESSAGE =
+  "We are still waiting for permission to use your camera and microphone. Allow access in your " +
+  "browser's prompt, and close any other app using the camera (Zoom, Teams, Meet), then try again.";
+
 export default function DeviceCheckPage({
   params,
 }: {
@@ -62,6 +82,29 @@ export default function DeviceCheckPage({
   const returnTo = safeFrom(useSearchParams()?.get("from"));
   const [, setLoading] = useState(false); // Start with false - don't block initial render
   const [checking, setChecking] = useState(false);
+  /**
+   * True when the camera reported a LIVE track but no frame ever reached the preview.
+   *
+   * Advisory, never a gate: the hardware is present and permitted, so refusing entry would be
+   * the detector-opinion mistake this page already learned once. What it changes is the words --
+   * "Camera is working properly" over a black rectangle is the sentence that sends a student
+   * looking for a fault they cannot find.
+   */
+  const [noCameraPicture, setNoCameraPicture] = useState(false);
+  /** Which device check is current, so a late grant from an abandoned one is released. */
+  const deviceAttemptRef = useRef(0);
+  /** The track watcher and the picture-liveness loop for the CURRENT stream. */
+  const trackWatchRef = useRef<Stoppable | null>(null);
+  const livenessRef = useRef<Stoppable | null>(null);
+  /** Camera device ids tried this visit, so "try another camera" never loops between two dead ones. */
+  const triedCamerasRef = useRef<Set<string>>(new Set());
+  const stopCameraWatchers = useCallback(() => {
+    trackWatchRef.current?.stop();
+    trackWatchRef.current = null;
+    livenessRef.current?.stop();
+    livenessRef.current = null;
+  }, []);
+  const mountedRef = useRef(true);
   const [deviceAccessDenied, setDeviceAccessDenied] = useState(false);
   const [deniedAssessment, setDeniedAssessment] =
     useState<AssessmentDetail | null>(null);
@@ -273,7 +316,19 @@ export default function DeviceCheckPage({
         el: videoRef.current,
         stream,
         hasVideo,
+        onNoFrames: () => setNoCameraPicture(true),
         onReady: () => {
+          setNoCameraPicture(false);
+          // Frames are arriving now. Keep checking that they are a PICTURE: a shutter, antivirus
+          // webcam protection or an idle virtual camera all deliver frames that are simply black,
+          // which "frames arrived" cannot see and the face detector reports as "no face".
+          livenessRef.current?.stop();
+          if (videoRef.current) {
+            livenessRef.current = watchPictureLiveness(videoRef.current, {
+              onNoPicture: () => setNoCameraPicture(true),
+              onPicture: () => setNoCameraPicture(false),
+            });
+          }
           if (faceDetectionStartedRef.current) return;
           faceDetectionStartedRef.current = true;
           setTimeout(() => {
@@ -297,34 +352,36 @@ export default function DeviceCheckPage({
     if (cameraStream) attachStreamToVideo(cameraStream);
   }, [cameraStream, attachStreamToVideo, mobileAssessmentGate, deviceAccessDenied]);
 
-  // Test devices
-  const testDevices = useCallback(async () => {
-    setChecking(true);
-    setCameraError(null);
-    setMicError(null);
-
-    try {
-      // Request camera and microphone access - use lower resolution for faster check
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          width: { ideal: 640 },
-          height: { ideal: 480 },
-          facingMode: "user",
-        },
-        audio: {
-          echoCancellation: true,
-          noiseSuppression: true,
-        },
-      });
-
+  /**
+   * Take ownership of a granted stream: wire the preview, publish readiness, name any gap.
+   *
+   * Split out because there are now TWO ways a stream arrives -- promptly, and after the wait
+   * below has already given up -- and the second must leave the page in exactly the state the
+   * first does. Keeping one copy is what stops a late grant producing a half-configured check.
+   */
+  const adoptStream = useCallback(
+    (stream: MediaStream) => {
+      stopCameraWatchers();
       streamRef.current = stream;
 
-      // Check video tracks
       const videoTracks = stream.getVideoTracks();
       const hasVideo =
         videoTracks.length > 0 && videoTracks[0].readyState === "live";
 
-      // Check audio tracks
+      if (hasVideo) {
+        const track = videoTracks[0];
+        const id = track.getSettings?.().deviceId;
+        if (id) triedCamerasRef.current.add(id);
+        // A live track at grant time says nothing about a second later. Another application
+        // taking the device MUTES the track; unplugging it ENDS it. Both leave the browser's
+        // own "camera with a slash" in the preview, under a readiness row that would otherwise
+        // go on saying "working properly".
+        trackWatchRef.current = watchVideoTrack(track, {
+          onMuted: () => setNoCameraPicture(true),
+          onUnmuted: () => setNoCameraPicture(false),
+          onEnded: () => setNoCameraPicture(true),
+        });
+      }
       const audioTracks = stream.getAudioTracks();
       const hasAudio =
         audioTracks.length > 0 && audioTracks[0].readyState === "live";
@@ -340,13 +397,87 @@ export default function DeviceCheckPage({
         browserSupported: true,
       });
 
-      if (!hasVideo) {
-        setCameraError("Camera is not accessible or not working properly");
+      // A late grant has to clear the message the timeout left behind, or the student reads an
+      // error over a working camera.
+      setCameraError(hasVideo ? null : "Camera is not accessible or not working properly");
+      setMicError(hasAudio ? null : "Microphone is not accessible or not working properly");
+      if (hasVideo) setNoCameraPicture(false);
+
+      return { hasVideo, hasAudio, audioTracks };
+    },
+    [attachStreamToVideo, stopCameraWatchers]
+  );
+
+  // Test devices
+  const testDevices = useCallback(async (opts?: { videoDeviceId?: string }) => {
+    setChecking(true);
+    setCameraError(null);
+    setMicError(null);
+    setNoCameraPicture(false);
+
+    const attempt = ++deviceAttemptRef.current;
+    // Release whatever we hold before asking again: a camera held by this page is exactly as
+    // unavailable as one held by Zoom.
+    stopCameraWatchers();
+    streamRef.current?.getTracks().forEach((t) => t.stop());
+    streamRef.current = null;
+
+    try {
+      /**
+       * `getUserMedia` CAN HANG, and when it did the student was stranded.
+       *
+       * It does not always reject. A permission prompt that is never answered -- dismissed,
+       * opened behind another window, or on a machine where the camera is held exclusively by
+       * another application -- leaves the promise pending for ever. `setChecking(false)` lives in
+       * the `finally` below, so the page sat on a disabled "Checking devices..." button with no
+       * begin button beneath it (`canProceed` needs the camera), no error, and nothing to click.
+       * That is the state in the report: the learner gave up on their laptop and sat the paper on
+       * a phone instead.
+       *
+       * So the wait is bounded. Losing the race is not a verdict on the hardware: if the prompt
+       * is answered late the stream is adopted below and the check simply completes, which is why
+       * the original promise is kept rather than abandoned.
+       */
+      const request = navigator.mediaDevices.getUserMedia({
+        video: {
+          width: { ideal: 640 },
+          height: { ideal: 480 },
+          // A specific camera when retrying with another one; otherwise the front-facing default.
+          ...(opts?.videoDeviceId
+            ? { deviceId: { exact: opts.videoDeviceId } }
+            : { facingMode: "user" }),
+        },
+        audio: {
+          echoCancellation: true,
+          noiseSuppression: true,
+        },
+      });
+
+      const stream = await Promise.race([
+        request,
+        new Promise<null>((resolve) =>
+          setTimeout(() => resolve(null), DEVICE_REQUEST_TIMEOUT_MS)
+        ),
+      ]);
+
+      if (stream === null) {
+        // Still pending. Adopt it if it lands later and this is still the newest attempt;
+        // otherwise release it, so a camera is never left running for a page that moved on.
+        void request
+          .then((late) => {
+            if (attempt !== deviceAttemptRef.current || !mountedRef.current) {
+              late.getTracks().forEach((t) => t.stop());
+              return;
+            }
+            adoptStream(late);
+          })
+          .catch(() => undefined);
+        setCameraError(DEVICE_REQUEST_TIMEOUT_MESSAGE);
+        setMicError(DEVICE_REQUEST_TIMEOUT_MESSAGE);
+        return;
       }
 
-      if (!hasAudio) {
-        setMicError("Microphone is not accessible or not working properly");
-      }
+      const { hasVideo, hasAudio, audioTracks } = adoptStream(stream);
 
       // Test microphone levels (visual feedback)
       if (hasAudio && audioTracks.length > 0) {
@@ -433,7 +564,21 @@ export default function DeviceCheckPage({
     } finally {
       setChecking(false);
     }
-  }, [testInternetSpeed]);
+  }, [adoptStream, stopCameraWatchers, testInternetSpeed]);
+
+  /**
+   * The retry for a camera that is granted but shows nothing.
+   *
+   * First choice is a DIFFERENT camera, when the machine has one we have not tried: laptops with
+   * a virtual camera installed (OBS, DroidCam, ManyCam) often default to it, and an idle virtual
+   * camera is a live, empty track -- the student cannot discover that from the browser's prompt,
+   * which never offered a choice. With no untried camera left, the same one is asked for again,
+   * which is the right move after they close Zoom or open the shutter.
+   */
+  const retryCamera = useCallback(async () => {
+    const other = await pickAlternateCamera(triedCamerasRef.current);
+    await testDevices(other ? { videoDeviceId: other } : undefined);
+  }, [testDevices]);
 
   /**
    * Actually re-attempt the failed step, rather than just re-rendering.
@@ -454,6 +599,16 @@ export default function DeviceCheckPage({
       setIsRetryingFaceCheck(false);
     }
   }, [stopFaceDetection, testDevices]);
+
+  // A late grant must not configure a page the student has already left, and the watchers must
+  // not outlive it either.
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      stopCameraWatchers();
+    };
+  }, [stopCameraWatchers]);
 
   // Check browser support and auto-test devices on mount
   useEffect(() => {
@@ -610,6 +765,8 @@ export default function DeviceCheckPage({
 
     // Stop face detection only - keep camera/mic tracks live for the take page (same MediaStream as __assessmentStream)
     stopFaceDetection({ preserveMediaStream: true });
+    // Likewise our own watchers: the exam owns the stream from here. The tracks stay live.
+    stopCameraWatchers();
 
     // Navigate to take assessment page immediately
     router.push(withFrom(`/assessments/${slug}/take`, returnTo));
@@ -663,7 +820,8 @@ export default function DeviceCheckPage({
    * Surfaced honestly so nobody discovers mid-exam that face monitoring was never running.
    */
   const degradedSignals: string[] = [];
-  if (faceCheckError) degradedSignals.push("the camera check could not run");
+  if (noCameraPicture) degradedSignals.push("no picture is reaching us from your camera");
+  else if (faceCheckError) degradedSignals.push("the camera check could not run");
   else if (deviceStatus.camera && !faceValidationPassed)
     degradedSignals.push("we cannot see your face clearly");
   if (!networkAllowsProceed) degradedSignals.push("your connection is very slow");
@@ -820,11 +978,17 @@ export default function DeviceCheckPage({
       key: "camera",
       icon: "mdi:camera-outline",
       name: "Camera",
+      // "Working properly" is a claim about a PICTURE, and a live track is not one: a lens cover,
+      // a privacy shutter or another app holding the device all leave the track live and every
+      // frame black. Saying it anyway, over a black preview, sends the student hunting for a
+      // fault they cannot find -- which is what the screenshot in the report shows.
       sub: cameraReady
-        ? "Camera is working properly"
+        ? noCameraPicture
+          ? "Camera is allowed, but no picture is reaching us. Close any other app using it."
+          : "Camera is working properly"
         : cameraError || "Camera check required",
-      tone: cameraTone,
-      chip: cameraReady ? "Ready" : "Pending",
+      tone: cameraReady && noCameraPicture ? "warning" : cameraTone,
+      chip: cameraReady ? (noCameraPicture ? "No picture" : "Ready") : "Pending",
     },
     {
       key: "microphone",
@@ -1346,20 +1510,10 @@ export default function DeviceCheckPage({
             {/* Advisory, never a barrier. The student is told what is degraded and then given the
                 same button as everyone else. Before this, each of these conditions silently
                 removed the button and left them with nothing to click. */}
-            {canProceed && degradedSignals.length > 0 && (
-              <Alert
-                severity="warning"
-                sx={{ borderRadius: "var(--radius-card)" }}
-              >
-                <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
-                  You can still start your assessment
-                </Typography>
-                <Typography variant="body2">
-                  {`We noticed ${degradedSignals.join(", and ")}. You do not need to fix this to begin — your assessment will not be blocked. If your institution requires camera monitoring, tell your supervisor before you start.`}
-                </Typography>
-              </Alert>
-            )}
 
+            {/* The button FIRST, then what is degraded. On a 1366x768 laptop the warning pushed the
+                only button below the fold, so a student reading "No face detected" above saw no
+                way forward even though the page was not blocking them. */}
             {canProceed ? (
               <Button
                 fullWidth
@@ -1438,12 +1592,12 @@ export default function DeviceCheckPage({
                     </Button>
                   )}
 
-                {(!deviceStatus.camera || !deviceStatus.microphone) && (
+                {(!deviceStatus.camera || !deviceStatus.microphone || noCameraPicture) && (
                   <Button
                     fullWidth
                     variant="contained"
                     size="large"
-                    onClick={testDevices}
+                    onClick={() => void (noCameraPicture ? retryCamera() : testDevices())}
                     disabled={checking || !deviceStatus.browserSupported}
                     startIcon={
                       checking ? (
@@ -1468,10 +1622,27 @@ export default function DeviceCheckPage({
                   >
                     {checking
                       ? "Checking devices..."
-                      : "Test camera & microphone"}
+                      : noCameraPicture
+                        ? "Try the camera again"
+                        : "Test camera & microphone"}
                   </Button>
                 )}
+
               </>
+            )}
+
+            {canProceed && degradedSignals.length > 0 && (
+              <Alert
+                severity="warning"
+                sx={{ borderRadius: "var(--radius-card)" }}
+              >
+                <Typography variant="body2" sx={{ fontWeight: 600, mb: 0.5 }}>
+                  You can still start your assessment
+                </Typography>
+                <Typography variant="body2">
+                  {`We noticed ${degradedSignals.join(", and ")}. You do not need to fix this to begin — your assessment will not be blocked. If your institution requires camera monitoring, tell your supervisor before you start.`}
+                </Typography>
+              </Alert>
             )}
 
             <Button
