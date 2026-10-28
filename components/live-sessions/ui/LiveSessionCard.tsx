@@ -5,6 +5,7 @@ import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { PHONE } from "@/components/common/mobile/phone";
 import { StatusChip, type ChipTone } from "@/components/admin/assessment/shared";
+import { learnerJoinUrl } from "@/lib/services/live-sessions/learner-join-url";
 import { sessionTimeParts } from "@/lib/utils/session-time";
 
 /**
@@ -160,11 +161,10 @@ export function LiveSessionCard<T extends LiveSessionCardData>({
   const isUpcomingOrLive = status === "scheduled" || status === "live";
   const isDone = status === "ended" || status === "expired";
 
-  // The personal link first, the shared one otherwise. A student without a registrant row must
-  // still be able to get into their own class - being locked out is a far worse failure than
-  // having attendance filed against a display name.
-  const sharedUrl = session.is_google_meet ? session.join_link?.trim() : session.zoom_join_url?.trim();
-  const joinUrl = session.my_join_link?.trim() || sharedUrl;
+  // The personal link first, the shared one otherwise - decided in `learnerJoinUrl`, which the
+  // learner page's hero button and calendar exports share, so no surface can hand a registered
+  // student the shared link. Empty when there is nothing to open yet.
+  const joinUrl = learnerJoinUrl(session);
   const hasMeeting = Boolean(session.is_google_meet || session.zoom_meeting_id || session.zoom_join_url);
   const hasRecording = Boolean(
     session.has_recording || session.zoom_recording_url?.trim() || session.recording_link?.trim()

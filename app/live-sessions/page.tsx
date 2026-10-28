@@ -17,6 +17,7 @@ import { LiveSessionFeedbackDialog } from "@/components/live-sessions/LiveSessio
 import { COMMUNITY_FEATURE, HIDE_PARTICIPANT_COUNTS, useClientFeature, useClientOptIn } from "@/lib/hooks/useClientFeature";
 import { PAST_MEETING_STATES, selectHistory } from "@/lib/live-sessions/history";
 import { studentLiveSessionsService } from "@/lib/services/live-sessions";
+import { learnerJoinUrl } from "@/lib/services/live-sessions/learner-join-url";
 import type { StudentLiveSession, MyLiveStats } from "@/lib/services/live-sessions";
 import { ScheduleCalendar, dayKey, type CalendarEvent } from "@/components/live-sessions/ScheduleCalendar";
 import { ScrollRow } from "@/components/common/mobile/ScrollRow";
@@ -59,9 +60,6 @@ function facetsOf(s: StudentLiveSession): { key: string; label: string; kind: "c
   }
   return out;
 }
-function joinUrlOf(s: StudentLiveSession): string {
-  return (s.is_google_meet ? s.join_link : s.zoom_join_url) || s.join_link || "";
-}
 function initials(name: string): string {
   return (name || "?").trim().slice(0, 2).toUpperCase();
 }
@@ -101,9 +99,6 @@ function icsStamp(d: Date): string {
 function icsEscape(s: string): string {
   return (s || "").replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\r?\n/g, "\\n");
 }
-function sessionJoinUrl(s: StudentLiveSession): string {
-  return (s.is_google_meet ? s.join_link : s.zoom_join_url) || s.join_link || "";
-}
 function buildIcs(sessions: StudentLiveSession[]): string {
   const now = icsStamp(new Date());
   const events: string[] = [];
@@ -112,7 +107,7 @@ function buildIcs(sessions: StudentLiveSession[]): string {
     const start = new Date(s.class_datetime);
     if (Number.isNaN(start.getTime())) continue;
     const end = new Date(start.getTime() + (s.duration_minutes || 60) * 60000);
-    const join = sessionJoinUrl(s);
+    const join = learnerJoinUrl(s);
     events.push(
       [
         "BEGIN:VEVENT",
@@ -147,7 +142,7 @@ function googleCalendarUrl(s: StudentLiveSession): string {
   if (!s.class_datetime) return "";
   const start = new Date(s.class_datetime);
   const end = new Date(start.getTime() + (s.duration_minutes || 60) * 60000);
-  const join = sessionJoinUrl(s);
+  const join = learnerJoinUrl(s);
   const params = new URLSearchParams({
     action: "TEMPLATE",
     text: s.topic_name || "Live session",
@@ -620,7 +615,7 @@ export default function LiveSessionsPage() {
                       Waiting for your trainer to start
                     </Button>
                   ) : (
-                    <Button component="a" href={joinUrlOf(live)} target="_blank" rel="noopener"
+                    <Button component="a" href={learnerJoinUrl(live)} target="_blank" rel="noopener"
                       startIcon={<Icon icon="mdi:video" width={18} />}
                       sx={{ px: 3, py: 1.1, borderRadius: 2.5, fontWeight: 800, textTransform: "none", color: "#047857", bgcolor: "#fff", "&:hover": { bgcolor: "rgba(255,255,255,0.9)" } }}>
                       Join now
