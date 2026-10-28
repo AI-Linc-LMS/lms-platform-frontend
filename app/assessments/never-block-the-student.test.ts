@@ -128,3 +128,56 @@ describe("the take page cannot bounce a student out", () => {
     expect(src).toContain("mediaNoticeDismissed");
   });
 });
+
+/**
+ * The camera is watched after it is granted, and a camera with no picture never strands anyone.
+ *
+ * Reported with two screenshots: one stuck on a disabled "Checking devices..." button with
+ * nothing beneath it, one with the camera row reading "Ready" over a black preview showing
+ * Chrome's own muted-track icon and "No face detected". The first is a media request with no
+ * bound; the second is a camera assessed once at grant time and never looked at again.
+ */
+describe("a camera that stops short of a picture", () => {
+  const src = readFileSync(
+    path.join(__dirname, "[slug]", "device-check", "page.tsx"),
+    "utf8"
+  );
+
+  it("bounds the media request, so an unanswered prompt cannot hang the check for ever", () => {
+    expect(src).toContain("Promise.race(");
+    expect(src).toContain("DEVICE_REQUEST_TIMEOUT_MS");
+    // and a late grant is adopted rather than thrown away
+    expect(src).toMatch(/adoptStream\(late\)/);
+  });
+
+  it("keeps watching the granted track instead of trusting the grant", () => {
+    expect(src).toContain("watchVideoTrack(");
+    expect(src).toContain("watchPictureLiveness(");
+  });
+
+  it("never lets 'no picture' become a gate", () => {
+    const match = src.match(/const canProceed =([\s\S]*?);/);
+    expect(match, "canProceed should still exist").toBeTruthy();
+    expect(match![1]).not.toContain("noCameraPicture");
+  });
+
+  it("offers a retry when the camera is granted but shows nothing", () => {
+    expect(src).toMatch(
+      /\(!deviceStatus\.camera \|\| !deviceStatus\.microphone \|\| noCameraPicture\) &&/
+    );
+    expect(src).toContain("Try the camera again");
+    expect(src).toContain("pickAlternateCamera(");
+  });
+
+  it("stops claiming 'working properly' over a black preview", () => {
+    expect(src).toMatch(/noCameraPicture\s*\?\s*"Camera is allowed, but no picture/);
+  });
+
+  it("renders the begin button before the advisory alert, so it cannot sit below the fold", () => {
+    const button = src.indexOf("Enter fullscreen & begin");
+    const alert = src.indexOf("You can still start your assessment");
+    expect(button).toBeGreaterThan(-1);
+    expect(alert).toBeGreaterThan(-1);
+    expect(button).toBeLessThan(alert);
+  });
+});
