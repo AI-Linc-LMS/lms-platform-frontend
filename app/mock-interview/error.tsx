@@ -46,7 +46,7 @@ export default function MockInterviewError({
       </Typography>
       <Typography variant="body1" sx={{ color: "var(--font-secondary)", mb: 4, lineHeight: 1.6 }}>
         We hit a snag loading this page. Your interview progress and results are saved - try
-        again, or head back to your interviews.
+        again, or head back to your dashboard.
       </Typography>
       <Box sx={{ display: "inline-flex", gap: 2, flexWrap: "wrap", justifyContent: "center" }}>
         <Button
@@ -66,10 +66,14 @@ export default function MockInterviewError({
         >
           Try again
         </Button>
+        {/* This sent the learner to /mock-interview, the standalone product's hub. That hub is
+            retired, so the link would have been a full page load into a redirect. The dashboard
+            is the one destination that is valid for every tenant, which matters here because
+            this boundary also covers the surviving course rounds and their runner. */}
         <Button
           variant="outlined"
           onClick={() => {
-            window.location.href = "/mock-interview";
+            window.location.href = "/dashboard";
           }}
           sx={{
             px: 2.5,
@@ -81,7 +85,7 @@ export default function MockInterviewError({
             [PHONE]: { minHeight: 44 },
           }}
         >
-          Back to interviews
+          Back to dashboard
         </Button>
       </Box>
     </Container>

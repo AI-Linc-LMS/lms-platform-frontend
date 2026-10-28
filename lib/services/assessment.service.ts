@@ -490,6 +490,23 @@ export interface AssessmentMetadata {
     total_violation_count: number;
     violation_threshold_reached: boolean;
     violation_screenshot_samples?: ViolationScreenshotSample[];
+    /**
+     * What invigilation the learner's device could carry, and what was actually in force.
+     *
+     * `fullscreen_exits: []` is produced both by a desktop attempt that never left fullscreen and
+     * by an iPhone attempt where fullscreen does not exist to leave. Those are not the same
+     * attempt and the record must say which. Optional on the type because older clients in the
+     * field do not send them: absent means unknown, NOT enforced.
+     *
+     * Read by the backend half of this fix inside
+     * `metadata.transcript.metadata.proctoring`. `device_class` is the value of
+     * `getClientDeviceClass()`, the same helper behind `X-Client-Device-Type`.
+     */
+    fullscreen_supported?: boolean;
+    /** The server's own vocabulary (assessment/integrity.py). Absent means "not recorded",
+     *  which the server must never round up to either claim. */
+    fullscreen_enforcement?: "enforced" | "unavailable";
+    device_class?: "desktop" | "mobile" | "tablet";
   };
   timing: {
     started_at: string;

@@ -30,6 +30,18 @@ export interface AttachCameraStreamArgs {
    * 0x0 frame and it reports "no face" for a camera that is working.
    */
   onReady?: () => void;
+  /**
+   * Called when the element never produced a frame within ``framesTimeoutMs``.
+   *
+   * A live video track is not a picture. A lens cover, a privacy shutter, a virtual camera with
+   * no source, or another application holding the device can all leave `readyState === "live"`
+   * while every frame is black or no frame arrives at all. Without this the poll below simply
+   * ran for ever: `onReady` never fired, so face detection never started, and the page went on
+   * announcing "Camera is working properly" over a black rectangle.
+   */
+  onNoFrames?: () => void;
+  /** How long to wait for a first real frame before giving up. */
+  framesTimeoutMs?: number;
   /** Skip onReady when the stream carries no live video track. */
   hasVideo?: boolean;
   /** Test seam. */
@@ -41,6 +53,8 @@ export function attachCameraStream({
   el,
   stream,
   onReady,
+  onNoFrames,
+  framesTimeoutMs = 8000,
   hasVideo = true,
   setTimeoutFn = setTimeout,
 }: AttachCameraStreamArgs): boolean {
@@ -50,12 +64,20 @@ export function attachCameraStream({
 
   el.srcObject = stream;
 
+  // Bounded. The unbounded version polled every 200ms for the life of the page whenever frames
+  // never came, which is precisely the case worth reporting rather than waiting out.
+  let waited = 0;
   const waitForFrames = () => {
     if (el.readyState >= 2 && el.videoWidth > 0 && el.videoHeight > 0) {
       onReady?.();
-    } else {
-      setTimeoutFn(waitForFrames, 200);
+      return;
     }
+    waited += 200;
+    if (waited >= framesTimeoutMs) {
+      onNoFrames?.();
+      return;
+    }
+    setTimeoutFn(waitForFrames, 200);
   };
 
   const play = el.play?.();

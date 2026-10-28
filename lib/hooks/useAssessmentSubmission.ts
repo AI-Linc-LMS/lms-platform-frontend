@@ -270,6 +270,21 @@ export function useAssessmentSubmission({
           fullscreen_exits: metadata.proctoring.fullscreen_exits,
           total_violation_count: metadata.proctoring.total_violation_count,
           violation_threshold_reached: metadata.proctoring.violation_threshold_reached,
+          /**
+           * What invigilation this device could carry, and what was actually in force.
+           *
+           * `fullscreen_exits: []` means two completely different things on an iPhone (no
+           * Fullscreen API exists, so the requirement was never in force) and on a desktop (it was
+           * in force and never broken). Without these three fields the record cannot tell them
+           * apart, and an unproctored attempt reads as a clean proctored one. HANDOFF: the backend
+           * half reads exactly these keys - `fullscreen_supported`, `fullscreen_enforcement`,
+           * `device_class` - inside `metadata.transcript.metadata.proctoring`. `device_class` is
+           * the same value as the `X-Client-Device-Type` header, from one helper, not a second
+           * heuristic.
+           */
+          fullscreen_supported: metadata.proctoring.fullscreen_supported,
+          fullscreen_enforcement: metadata.proctoring.fullscreen_enforcement,
+          device_class: metadata.proctoring.device_class,
           ...(violationScreenshotSamples.length > 0
             ? { violation_screenshot_samples: violationScreenshotSamples }
             : {}),

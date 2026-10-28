@@ -10,14 +10,11 @@ import mockInterviewService, {
   MockInterview,
 } from "@/lib/services/mock-interview.service";
 import { useToast } from "@/components/common/Toast";
-import { useRouter } from "next/navigation";
 import { useStopCameraOnMount } from "@/lib/hooks/useStopCameraOnMount";
-import { PHONE } from "@/components/common/mobile/phone";
 
 export default function PreviousInterviewsPage() {
   const { t } = useTranslation("common");
   const { showToast } = useToast();
-  const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [interviews, setInterviews] = useState<MockInterview[]>([]);
   const hasLoadedRef = useRef(false);
@@ -87,147 +84,13 @@ export default function PreviousInterviewsPage() {
           </Box>
         </Box>
 
-        {/* Tabs Navigation */}
-        <Box
-          sx={{
-            display: "flex",
-            gap: 2,
-            mb: 4,
-            p: 1,
-            backgroundColor: "var(--surface)",
-            borderRadius: 3,
-            width: "fit-content",
-            [PHONE]: {
-              width: "100%",
-              display: "grid",
-              gridTemplateColumns: "repeat(3, minmax(0, 1fr))",
-              gap: 0.5,
-              p: 0.5,
-              mb: 3,
-            },
-          }}
-        >
-          <Box
-            onClick={() => router.push("/mock-interview")}
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-              px: 3,
-              py: 1.5,
-              borderRadius: 2.5,
-              [PHONE]: {
-                flexDirection: "column",
-                justifyContent: "center",
-                gap: 0.5,
-                px: 0.5,
-                py: 1,
-                minHeight: 56,
-                minWidth: 0,
-                "& .MuiTypography-root": { fontSize: "0.75rem", textAlign: "center", lineHeight: 1.2 },
-              },
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-              backgroundColor: "transparent",
-              "&:hover": {
-                backgroundColor:
-                  "color-mix(in srgb, var(--font-primary) 8%, transparent)",
-              },
-            }}
-          >
-            <IconWrapper icon="mdi:lightning-bolt" size={20} color="var(--font-secondary)" />
-            <Typography
-              variant="body1"
-              sx={{
-                fontWeight: 600,
-                fontSize: "0.95rem",
-                color: "var(--font-secondary)",
-              }}
-            >
-              {t("mockInterview.newInterview")}
-            </Typography>
-          </Box>
-
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-              px: 3,
-              py: 1.5,
-              borderRadius: 2.5,
-              [PHONE]: {
-                flexDirection: "column",
-                justifyContent: "center",
-                gap: 0.5,
-                px: 0.5,
-                py: 1,
-                minHeight: 56,
-                minWidth: 0,
-                "& .MuiTypography-root": { fontSize: "0.75rem", textAlign: "center", lineHeight: 1.2 },
-              },
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-              backgroundColor: "var(--card-bg)",
-              boxShadow:
-                "0 2px 8px color-mix(in srgb, var(--font-primary) 10%, transparent)",
-            }}
-          >
-            <IconWrapper icon="mdi:history" size={20} color="var(--accent-indigo)" />
-            <Typography
-              variant="body1"
-              sx={{
-                fontWeight: 600,
-                fontSize: "0.95rem",
-                color: "var(--font-primary)",
-              }}
-            >
-              {t("mockInterview.previous")}
-            </Typography>
-          </Box>
-
-          <Box
-            onClick={() => router.push("/mock-interview/scheduled")}
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              gap: 1.5,
-              px: 3,
-              py: 1.5,
-              borderRadius: 2.5,
-              [PHONE]: {
-                flexDirection: "column",
-                justifyContent: "center",
-                gap: 0.5,
-                px: 0.5,
-                py: 1,
-                minHeight: 56,
-                minWidth: 0,
-                "& .MuiTypography-root": { fontSize: "0.75rem", textAlign: "center", lineHeight: 1.2 },
-              },
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-              backgroundColor: "transparent",
-              "&:hover": {
-                backgroundColor:
-                  "color-mix(in srgb, var(--font-primary) 8%, transparent)",
-              },
-            }}
-          >
-            <IconWrapper icon="mdi:calendar-clock" size={20} color="var(--font-secondary)" />
-            <Typography
-              variant="body1"
-              sx={{
-                fontWeight: 600,
-                fontSize: "0.95rem",
-                color: "var(--font-secondary)",
-              }}
-            >
-              Scheduled
-            </Typography>
-          </Box>
-        </Box>
-
+        {/* The three-tab strip that sat here - New Interview (/mock-interview), Previous,
+            Scheduled (/mock-interview/scheduled) - belonged to the standalone legacy mock
+            interview, which is retired. Two of its three tabs pointed into that product and
+            the third was this page, so the strip is gone rather than left with one dead tab
+            and one tab pointing at itself. This page stays: it is the learner's own
+            completed-attempt history, it is where the result page sends them, and it lists
+            course interview ROUNDS as well as the standalone attempts they already sat. */}
         {/* Previous Interviews Table */}
         <PreviousInterviewsTable interviews={interviews} />
       </Container>

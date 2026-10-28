@@ -11,20 +11,32 @@ import {
   Alert,
 } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
-import { memo } from "react";
+import { memo, useEffect, useState } from "react";
 import { PHONE } from "@/components/common/mobile/phone";
 import { usePhoneSheet } from "@/components/mock-interview/usePhoneSheet";
+import { canPressFullscreenHotkey } from "@/lib/fullscreen/fullscreenSupport";
 
 interface FullscreenWarningDialogProps {
   open: boolean;
   onReEnterFullscreen: () => void;
+  /** Whether to mention the F11 key. Defaults to asking the device. */
+  mentionHotkey?: boolean;
 }
 
 export const FullscreenWarningDialog = memo(function FullscreenWarningDialog({
   open,
   onReEnterFullscreen,
+  mentionHotkey,
 }: FullscreenWarningDialogProps) {
   const { sheetProps } = usePhoneSheet();
+  // There is no F11 on a phone, and this dialog renders as a phone sheet. See the assessment
+  // sibling for the full story.
+  const [showHotkey, setShowHotkey] = useState(false);
+  useEffect(() => {
+    setShowHotkey(
+      mentionHotkey !== undefined ? mentionHotkey : canPressFullscreenHotkey()
+    );
+  }, [mentionHotkey]);
   return (
     <Dialog
       open={open}
@@ -53,7 +65,13 @@ export const FullscreenWarningDialog = memo(function FullscreenWarningDialog({
           </Typography>
         </Alert>
         <Typography variant="body2" paragraph>
-          Press <strong>F11</strong> or click the button below to continue.
+          {showHotkey ? (
+            <>
+              Press <strong>F11</strong> or use the button below to continue.
+            </>
+          ) : (
+            <>Use the button below to continue.</>
+          )}
         </Typography>
       </DialogContent>
       <DialogActions>

@@ -1,6 +1,12 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import {
+  canEnterFullscreen,
+  exitDocumentFullscreen,
+  isDocumentFullscreen,
+  requestDocumentFullscreen,
+} from "@/lib/fullscreen/fullscreenSupport";
 
 export interface FullscreenViolation {
   timestamp: string;
@@ -10,68 +16,68 @@ export interface FullscreenViolation {
 
 interface UseFullscreenMonitorReturn {
   isFullscreen: boolean;
-  enterFullscreen: () => Promise<void>;
+  /**
+   * False when this browser cannot enter fullscreen at all (iPhone Safari; an iframe without
+   * `allow="fullscreen"`). Callers MUST check this before demanding fullscreen of a learner.
+   */
+  isSupported: boolean;
+  /**
+   * True once fullscreen has actually been held at least once during this session. This is the
+   * evidence that the fullscreen requirement was really in force, as opposed to merely asked for,
+   * and it is what the attempt's record reports.
+   */
+  hasEnteredFullscreen: boolean;
+  /** Resolves to whether fullscreen is actually held afterwards. Never throws. */
+  enterFullscreen: () => Promise<boolean>;
   exitFullscreen: () => Promise<void>;
   violations: FullscreenViolation[];
   clearViolations: () => void;
 }
 
 /**
- * Hook to monitor fullscreen state and track violations
+ * Monitors fullscreen state and records FULLSCREEN_EXIT violations.
+ *
+ * Fullscreen is treated as MANDATORY by the callers of this hook: the assessment take page puts up
+ * a blocking modal when it is not held, and logs an integrity violation when it is lost. This hook
+ * therefore has to tell the truth about two different things, which the previous version conflated:
+ *
+ *   - whether fullscreen is currently held (`isFullscreen`), and
+ *   - whether this browser can hold it at all (`isSupported`).
+ *
+ * The old `enterFullscreen` resolved successfully after doing literally nothing on a browser with
+ * no Fullscreen API, and its comment claimed "fullscreen is optional and should not block the
+ * assessment" - which was not what any caller did with it. An iPhone learner got the blocking modal
+ * and a button that silently no-opped, for ever, with the clock running. Where fullscreen cannot be
+ * entered, it cannot be required and it cannot be violated: no listeners, no violations, and
+ * callers are told so instead of being handed a false success.
  */
 export function useFullscreenMonitor(): UseFullscreenMonitorReturn {
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [isSupported, setIsSupported] = useState(false);
+  const [hasEnteredFullscreen, setHasEnteredFullscreen] = useState(false);
   const [violations, setViolations] = useState<FullscreenViolation[]>([]);
   const exitTimestampRef = useRef<string | null>(null);
 
   // Check fullscreen state
   const checkFullscreen = useCallback(() => {
-    const isFS =
-      !!document.fullscreenElement ||
-      !!(document as any).webkitFullscreenElement ||
-      !!(document as any).mozFullScreenElement ||
-      !!(document as any).msFullscreenElement;
+    const isFS = isDocumentFullscreen();
     setIsFullscreen(isFS);
+    if (isFS) setHasEnteredFullscreen(true);
     return isFS;
   }, []);
 
-  // Enter fullscreen
-  const enterFullscreen = useCallback(async () => {
-    try {
-      const element = document.documentElement;
-      if (element.requestFullscreen) {
-        await element.requestFullscreen();
-      } else if ((element as any).webkitRequestFullscreen) {
-        await (element as any).webkitRequestFullscreen();
-      } else if ((element as any).mozRequestFullScreen) {
-        await (element as any).mozRequestFullScreen();
-      } else if ((element as any).msRequestFullscreen) {
-        await (element as any).msRequestFullscreen();
-      }
-      checkFullscreen();
-    } catch (error) {
-      // Fullscreen entry failed - allow the application to continue without fullscreen
-      // Fullscreen is optional and should not block the assessment
-      checkFullscreen();
-    }
+  // Enter fullscreen. Reports whether fullscreen is actually held afterwards, so a caller can
+  // distinguish "the learner declined" from "this device has no fullscreen to enter".
+  const enterFullscreen = useCallback(async (): Promise<boolean> => {
+    const entered = await requestDocumentFullscreen();
+    checkFullscreen();
+    return entered;
   }, [checkFullscreen]);
 
   // Exit fullscreen
   const exitFullscreen = useCallback(async () => {
-    try {
-      if (document.exitFullscreen) {
-        await document.exitFullscreen();
-      } else if ((document as any).webkitExitFullscreen) {
-        await (document as any).webkitExitFullscreen();
-      } else if ((document as any).mozCancelFullScreen) {
-        await (document as any).mozCancelFullScreen();
-      } else if ((document as any).msExitFullscreen) {
-        await (document as any).msExitFullscreen();
-      }
-      checkFullscreen();
-    } catch (error) {
-      // Silently handle fullscreen exit error
-    }
+    await exitDocumentFullscreen();
+    checkFullscreen();
   }, [checkFullscreen]);
 
   // Clear violations
@@ -80,10 +86,20 @@ export function useFullscreenMonitor(): UseFullscreenMonitorReturn {
     exitTimestampRef.current = null;
   }, []);
 
+  // Capability is a property of the document, so it is read once on mount (it cannot change for
+  // the life of the page) and kept in state so render output is stable between server and client.
+  useEffect(() => {
+    setIsSupported(canEnterFullscreen());
+  }, []);
+
   // Set up fullscreen change listeners
   useEffect(() => {
     // Initial check
     checkFullscreen();
+
+    // Nothing to monitor, and nothing that could be a violation: a device with no Fullscreen API
+    // never enters fullscreen, so it must never be recorded as having LEFT it.
+    if (!canEnterFullscreen()) return;
 
     const handleFullscreenChange = () => {
       const wasFullscreen = isFullscreen;
@@ -140,10 +156,11 @@ export function useFullscreenMonitor(): UseFullscreenMonitorReturn {
 
   return {
     isFullscreen,
+    isSupported,
+    hasEnteredFullscreen,
     enterFullscreen,
     exitFullscreen,
     violations,
     clearViolations,
   };
 }
-

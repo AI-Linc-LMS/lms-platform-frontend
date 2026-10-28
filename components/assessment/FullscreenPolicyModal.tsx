@@ -20,6 +20,11 @@ interface FullscreenPolicyModalProps {
 /**
  * Renders inside the fullscreen element so it stays visible in browser fullscreen mode
  * (portaling only to document.body can be clipped when the fullscreen target is not body).
+ *
+ * Currently unreferenced. If it is wired up, gate it on
+ * `canEnterFullscreen()` from `@/lib/fullscreen/fullscreenSupport`: its copy states a requirement
+ * ("Fullscreen is required", "Stay in fullscreen for the whole assessment") that iPhone Safari
+ * cannot meet, and its one button is the only way out of it.
  */
 export function FullscreenPolicyModal({
   open,

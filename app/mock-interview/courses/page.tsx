@@ -69,11 +69,13 @@ export default function MockInterviewCoursesPage() {
   return (
     <MainLayout>
       <Container maxWidth="xl" sx={{ py: 4 }}>
-        {/* Header + back link */}
+        {/* Header + back link. This used to say "Back to Interviews" and go to /mock-interview,
+            the standalone product's hub. That product is retired, so the only honest way back
+            from a list of course interviews is the dashboard the course is reached from. */}
         <Box sx={{ display: "flex", alignItems: "center", gap: 2, mb: 1 }}>
           <Button
             startIcon={<IconWrapper icon="mdi:arrow-left" size={18} />}
-            onClick={() => router.push("/mock-interview")}
+            onClick={() => router.push("/dashboard")}
             sx={{
               textTransform: "none",
               color: "var(--font-secondary)",
@@ -81,7 +83,7 @@ export default function MockInterviewCoursesPage() {
               [PHONE]: { minHeight: 44 },
             }}
           >
-            Back to Interviews
+            Back to Dashboard
           </Button>
         </Box>
 
@@ -124,6 +126,12 @@ export default function MockInterviewCoursesPage() {
         ) : templates.length === 0 ? (
           // Empty state. Two common cases: student isn't enrolled in any mapped course
           // yet, or they've already completed all their assigned interviews.
+          //
+          // It used to end in a "Go to Quick Start" button pointing at
+          // /mock-interview/quick-start. Quick Start was the standalone product and is retired,
+          // so that button now only bounced the learner to the dashboard: an empty state whose
+          // one call to action silently goes somewhere else is worse than an empty state with
+          // none. A course interview can only come from a course, so there is nothing to offer.
           <Box
             sx={{
               p: 6,
@@ -149,25 +157,8 @@ export default function MockInterviewCoursesPage() {
               sx={{ color: "var(--font-secondary)" }}
             >
               You'll see interviews here once they're attached to one of your enrolled
-              courses. In the meantime, you can practice with Quick Start.
+              courses. Open a course to find the interview round in its journey.
             </Typography>
-            <Button
-              variant="contained"
-              onClick={() => router.push("/mock-interview/quick-start")}
-              startIcon={
-                <IconWrapper icon="mdi:lightning-bolt" size={18} />
-              }
-              sx={{
-                mt: 3,
-                textTransform: "none",
-                fontWeight: 600,
-                backgroundColor: "var(--accent-indigo)",
-                "&:hover": { backgroundColor: "var(--accent-indigo-dark)" },
-                [PHONE]: { minHeight: 44 },
-              }}
-            >
-              Go to Quick Start
-            </Button>
           </Box>
         ) : (
           <Box

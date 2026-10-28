@@ -1,19 +1,9 @@
 "use client";
 
-import { Box, Paper, Typography } from "@mui/material";
+import { Box, Paper } from "@mui/material";
 import { memo } from "react";
 import { QuizOption } from "./QuizLayout";
-
-/** Check if string contains HTML tags */
-function hasHtml(str: unknown): str is string {
-  return typeof str === "string" && /<[a-zA-Z][^>]*\/?>|<[a-zA-Z][\s\S]*>/i.test(str);
-}
-
-/** Check if HTML string would render visible text (not blank). Bare tags like <p>, <br/> render as blank. */
-function hasVisibleHtmlContent(str: string): boolean {
-  const textContent = str.replace(/<[^>]+>/g, "").trim();
-  return textContent.length > 0;
-}
+import { OptionText } from "./OptionText";
 
 interface AnswerOptionProps {
   option: QuizOption;
@@ -88,44 +78,28 @@ export const AnswerOption = memo(function AnswerOption({
           justifyContent: "space-between",
         }}
       >
-        {hasHtml(option.label) && hasVisibleHtmlContent(option.label) ? (
-          <Box
-            component="span"
-            sx={{
-              fontWeight: isSelected || isCorrect ? 600 : 500,
-              color: isSelected
-                ? "#1e40af"
-                : isCorrect
-                ? "#065f46"
-                : isWrongSelection
-                ? "#991b1b"
-                : "#1a1f2e",
-              fontSize: "1rem",
-              lineHeight: 1.6,
-              letterSpacing: "0.01em",
-              "& p": { margin: 0 },
-            }}
-            dangerouslySetInnerHTML={{ __html: option.label }}
-          />
-        ) : (
-          <Typography
-            sx={{
-              fontWeight: isSelected || isCorrect ? 600 : 500,
-              color: isSelected
-                ? "#1e40af"
-                : isCorrect
-                ? "#065f46"
-                : isWrongSelection
-                ? "#991b1b"
-                : "#1a1f2e",
-              fontSize: "1rem",
-              lineHeight: 1.6,
-              letterSpacing: "0.01em",
-            }}
-          >
-            {option.label ?? ""}
-          </Typography>
-        )}
+        {/* One renderer, and a sanitizing one. This branch used to inject option HTML with a raw
+            `dangerouslySetInnerHTML` while every other surface went through RichHtml, so the
+            busiest learner screen was the one place option markup reached the DOM unfiltered. The
+            text branch, the HTML detection and the blank-tag guard all move WITH it, in
+            components/quiz/OptionText.tsx, so nothing about how a plain option looks changes. */}
+        <OptionText
+          text={option.label}
+          sx={{
+            fontWeight: isSelected || isCorrect ? 600 : 500,
+            color: isSelected
+              ? "#1e40af"
+              : isCorrect
+              ? "#065f46"
+              : isWrongSelection
+              ? "#991b1b"
+              : "#1a1f2e",
+            fontSize: "1rem",
+            lineHeight: 1.6,
+            letterSpacing: "0.01em",
+            "& p": { margin: 0 },
+          }}
+        />
         <Box sx={{ display: "flex", gap: 1, alignItems: "center" }}>
           {isCorrect && (
             <Box

@@ -9,6 +9,7 @@ import { adaptiveJourneyService } from "@/lib/services/adaptive-journey.service"
 import { notifyContentCompleted } from "@/lib/streak/streakCelebration";
 import type { CalibrationResult } from "@/lib/types/adaptive-journey";
 import { QuestionTitle } from "@/components/quiz/QuestionTitle";
+import { OptionText } from "@/components/quiz/OptionText";
 import { QuestionImage } from "@/components/quiz/QuestionImage";
 import {
   QuestionPalette,
@@ -17,6 +18,11 @@ import {
   submitWarning,
 } from "@/components/assessment/calibration/QuestionPalette";
 import { PHONE } from "@/components/common/mobile/phone";
+import {
+  canEnterFullscreen,
+  requestDocumentFullscreen,
+} from "@/lib/fullscreen/fullscreenSupport";
+import { getClientDeviceClass } from "@/lib/utils/assessment-device";
 
 interface CalibMcq {
   id: number | string;
@@ -107,7 +113,20 @@ function CalibrationTakeInner() {
 
   // Self-proctored: we monitor only fullscreen + tab-switching (no webcam).
   const [fullscreen, setFullscreen] = useState(false);
+  /**
+   * iPhone Safari has no Fullscreen API, so this page's `requestFullscreen?.()` quietly did
+   * nothing and the integrity strip then showed "Fullscreen: off" for the whole sitting, next to a
+   * chip inviting the learner to fix it. It never blocked the test (the optional chaining saved
+   * it), but it told them they were failing a check they could not pass. Where it is unsupported,
+   * fullscreen is not offered, not shown as off, and not logged as an exit.
+   */
+  const [fullscreenSupported, setFullscreenSupported] = useState(false);
+  useEffect(() => {
+    setFullscreenSupported(canEnterFullscreen());
+  }, []);
   const [tabSwitches, setTabSwitches] = useState<string[]>([]);
+  /** True once fullscreen has actually been held, ever, during this sitting. */
+  const fullscreenHeldRef = useRef(false);
   const fsExitsRef = useRef<{ timestamp: string }[]>([]);
   const startedAtRef = useRef<string>(new Date().toISOString());
 
@@ -189,7 +208,13 @@ function CalibrationTakeInner() {
     const onFs = () => {
       const on = !!document.fullscreenElement;
       setFullscreen(on);
-      if (!on) fsExitsRef.current.push({ timestamp: new Date().toISOString() });
+      // Recorded in a ref the moment it is true, not read off state at submit time: the submit
+      // handler closes over whatever `fullscreen` was when it was created, so a sitting that WAS
+      // locked could report that it never had been.
+      if (on) fullscreenHeldRef.current = true;
+      // Never log an exit from a mode this browser cannot enter.
+      if (!on && canEnterFullscreen())
+        fsExitsRef.current.push({ timestamp: new Date().toISOString() });
     };
     document.addEventListener("visibilitychange", onVis);
     document.addEventListener("fullscreenchange", onFs);
@@ -228,6 +253,18 @@ function CalibrationTakeInner() {
                   total_violation_count: tabSwitches.length + fsExitsRef.current.length,
                   violation_threshold_reached: false,
                   violation_screenshot_samples: [],
+                  // Same three keys as the take page: an empty exits list on a device with no
+                  // Fullscreen API must not read as a clean fullscreen-enforced sitting.
+                  fullscreen_supported: canEnterFullscreen(),
+                  // The server's vocabulary, and only what we can stand behind: "enforced" once
+                  // fullscreen was actually held, "unavailable" when the browser has no API, and
+                  // nothing at all when it was simply never entered on a capable browser.
+                  ...(canEnterFullscreen()
+                    ? fullscreenHeldRef.current
+                      ? { fullscreen_enforcement: "enforced" as const }
+                      : {}
+                    : { fullscreen_enforcement: "unavailable" as const }),
+                  device_class: getClientDeviceClass(),
                 },
                 timing: {
                   started_at: startedAtRef.current,
@@ -275,17 +312,14 @@ function CalibrationTakeInner() {
   }, [loading, submitted, error, started, remaining > 0, doSubmit]);
 
   const enterLockdown = () => {
-    document.documentElement.requestFullscreen?.().catch(() => {});
+    void requestDocumentFullscreen();
   };
 
   // Begin: a single user gesture lets us enter fullscreen (browsers block it on
-  // navigation), so the test starts in full screen by default.
+  // navigation), so the test starts in full screen by default. Where there is no Fullscreen API
+  // this is a no-op and the test simply starts - it was never a gate, and must not become one.
   const begin = async () => {
-    try {
-      await document.documentElement.requestFullscreen?.();
-    } catch {
-      /* user can re-enter via the "Go full screen" chip if the browser blocked it */
-    }
+    await requestDocumentFullscreen();
     enteredAtRef.current = performance.now();
     prevIdxRef.current = 0;
     setStarted(true);
@@ -417,20 +451,27 @@ function CalibrationTakeInner() {
             Calibration Assessment{fieldName ? ` · ${fieldName}` : ""}
           </Typography>
           <Typography sx={{ color: "rgba(255,255,255,0.6)", lineHeight: 1.6 }}>
-            This is a self-proctored assessment. When you begin, it goes full screen and your
-            fullscreen and tab-switching are monitored. {total} questions · {fmtClock(remaining)} on the clock.
+            {fullscreenSupported
+              ? `This is a self-proctored assessment. When you begin, it goes full screen and your fullscreen and tab-switching are monitored. ${total} questions · ${fmtClock(remaining)} on the clock.`
+              : `This is a self-proctored assessment. This browser cannot go full screen, so your tab-switching is what is monitored - please stay on this page until you submit. ${total} questions · ${fmtClock(remaining)} on the clock.`}
           </Typography>
           <Stack direction="row" spacing={1} sx={{ color: "rgba(255,255,255,0.55)", fontSize: "0.8rem" }}>
-            <Icon icon="mdi:fullscreen" width={16} /> <span>Go full screen</span>
+            {fullscreenSupported && (
+              <>
+                <Icon icon="mdi:fullscreen" width={16} /> <span>Go full screen</span>
+              </>
+            )}
             <Icon icon="mdi:eye-outline" width={16} /> <span>Tab monitoring</span>
           </Stack>
           <Button variant="contained" onClick={begin}
-            startIcon={<Icon icon="mdi:fullscreen" width={20} />}
+            startIcon={<Icon icon={fullscreenSupported ? "mdi:fullscreen" : "mdi:play"} width={20} />}
             sx={{ mt: 1, textTransform: "none", fontWeight: 800, borderRadius: 2, px: 4, py: 1.2, bgcolor: "#3b82f6", "&:hover": { bgcolor: "#2563eb" } }}>
-            Enter fullscreen & begin
+            {fullscreenSupported ? "Enter fullscreen & begin" : "Begin"}
           </Button>
           <Typography sx={{ fontSize: "0.72rem", color: "rgba(255,255,255,0.4)" }}>
-            Exiting fullscreen during the test is logged for integrity.
+            {fullscreenSupported
+              ? "Exiting fullscreen during the test is logged for integrity."
+              : "Leaving this page during the test is logged for integrity."}
           </Typography>
         </Stack>
       </Box>
@@ -464,9 +505,12 @@ function CalibrationTakeInner() {
         <Stack direction="row" spacing={1.25} alignItems="center" sx={{ [PHONE]: { flex: "1 1 100%", minWidth: 0 } }}>
           <Chip size="small" icon={<Icon icon="mdi:shield-account" width={14} />} label="Self-proctored"
             sx={{ color: "#93c5fd", bgcolor: "rgba(59,130,246,0.12)", fontWeight: 700, fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem", minWidth: 0 } }} />
-          <Chip size="small" icon={<Icon icon="mdi:fullscreen" width={14} />} label={fullscreen ? "Full screen" : "Go full screen"}
-            onClick={fullscreen ? undefined : enterLockdown}
-            sx={{ color: fullscreen ? "#cbd5e1" : "#fcd34d", bgcolor: "rgba(255,255,255,0.06)", fontWeight: 700, fontSize: "0.7rem", cursor: fullscreen ? "default" : "pointer", [PHONE]: { fontSize: "0.75rem", height: 44, borderRadius: 22, minWidth: 0 } }} />
+          {/* A chip offering a mode this browser does not have is a button that cannot work. */}
+          {fullscreenSupported && (
+            <Chip size="small" icon={<Icon icon="mdi:fullscreen" width={14} />} label={fullscreen ? "Full screen" : "Go full screen"}
+              onClick={fullscreen ? undefined : enterLockdown}
+              sx={{ color: fullscreen ? "#cbd5e1" : "#fcd34d", bgcolor: "rgba(255,255,255,0.06)", fontWeight: 700, fontSize: "0.7rem", cursor: fullscreen ? "default" : "pointer", [PHONE]: { fontSize: "0.75rem", height: 44, borderRadius: 22, minWidth: 0 } }} />
+          )}
           <Typography data-testid="calib-timer" sx={{ fontWeight: 800, fontVariantNumeric: "tabular-nums", letterSpacing: 1, [PHONE]: { marginInlineStart: "auto !important", flexShrink: 0 } }}>{fmtClock(remaining)}</Typography>
         </Stack>
       </Stack>
@@ -515,7 +559,19 @@ function CalibrationTakeInner() {
                       bgcolor: selected ? "#60a5fa" : "rgba(255,255,255,0.06)", color: selected ? "#0b1220" : "rgba(255,255,255,0.8)", fontWeight: 800, fontSize: "0.85rem" }}>
                       {L.toUpperCase()}
                     </Box>
-                    <Typography sx={{ fontSize: "0.95rem", color: "rgba(255,255,255,0.92)" }}>{text}</Typography>
+                    {/* Through the SAME renderer the stem above uses. Printing it as text was
+                        why a learner saw "<code>addEventListener</code>" spelled out while the
+                        question above it formatted correctly, on one screen. */}
+                    <OptionText
+                      text={text}
+                      sx={{
+                        fontSize: "0.95rem",
+                        color: "rgba(255,255,255,0.92)",
+                        // This card is dark (#0b1220); RichHtml's default code tint is pitched
+                        // for a light surface and all but disappears here.
+                        "& code": { bgcolor: "rgba(148,163,255,0.18)", color: "#e0e7ff" },
+                      }}
+                    />
                   </Box>
                 );
               })}
@@ -559,7 +615,13 @@ function CalibrationTakeInner() {
           <QuestionPalette statuses={statuses} current={idx} onJump={setIdx} />
           <Box sx={{ my: 2.5, borderTop: "1px solid rgba(255,255,255,0.08)" }} />
           <Typography sx={{ fontSize: "0.68rem", fontWeight: 800, letterSpacing: 1, color: "rgba(255,255,255,0.45)", mb: 0.5 }}>INTEGRITY CHECKS</Typography>
-          <Integrity label="Fullscreen" ok={fullscreen} warn={fullscreen ? undefined : "off"} />
+          {/* Only a check the learner can actually pass. On a browser with no Fullscreen API this
+              row sat on "off" for the whole sitting, reading as a failure of theirs. */}
+          {fullscreenSupported ? (
+            <Integrity label="Fullscreen" ok={fullscreen} warn={fullscreen ? undefined : "off"} />
+          ) : (
+            <Integrity label="Fullscreen" warn="not available on this device" />
+          )}
           <Integrity label="Tab switches" ok={tabSwitches.length === 0} warn={tabSwitches.length ? `${tabSwitches.length} flagged` : undefined} />
 
           <Box sx={{ mt: 3, p: 1.75, borderRadius: 2, bgcolor: "rgba(124,58,237,0.12)", border: "1px solid rgba(124,58,237,0.25)" }}>

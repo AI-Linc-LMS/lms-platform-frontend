@@ -21,11 +21,13 @@ export interface NavigationItem {
   featureNamesAny?: string[];
   /** If true, only org admins (admin / superadmin) see this link. */
   orgAdminOnly?: boolean;
-  /**
-   * Hide this item when any listed feature is also on: another entry has replaced it. A tenant
-   * holding both the old and the rebuilt interview would otherwise get two "Interview" rows.
-   */
-  supersededBy?: string[];
+  //
+  // There was a `supersededBy` here, to hide an entry when a newer module replaced it. Its one
+  // user was the learner's legacy mock interview, hidden from the four tenants that held the
+  // rebuilt key as well. That product is retired outright now, so the entry is gone rather than
+  // conditionally hidden, and a filter with no caller is a check that cannot fail. Bring the
+  // field back with its own test when a module is next superseded instead of withdrawn.
+  //
   /** i18n key for the one-line module explainer shown via the (i) tooltip. */
   descKey?: string;
   /**
@@ -92,12 +94,13 @@ export const STUDENT_SECTIONS: NavSection[] = [
     label: "Career",
     icon: "mdi:briefcase-outline",
     //
-    // `interview_realtime` is listed BESIDE `mock_interview`, not instead of it. It was in no
-    // section at all, which meant 832 students across three tenants - Impacteers, Agileology
-    // and Capabl Labs - held the Mock Interview feature with no sidebar entry to reach it,
-    // because those tenants have the v2 flag and not the legacy one. Tenants with both show
-    // one entry each; neither is a replacement for the other at the nav layer.
-    itemFeatures: ["mock_interview", "interview_realtime", "jobs_v2", "resume", "certificates"],
+    // `interview_realtime` is the ONLY interview key here now. It was once in no section at all,
+    // which meant 832 students across three tenants - Impacteers, Agileology and Capabl Labs -
+    // held the rebuilt interview with no sidebar entry to reach it. The legacy `mock_interview`
+    // key sat beside it until that product was retired; it is out of this list because no
+    // learner nav entry carries it any more, and a section listing a feature with no item is
+    // what the "leaves no nav item homeless" test cannot see.
+    itemFeatures: ["interview_realtime", "jobs_v2", "resume", "certificates"],
   },
   {
     id: "engage",
@@ -267,19 +270,12 @@ export const STUDENT_NAV_ITEMS: NavigationItem[] = [
     descKey: "navDesc.interviewRealtime",
     gateKey: "interview",
   },
-  {
-    // Superseded by the rebuilt interview above: four tenants now hold BOTH keys (the rebuilt one
-    // was switched on for them without the old one being switched off), and they were getting two
-    // entries with the same name pointing at two different products.
-    label: "Mock Interview",
-    labelKey: "nav.mockInterview",
-    path: "/mock-interview",
-    icon: "mdi:video-plus",
-    featureName: "mock_interview",
-    descKey: "navDesc.mockInterview",
-    gateKey: "interview",
-    supersededBy: ["interview_realtime"],
-  },
+  // The learner's STANDALONE legacy mock interview (`/mock-interview`, `mock_interview`) was
+  // here. The product is retired for every tenant, including the 14 that still hold the row and
+  // the 5 that hold no rows at all, so there is no door to offer. Its URL prefix survives for the
+  // course interview ROUNDS - /mock-interview/courses and the runner /mock-interview/<id> - which
+  // the course governs and which no sidebar entry ever pointed at. Admin keeps all three of its
+  // surfaces below: the hub, Interview Attempts, and Interview Setup, where the rounds are built.
   {
     label: "Jobs",
     labelKey: "nav.jobsV2",
@@ -593,12 +589,6 @@ export function filterNavigationItems(params: {
   if (hideCertificatesFromStudents) {
     items = items.filter((item) => item.path !== "/certificates");
   }
-
-  // An item replaced by a newer module drops out when that module is also on. A tenant with no
-  // features configured at all counts as holding everything (default-allow above), so the newer
-  // entry wins there too rather than showing both.
-  const holds = (name: string) => featureNames.size === 0 || featureNames.has(name);
-  items = items.filter((item) => !item.supersededBy?.some(holds));
 
   return items.filter((item) => !item.orgAdminOnly || isOrgAdmin);
 }

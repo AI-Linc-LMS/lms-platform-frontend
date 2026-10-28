@@ -1,26 +1,32 @@
 /**
- * Where a visit to the legacy mock interview belongs for this tenant, and which of its pages the
+ * Where a visit to the RETIRED standalone mock interview goes, and which of its pages the
  * question applies to.
  *
- * /mock-interview is two products behind one URL prefix. The hub, quick-start, schedule and
- * scheduled pages are the STANDALONE legacy product, the one the `mock_interview` feature row
- * describes and the one a tenant switches off. /mock-interview/courses and /mock-interview/<id>
- * are the course and journey interview ROUNDS: a template-started interview runs through the same
- * runner pages, and those rounds are governed by the course (`interview_rounds_enabled`), not by
- * the row. TechU held 74 active templates across 12 such courses while holding no row at all, so
- * guarding the whole prefix would have retired the rounds its courses were built with.
+ * /mock-interview is two products behind one URL prefix, and only the first one is retired.
  *
- * `legacyInterviewDestination` returns `null` when the page may render: the tenant holds
- * `mock_interview`, or holds NO features at all, which the catalogue has always treated as holding
- * everything (the sidebar in navModel.ts and the backend's client_has_feature apply the same rule).
- * Otherwise the rebuilt interview when the tenant holds it, else the dashboard.
+ * RETIRED, FOR EVERY TENANT - the standalone legacy mock interview: the hub, quick-start,
+ * schedule and scheduled pages, the product the `mock_interview` feature row described. There is
+ * no tenant left that may see it, so `legacyInterviewDestination` ALWAYS names somewhere to go
+ * and never returns null. It deliberately does not read `mock_interview` at all:
+ *   - holding the row is no longer a way in, and 14 tenants hold it;
+ *   - 5 tenants hold NO feature rows at all, and the catalogue has always read "no rows" as
+ *     "holds everything", so a feature-row check could never have retired this for them.
+ * That is the whole reason this function stopped being a feature check and became a redirect.
+ *
+ * KEPT, UNTOUCHED - /mock-interview/courses and the runner /mock-interview/<id>: the course and
+ * journey interview ROUNDS. A template-started round runs through the SAME runner pages, and the
+ * rounds are governed by the course (`AdaptiveCourse.interview_rounds_enabled`), never by the
+ * row. 468 live templates across 9 tenants depend on them, and TechU holds 74 of those while
+ * holding no feature row at all. `isStandaloneLegacyInterviewPath` is the line between the two
+ * products: widen it to the whole prefix and you retire the rounds the courses were built with.
+ *
+ * Nothing is deleted. Historical attempts stay exactly as they are and stay readable to admins
+ * at /admin/admin-mock-interview/sessions; rounds are still built at .../templates.
  */
 export function legacyInterviewDestination(
   features: ReadonlyArray<{ name: string }> | undefined,
-): "/interview" | "/dashboard" | null {
-  if (!features || features.length === 0) return null;
-  const holds = (name: string) => features.some((f) => f.name === name);
-  if (holds("mock_interview")) return null;
+): "/interview" | "/dashboard" {
+  const holds = (name: string) => Boolean(features?.some((f) => f.name === name));
   return holds("interview_realtime") ? "/interview" : "/dashboard";
 }
 

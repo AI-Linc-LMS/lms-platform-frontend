@@ -175,7 +175,7 @@ export default function SubmissionSuccessPage() {
           >
             <Button
               variant="outlined"
-              onClick={() => router.push("/mock-interview")}
+              onClick={() => router.push("/mock-interview/courses")}
               startIcon={<IconWrapper icon="mdi:home" size={20} />}
               sx={{
                 borderColor: "var(--border-light)",

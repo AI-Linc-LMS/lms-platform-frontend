@@ -598,12 +598,12 @@ export default function TakeMockInterviewPage() {
 
         if (status === 400 && serverMessage.includes("cancelled")) {
           showToast("This interview was cancelled.", "warning");
-          router.push("/mock-interview");
+          router.push("/mock-interview/courses");
           return;
         }
 
         showToast("Failed to load interview", "error");
-        router.push("/mock-interview");
+        router.push("/mock-interview/courses");
       } finally {
         setLoading(false);
       }
@@ -2369,7 +2369,7 @@ export default function TakeMockInterviewPage() {
         topic={interview.topic}
         difficulty={interview.difficulty}
         interviewStarted={interviewStarted}
-        onBack={() => router.push("/mock-interview")}
+        onBack={() => router.push("/mock-interview/courses")}
         durationMinutes={interview.duration_minutes}
         startedAt={
           startTime ||
