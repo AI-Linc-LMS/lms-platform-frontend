@@ -1,11 +1,16 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Button, IconButton, Paper, TextField, Tooltip, Typography } from "@mui/material";
 import { CodeEditor } from "@/components/editor/MonacoEditor";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import ProjectPreview from "./ProjectPreview";
 import { isEditable, languageForPath } from "@/lib/services/project-workspace.service";
+import {
+  planUpload,
+  readUploadEntries,
+  type UploadPlan,
+} from "@/lib/services/project-upload";
 
 /**
  * Files on the left, editor in the middle, live preview on the right.
@@ -30,8 +35,18 @@ export interface ProjectFileEditorProps {
   entry?: string;
   /** Nothing can be edited or added — a submitted attempt, or a read-only review. */
   readOnly?: boolean;
-  /** Author-only: allow adding and removing files. */
+  /**
+   * Allow adding and removing files.
+   *
+   * Not author-only, which is how it was first written and what left a learner stuck: a brief
+   * whose starter is one `App.jsx` cannot hold a React app, and without this the learner had no
+   * way to make the second file. Whoever is editing the project needs it.
+   */
   allowFileManagement?: boolean;
+  /** Offer "upload files" and "upload a folder". Defaults to whatever file management allows. */
+  allowUpload?: boolean;
+  /** Told what an upload did, so the caller can show what was refused and why. */
+  onUploadReport?: (report: UploadPlan) => void;
   height?: number | string;
   /** Shown above the tree, e.g. "Starter files" or "Hidden grader". */
   label?: string;
@@ -46,6 +61,8 @@ export default function ProjectFileEditor({
   entry = "index.html",
   readOnly = false,
   allowFileManagement = false,
+  allowUpload,
+  onUploadReport,
   height = 520,
   label,
   emptyHint = "No files yet.",
@@ -54,6 +71,19 @@ export default function ProjectFileEditor({
   const [activePath, setActivePath] = useState<string>(paths[0] ?? "");
   const [adding, setAdding] = useState(false);
   const [newPath, setNewPath] = useState("");
+  const [uploading, setUploading] = useState(false);
+  const filePicker = useRef<HTMLInputElement>(null);
+  const folderPicker = useRef<HTMLInputElement>(null);
+  const uploadAllowed = (allowUpload ?? allowFileManagement) && !readOnly;
+
+  // `webkitdirectory` is not in React's attribute list, and spreading it as a prop trips both the
+  // type checker and a DOM warning. Setting it on the node is the same thing without either.
+  useEffect(() => {
+    const node = folderPicker.current;
+    if (!node) return;
+    node.setAttribute("webkitdirectory", "");
+    node.setAttribute("directory", "");
+  }, [uploadAllowed]);
 
   // Keep the selection valid when files appear or disappear underneath it.
   useEffect(() => {
@@ -86,6 +116,25 @@ export default function ProjectFileEditor({
     const next = { ...files };
     delete next[path];
     onChange(next);
+  };
+
+  /** Merge a pick into the workspace, then say what landed and what did not. */
+  const handlePicked = async (picked: FileList | null, fromDirectory: boolean) => {
+    if (!picked || picked.length === 0) return;
+    setUploading(true);
+    try {
+      const { entries, unreadable } = await readUploadEntries(Array.from(picked));
+      const plan = planUpload(files, entries, { editablePaths, fromDirectory });
+      onChange(plan.files);
+      // Open something the learner just uploaded, so the upload is visibly real.
+      const landed = plan.added[0] ?? plan.replaced[0];
+      if (landed) setActivePath(landed);
+      onUploadReport?.({ ...plan, skipped: [...unreadable, ...plan.skipped] });
+    } finally {
+      setUploading(false);
+      if (filePicker.current) filePicker.current.value = "";
+      if (folderPicker.current) folderPicker.current.value = "";
+    }
   };
 
   return (
@@ -140,13 +189,59 @@ export default function ProjectFileEditor({
           >
             {label ?? "Files"}
           </Typography>
-          {allowFileManagement && !readOnly && (
-            <Tooltip title="Add a file">
-              <IconButton size="small" onClick={() => setAdding(true)} sx={{ p: 0.25 }}>
-                <IconWrapper icon="mdi:plus" size={16} />
-              </IconButton>
-            </Tooltip>
-          )}
+          <Box sx={{ display: "flex", alignItems: "center", gap: 0.25 }}>
+            {allowFileManagement && !readOnly && (
+              <Tooltip title="Add a file">
+                <IconButton size="small" onClick={() => setAdding(true)} sx={{ p: 0.25 }}>
+                  <IconWrapper icon="mdi:plus" size={16} />
+                </IconButton>
+              </Tooltip>
+            )}
+            {uploadAllowed && (
+              <>
+                <Tooltip title="Upload files from your computer">
+                  <IconButton
+                    size="small"
+                    disabled={uploading}
+                    onClick={() => filePicker.current?.click()}
+                    sx={{ p: 0.25 }}
+                  >
+                    <IconWrapper icon="mdi:file-upload-outline" size={16} />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Upload a project folder (build output and node_modules are left out)">
+                  <IconButton
+                    size="small"
+                    disabled={uploading}
+                    onClick={() => folderPicker.current?.click()}
+                    sx={{ p: 0.25 }}
+                  >
+                    <IconWrapper icon="mdi:folder-upload-outline" size={16} />
+                  </IconButton>
+                </Tooltip>
+                <Box
+                  component="input"
+                  ref={filePicker}
+                  type="file"
+                  multiple
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    void handlePicked(e.target.files, false)
+                  }
+                  sx={{ display: "none" }}
+                />
+                <Box
+                  component="input"
+                  ref={folderPicker}
+                  type="file"
+                  multiple
+                  onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+                    void handlePicked(e.target.files, true)
+                  }
+                  sx={{ display: "none" }}
+                />
+              </>
+            )}
+          </Box>
         </Box>
 
         <Box sx={{ flex: 1, overflowY: "auto", minHeight: 0 }}>
@@ -275,13 +370,24 @@ export default function ProjectFileEditor({
               }}
             >
               {allowFileManagement ? (
-                <Button
-                  startIcon={<IconWrapper icon="mdi:plus" size={16} />}
-                  onClick={() => setAdding(true)}
-                  sx={{ textTransform: "none" }}
-                >
-                  Add the first file
-                </Button>
+                <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap", justifyContent: "center" }}>
+                  <Button
+                    startIcon={<IconWrapper icon="mdi:plus" size={16} />}
+                    onClick={() => setAdding(true)}
+                    sx={{ textTransform: "none" }}
+                  >
+                    Add the first file
+                  </Button>
+                  {uploadAllowed && (
+                    <Button
+                      startIcon={<IconWrapper icon="mdi:folder-upload-outline" size={16} />}
+                      onClick={() => folderPicker.current?.click()}
+                      sx={{ textTransform: "none" }}
+                    >
+                      Upload a folder
+                    </Button>
+                  )}
+                </Box>
               ) : (
                 emptyHint
               )}

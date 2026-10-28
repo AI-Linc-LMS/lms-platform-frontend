@@ -16,6 +16,7 @@ import {
   type ProjectRun,
   type ProjectWorkspace as Workspace,
 } from "@/lib/services/project-workspace.service";
+import type { SkippedUpload, UploadPlan } from "@/lib/services/project-upload";
 
 /**
  * The learner's project workspace: the brief, their files, a live preview, and the checks.
@@ -43,6 +44,7 @@ export default function ProjectWorkspace({ workspaceId, locked = false }: Projec
   const [rejected, setRejected] = useState<string[]>([]);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
+  const [refusedUploads, setRefusedUploads] = useState<SkippedUpload[]>([]);
 
   const [run, setRun] = useState<ProjectRun | null>(null);
   const [running, setRunning] = useState(false);
@@ -54,6 +56,10 @@ export default function ProjectWorkspace({ workspaceId, locked = false }: Projec
   const confirmed = useRef<string>("");
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const inFlight = useRef(false);
+  // Files the learner deleted that the server has not been told about yet. A save is a MERGE, so
+  // a path left out of the payload stays on the server: without naming it in `deleted` the file
+  // reappears on the learner's next reload, and the delete was theatre.
+  const pendingDeletes = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -80,11 +86,14 @@ export default function ProjectWorkspace({ workspaceId, locked = false }: Projec
 
     inFlight.current = true;
     setSaveState("saving");
+    const deletes = [...pendingDeletes.current];
     try {
-      const result = await saveWorkspace(workspaceId, snapshot);
+      const result = await saveWorkspace(workspaceId, snapshot, deletes);
       // Confirm the snapshot that was SENT, not the current state: edits made while this request
-      // was in flight are still unsaved and must stay that way.
+      // was in flight are still unsaved and must stay that way. Same for the deletions: clear
+      // only the ones this request carried, so a path deleted meanwhile is still sent next time.
       confirmed.current = serialised;
+      deletes.forEach((path) => pendingDeletes.current.delete(path));
       setSaveError(null);
       setRejected(result.rejected_paths ?? []);
       setSaveState(JSON.stringify(files) === serialised ? "saved" : "idle");
@@ -131,6 +140,24 @@ export default function ProjectWorkspace({ workspaceId, locked = false }: Projec
       window.removeEventListener("pagehide", onHide);
     };
   }, [files, flush]);
+
+  /**
+   * Take the editor's new file map, noticing what disappeared.
+   *
+   * The editor hands back a whole map, so a deletion shows up only as an absence. Recording it
+   * here is what lets `flush` name it to the server.
+   */
+  const handleFilesChange = (next: Record<string, string>) => {
+    for (const path of Object.keys(files)) {
+      if (next[path] === undefined) pendingDeletes.current.add(path);
+    }
+    for (const path of Object.keys(next)) pendingDeletes.current.delete(path);
+    setFiles(next);
+  };
+
+  const handleUploadReport = (plan: UploadPlan) => {
+    setRefusedUploads(plan.skipped);
+  };
 
   const handleRun = async () => {
     if (!workspace || locked) return;
@@ -303,12 +330,50 @@ export default function ProjectWorkspace({ workspaceId, locked = false }: Projec
         </Paper>
       )}
 
+      {refusedUploads.length > 0 && (
+        <Paper
+          elevation={0}
+          sx={{
+            p: 1.5,
+            borderRadius: 2,
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 1,
+            border: "1px solid color-mix(in srgb, var(--warning-500) 30%, transparent)",
+            backgroundColor: "color-mix(in srgb, var(--warning-500) 8%, var(--surface) 92%)",
+          }}
+        >
+          <IconWrapper icon="mdi:information-outline" size={18} />
+          <Box>
+            <Typography sx={{ fontSize: 13, fontWeight: 700 }}>
+              {refusedUploads.length} file{refusedUploads.length === 1 ? "" : "s"} from your upload
+              {refusedUploads.length === 1 ? " was" : " were"} left out
+            </Typography>
+            {refusedUploads.slice(0, 6).map((item) => (
+              <Typography key={item.path} sx={{ fontSize: 12.5, color: "var(--font-secondary)" }}>
+                <Box component="span" sx={{ fontFamily: "var(--font-mono)" }}>{item.path}</Box>
+                {" — "}{item.reason}
+              </Typography>
+            ))}
+            {refusedUploads.length > 6 && (
+              <Typography sx={{ fontSize: 12.5, color: "var(--font-secondary)" }}>
+                and {refusedUploads.length - 6} more.
+              </Typography>
+            )}
+          </Box>
+        </Paper>
+      )}
+
       <ProjectFileEditor
         files={files}
-        onChange={setFiles}
+        onChange={handleFilesChange}
         editablePaths={template.editable_paths}
         showPreview={isPreviewable(template.runtime)}
         readOnly={locked || saveState === "closed"}
+        // The learner builds the project, so the learner needs to make its files. A brief whose
+        // starter is a single file cannot otherwise hold anything that needs two.
+        allowFileManagement={!locked && saveState !== "closed"}
+        onUploadReport={handleUploadReport}
         height={620}
         label="Your files"
       />
