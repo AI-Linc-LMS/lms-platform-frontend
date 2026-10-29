@@ -49,6 +49,7 @@ import {
 import { PHONE } from "@/components/common/mobile/phone";
 import { SheetDialog } from "@/components/admin/SheetDialog";
 import { PhoneFloor } from "@/components/admin/PhoneSheetParts";
+import { looksLikeMarkup } from "@/lib/utils/markup";
 
 type ScoreMap = Record<number, { awarded_marks: string; note: string }>;
 
@@ -114,7 +115,7 @@ function normalizeCorrectLettersFromRow(q: {
 }
 
 function looksLikeHtml(s: string): boolean {
-  return /<[a-z][\s\S]*>/i.test(s);
+  return looksLikeMarkup(s);
 }
 
 function reviewStatusColor(

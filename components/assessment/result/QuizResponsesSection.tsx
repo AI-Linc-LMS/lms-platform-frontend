@@ -12,6 +12,7 @@ import { IconWrapper } from "@/components/common/IconWrapper";
 import RichHtml from "@/components/common/RichHtml";
 import type { QuizResponseItem } from "@/lib/services/assessment.service";
 import { questionOutcome, OUTCOME_STYLE } from "./questionOutcome";
+import { looksLikeMarkup } from "@/lib/utils/markup";
 
 interface QuizResponsesSectionProps {
   quizResponses: QuizResponseItem[];
@@ -280,7 +281,15 @@ export function QuizResponsesSection({ quizResponses }: QuizResponsesSectionProp
                 />
               ) : null}
             </Box>
-            <RichHtml html={q.question_text} sx={{ fontWeight: 500, color: "var(--font-primary)", lineHeight: 1.6 }} />
+            {/* Only authored markup goes through RichHtml. A stem containing `#include <stdio.h>`
+                is prose to the browser's parser, which eats the header as an unknown element. */}
+            {looksLikeMarkup(q.question_text) ? (
+              <RichHtml html={q.question_text} sx={{ fontWeight: 500, color: "var(--font-primary)", lineHeight: 1.6 }} />
+            ) : (
+              <Typography sx={{ fontWeight: 500, color: "var(--font-primary)", lineHeight: 1.6, whiteSpace: "pre-wrap" }}>
+                {q.question_text}
+              </Typography>
+            )}
           </Box>
         </Box>
 

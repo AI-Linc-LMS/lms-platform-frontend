@@ -3,10 +3,11 @@
 import { Box, Typography } from "@mui/material";
 import RichHtml from "@/components/common/RichHtml";
 import { QuestionImage } from "./QuestionImage";
+import { looksLikeMarkup } from "@/lib/utils/markup";
 
 /** Check if string contains HTML tags so we can render with dangerouslySetInnerHTML */
 function hasHtml(str: unknown): str is string {
-  return typeof str === "string" && /<[a-z][\s\S]*>/i.test(str);
+  return looksLikeMarkup(str);
 }
 
 interface QuestionTitleProps {

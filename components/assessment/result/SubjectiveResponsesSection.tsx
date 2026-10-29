@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Box, Paper, Typography, Button, Chip, Link } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import type { SubjectiveResponseItem } from "@/lib/services/assessment.service";
+import { looksLikeMarkup } from "@/lib/utils/markup";
 import {
   mergeSubjectiveApiRowIntoPayload,
   normalizeSubjectiveAnswer,
@@ -16,7 +17,7 @@ interface SubjectiveResponsesSectionProps {
 }
 
 function hasHtml(str: unknown): str is string {
-  return typeof str === "string" && /<[a-z][\s\S]*>/i.test(str);
+  return looksLikeMarkup(str);
 }
 
 function formatQuestionTypeLabel(type: string) {

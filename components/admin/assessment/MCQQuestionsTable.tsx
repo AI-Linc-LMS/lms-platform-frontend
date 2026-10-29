@@ -5,6 +5,7 @@ import { MCQ } from "@/lib/services/admin/admin-assessment.service";
 import { PaginationControls } from "./PaginationControls";
 
 import { QuestionImage } from "@/components/quiz/QuestionImage";
+import { looksLikeMarkup } from "@/lib/utils/markup";
 interface MCQWithSection extends MCQ {
   sectionId: string;
 }
@@ -19,7 +20,7 @@ interface MCQQuestionsTableProps {
 }
 
 function hasHtml(str: unknown): str is string {
-  return typeof str === "string" && /<[a-z][\s\S]*>/i.test(str);
+  return looksLikeMarkup(str);
 }
 
 const DIFFICULTY_COLORS: Record<string, { bg: string; text: string }> = {
