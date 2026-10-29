@@ -3,6 +3,7 @@ import {
   generateAssessmentResultPdfVector,
   type AssessmentPdfStudentOverrides,
 } from "@/lib/utils/assessment-result-pdf.utils";
+import { looksLikeMarkup } from "@/lib/utils/markup";
 import {
   normalizeSubjectiveAnswer,
   parseSubjectiveAnswerPayload,
@@ -10,7 +11,7 @@ import {
 
 function subjectiveAnswerToPlainText(raw: string): string {
   if (!raw.trim()) return raw;
-  if (!/<[a-z][\s\S]*>/i.test(raw)) return raw;
+  if (!looksLikeMarkup(raw)) return raw;
   if (typeof document === "undefined") return raw.replace(/<[^>]+>/g, " ");
   const div = document.createElement("div");
   div.innerHTML = raw;

@@ -26,9 +26,10 @@ import {
 } from "react";
 import { useTranslation } from "react-i18next";
 import { IconWrapper } from "@/components/common/IconWrapper";
+import { looksLikeMarkup } from "@/lib/utils/markup";
 
 function hasHtml(str: unknown): str is string {
-  return typeof str === "string" && /<[a-z][\s\S]*>/i.test(str);
+  return looksLikeMarkup(str);
 }
 
 function stripLeadingBracketTag(text: string): string {

@@ -3,6 +3,7 @@
 import { Typography } from "@mui/material";
 import type { SxProps, Theme } from "@mui/material";
 import RichHtml from "@/components/common/RichHtml";
+import { hasVisibleMarkupContent, looksLikeMarkup } from "@/lib/utils/markup";
 
 /**
  * One MCQ option, rendered the one way.
@@ -50,33 +51,6 @@ import RichHtml from "@/components/common/RichHtml";
  * lms_core/management/commands/convert_legacy_course_to_adaptive.py): where the two lists
  * disagree, a string one side treats as prose is markup to the other.
  */
-const CLOSING_TAG = new RegExp(
-  "</\\s*(?:a|abbr|article|aside|b|blockquote|body|button|code|dd|div|dl|dt|em|figcaption|figure|" +
-    "footer|form|h[1-6]|head|header|html|i|kbd|li|main|mark|nav|ol|p|pre|q|s|samp|script|section|" +
-    "small|span|strong|style|sub|summary|sup|table|tbody|td|tfoot|th|thead|title|tr|u|ul|var" +
-    ")\\s*>",
-  "i"
-);
-
-/** Elements that never have a closing tag, so their presence alone is the signal. */
-const VOID_TAG = /<\s*(?:br|hr|img|input|link|meta|col)\b[^>]*\/?>/i;
-
-/** Does this string carry real markup, as opposed to prose that merely contains `<`? */
-function hasHtml(value: unknown): value is string {
-  return typeof value === "string" && (CLOSING_TAG.test(value) || VOID_TAG.test(value));
-}
-
-/**
- * Would rendering it as HTML show anything?
- *
- * A value that is only tags — `<p></p>`, a stray `<br/>` — renders as an empty option, which is
- * worse than showing the author their own stray tag. Those fall through to the text branch, which
- * is the behaviour `AnswerOption` already had and which must not be lost in the move.
- */
-function hasVisibleHtmlContent(value: string): boolean {
-  return value.replace(/<[^>]+>/g, "").trim().length > 0;
-}
-
 export interface OptionTextProps {
   /** The option as the server sent it: plain text, or platform-authored HTML. */
   text?: string | null;
@@ -88,7 +62,7 @@ export interface OptionTextProps {
 export function OptionText({ text, sx, ...rest }: OptionTextProps) {
   const value = text ?? "";
 
-  if (hasHtml(value) && hasVisibleHtmlContent(value)) {
+  if (looksLikeMarkup(value) && hasVisibleMarkupContent(value)) {
     // `inline`, because an option is a run of text inside a row, not a block of its own. It also
     // keeps `<pre>` on one wrapped line rather than opening a code block inside a radio button.
     return <RichHtml inline html={value} sx={[{ font: "inherit" }, ...(Array.isArray(sx) ? sx : [sx])]} {...rest} />;
