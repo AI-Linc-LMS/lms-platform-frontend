@@ -58,9 +58,7 @@ describe("the trainer's shared files", () => {
   });
 
   it("groups them under the class they were shared in", async () => {
-    mine.mockResolvedValue({
-      count: 3,
-      results: [
+    mine.mockResolvedValue({ hasMore: false, results: [
         material({ id: 1, title: "Trees handout", live_class_id: 20, session_title: "Week 2 - Trees" }),
         material({ id: 2, title: "Recursion slides", live_class_id: 10, session_title: "Week 1 - Recursion" }),
         material({ id: 3, title: "Recursion exercises", live_class_id: 10, session_title: "Week 1 - Recursion" }),
@@ -76,9 +74,7 @@ describe("the trainer's shared files", () => {
   });
 
   it("asks the server once, never once per session", async () => {
-    mine.mockResolvedValue({
-      count: 2,
-      results: [
+    mine.mockResolvedValue({ hasMore: false, results: [
         material({ id: 1, live_class_id: 10, session_title: "A" }),
         material({ id: 2, live_class_id: 20, session_title: "B" }),
       ],
@@ -91,17 +87,72 @@ describe("the trainer's shared files", () => {
     expect(list).not.toHaveBeenCalled();
   });
 
-  it("reports how many there are, so the tab can show a count", async () => {
+  it("reports how many are loaded, so the tab can show a count", async () => {
     const onCountChange = vi.fn();
-    mine.mockResolvedValue({ count: 2, results: [material({ id: 1 }), material({ id: 2 })] });
+    mine.mockResolvedValue({ hasMore: false, results: [material({ id: 1 }), material({ id: 2 })] });
 
     render(<TrainerNotesPanel onCountChange={onCountChange} />);
 
     await waitFor(() => expect(onCountChange).toHaveBeenCalledWith(2));
   });
 
+  it("asks for ONE page first, not everything", async () => {
+    mine.mockResolvedValue({ hasMore: false, results: [material()] });
+
+    render(<TrainerNotesPanel />);
+
+    await screen.findByText("Week 1 - Recursion");
+    expect(mine).toHaveBeenCalledWith({ limit: 20, offset: 0 });
+  });
+
+  it("loads the next page on demand and appends it", async () => {
+    mine.mockResolvedValueOnce({
+      hasMore: true,
+      results: [material({ id: 1, title: "page one", live_class_id: 10, session_title: "Week 1" })],
+    });
+
+    render(<TrainerNotesPanel />);
+    await screen.findByText("page one");
+
+    mine.mockResolvedValueOnce({
+      hasMore: false,
+      results: [material({ id: 2, title: "page two", live_class_id: 20, session_title: "Week 2" })],
+    });
+    await userEvent.click(screen.getByRole("button", { name: /load more files/i }));
+
+    // appended, not replaced - the first page must still be on screen
+    expect(await screen.findByText("page two")).toBeInTheDocument();
+    expect(screen.getByText("page one")).toBeInTheDocument();
+    expect(mine).toHaveBeenLastCalledWith({ limit: 20, offset: 1 });
+  });
+
+  it("stops offering more once the server says there is none", async () => {
+    mine.mockResolvedValue({ hasMore: false, results: [material()] });
+
+    render(<TrainerNotesPanel />);
+
+    await screen.findByText("Week 1 - Recursion");
+    expect(screen.queryByRole("button", { name: /load more/i })).not.toBeInTheDocument();
+  });
+
+  it("keeps what is already on screen when a later page fails", async () => {
+    mine.mockResolvedValueOnce({
+      hasMore: true,
+      results: [material({ id: 1, title: "already here" })],
+    });
+
+    render(<TrainerNotesPanel />);
+    await screen.findByText("already here");
+
+    mine.mockRejectedValueOnce(new Error("network"));
+    await userEvent.click(screen.getByRole("button", { name: /load more files/i }));
+
+    expect(await screen.findByText(/could not load the shared files/i)).toBeInTheDocument();
+    expect(screen.getByText("already here")).toBeInTheDocument();
+  });
+
   it("says so when a trainer has shared nothing yet", async () => {
-    mine.mockResolvedValue({ count: 0, results: [] });
+    mine.mockResolvedValue({ hasMore: false, results: [] });
 
     render(<TrainerNotesPanel />);
 
@@ -117,7 +168,7 @@ describe("the trainer's shared files", () => {
 
     expect(await screen.findByText(/could not load the shared files/i)).toBeInTheDocument();
 
-    mine.mockResolvedValue({ count: 1, results: [material({ title: "Back online" })] });
+    mine.mockResolvedValue({ hasMore: false, results: [material({ title: "Back online" })] });
     await userEvent.click(screen.getByRole("button", { name: /try again/i }));
 
     expect(await screen.findByText("Week 1 - Recursion")).toBeInTheDocument();

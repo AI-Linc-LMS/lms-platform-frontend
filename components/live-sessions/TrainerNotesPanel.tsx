@@ -7,6 +7,7 @@ import { Icon } from "@iconify/react";
 import { MaterialViewerDialog } from "@/components/live-sessions/MaterialViewerDialog";
 import { StudyMaterialList } from "@/components/live-sessions/StudyMaterialList";
 import {
+  PAGE_SIZE,
   liveSessionMaterialsService,
   type MySessionMaterial,
 } from "@/lib/services/live-session-materials.service";
@@ -33,25 +34,46 @@ export function TrainerNotesPanel({
   onCountChange?: (count: number) => void;
 }) {
   const [rows, setRows] = useState<MySessionMaterial[] | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [viewing, setViewing] = useState<MySessionMaterial | null>(null);
 
-  const load = useCallback(async () => {
+  /**
+   * One page at a time. The first screenful is what the learner waits for, and page cost is
+   * roughly linear in rows: asking for everything up front made the biggest cohort's tab take
+   * about twice as long as it needed to.
+   *
+   * `offset` is passed explicitly rather than read from state so a second click cannot race the
+   * first into requesting the same page twice.
+   */
+  const load = useCallback(async (offset: number) => {
     setError(null);
+    if (offset > 0) setLoadingMore(true);
     try {
-      const { results } = await liveSessionMaterialsService.mine({ limit: 200 });
-      setRows(results);
-      onCountChange?.(results.length);
+      const { results, hasMore: more } = await liveSessionMaterialsService.mine({
+        limit: PAGE_SIZE,
+        offset,
+      });
+      setRows((prev) => {
+        const next = offset === 0 ? results : [...(prev ?? []), ...results];
+        onCountChange?.(next.length);
+        return next;
+      });
+      setHasMore(more);
     } catch {
       // A failed list must say so and offer a way out. A spinner that never resolves is the
-      // one outcome this panel is not allowed to produce.
-      setRows([]);
+      // one outcome this panel is not allowed to produce. A failed SECOND page keeps the rows
+      // already on screen rather than throwing them away.
+      if (offset === 0) setRows([]);
       setError("We could not load the shared files just now.");
+    } finally {
+      setLoadingMore(false);
     }
   }, [onCountChange]);
 
   useEffect(() => {
-    void load();
+    void load(0);
   }, [load]);
 
   /** [sessionTitle, files][] in the order each class first appears, i.e. newest activity first. */
@@ -73,7 +95,10 @@ export function TrainerNotesPanel({
     );
   }
 
-  if (error) {
+  // Only take over the whole panel when there is nothing to take it over FROM. A second
+  // page failing must not wipe the files the learner is already reading; that case is
+  // reported by the inline message below the list instead.
+  if (error && rows.length === 0) {
     return (
       <Box
         sx={{
@@ -85,7 +110,7 @@ export function TrainerNotesPanel({
       >
         <Icon icon="mdi:cloud-off-outline" width={30} style={{ opacity: 0.4 }} />
         <Typography sx={{ color: "text.secondary", mt: 1 }}>{error}</Typography>
-        <Button onClick={() => void load()} sx={{ mt: 1.5, textTransform: "none" }}>
+        <Button onClick={() => void load(rows?.length ?? 0)} sx={{ mt: 1.5, textTransform: "none" }}>
           Try again
         </Button>
       </Box>
@@ -150,6 +175,25 @@ export function TrainerNotesPanel({
           </Box>
         ))}
       </Stack>
+
+      {hasMore && (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 2 }}>
+          <Button
+            onClick={() => void load(rows.length)}
+            disabled={loadingMore}
+            startIcon={loadingMore ? <CircularProgress size={16} /> : <Icon icon="mdi:chevron-down" />}
+            sx={{ textTransform: "none", fontWeight: 600, minHeight: 44 }}
+          >
+            {loadingMore ? "Loading" : "Load more files"}
+          </Button>
+        </Box>
+      )}
+
+      {error && rows.length > 0 && (
+        <Typography variant="body2" sx={{ color: "error.main", textAlign: "center", mt: 1.5 }}>
+          {error}
+        </Typography>
+      )}
 
       <MaterialViewerDialog material={viewing} onClose={() => setViewing(null)} />
     </>
