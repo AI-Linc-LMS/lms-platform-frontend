@@ -8,6 +8,7 @@ import { Icon } from "@iconify/react";
 import { PageShell } from "@/components/common/PageShell";
 import { AnimatedRing } from "@/components/scorecard/shared";
 import { LiveSessionsEmptyState } from "@/components/live-sessions/LiveSessionsEmptyState";
+import { TrainerNotesPanel } from "@/components/live-sessions/TrainerNotesPanel";
 import { LiveSessionsFeatureBlocked } from "@/components/live-sessions/LiveSessionsFeatureBlocked";
 import { useLiveSessions } from "@/components/live-sessions/useLiveSessions";
 import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlayerDialog";
@@ -36,7 +37,7 @@ import {
 // Recordings is its own module now (/recordings), not a tab here: the archive answers a
 // different question from the schedule, it only grows, and this page polls while it does
 // not - so sharing one page made the growing half ride on the busy half.
-type Tab = "upcoming" | "history";
+type Tab = "upcoming" | "history" | "materials";
 // One definition with the History selection (lib/live-sessions/history.ts), so the two cannot drift.
 const PAST = PAST_MEETING_STATES;
 
@@ -163,6 +164,9 @@ export default function LiveSessionsPage() {
   } = useLiveSessions();
 
   const [tab, setTab] = useState<Tab>("upcoming");
+  // Filled by the panel on its first load so the tab can carry a count without this page
+  // fetching the same list a second time.
+  const [materialCount, setMaterialCount] = useState<number | null>(null);
   const [stats, setStats] = useState<MyLiveStats | null>(null);
   // Keyed by cardKeyOf(s) (`id:occurrence`), NOT by id: arming one date of a series must not light
   // "Reminder on" on every other date (the ids match the payload's reminder_occurrence_ids).
@@ -519,6 +523,9 @@ export default function LiveSessionsPage() {
   const TABS: { key: Tab; label: string; icon: string; count: number }[] = [
     { key: "upcoming", label: "Upcoming", icon: "mdi:calendar-blank-outline", count: upcoming.length },
     { key: "history", label: "History", icon: "mdi:history", count: history.length },
+    // Asked for by name: the trainer's own files, out of the History rows they were buried in.
+    { key: "materials", label: "Trainer Notes", icon: "mdi:file-document-multiple-outline",
+      count: materialCount ?? 0 },
   ];
 
   return (
@@ -768,6 +775,9 @@ export default function LiveSessionsPage() {
                     ))}
                   </Stack>
                 )
+              )}
+              {tab === "materials" && (
+                <TrainerNotesPanel onCountChange={setMaterialCount} />
               )}
             </Box>
 

@@ -35,6 +35,15 @@ export interface LiveSessionMaterial {
   updated_at: string;
 }
 
+/**
+ * The same material, as the across-all-sessions list returns it: carrying which class it came
+ * from so the UI can group without a second request per row.
+ */
+export interface MySessionMaterial extends LiveSessionMaterial {
+  live_class_id: number;
+  session_title: string;
+}
+
 /** Human file size — "2.4 MB". Bytes are meaningless to a learner deciding whether to download. */
 export function formatFileSize(bytes: number): string {
   if (!bytes || bytes < 0) return "";
@@ -61,6 +70,26 @@ export const MATERIAL_ICONS: Record<MaterialFileType, string> = {
 };
 
 export const liveSessionMaterialsService = {
+  /**
+   * Every file a trainer shared with this learner, across all of their sessions, newest first.
+   *
+   * Not a fan-out over `list`: that is one request per session for a surface whose whole point is
+   * to be a single list. The backend answers it in one query, scoped by the same rule that builds
+   * the learner's own session list.
+   */
+  mine: async (
+    opts: { limit?: number; offset?: number } = {}
+  ): Promise<{ count: number; results: MySessionMaterial[] }> => {
+    const res = await apiClient.get<{ count: number; results: MySessionMaterial[] }>(
+      `${BASE}/my-session-materials/`,
+      { params: { limit: opts.limit ?? 100, offset: opts.offset ?? 0 } }
+    );
+    return {
+      count: res.data?.count ?? 0,
+      results: Array.isArray(res.data?.results) ? res.data.results : [],
+    };
+  },
+
   /**
    * `occurrenceId` scopes the list to one sitting: that date's files plus the series-wide ones.
    * Omitting it returns the whole series, which is the staff manage-everything view. A recurring
