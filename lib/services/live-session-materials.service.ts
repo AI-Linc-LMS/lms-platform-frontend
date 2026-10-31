@@ -10,6 +10,10 @@ import { config } from "../config";
  */
 const BASE = `/live-class/api/clients/${config.clientId}`;
 
+/** One screenful. Page cost is roughly linear in rows once the fixed query cost is paid, so
+ *  asking for everything up front is what made this slow. Matches the server default. */
+export const PAGE_SIZE = 20;
+
 export type MaterialFileType =
   | "pdf" | "image" | "document" | "spreadsheet" | "presentation"
   | "text" | "video" | "audio" | "archive" | "code" | "other";
@@ -79,13 +83,13 @@ export const liveSessionMaterialsService = {
    */
   mine: async (
     opts: { limit?: number; offset?: number } = {}
-  ): Promise<{ count: number; results: MySessionMaterial[] }> => {
-    const res = await apiClient.get<{ count: number; results: MySessionMaterial[] }>(
+  ): Promise<{ hasMore: boolean; results: MySessionMaterial[] }> => {
+    const res = await apiClient.get<{ has_more?: boolean; results: MySessionMaterial[] }>(
       `${BASE}/my-session-materials/`,
-      { params: { limit: opts.limit ?? 100, offset: opts.offset ?? 0 } }
+      { params: { limit: opts.limit ?? PAGE_SIZE, offset: opts.offset ?? 0 } }
     );
     return {
-      count: res.data?.count ?? 0,
+      hasMore: Boolean(res.data?.has_more),
       results: Array.isArray(res.data?.results) ? res.data.results : [],
     };
   },
