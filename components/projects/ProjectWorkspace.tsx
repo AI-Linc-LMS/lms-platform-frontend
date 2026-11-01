@@ -5,6 +5,7 @@ import { Box, Button, Paper, Typography } from "@mui/material";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { StatusChip } from "@/components/admin/assessment/shared";
 import ProjectFileEditor from "./ProjectFileEditor";
+import ProjectPromptPanel from "./ProjectPromptPanel";
 import ProjectRunPanel from "./ProjectRunPanel";
 import {
   AttemptClosedError,
@@ -25,6 +26,12 @@ import type { SkippedUpload, UploadPlan } from "@/lib/services/project-upload";
  * are: never let a save in flight drop edits made while it was in flight, never claim "saved" for
  * a file the server rejected, and always show plainly whether the current state has reached the
  * server. A silent failure here loses work somebody spent an evening on.
+ *
+ * In PROMPT mode the brief is the same and the hidden checks are the same, but the learner briefs
+ * an AI instead of typing the code — so the editor is read-only and autosave is switched off
+ * entirely rather than merely disabled in the UI. Leaving it armed would have it PATCH the tree
+ * the model just wrote back over itself on every reload, and a learner who cannot type is a
+ * learner whose only save is one they did not ask for.
  */
 
 const AUTOSAVE_DEBOUNCE_MS = 1500;
@@ -78,8 +85,34 @@ export default function ProjectWorkspace({ workspaceId, locked = false }: Projec
     };
   }, [workspaceId]);
 
+  // Read from state rather than from the `template` destructured further down: the autosave
+  // hooks below close over this, and a binding declared after them is in its temporal dead zone
+  // when they run.
+  const promptMode = workspace?.template.authoring_mode === "prompt";
+
+  /**
+   * Re-read the tree after a generation. Prompt mode's files are written SERVER-side, so this
+   * component's copy is stale the moment an attempt succeeds, and the preview and the checks both
+   * read from it.
+   */
+  const reloadFiles = useCallback(async () => {
+    try {
+      const fresh = await getWorkspace(workspaceId);
+      setWorkspace(fresh);
+      const next = Object.keys(fresh.files || {}).length
+        ? fresh.files
+        : fresh.template.starter_files;
+      setFiles(next);
+      confirmed.current = JSON.stringify(next);
+      setRun(fresh.latest_run);
+    } catch {
+      // The panel has already told the learner the generation landed; a failed re-read means the
+      // editor is showing the previous tree, which a reload fixes. Nothing is lost.
+    }
+  }, [workspaceId]);
+
   const flush = useCallback(async () => {
-    if (inFlight.current || locked) return;
+    if (inFlight.current || locked || promptMode) return;
     const snapshot = files;
     const serialised = JSON.stringify(snapshot);
     if (serialised === confirmed.current) return;
@@ -119,7 +152,7 @@ export default function ProjectWorkspace({ workspaceId, locked = false }: Projec
   }, [files, locked, workspaceId]);
 
   useEffect(() => {
-    if (locked || !workspace) return;
+    if (locked || promptMode || !workspace) return;
     if (JSON.stringify(files) === confirmed.current) return;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => void flush(), AUTOSAVE_DEBOUNCE_MS);
@@ -203,6 +236,10 @@ export default function ProjectWorkspace({ workspaceId, locked = false }: Projec
 
   const saveChip = () => {
     if (locked) return <StatusChip label="Submitted" tone="neutral" icon="mdi:lock-outline" />;
+    // Nothing of the learner's is pending in prompt mode: the files arrive from the server
+    // already stored. A "Saved"/"Unsaved" chip there would describe a save that never happens.
+    if (promptMode)
+      return <StatusChip label="Written by AI" tone="ai" icon="mdi:auto-fix" />;
     if (saveState === "closed")
       return <StatusChip label="Attempt closed" tone="warning" icon="mdi:lock-clock" />;
     if (saveState === "rejected")
@@ -364,18 +401,30 @@ export default function ProjectWorkspace({ workspaceId, locked = false }: Projec
         </Paper>
       )}
 
+      {promptMode && (
+        <ProjectPromptPanel
+          workspaceId={workspaceId}
+          locked={locked}
+          onGenerated={() => void reloadFiles()}
+        />
+      )}
+
       <ProjectFileEditor
         files={files}
         onChange={handleFilesChange}
         editablePaths={template.editable_paths}
         showPreview={isPreviewable(template.runtime)}
-        readOnly={locked || saveState === "closed"}
+        // Prompt mode is read-only by design, not as a precaution: the mark has to measure the
+        // one thing the exercise is now about. Hand-editing afterwards would make it measure a
+        // mixture of the prompt and the patching, which is not what anyone is being graded on.
+        readOnly={promptMode || locked || saveState === "closed"}
         // The learner builds the project, so the learner needs to make its files. A brief whose
-        // starter is a single file cannot otherwise hold anything that needs two.
-        allowFileManagement={!locked && saveState !== "closed"}
+        // starter is a single file cannot otherwise hold anything that needs two. In prompt mode
+        // the model makes them instead.
+        allowFileManagement={!promptMode && !locked && saveState !== "closed"}
         onUploadReport={handleUploadReport}
         height={620}
-        label="Your files"
+        label={promptMode ? "What the AI wrote" : "Your files"}
       />
 
       {gradeable && (
