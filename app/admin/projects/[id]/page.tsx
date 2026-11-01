@@ -41,7 +41,11 @@ import {
   type ProjectTemplateDraft,
   type RubricCriterion,
 } from "@/lib/services/admin/admin-projects.service";
-import type { ProjectRuntime, ProjectTier } from "@/lib/services/project-workspace.service";
+import type {
+  ProjectAuthoringMode,
+  ProjectRuntime,
+  ProjectTier,
+} from "@/lib/services/project-workspace.service";
 import { adminCohortsService } from "@/lib/services/admin/admin-cohorts.service";
 import { useAuth } from "@/lib/auth/auth-context";
 import { isScopedAdminRole } from "@/lib/auth/role-utils";
@@ -101,6 +105,8 @@ export default function ProjectEditorPage() {
   const [briefHtml, setBriefHtml] = useState("");
   const [runtime, setRuntime] = useState<ProjectRuntime>("web_static");
   const [tier, setTier] = useState<ProjectTier>("auto");
+  const [authoringMode, setAuthoringMode] = useState<ProjectAuthoringMode>("manual");
+  const [promptAttempts, setPromptAttempts] = useState(2);
   const [maxMarks, setMaxMarks] = useState(100);
   const [isActive, setIsActive] = useState(true);
   const [starterFiles, setStarterFiles] = useState<Record<string, string>>(BLANK_STARTER.web_static);
@@ -124,6 +130,8 @@ export default function ProjectEditorPage() {
     setRuntime(p.runtime);
     setTier(p.tier);
     setMaxMarks(p.max_marks);
+    setAuthoringMode(p.authoring_mode ?? "manual");
+    setPromptAttempts(p.prompt_attempts_allowed ?? 2);
     setIsActive(p.is_active);
     setStarterFiles(p.starter_files || {});
     setGraderFiles(p.grader_files || {});
@@ -183,6 +191,8 @@ export default function ProjectEditorPage() {
       runtime,
       tier,
       max_marks: Number(maxMarks) || 0,
+      authoring_mode: authoringMode,
+      prompt_attempts_allowed: Number(promptAttempts) || 0,
       is_active: isActive,
       owner_cohort: ownerCohort === "" ? null : Number(ownerCohort),
       starter_files: starterFiles,
@@ -200,6 +210,7 @@ export default function ProjectEditorPage() {
     return base;
   }, [
     title, briefHtml, runtime, tier, maxMarks, isActive, starterFiles,
+    authoringMode, promptAttempts,
     editablePathsText, graderFiles, referenceSolution, rubric,
   ]);
 
@@ -486,6 +497,34 @@ export default function ProjectEditorPage() {
                 </MenuItem>
                 <MenuItem value="rubric">Reviewed against a rubric</MenuItem>
               </TextField>
+
+              <TextField
+                select
+                label="Who writes the code"
+                value={authoringMode}
+                onChange={(e) => mark(setAuthoringMode)(e.target.value as ProjectAuthoringMode)}
+                fullWidth
+                helperText={
+                  authoringMode === "prompt"
+                    ? "The learner writes a prompt and an AI builds the project. The editor is read-only, so the prompt is what you are marking — say in the brief which files and ids the checks look for."
+                    : "The learner types the code themselves."
+                }
+              >
+                <MenuItem value="manual">The learner writes the code</MenuItem>
+                <MenuItem value="prompt">The learner briefs an AI</MenuItem>
+              </TextField>
+
+              {authoringMode === "prompt" && (
+                <TextField
+                  label="Generations each learner gets"
+                  type="number"
+                  value={promptAttempts}
+                  onChange={(e) => mark(setPromptAttempts)(Number(e.target.value))}
+                  fullWidth
+                  inputProps={{ min: 0, max: 10 }}
+                  helperText="A generation that fails does not count. 0 turns generating off for this brief without changing anything else."
+                />
+              )}
 
               <TextField
                 label="Marks"

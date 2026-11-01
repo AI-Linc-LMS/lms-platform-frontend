@@ -18,6 +18,15 @@ export const AUTO_GRADEABLE_RUNTIMES: ProjectRuntime[] = ["web_static", "python"
 export type ProjectTier = "auto" | "rubric";
 
 /**
+ * How the learner produces the code.
+ *
+ * `manual` is the original exercise: type HTML, CSS and JS into the editor. `prompt` is the
+ * same brief and the same hidden checks, but the learner briefs an AI and is assessed on the
+ * brief they wrote — so the editor goes read-only and the generations are metered.
+ */
+export type ProjectAuthoringMode = "manual" | "prompt";
+
+/**
  * The brief as the learner receives it.
  *
  * `grader_files`, `reference_solution` and `rubric` are deliberately absent: the backend
@@ -35,6 +44,48 @@ export interface ProjectTemplate {
   /** Globs the learner may edit. Empty means the whole tree is theirs. */
   editable_paths: string[];
   max_marks: number;
+  authoring_mode: ProjectAuthoringMode;
+  /**
+   * The allowance, for the first paint. NOT how many are left — that comes from
+   * `getGenerations`, which counts rows on the server. Rendering this as "left" is the bug the
+   * assessment page already has at `app/assessments/[slug]/page.tsx`, where "1 / 2" is derived
+   * from a boolean and is a fiction.
+   */
+  prompt_attempts_allowed: number;
+}
+
+export type GenerationStatus = "pending" | "running" | "succeeded" | "failed";
+
+export interface ProjectGeneration {
+  id: number;
+  attempt_index: number;
+  /** The learner's own prompt. This is the work being assessed, so it stays readable. */
+  prompt: string;
+  status: GenerationStatus;
+  /** What the model says it built, plus any file the brief would not let it write. */
+  notes: string;
+  /** Why it failed, in words for the learner. A failed attempt does not count against them. */
+  error: string;
+  file_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface AttemptState {
+  used: number;
+  allowed: number;
+  remaining: number;
+  /**
+   * Staff are not metered. Their `used` never moves, so a UI that renders "2 of 2 left" for
+   * them is indistinguishable from a meter that has stopped counting — which is how the tutor
+   * minutes bug was reported. Branch on this, do not infer it from the numbers.
+   */
+  unmetered: boolean;
+}
+
+export interface GenerationsResponse {
+  attempts: AttemptState;
+  generations: ProjectGeneration[];
 }
 
 export interface ProjectRun {
@@ -105,6 +156,77 @@ export async function saveWorkspace(
     ...(deleted?.length ? { deleted } : {}),
   });
   return data;
+}
+
+/** Every generation for this brief has been used. The learner submits what they have. */
+export class AttemptsExhaustedError extends Error {
+  readonly attempts: AttemptState | null;
+  constructor(message: string, attempts: AttemptState | null) {
+    super(message);
+    this.name = "AttemptsExhaustedError";
+    this.attempts = attempts;
+  }
+}
+
+/**
+ * OUR ceiling, not theirs — the tenant's daily cap, or the model being unreachable.
+ *
+ * Deliberately a separate error from `AttemptsExhaustedError`. Showing a learner "you have used
+ * your attempts" when the real cause is our own backstop sends them to an instructor to ask for
+ * an attempt they still have.
+ */
+export class GenerationUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "GenerationUnavailableError";
+  }
+}
+
+export async function getGenerations(workspaceId: number): Promise<GenerationsResponse> {
+  const { data } = await apiClient.get(`${BASE}/workspaces/${workspaceId}/generate/`);
+  return data;
+}
+
+/**
+ * Ask an AI to write the project.
+ *
+ * Returns as soon as the slot is claimed (202); the files land asynchronously, so the caller
+ * polls `getGenerations` until the attempt leaves `pending`/`running`. The attempt count in the
+ * reply is the server's, counted from rows — never computed on the client, because the client
+ * cannot see the other tab.
+ */
+export async function generateProject(
+  workspaceId: number,
+  prompt: string
+): Promise<{ generation: ProjectGeneration; attempts: AttemptState }> {
+  try {
+    const { data } = await apiClient.post(`${BASE}/workspaces/${workspaceId}/generate/`, {
+      prompt,
+    });
+    return data;
+  } catch (err) {
+    const res = (err as {
+      response?: { status?: number; data?: { error?: string; attempts?: AttemptState } };
+    })?.response;
+    const message = res?.data?.error;
+    if (res?.status === 429) {
+      throw new AttemptsExhaustedError(
+        message || "You have used all of your generations for this project.",
+        res?.data?.attempts ?? null
+      );
+    }
+    if (res?.status === 409) {
+      throw new AttemptClosedError(
+        message || "This attempt has been submitted, so it can no longer be changed."
+      );
+    }
+    if (res?.status === 503) {
+      throw new GenerationUnavailableError(
+        message || "We could not generate this just now. Your attempts have not been used."
+      );
+    }
+    throw err;
+  }
 }
 
 export class RunnerUnavailableError extends Error {

@@ -1,5 +1,9 @@
 import apiClient from "@/lib/services/api";
-import type { ProjectRuntime, ProjectTier } from "@/lib/services/project-workspace.service";
+import type {
+  ProjectAuthoringMode,
+  ProjectRuntime,
+  ProjectTier,
+} from "@/lib/services/project-workspace.service";
 
 const BASE = "/assessment/api/projects";
 
@@ -41,6 +45,14 @@ export interface AdminProjectTemplate {
   rubric: RubricCriterion[];
   verification: ProjectVerification | null;
   is_active: boolean;
+  /**
+   * Who writes the code. Optional because a backend that predates prompt mode omits both fields,
+   * and `undefined` has to read as "the learner writes it" — the existing behaviour — rather than
+   * silently putting a live brief into a mode nobody chose.
+   */
+  authoring_mode?: ProjectAuthoringMode;
+  /** Generations each learner gets in prompt mode. A failed generation does not count. */
+  prompt_attempts_allowed?: number;
   /** The batch that owns this brief. Null means the tenant's shared library (admin-authored). */
   owner_cohort?: number | null;
   /**
