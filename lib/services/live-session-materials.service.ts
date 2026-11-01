@@ -10,6 +10,10 @@ import { config } from "../config";
  */
 const BASE = `/live-class/api/clients/${config.clientId}`;
 
+/** One screenful. Page cost is roughly linear in rows once the fixed query cost is paid, so
+ *  asking for everything up front is what made this slow. Matches the server default. */
+export const PAGE_SIZE = 20;
+
 export type MaterialFileType =
   | "pdf" | "image" | "document" | "spreadsheet" | "presentation"
   | "text" | "video" | "audio" | "archive" | "code" | "other";
@@ -33,6 +37,15 @@ export interface LiveSessionMaterial {
   occurrence_datetime: string | null;
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * The same material, as the across-all-sessions list returns it: carrying which class it came
+ * from so the UI can group without a second request per row.
+ */
+export interface MySessionMaterial extends LiveSessionMaterial {
+  live_class_id: number;
+  session_title: string;
 }
 
 /** Human file size — "2.4 MB". Bytes are meaningless to a learner deciding whether to download. */
@@ -61,6 +74,26 @@ export const MATERIAL_ICONS: Record<MaterialFileType, string> = {
 };
 
 export const liveSessionMaterialsService = {
+  /**
+   * Every file a trainer shared with this learner, across all of their sessions, newest first.
+   *
+   * Not a fan-out over `list`: that is one request per session for a surface whose whole point is
+   * to be a single list. The backend answers it in one query, scoped by the same rule that builds
+   * the learner's own session list.
+   */
+  mine: async (
+    opts: { limit?: number; offset?: number } = {}
+  ): Promise<{ hasMore: boolean; results: MySessionMaterial[] }> => {
+    const res = await apiClient.get<{ has_more?: boolean; results: MySessionMaterial[] }>(
+      `${BASE}/my-session-materials/`,
+      { params: { limit: opts.limit ?? PAGE_SIZE, offset: opts.offset ?? 0 } }
+    );
+    return {
+      hasMore: Boolean(res.data?.has_more),
+      results: Array.isArray(res.data?.results) ? res.data.results : [],
+    };
+  },
+
   /**
    * `occurrenceId` scopes the list to one sitting: that date's files plus the series-wide ones.
    * Omitting it returns the whole series, which is the staff manage-everything view. A recurring
