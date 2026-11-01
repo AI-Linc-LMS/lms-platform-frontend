@@ -9,6 +9,7 @@ import { StudyMaterialList } from "@/components/live-sessions/StudyMaterialList"
 import {
   PAGE_SIZE,
   liveSessionMaterialsService,
+  type MaterialDate,
   type MySessionMaterial,
 } from "@/lib/services/live-session-materials.service";
 
@@ -29,9 +30,21 @@ import {
  */
 export function TrainerNotesPanel({
   onCountChange,
+  since,
+  until,
+  onDatesChange,
 }: {
   /** Lets the page show a count on the tab without fetching the list twice. */
   onCountChange?: (count: number) => void;
+  /**
+   * A local YYYY-MM-DD day picked on the shared calendar, or undefined for the whole archive.
+   * Filtered SERVER-side on the class date, so paging past page one still respects it — a
+   * client-side filter would hide rows from page 1 and then show unfiltered rows on page 2.
+   */
+  since?: string;
+  until?: string;
+  /** The days this learner has trainer files on, so the shared calendar can dot them. */
+  onDatesChange?: (dates: MaterialDate[]) => void;
 }) {
   const [rows, setRows] = useState<MySessionMaterial[] | null>(null);
   const [hasMore, setHasMore] = useState(false);
@@ -51,10 +64,16 @@ export function TrainerNotesPanel({
     setError(null);
     if (offset > 0) setLoadingMore(true);
     try {
-      const { results, hasMore: more } = await liveSessionMaterialsService.mine({
+      const { results, hasMore: more, dates } = await liveSessionMaterialsService.mine({
         limit: PAGE_SIZE,
         offset,
+        since,
+        until,
+        // First page only. The day list is the same whatever page you are on, and asking for it
+        // on Load more would pay for a GROUP BY per click.
+        facets: offset === 0,
       });
+      if (dates) onDatesChange?.(dates);
       setRows((prev) => {
         const next = offset === 0 ? results : [...(prev ?? []), ...results];
         onCountChange?.(next.length);
@@ -70,8 +89,10 @@ export function TrainerNotesPanel({
     } finally {
       setLoadingMore(false);
     }
-  }, [onCountChange]);
+  }, [onCountChange, onDatesChange, since, until]);
 
+  // `load` changes identity when the day changes, which restarts from page 0 — correct, because
+  // an offset into the old filter's results means nothing under the new one.
   useEffect(() => {
     void load(0);
   }, [load]);
@@ -129,10 +150,14 @@ export function TrainerNotesPanel({
       >
         <Icon icon="mdi:file-document-outline" width={30} style={{ opacity: 0.4 }} />
         <Typography sx={{ color: "text.secondary", mt: 1 }}>
-          Your trainers have not shared any files yet.
+          {since
+            ? "No trainer files for the day you picked."
+            : "Your trainers have not shared any files yet."}
         </Typography>
         <Typography variant="body2" sx={{ color: "var(--font-secondary)", mt: 0.5 }}>
-          Slides, notes and datasets they upload to a class will appear here.
+          {since
+            ? "Pick another day on the calendar, or clear it to see everything."
+            : "Slides, notes and datasets they upload to a class will appear here."}
         </Typography>
       </Box>
     );

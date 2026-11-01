@@ -31,6 +31,15 @@ export const CALENDAR_TYPE_META: Record<CalendarEventType, { label: string; colo
 const WEEKDAYS = ["M", "T", "W", "T", "F", "S", "S"];
 const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 
+/** What a screen reader says for one day cell. The number alone is not a usable button name. */
+function dayLabel(d: Date, eventCount: number, selected: boolean): string {
+  const parts = [`${d.getDate()} ${MONTHS[d.getMonth()]}`];
+  if (eventCount) parts.push(`${eventCount} session${eventCount === 1 ? "" : "s"}`);
+  else parts.push("nothing scheduled");
+  if (selected) parts.push("selected");
+  return parts.join(", ");
+}
+
 /** Local YYYY-MM-DD key (avoids UTC off-by-one that toISOString would cause). Exported so pages
  *  driving the calendar in controlled mode bucket their lists with the SAME day boundaries. */
 export function dayKey(d: Date): string {
@@ -166,6 +175,12 @@ export function ScheduleCalendar({
               onClick={() => selectDay(key)}
               role="button"
               tabIndex={0}
+              /* Without this the cell is announced as "15, button": no month, no sense of what
+                 is on that day, and no way to tell the selected day from the rest. The dots are
+                 colour-only and the detail lives in a hover tooltip, neither of which a screen
+                 reader conveys. */
+              aria-label={dayLabel(d, dayEvents.length, isSelected)}
+              aria-pressed={isSelected}
               onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") selectDay(key); }}
               sx={{
                 aspectRatio: "1 / 1",
@@ -201,6 +216,12 @@ export function ScheduleCalendar({
               key={i}
               arrow
               placement="top"
+              /* MUI's default is to LABEL the child with the tooltip, via aria-labelledby, which
+                 outranks the cell's own aria-label: the moment the tooltip opened, the day cell
+                 stopped being "15 Nov, 1 session" and became the tooltip's prose. describeChild
+                 makes it a DESCRIPTION instead, so the cell keeps its name and gains the detail.
+                 Without it a screen-reader user loses the date itself on hover or focus. */
+              describeChild
               title={
                 <Box sx={{ py: 0.25 }}>
                   <Typography sx={{ fontSize: "0.62rem", fontWeight: 800, letterSpacing: "0.08em", opacity: 0.7, textTransform: "uppercase" }}>
