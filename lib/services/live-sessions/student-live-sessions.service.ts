@@ -150,6 +150,14 @@ export interface RecordingsFacets {
   /** Under the current q/course/batch/since/until but NOT the view, so the two view badges agree
    *  with the list beneath them. */
   totals: { all: number; recordings: number; notes: number };
+  /**
+   * One row per LOCAL day that has anything, for the calendar's dots.
+   *
+   * From the server on purpose. The list pages twenty at a time over an archive that only
+   * grows, so dots derived from the loaded rows would cover the most recent three weeks of a
+   * six-month history and every older day would look empty.
+   */
+  dates: { date: string; recordings: number; notes: number }[];
 }
 
 /** What the server actually applied. Junk is dropped and echoed as null rather than silently

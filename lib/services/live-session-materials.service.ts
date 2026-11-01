@@ -73,6 +73,12 @@ export const MATERIAL_ICONS: Record<MaterialFileType, string> = {
   other: "mdi:file-outline",
 };
 
+/** A day that has trainer files, for the shared calendar on the Recordings page. */
+export interface MaterialDate {
+  date: string;
+  count: number;
+}
+
 export const liveSessionMaterialsService = {
   /**
    * Every file a trainer shared with this learner, across all of their sessions, newest first.
@@ -82,15 +88,39 @@ export const liveSessionMaterialsService = {
    * the learner's own session list.
    */
   mine: async (
-    opts: { limit?: number; offset?: number } = {}
-  ): Promise<{ hasMore: boolean; results: MySessionMaterial[] }> => {
-    const res = await apiClient.get<{ has_more?: boolean; results: MySessionMaterial[] }>(
-      `${BASE}/my-session-materials/`,
-      { params: { limit: opts.limit ?? PAGE_SIZE, offset: opts.offset ?? 0 } }
-    );
+    opts: {
+      limit?: number;
+      offset?: number;
+      /**
+       * A local YYYY-MM-DD. The server filters on the CLASS date, not the upload date — a
+       * trainer posting Friday's notebook on Saturday morning is routine, and a learner who
+       * picks Friday on the calendar wants that class's handouts.
+       */
+      since?: string;
+      until?: string;
+      /** Ask for `facets.dates`: the days the calendar should offer. First page only. */
+      facets?: boolean;
+    } = {}
+  ): Promise<{ hasMore: boolean; results: MySessionMaterial[]; dates?: MaterialDate[] }> => {
+    const res = await apiClient.get<{
+      has_more?: boolean;
+      results: MySessionMaterial[];
+      facets?: { dates?: MaterialDate[] };
+    }>(`${BASE}/my-session-materials/`, {
+      params: {
+        limit: opts.limit ?? PAGE_SIZE,
+        offset: opts.offset ?? 0,
+        // Omitted rather than sent empty: the server reads an unparseable bound as "no bound",
+        // but a blank param in the query string is noise in every log and cache key.
+        ...(opts.since ? { since: opts.since } : {}),
+        ...(opts.until ? { until: opts.until } : {}),
+        ...(opts.facets ? { facets: "1" } : {}),
+      },
+    });
     return {
       hasMore: Boolean(res.data?.has_more),
       results: Array.isArray(res.data?.results) ? res.data.results : [],
+      dates: res.data?.facets?.dates,
     };
   },
 

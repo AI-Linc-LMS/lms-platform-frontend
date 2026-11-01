@@ -130,6 +130,10 @@ const flush = () => act(async () => {});
 const viewChip = (name: RegExp) =>
   within(screen.getByRole("group", { name: "Recordings or notes" })).getByRole("button", { name });
 
+/** The Notes chip specifically. Anchored, because the third tab is "Trainer Notes" and an
+ *  unanchored /notes/i now matches both. */
+const notesChip = () => viewChip(/^Notes/);
+
 /** Opens one of the toolbar's MUI selects and picks an option from its popover. */
 async function choose(select: RegExp, option: RegExp) {
   fireEvent.mouseDown(screen.getByRole("combobox", { name: select }));
@@ -181,7 +185,7 @@ describe("the recordings module page", () => {
     expect(lastCall().has_recording).toBe(true);
     expect(lastCall().has_notes).toBeFalsy();
     expect(viewChip(/recordings/i).getAttribute("aria-pressed")).toBe("true");
-    expect(viewChip(/notes/i).getAttribute("aria-pressed")).toBe("false");
+    expect(notesChip().getAttribute("aria-pressed")).toBe("false");
   });
 
   it("switches to the Notes view and sends has_notes instead", async () => {
@@ -190,12 +194,12 @@ describe("the recordings module page", () => {
     await screen.findByTestId("recording-row");
 
     await act(async () => {
-      fireEvent.click(viewChip(/notes/i));
+      fireEvent.click(notesChip());
     });
     expect(getRecordings).toHaveBeenCalledTimes(2);
     expect(lastCall()).toMatchObject({ has_notes: true, offset: 0, facets: true });
     expect(lastCall().has_recording).toBeFalsy();
-    expect(viewChip(/notes/i).getAttribute("aria-pressed")).toBe("true");
+    expect(notesChip().getAttribute("aria-pressed")).toBe("true");
   });
 
   it("shows the view counts from the facets, so the badges agree with the list", async () => {
@@ -203,7 +207,7 @@ describe("the recordings module page", () => {
     render(<RecordingsPage />);
     await screen.findByTestId("recording-row");
     expect(viewChip(/recordings/i).textContent).toBe("Recordings5");
-    expect(viewChip(/notes/i).textContent).toBe("Notes3");
+    expect(notesChip().textContent).toBe("Notes3");
   });
 
   it("debounces the search box and sends q after 300ms from the first page", async () => {
@@ -300,7 +304,7 @@ describe("the recordings module page", () => {
     await flush();
 
     await act(async () => {
-      fireEvent.click(viewChip(/notes/i));
+      fireEvent.click(notesChip());
     });
     expect(getRecordings).toHaveBeenCalledTimes(2);
 
@@ -379,7 +383,7 @@ describe("the recordings module page", () => {
     render(<RecordingsPage />);
     await screen.findByText(/no recordings yet/i);
     await act(async () => {
-      fireEvent.click(viewChip(/notes/i));
+      fireEvent.click(notesChip());
     });
     await screen.findByText(/no notes yet/i);
     expect(screen.queryByText("Clear filters")).toBeNull();
@@ -416,7 +420,7 @@ describe("the recordings module page", () => {
     expect(screen.queryByTestId("notes-preview")).toBeNull();
 
     await act(async () => {
-      fireEvent.click(viewChip(/notes/i));
+      fireEvent.click(notesChip());
     });
     const preview = await screen.findByTestId("notes-preview");
     expect(preview.textContent).toMatch(/halves the range/);
@@ -432,7 +436,7 @@ describe("the recordings module page", () => {
     render(<RecordingsPage />);
     await screen.findByTestId("recording-row");
     await act(async () => {
-      fireEvent.click(viewChip(/notes/i));
+      fireEvent.click(notesChip());
     });
     await screen.findByTestId("transcript-only");
     expect(screen.queryByTestId("notes-preview")).toBeNull();

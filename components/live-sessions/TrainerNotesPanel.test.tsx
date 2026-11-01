@@ -102,7 +102,9 @@ describe("the trainer's shared files", () => {
     render(<TrainerNotesPanel />);
 
     await screen.findByText("Week 1 - Recursion");
-    expect(mine).toHaveBeenCalledWith({ limit: 20, offset: 0 });
+    expect(mine).toHaveBeenCalledWith(
+      expect.objectContaining({ limit: 20, offset: 0 })
+    );
   });
 
   it("loads the next page on demand and appends it", async () => {
@@ -123,7 +125,11 @@ describe("the trainer's shared files", () => {
     // appended, not replaced - the first page must still be on screen
     expect(await screen.findByText("page two")).toBeInTheDocument();
     expect(screen.getByText("page one")).toBeInTheDocument();
-    expect(mine).toHaveBeenLastCalledWith({ limit: 20, offset: 1 });
+    // Load more asks for the next page and, deliberately, NOT for the facets: the calendar's
+    // day list is the same whatever page you are on.
+    expect(mine).toHaveBeenLastCalledWith(
+      expect.objectContaining({ limit: 20, offset: 1, facets: false })
+    );
   });
 
   it("stops offering more once the server says there is none", async () => {

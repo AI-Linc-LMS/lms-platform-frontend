@@ -22,9 +22,19 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Box, Button, Chip, CircularProgress, Stack, Typography } from "@mui/material";
+import {
+  Box,
+  Button,
+  Chip,
+  CircularProgress,
+  Stack,
+  Typography,
+} from "@mui/material";
 import { PageShell } from "@/components/common/PageShell";
-import { HeaderActionButton, ModulePageHeader } from "@/components/common/ModulePageHeader";
+import {
+  HeaderActionButton,
+  ModulePageHeader,
+} from "@/components/common/ModulePageHeader";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import { PHONE } from "@/components/common/mobile/phone";
 import { AssessmentStatusFilter } from "@/components/assessment/AssessmentStatusFilter";
@@ -34,11 +44,20 @@ import {
   type FilterSelectDef,
 } from "@/components/common/list";
 import { RecordingPlayerDialog } from "@/components/live-sessions/RecordingPlayerDialog";
+import {
+  ScheduleCalendar,
+  type CalendarEvent,
+} from "@/components/live-sessions/ScheduleCalendar";
 import { StudentSessionSummaryDialog } from "@/components/live-sessions/StudentSessionSummaryDialog";
+import { TrainerNotesPanel } from "@/components/live-sessions/TrainerNotesPanel";
+import type { MaterialDate } from "@/lib/services/live-session-materials.service";
 import { useDebouncedValue } from "@/lib/hooks/useDebouncedValue";
 import { useInstantNavigation } from "@/lib/hooks/useInstantNavigation";
 import { studentLiveSessionsService } from "@/lib/services/live-sessions";
-import type { RecordingSession, RecordingsFacets } from "@/lib/services/live-sessions";
+import type {
+  RecordingSession,
+  RecordingsFacets,
+} from "@/lib/services/live-sessions";
 
 const PAGE_SIZE = 20;
 const SEARCH_DEBOUNCE_MS = 300;
@@ -46,7 +65,7 @@ const SEARCH_DEBOUNCE_MS = 300;
 /** Recordings lists classes with a video; Notes lists classes with AI notes or a transcript. A
  *  class with both is in both. A notes-only class (a recording that failed, or a class held
  *  before a learner joined their batch) is under Notes, which is where "catch up" lands. */
-type View = "recordings" | "notes";
+type View = "recordings" | "notes" | "materials";
 type Period = "" | "7d" | "30d" | "90d" | "year";
 
 const PERIODS: { value: Exclude<Period, "">; label: string }[] = [
@@ -59,11 +78,21 @@ const PERIODS: { value: Exclude<Period, "">; label: string }[] = [
 const VIEW_TABS: { value: View; label: string; icon: string }[] = [
   { value: "recordings", label: "Recordings", icon: "mdi:play-circle-outline" },
   { value: "notes", label: "Notes", icon: "mdi:text-box-outline" },
+  // The trainer's own files. They live beside the AI notes rather than only on Live Sessions
+  // because this is the catch-up page: a learner looking for last week's handout is already
+  // here looking for last week's recording. It stays on Live Sessions too.
+  {
+    value: "materials",
+    label: "Trainer Notes",
+    icon: "mdi:file-document-multiple-outline",
+  },
 ];
 
 /** Uppercase, tracked labels drop both under RTL: tracking breaks Arabic joins and uppercase is
  *  a no-op there (DESIGN.md, section 4). */
-const RTL_RESET = { '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" } } as const;
+const RTL_RESET = {
+  '[dir="rtl"] &': { letterSpacing: "normal", textTransform: "none" },
+} as const;
 
 const CARD_SX = {
   borderRadius: 3,
@@ -111,7 +140,23 @@ export default function RecordingsPage() {
   const [course, setCourse] = useState("");
   const [batch, setBatch] = useState("");
   const [period, setPeriod] = useState<Period>("");
-  const since = useMemo(() => sinceFor(period), [period]);
+  /**
+   * The day picked on the calendar, as a local YYYY-MM-DD, or null for the whole archive.
+   *
+   * It outranks the period select: a learner who clicks 12 October means that day, not "the
+   * last 30 days that also contains it". Both ride the same `since`/`until` pair to the server,
+   * so one day filters all three tabs and means the same thing on each.
+   */
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
+  const since = useMemo(
+    () => (selectedDay ? selectedDay : sinceFor(period)),
+    [selectedDay, period],
+  );
+  const until = selectedDay ?? undefined;
+
+  /** Trainer files are a different table, so the tab reports its own days and count up here. */
+  const [materialDates, setMaterialDates] = useState<MaterialDate[]>([]);
+  const [materialCount, setMaterialCount] = useState<number | null>(null);
 
   // ---- The list. ----
   const [rows, setRows] = useState<RecordingSession[]>([]);
@@ -131,7 +176,15 @@ export default function RecordingsPage() {
   const requestSeq = useRef(0);
 
   const load = useCallback(
-    async ({ offset, replace, facets: wantFacets }: { offset: number; replace: boolean; facets: boolean }) => {
+    async ({
+      offset,
+      replace,
+      facets: wantFacets,
+    }: {
+      offset: number;
+      replace: boolean;
+      facets: boolean;
+    }) => {
       const ticket = ++requestSeq.current;
       if (replace) setLoading(true);
       else setLoadingMore(true);
@@ -145,11 +198,14 @@ export default function RecordingsPage() {
           has_recording: view === "recordings",
           has_notes: view === "notes",
           since,
+          until,
           facets: wantFacets,
         });
         if (ticket !== requestSeq.current) return;
         // Append on Load more, so it builds the list instead of paging past it.
-        setRows((prev) => (replace ? page.sessions : [...prev, ...page.sessions]));
+        setRows((prev) =>
+          replace ? page.sessions : [...prev, ...page.sessions],
+        );
         setCount(page.count);
         setHasMore(page.has_more);
         if (page.facets) setFacets(page.facets);
@@ -171,13 +227,18 @@ export default function RecordingsPage() {
         }
       }
     },
-    [q, course, batch, since, view]
+    [q, course, batch, since, until, view],
   );
 
   // Any change to the filters or the view starts over from the first page, with facets.
+  //
+  // Skipped on the Trainer Notes tab: that panel owns its own fetch, and running this one as
+  // well would pull a page of recordings nobody is going to look at on every keystroke.
+  const materialsView = view === "materials";
   useEffect(() => {
+    if (materialsView) return;
     void load({ offset: 0, replace: true, facets: true });
-  }, [load]);
+  }, [load, materialsView]);
 
   const filtering = Boolean(q || course || batch || since);
   const firstLoad = loading && rows.length === 0;
@@ -188,6 +249,7 @@ export default function RecordingsPage() {
     setCourse("");
     setBatch("");
     setPeriod("");
+    setSelectedDay(null);
   };
 
   // ---- Toolbar. A facet select is only worth its pixels when there are at least two. ----
@@ -197,7 +259,10 @@ export default function RecordingsPage() {
       key: "course",
       label: "Course",
       value: course,
-      options: (facets?.courses ?? []).map((c) => ({ value: String(c.id), label: c.title })),
+      options: (facets?.courses ?? []).map((c) => ({
+        value: String(c.id),
+        label: c.title,
+      })),
       onChange: setCourse,
     });
   }
@@ -206,7 +271,10 @@ export default function RecordingsPage() {
       key: "batch",
       label: "Batch",
       value: batch,
-      options: (facets?.batches ?? []).map((b) => ({ value: String(b.id), label: b.name })),
+      options: (facets?.batches ?? []).map((b) => ({
+        value: String(b.id),
+        label: b.name,
+      })),
       onChange: setBatch,
     });
   }
@@ -220,30 +288,100 @@ export default function RecordingsPage() {
 
   const typed = searchInput.trim();
   const activeChips: ActiveFilterChip[] = [];
-  if (typed) activeChips.push({ key: "q", label: `Search: ${typed}`, onClear: () => setSearchInput("") });
+  if (typed)
+    activeChips.push({
+      key: "q",
+      label: `Search: ${typed}`,
+      onClear: () => setSearchInput(""),
+    });
   if (course) {
-    const title = facets?.courses.find((c) => String(c.id) === course)?.title ?? "Course";
-    activeChips.push({ key: "course", label: title, onClear: () => setCourse("") });
+    const title =
+      facets?.courses.find((c) => String(c.id) === course)?.title ?? "Course";
+    activeChips.push({
+      key: "course",
+      label: title,
+      onClear: () => setCourse(""),
+    });
   }
   if (batch) {
-    const name = facets?.batches.find((b) => String(b.id) === batch)?.name ?? "Batch";
-    activeChips.push({ key: "batch", label: name, onClear: () => setBatch("") });
+    const name =
+      facets?.batches.find((b) => String(b.id) === batch)?.name ?? "Batch";
+    activeChips.push({
+      key: "batch",
+      label: name,
+      onClear: () => setBatch(""),
+    });
   }
-  if (period) {
+  if (period && !selectedDay) {
     const label = PERIODS.find((p) => p.value === period)?.label ?? "Held";
     activeChips.push({ key: "held", label, onClear: () => setPeriod("") });
+  }
+  if (selectedDay) {
+    // Shown as a chip as well as highlighted on the calendar: the calendar is in the right rail
+    // and drops below the list on a phone, where the only sign the list is narrowed would
+    // otherwise be off screen.
+    activeChips.push({
+      key: "day",
+      label: heldOn(`${selectedDay}T12:00:00`) || selectedDay,
+      onClear: () => setSelectedDay(null),
+    });
   }
 
   const tabs = VIEW_TABS.map((t) => ({
     ...t,
-    count: t.value === "recordings" ? facets?.totals.recordings : facets?.totals.notes,
+    count:
+      t.value === "recordings"
+        ? facets?.totals.recordings
+        : t.value === "notes"
+          ? facets?.totals.notes
+          : (materialCount ?? undefined),
   }));
+
+  /**
+   * The calendar's dots: every day that has anything, on any tab.
+   *
+   * A union rather than per-tab, because there is ONE calendar for three tabs and a learner
+   * switching tabs should not watch the dots move. The server computes both halves over the
+   * whole visible archive: the list pages twenty at a time, so dots built from the rows on
+   * screen would cover only the newest few weeks.
+   */
+  const calendarEvents = useMemo<CalendarEvent[]>(() => {
+    const byDay = new Map<
+      string,
+      { recordings: number; notes: number; files: number }
+    >();
+    for (const d of facets?.dates ?? []) {
+      byDay.set(d.date, { recordings: d.recordings, notes: d.notes, files: 0 });
+    }
+    for (const d of materialDates) {
+      const at = byDay.get(d.date) ?? { recordings: 0, notes: 0, files: 0 };
+      at.files = d.count;
+      byDay.set(d.date, at);
+    }
+    return Array.from(byDay.entries()).map(([date, n]) => {
+      const parts: string[] = [];
+      if (n.recordings)
+        parts.push(`${n.recordings} recording${n.recordings === 1 ? "" : "s"}`);
+      if (n.notes) parts.push(`${n.notes} with notes`);
+      if (n.files) parts.push(`${n.files} file${n.files === 1 ? "" : "s"}`);
+      return {
+        id: `rec-${date}`,
+        // Midday local, so the calendar's own local-day bucketing cannot round a midnight
+        // timestamp back onto the previous day.
+        date: `${date}T12:00:00`,
+        title: parts.join(" · ") || "Class",
+        type: "live" as const,
+      };
+    });
+  }, [facets?.dates, materialDates]);
 
   const notesView = view === "notes";
   const noun = notesView ? "notes" : "recordings";
 
   return (
-    <PageShell maxWidth={1040}>
+    // Full width, like Live Sessions. The 1040 cap was right for one centred column; with a
+    // calendar in a right rail it would squeeze the list into about 700px on a laptop.
+    <PageShell>
       <ModulePageHeader
         eyebrow="LEARN · LIVE"
         title="Recordings"
@@ -253,7 +391,12 @@ export default function RecordingsPage() {
         action={
           // `display: contents` keeps this wrapper out of the layout; it only carries the
           // phone-only 44px height for a pill that is 38px tall.
-          <Box sx={{ display: "contents", [PHONE]: { "& .MuiButtonBase-root": { minHeight: 44 } } }}>
+          <Box
+            sx={{
+              display: "contents",
+              [PHONE]: { "& .MuiButtonBase-root": { minHeight: 44 } },
+            }}
+          >
             <HeaderActionButton
               icon="mdi:calendar-blank-outline"
               variant="ghost"
@@ -266,7 +409,12 @@ export default function RecordingsPage() {
       />
 
       {/* Recordings | Notes. The segmented track from sm up, a 44px chip row on a phone. */}
-      <AssessmentStatusFilter tabs={tabs} value={view} onChange={setView} ariaLabel="Recordings or notes" />
+      <AssessmentStatusFilter
+        tabs={tabs}
+        value={view}
+        onChange={setView}
+        ariaLabel="Recordings or notes"
+      />
 
       <Box
         sx={{
@@ -285,125 +433,207 @@ export default function RecordingsPage() {
         />
       </Box>
 
-      <Box sx={{ mt: 2.5 }}>
-        {firstLoad && (
-          <Stack alignItems="center" sx={{ py: 6 }}>
-            <CircularProgress size={28} />
-          </Stack>
-        )}
-
-        {!loading && failed === "page" && rows.length === 0 && (
-          <Box sx={{ ...CARD_SX, p: 3, textAlign: "center" }}>
-            <Typography sx={{ fontWeight: 800, mb: 0.5 }}>Could not load {noun}</Typography>
-            <Typography sx={{ color: "text.secondary", fontSize: "0.9rem" }}>
-              Check your connection and try again.
-            </Typography>
-            <Button
-              onClick={() => void load({ offset: 0, replace: true, facets: true })}
-              variant="contained"
-              sx={{ textTransform: "none", fontWeight: 700, minHeight: 44, mt: 1.5 }}
-            >
-              Try again
-            </Button>
-          </Box>
-        )}
-
-        {!loading && !failed && rows.length === 0 && (
-          filtering ? (
-            <EmptyState
-              icon="mdi:magnify-close"
-              title={`No ${noun} match these filters`}
-              body="Try a different search, course, batch or period."
-              action={
-                <Chip
-                  label="Clear filters"
-                  onClick={clearAll}
-                  sx={{ mt: 1.75, fontWeight: 700, cursor: "pointer", [PHONE]: { height: 44, px: 1, fontSize: "0.9rem" } }}
-                />
-              }
+      <Box
+        sx={{
+          mt: 2.5,
+          display: "grid",
+          gap: { xs: 2, lg: 2.5 },
+          // One column until there is room for a rail. The calendar then follows the list in
+          // source order on a phone, which is the right reading order: the list is the content.
+          gridTemplateColumns: { xs: "1fr", lg: "minmax(0, 1fr) 320px" },
+          alignItems: "start",
+        }}
+      >
+        <Box sx={{ minWidth: 0 }}>
+          {materialsView ? (
+            <TrainerNotesPanel
+              since={selectedDay ?? undefined}
+              until={selectedDay ?? undefined}
+              onCountChange={setMaterialCount}
+              onDatesChange={setMaterialDates}
             />
           ) : (
-            <EmptyState
-              icon={notesView ? "mdi:text-box-outline" : "mdi:play-circle-outline"}
-              title={notesView ? "No notes yet" : "No recordings yet"}
-              body={
-                notesView
-                  ? "Once a class has been held and its AI notes or transcript are ready, they will appear here."
-                  : "Once a class has been held and its recording is ready, it will appear here."
-              }
-            />
-          )
-        )}
+            <>
+              {firstLoad && (
+                <Stack alignItems="center" sx={{ py: 6 }}>
+                  <CircularProgress size={28} />
+                </Stack>
+              )}
 
-        {rows.length > 0 && (
-          <>
-            <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
-              <Typography
-                data-testid="recordings-count"
-                sx={{
-                  color: "text.secondary",
-                  fontSize: "0.82rem",
-                  fontWeight: 700,
-                  letterSpacing: "0.04em",
-                  textTransform: "uppercase",
-                  ...RTL_RESET,
-                }}
-              >
-                Showing {rows.length} of {count}
-                {filtering ? " matching" : ""}
-              </Typography>
-              {refetching && <CircularProgress size={14} />}
-            </Stack>
+              {!loading && failed === "page" && rows.length === 0 && (
+                <Box sx={{ ...CARD_SX, p: 3, textAlign: "center" }}>
+                  <Typography sx={{ fontWeight: 800, mb: 0.5 }}>
+                    Could not load {noun}
+                  </Typography>
+                  <Typography
+                    sx={{ color: "text.secondary", fontSize: "0.9rem" }}
+                  >
+                    Check your connection and try again.
+                  </Typography>
+                  <Button
+                    onClick={() =>
+                      void load({ offset: 0, replace: true, facets: true })
+                    }
+                    variant="contained"
+                    sx={{
+                      textTransform: "none",
+                      fontWeight: 700,
+                      minHeight: 44,
+                      mt: 1.5,
+                    }}
+                  >
+                    Try again
+                  </Button>
+                </Box>
+              )}
 
-            {/* A filter change keeps the rows on screen, dimmed, until the next page lands. A
+              {!loading &&
+                !failed &&
+                rows.length === 0 &&
+                (filtering ? (
+                  <EmptyState
+                    icon="mdi:magnify-close"
+                    title={`No ${noun} match these filters`}
+                    body="Try a different search, course, batch or period."
+                    action={
+                      <Chip
+                        label="Clear filters"
+                        onClick={clearAll}
+                        sx={{
+                          mt: 1.75,
+                          fontWeight: 700,
+                          cursor: "pointer",
+                          [PHONE]: { height: 44, px: 1, fontSize: "0.9rem" },
+                        }}
+                      />
+                    }
+                  />
+                ) : (
+                  <EmptyState
+                    icon={
+                      notesView
+                        ? "mdi:text-box-outline"
+                        : "mdi:play-circle-outline"
+                    }
+                    title={notesView ? "No notes yet" : "No recordings yet"}
+                    body={
+                      notesView
+                        ? "Once a class has been held and its AI notes or transcript are ready, they will appear here."
+                        : "Once a class has been held and its recording is ready, it will appear here."
+                    }
+                  />
+                ))}
+
+              {rows.length > 0 && (
+                <>
+                  <Stack
+                    direction="row"
+                    alignItems="center"
+                    spacing={1}
+                    sx={{ mb: 1.5 }}
+                  >
+                    <Typography
+                      data-testid="recordings-count"
+                      sx={{
+                        color: "text.secondary",
+                        fontSize: "0.82rem",
+                        fontWeight: 700,
+                        letterSpacing: "0.04em",
+                        textTransform: "uppercase",
+                        ...RTL_RESET,
+                      }}
+                    >
+                      Showing {rows.length} of {count}
+                      {filtering ? " matching" : ""}
+                    </Typography>
+                    {refetching && <CircularProgress size={14} />}
+                  </Stack>
+
+                  {/* A filter change keeps the rows on screen, dimmed, until the next page lands. A
                 spinner card in their place would make every keystroke flash the list away. */}
-            <Stack
-              data-testid="recordings-list"
-              spacing={1.5}
-              aria-busy={refetching || undefined}
-              sx={{ opacity: refetching ? 0.55 : 1, transition: "opacity .15s ease" }}
-            >
-              {rows.map((s) => (
-                <RecordingRow
-                  key={s.occurrence_id}
-                  s={s}
-                  view={view}
-                  onWatch={() => setPlaying(s)}
-                  onRead={() => setReading(s)}
-                />
-              ))}
-            </Stack>
+                  <Stack
+                    data-testid="recordings-list"
+                    spacing={1.5}
+                    aria-busy={refetching || undefined}
+                    sx={{
+                      opacity: refetching ? 0.55 : 1,
+                      transition: "opacity .15s ease",
+                    }}
+                  >
+                    {rows.map((s) => (
+                      <RecordingRow
+                        key={s.occurrence_id}
+                        s={s}
+                        view={view}
+                        onWatch={() => setPlaying(s)}
+                        onRead={() => setReading(s)}
+                      />
+                    ))}
+                  </Stack>
 
-            {hasMore && (
-              <Stack alignItems="center" sx={{ mt: 2.5 }}>
-                <Button
-                  data-testid="load-more-recordings"
-                  onClick={() => void load({ offset: rows.length, replace: false, facets: false })}
-                  disabled={loadingMore || loading}
-                  startIcon={
-                    loadingMore ? <CircularProgress size={16} /> : <IconWrapper icon="mdi:chevron-down" size={18} />
-                  }
-                  sx={{
-                    textTransform: "none",
-                    fontWeight: 700,
-                    minHeight: 44,
-                    px: 3,
-                    borderRadius: 2,
-                    border: "1px solid var(--border-default)",
-                  }}
-                >
-                  {loadingMore ? "Loading" : `Load ${Math.max(1, Math.min(PAGE_SIZE, count - rows.length))} more`}
-                </Button>
-              </Stack>
-            )}
+                  {hasMore && (
+                    <Stack alignItems="center" sx={{ mt: 2.5 }}>
+                      <Button
+                        data-testid="load-more-recordings"
+                        onClick={() =>
+                          void load({
+                            offset: rows.length,
+                            replace: false,
+                            facets: false,
+                          })
+                        }
+                        disabled={loadingMore || loading}
+                        startIcon={
+                          loadingMore ? (
+                            <CircularProgress size={16} />
+                          ) : (
+                            <IconWrapper icon="mdi:chevron-down" size={18} />
+                          )
+                        }
+                        sx={{
+                          textTransform: "none",
+                          fontWeight: 700,
+                          minHeight: 44,
+                          px: 3,
+                          borderRadius: 2,
+                          border: "1px solid var(--border-default)",
+                        }}
+                      >
+                        {loadingMore
+                          ? "Loading"
+                          : `Load ${Math.max(1, Math.min(PAGE_SIZE, count - rows.length))} more`}
+                      </Button>
+                    </Stack>
+                  )}
 
-            {failed === "more" && (
-              <Typography sx={{ color: "text.secondary", fontSize: "0.85rem", textAlign: "center", mt: 2 }}>
-                Could not load more just now.
-              </Typography>
-            )}
-          </>
-        )}
+                  {failed === "more" && (
+                    <Typography
+                      sx={{
+                        color: "text.secondary",
+                        fontSize: "0.85rem",
+                        textAlign: "center",
+                        mt: 2,
+                      }}
+                    >
+                      Could not load more just now.
+                    </Typography>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </Box>
+
+        {/* Right rail. One calendar for all three tabs: picking a day narrows the list under
+            every one of them, so switching tabs keeps the day you were looking at. */}
+        <Box sx={{ minWidth: 0 }}>
+          <ScheduleCalendar
+            events={calendarEvents}
+            legendTypes={["live"]}
+            selectedKey={selectedDay}
+            onSelectDay={setSelectedDay}
+          />
+        </Box>
       </Box>
 
       {/* Playback and notes both resolve per OCCURRENCE. Asking by session id alone returns the
@@ -441,7 +671,15 @@ const PILL_TONES = {
   files: "var(--font-secondary)",
 } as const;
 
-function Pill({ tone, icon, children }: { tone: keyof typeof PILL_TONES; icon: string; children: string }) {
+function Pill({
+  tone,
+  icon,
+  children,
+}: {
+  tone: keyof typeof PILL_TONES;
+  icon: string;
+  children: string;
+}) {
   const color = PILL_TONES[tone];
   return (
     <Box
@@ -485,9 +723,16 @@ function RecordingRow({
 }) {
   const notesView = view === "notes";
   const hasNotes = s.has_transcript || s.has_summary;
-  const meta = [heldOn(s.held_at), s.course, s.batch].filter(Boolean).join(" · ");
+  const meta = [heldOn(s.held_at), s.course, s.batch]
+    .filter(Boolean)
+    .join(" · ");
 
-  const actionSx = { textTransform: "none", fontWeight: 800, px: 2, borderRadius: 2 } as const;
+  const actionSx = {
+    textTransform: "none",
+    fontWeight: 800,
+    px: 2,
+    borderRadius: 2,
+  } as const;
   const quietSx = {
     textTransform: "none",
     fontWeight: 700,
@@ -510,12 +755,25 @@ function RecordingRow({
       }}
     >
       <Box sx={{ flex: 1, minWidth: 0, width: { xs: "100%", sm: "auto" } }}>
-        <Typography sx={{ fontWeight: 800, fontSize: "1rem", minWidth: 0, overflowWrap: "anywhere" }}>
+        <Typography
+          sx={{
+            fontWeight: 800,
+            fontSize: "1rem",
+            minWidth: 0,
+            overflowWrap: "anywhere",
+          }}
+        >
           {s.title}
         </Typography>
-        <Typography sx={{ color: "text.secondary", fontSize: "0.85rem", mt: 0.25 }}>{meta}</Typography>
+        <Typography
+          sx={{ color: "text.secondary", fontSize: "0.85rem", mt: 0.25 }}
+        >
+          {meta}
+        </Typography>
 
-        {(s.has_summary || s.has_transcript || (!notesView && s.has_materials)) && (
+        {(s.has_summary ||
+          s.has_transcript ||
+          (!notesView && s.has_materials)) && (
           <Stack direction="row" flexWrap="wrap" gap={0.75} sx={{ mt: 1 }}>
             {s.has_summary && (
               <Pill tone="ai" icon="mdi:star-four-points">
@@ -553,7 +811,10 @@ function RecordingRow({
           </Typography>
         )}
         {notesView && !s.notes_preview && s.has_transcript && (
-          <Typography data-testid="transcript-only" sx={{ color: "text.secondary", fontSize: "0.82rem", mt: 1 }}>
+          <Typography
+            data-testid="transcript-only"
+            sx={{ color: "text.secondary", fontSize: "0.82rem", mt: 1 }}
+          >
             Transcript only
           </Typography>
         )}
@@ -561,7 +822,10 @@ function RecordingRow({
         {!s.attended && (
           // Said plainly on the archive, where catching up is the point. History deliberately
           // does not stamp anyone "Missed"; here it is just a reason to press Watch.
-          <Typography data-testid="did-not-attend" sx={{ color: "text.secondary", fontSize: "0.78rem", mt: 0.75 }}>
+          <Typography
+            data-testid="did-not-attend"
+            sx={{ color: "text.secondary", fontSize: "0.78rem", mt: 0.75 }}
+          >
             You were not marked present for this one
           </Typography>
         )}
@@ -581,7 +845,11 @@ function RecordingRow({
         {notesView ? (
           <>
             {s.has_recording && (
-              <Button onClick={onWatch} startIcon={<IconWrapper icon="mdi:play" size={16} />} sx={quietSx}>
+              <Button
+                onClick={onWatch}
+                startIcon={<IconWrapper icon="mdi:play" size={16} />}
+                sx={quietSx}
+              >
                 Watch
               </Button>
             )}
@@ -589,7 +857,9 @@ function RecordingRow({
               <Button
                 onClick={onRead}
                 variant="contained"
-                startIcon={<IconWrapper icon="mdi:text-box-outline" size={16} />}
+                startIcon={
+                  <IconWrapper icon="mdi:text-box-outline" size={16} />
+                }
                 sx={actionSx}
               >
                 {s.has_summary ? "Read notes" : "Read transcript"}
@@ -599,7 +869,13 @@ function RecordingRow({
         ) : (
           <>
             {hasNotes && (
-              <Button onClick={onRead} startIcon={<IconWrapper icon="mdi:text-box-outline" size={16} />} sx={quietSx}>
+              <Button
+                onClick={onRead}
+                startIcon={
+                  <IconWrapper icon="mdi:text-box-outline" size={16} />
+                }
+                sx={quietSx}
+              >
                 Notes
               </Button>
             )}
@@ -638,14 +914,25 @@ function EmptyState({
         borderRadius: 3,
         textAlign: "center",
         bgcolor: "color-mix(in srgb, var(--card-bg) 60%, transparent)",
-        border: "1px dashed color-mix(in srgb, var(--border-default) 90%, transparent)",
+        border:
+          "1px dashed color-mix(in srgb, var(--border-default) 90%, transparent)",
       }}
     >
       <Box sx={{ display: "inline-flex", opacity: 0.45 }}>
         <IconWrapper icon={icon} size={36} />
       </Box>
-      <Typography sx={{ fontWeight: 800, mt: 1.5, mb: 0.5 }}>{title}</Typography>
-      <Typography sx={{ color: "text.secondary", fontSize: "0.9rem", maxWidth: 480, mx: "auto", lineHeight: 1.5 }}>
+      <Typography sx={{ fontWeight: 800, mt: 1.5, mb: 0.5 }}>
+        {title}
+      </Typography>
+      <Typography
+        sx={{
+          color: "text.secondary",
+          fontSize: "0.9rem",
+          maxWidth: 480,
+          mx: "auto",
+          lineHeight: 1.5,
+        }}
+      >
         {body}
       </Typography>
       {action}
