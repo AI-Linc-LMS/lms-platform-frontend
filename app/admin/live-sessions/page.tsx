@@ -38,6 +38,7 @@ import { VirtualBackgroundsDialog } from "@/components/admin/live-sessions/Virtu
 import { LiveSessionCard } from "@/components/live-sessions/ui/LiveSessionCard";
 import { AttendanceIdentificationChip, SessionFilterChips } from "@/components/live-sessions/ui/LiveSessionUI";
 import { sessionsNeedingAttendanceAttention } from "@/lib/live-sessions/attendanceIdentification";
+import { schedulerBanner } from "@/lib/live-sessions/schedulerState";
 import { ViewToggle, type ListView } from "@/components/common/list";
 import { useToast } from "@/components/common/Toast";
 import type { LiveActivity } from "@/lib/services/admin/admin-live-activities.service";
@@ -182,6 +183,7 @@ export default function AdminLiveSessionsPage() {
     handleCreateGoogleMeet,
     handleWatchRecording,
     formatDateTime,
+    scheduler,
   } = useAdminLiveSessions();
 
   const [viewMode, setViewMode] = useState<"list" | "calendar">("list");
@@ -332,6 +334,7 @@ export default function AdminLiveSessionsPage() {
 
   // Sessions whose attendance would be guessed: the banner's list, derived from what we already hold.
   const attentionSessions = useMemo(() => sessionsNeedingAttendanceAttention(sessions), [sessions]);
+  const schedulerOutage = useMemo(() => schedulerBanner(scheduler), [scheduler]);
 
   const filteredSessions = useMemo(() => {
     let list = sessions;
@@ -467,6 +470,30 @@ export default function AdminLiveSessionsPage() {
         />
 
         <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          {/* The scheduler's pulse. A dead scheduler silences roster registration, attendance
+              sync and reminders together, with nothing else turning red; this is where an admin
+              finds out before a class rather than from its attendance the next morning. */}
+          {schedulerOutage && (
+            <Box
+              role="alert"
+              sx={{
+                p: 2,
+                borderRadius: 3,
+                border: "1px solid color-mix(in srgb, var(--error-500) 40%, transparent)",
+                bgcolor: "color-mix(in srgb, var(--error-500) 8%, transparent)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 0.75,
+              }}
+            >
+              <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: "var(--font-primary)" }}>
+                {schedulerOutage.title}
+              </Typography>
+              <Typography sx={{ fontSize: "0.85rem", color: "var(--font-secondary)" }}>
+                {schedulerOutage.body}
+              </Typography>
+            </Box>
+          )}
           {/* The tripwire. Computed from the list we already hold, so it needs no worker, no
               task and no extra request to be right - which is exactly when it matters. */}
           {attentionSessions.length > 0 && (
