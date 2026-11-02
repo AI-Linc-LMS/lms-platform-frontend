@@ -536,7 +536,7 @@ export default function CreateLiveSessionPage() {
                   </TextField>
                   <InfoCallout icon={isMeet ? "mdi:google" : isWebinar ? "mdi:presentation" : "mdi:video"}>
                     {sessionType === "zoom"
-                      ? t("adminLiveSessions.zoomTypeHint", "We create the Zoom meeting for you and auto-sync attendance, recording and transcript after it ends. Emailing students is your call - you choose on the last step.")
+                      ? t("adminLiveSessions.zoomTypeHint", "We create the Zoom meeting for you and auto-sync recording and transcript after it ends. Attendance for a Zoom meeting is matched on the names people type at the door - choose Zoom Webinar for exact, per-student attendance. Emailing students is your call - you choose on the last step.")
                       : isWebinar
                         ? t("adminLiveSessions.webinarTypeHint", "We create a Zoom webinar (requires the Zoom Webinar add-on on your account) and auto-sync attendance, recording and transcript after it ends. Emailing students is your call - you choose on the last step.")
                         : isAutoMeet

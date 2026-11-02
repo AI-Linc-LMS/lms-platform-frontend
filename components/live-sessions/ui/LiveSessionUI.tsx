@@ -336,3 +336,66 @@ export function PlatformChip({
     </Box>
   );
 }
+
+/**
+ * How attendance WILL be identified - exact, not yet registered, or by display name. Rendered from
+ * the server's read-time answer, so an admin sees a batch heading for name-matching before its
+ * class rather than in the roster afterwards (the first class of Agileology's 8027-M, 2026-11-02,
+ * credited 11 of 61 while 41 sat it, and no screen had said so). `exact` and `not_applicable`
+ * render nothing by default: the chip is for the two states that need a human.
+ */
+export function AttendanceIdentificationChip({
+  identification,
+  showExact = false,
+}: {
+  identification?: { mode: string; reason: string } | null;
+  showExact?: boolean;
+}) {
+  const { t } = useTranslation("common");
+  if (!identification) return null;
+  const { mode, reason } = identification;
+  let icon = "";
+  let label = "";
+  let color = "";
+  if (mode === "pending") {
+    icon = "mdi:account-clock-outline";
+    label = t("liveSessions.identificationPending", "Roster not registered");
+    color = "var(--warning-600, #b45309)";
+  } else if (mode === "name_only") {
+    icon = "mdi:account-question-outline";
+    label = t("liveSessions.identificationNameOnly", "Attendance by name");
+    color = "var(--error-500)";
+  } else if (mode === "exact" && showExact) {
+    icon = "mdi:account-check-outline";
+    label = t("liveSessions.identificationExact", "Attendance exact");
+    color = "var(--success-500)";
+  } else {
+    return null;
+  }
+  return (
+    <Box
+      component="span"
+      title={reason}
+      aria-label={`${label}. ${reason}`}
+      sx={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 0.5,
+        px: 1,
+        py: 0.4,
+        borderRadius: 999,
+        fontSize: "0.64rem",
+        fontWeight: 800,
+        letterSpacing: "0.08em",
+        textTransform: "uppercase",
+        color,
+        bgcolor: `color-mix(in srgb, ${color} 12%, transparent)`,
+        border: `1px solid color-mix(in srgb, ${color} 24%, transparent)`,
+        lineHeight: 1,
+      }}
+    >
+      <IconWrapper icon={icon} size={13} color={color} />
+      {label}
+    </Box>
+  );
+}

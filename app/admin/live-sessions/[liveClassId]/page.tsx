@@ -46,6 +46,7 @@ import {
   InfoCallout,
   MeetingStatusChip,
   PlatformChip,
+  AttendanceIdentificationChip,
 } from "@/components/live-sessions/ui/LiveSessionUI";
 import { AttendanceCenter } from "@/components/admin/live-sessions/AttendanceCenter";
 import { LiveSessionEmailPanel } from "@/components/admin/live-sessions/LiveSessionEmailPanel";
@@ -556,7 +557,17 @@ export default function LiveSessionDetailPage() {
                 <Box sx={{ display: "flex", gap: 0.75, flexWrap: "wrap", [PHONE]: { "& > .MuiBox-root": { fontSize: "0.75rem" } } }}>
                   <MeetingStatusChip status={activity.meeting_status} cancelled={isCancelled} />
                   <PlatformChip isZoom={activity.is_zoom} isGoogleMeet={activity.is_google_meet} zoomMeetingType={activity.zoom_meeting_type} />
+                  <AttendanceIdentificationChip identification={activity.attendance_identification} showExact />
                 </Box>
+
+                {activity.attendance_identification &&
+                  (activity.attendance_identification.mode === "pending" ||
+                    activity.attendance_identification.mode === "name_only") &&
+                  !isCancelled && (
+                    <InfoCallout icon="mdi:account-question-outline" color="var(--warning-600, #b45309)">
+                      {activity.attendance_identification.reason}
+                    </InfoCallout>
+                  )}
 
                 {isCancelled && (
                   <InfoCallout icon="mdi:cancel" color="var(--error-500)">

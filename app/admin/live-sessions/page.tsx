@@ -36,7 +36,8 @@ import { MeetingPresetsDialog } from "@/components/admin/live-sessions/MeetingPr
 import { sessionTimeParts } from "@/lib/utils/session-time";
 import { VirtualBackgroundsDialog } from "@/components/admin/live-sessions/VirtualBackgroundsDialog";
 import { LiveSessionCard } from "@/components/live-sessions/ui/LiveSessionCard";
-import { SessionFilterChips } from "@/components/live-sessions/ui/LiveSessionUI";
+import { AttendanceIdentificationChip, SessionFilterChips } from "@/components/live-sessions/ui/LiveSessionUI";
+import { sessionsNeedingAttendanceAttention } from "@/lib/live-sessions/attendanceIdentification";
 import { ViewToggle, type ListView } from "@/components/common/list";
 import { useToast } from "@/components/common/Toast";
 import type { LiveActivity } from "@/lib/services/admin/admin-live-activities.service";
@@ -329,6 +330,9 @@ export default function AdminLiveSessionsPage() {
     return new Date(y, m - 1, d).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
   }, [selectedDay]);
 
+  // Sessions whose attendance would be guessed: the banner's list, derived from what we already hold.
+  const attentionSessions = useMemo(() => sessionsNeedingAttendanceAttention(sessions), [sessions]);
+
   const filteredSessions = useMemo(() => {
     let list = sessions;
     if (filter === "upcoming") list = list.filter((s) => s.meeting_status === "scheduled");
@@ -463,6 +467,64 @@ export default function AdminLiveSessionsPage() {
         />
 
         <Box sx={{ display: "flex", flexDirection: "column", gap: 3 }}>
+          {/* The tripwire. Computed from the list we already hold, so it needs no worker, no
+              task and no extra request to be right - which is exactly when it matters. */}
+          {attentionSessions.length > 0 && (
+            <Box
+              role="status"
+              sx={{
+                p: 2,
+                borderRadius: 3,
+                border: "1px solid color-mix(in srgb, var(--warning-600, #b45309) 35%, transparent)",
+                bgcolor: "color-mix(in srgb, var(--warning-600, #b45309) 8%, transparent)",
+                display: "flex",
+                flexDirection: "column",
+                gap: 1,
+              }}
+            >
+              <Typography sx={{ fontWeight: 800, fontSize: "0.95rem", color: "var(--font-primary)" }}>
+                {t(
+                  "adminLiveSessions.attendanceAttentionTitle",
+                  "{{count}} upcoming session will match attendance by display name",
+                  { count: attentionSessions.length }
+                )}
+              </Typography>
+              <Typography sx={{ fontSize: "0.85rem", color: "var(--font-secondary)" }}>
+                {t(
+                  "adminLiveSessions.attendanceAttentionBody",
+                  "A roster that is not registered with Zoom can only be matched on the names people type at the door. Open the session and press Register roster, or make it a webinar."
+                )}
+              </Typography>
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                {attentionSessions.map((s) => (
+                  <Button
+                    key={s.id}
+                    variant="outlined"
+                    size="small"
+                    onClick={() => openDetail(s)}
+                    sx={{
+                      textTransform: "none",
+                      px: 1.25,
+                      py: 0.6,
+                      borderRadius: 999,
+                      fontSize: "0.8rem",
+                      fontWeight: 700,
+                      color: "var(--font-primary)",
+                      bgcolor: "var(--background-paper, #fff)",
+                      border: "1px solid var(--border-color, rgba(0,0,0,0.12))",
+                      display: "inline-flex",
+                      gap: 0.75,
+                      alignItems: "center",
+                    }}
+                  >
+                    {s.topic_name || t("adminLiveSessions.untitledSession", "Untitled session")}
+                    {s.cohort_detail?.name ? ` · ${s.cohort_detail.name}` : ""}
+                    <AttendanceIdentificationChip identification={s.attendance_identification} />
+                  </Button>
+                ))}
+              </Box>
+            </Box>
+          )}
             {/* Integrations & tools - one slim strip instead of three stacked panels. The full
                 setup cards live inside a Collapse and only demand attention when something
                 actually needs it (nothing configured yet, or a failed Google connect). */}
@@ -835,6 +897,11 @@ function SessionListRow({ session, onOpen }: { session: LiveActivity; onOpen: (s
         <Typography sx={{ fontSize: "0.82rem", color: "var(--font-secondary)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
           {`${dateStr} · ${timeStr} · ${metaText}`}
         </Typography>
+        {session.attendance_identification && session.meeting_status !== "expired" && (
+          <Box sx={{ mt: 0.5 }}>
+            <AttendanceIdentificationChip identification={session.attendance_identification} />
+          </Box>
+        )}
       </Box>
 
       <Box sx={{ display: { xs: "none", md: "flex" }, alignItems: "center", gap: 2.5, flexShrink: 0 }}>
