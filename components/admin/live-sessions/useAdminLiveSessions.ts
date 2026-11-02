@@ -10,6 +10,7 @@ import {
   adminLiveActivitiesService,
   LiveActivity,
 } from "@/lib/services/admin/admin-live-activities.service";
+import type { SchedulerState } from "@/lib/services/admin/admin-live-activities.service";
 import {
   getLiveSessionErrorMessage,
   getZoomApiErrorMessage,
@@ -25,6 +26,7 @@ export function useAdminLiveSessions() {
   const { clientInfo, loading: loadingClientInfo } = useClientInfo();
   const { showToast } = useToast();
   const [sessions, setSessions] = useState<LiveActivity[]>([]);
+  const [scheduler, setScheduler] = useState<SchedulerState | null>(null);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -71,6 +73,9 @@ export function useAdminLiveSessions() {
     try {
       setLoading(true);
       const data = await adminLiveActivitiesService.getLiveActivities();
+      // Beside the list, never ahead of it: a dead scheduler must be visible, but must not
+      // delay or fail the sessions themselves.
+      void adminLiveActivitiesService.getSchedulerState().then(setScheduler);
       setSessions(Array.isArray(data) ? data : []);
     } catch (error: unknown) {
       showToast(getLiveSessionErrorMessage(error), "error");
@@ -172,6 +177,7 @@ export function useAdminLiveSessions() {
     hasAdminLiveSessionsFeature,
     loading,
     sessions,
+    scheduler,
     playerSession,
     setPlayerSession,
     page,
