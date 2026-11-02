@@ -96,6 +96,12 @@ export interface LiveActivity {
   zoom_cancelled_at?: string | null;
   zoom_registration_url?: string | null;
   zoom_registration_required?: boolean;
+  /**
+   * How attendance WILL be identified for this session, decided by the server from the
+   * registrant footprint at read time. `pending` and `name_only` are the two an admin must
+   * see before the class, not in the roster after it.
+   */
+  attendance_identification?: AttendanceIdentification | null;
   zoom_is_recurring?: boolean;
   zoom_recurrence?: LiveSessionRecurrence | null;
   recurrence_summary?: string | null;
@@ -514,6 +520,13 @@ export interface Registrant {
   status?: string;
   join_url?: string;
   create_time?: string;
+}
+
+export type AttendanceIdentificationMode = "exact" | "pending" | "name_only" | "not_applicable";
+
+export interface AttendanceIdentification {
+  mode: AttendanceIdentificationMode;
+  reason: string;
 }
 
 export interface RosterRegistrationState {
