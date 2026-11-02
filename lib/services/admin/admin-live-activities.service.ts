@@ -529,6 +529,14 @@ export interface AttendanceIdentification {
   reason: string;
 }
 
+export interface SchedulerState {
+  last_seen: string | null;
+  age_minutes: number | null;
+  stale: boolean;
+  stale_after_minutes: number;
+  paused: string[];
+}
+
 export interface RosterRegistrationState {
   registration_required: boolean;
   roster_size: number;
@@ -1204,6 +1212,21 @@ export const adminLiveActivitiesService = {
   /**
    * What we currently hold for this session's roster. Reads our own rows; does not call Zoom.
    */
+  /**
+   * Is the background scheduler alive? Best-effort: an older server (404) or any failure
+   * answers null, and the page stays quiet - this must never make the list itself fail.
+   */
+  getSchedulerState: async (): Promise<SchedulerState | null> => {
+    try {
+      const response = await apiClient.get<ZoomApiResponse<SchedulerState>>(
+        `${BASE}/live-activities/scheduler/`
+      );
+      return (response.data.data ?? null) as SchedulerState | null;
+    } catch {
+      return null;
+    }
+  },
+
   getRosterRegistration: async (liveClassId: number): Promise<RosterRegistrationState> => {
     const response = await apiClient.get<ZoomApiResponse<RosterRegistrationState>>(
       `${BASE}/live-activities/${liveClassId}/registration/sync/`
