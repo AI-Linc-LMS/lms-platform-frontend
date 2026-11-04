@@ -34,6 +34,7 @@ import {
   type TestResults,
 } from "@/lib/services/adaptive-coding.service";
 import { PHONE } from "@/components/common/mobile/phone";
+import { outputsMatch } from "@/components/coding/outputMatch";
 
 /** The phone workspace's three panes. Desktop shows all of them side by side. */
 type PhoneTab = "problem" | "code" | "results";
@@ -353,6 +354,9 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
   // different or a silent program reads as a broken button.
   const [customOpen, setCustomOpen] = useState(false);
   const [customInput, setCustomInput] = useState("");
+  // Optional. Blank keeps the pad exactly as it was - output and no verdict. Filled in, the
+  // run is checked against it, which is the only way a scratch pad can answer "is this right".
+  const [customExpected, setCustomExpected] = useState("");
   const [customResult, setCustomResult] = useState<CustomRunResult | null>(null);
   const [runningCustom, setRunningCustom] = useState(false);
 
@@ -655,6 +659,20 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
       revealKey={isPhone ? phoneTab : undefined}
     />
   );
+  // A verdict only when the learner SAID what they expected and the program actually ran.
+  // A crash, a compile error or a timeout has no output worth comparing - the error is the
+  // answer, and a red "differs" beside a stack trace reads as though the output were merely
+  // wrong. The comparison is the grader's own (outputMatch.ts ports verdict.py), so this can
+  // never disagree with what Submit would say about the same two strings.
+  const customExpectedText = customExpected.trim();
+  const customRanCleanly =
+    !!customResult && !customResult.status && !customResult.compile_output;
+  const customVerdict =
+    customResult && customRanCleanly && customExpectedText !== ""
+      ? outputsMatch(customResult.stdout, customExpected)
+      : null;
+  const sampleCase = problem?.sample_input || problem?.sample_output ? problem : null;
+
   const customPanel = customOpen && (
     <Box
       sx={{
@@ -685,6 +703,10 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
         </Button>
       </Box>
 
+      <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 700, color: "text.secondary" }}>
+        INPUT
+      </Typography>
+
       <TextField
         value={customInput}
         onChange={(e) => setCustomInput(e.target.value)}
@@ -695,6 +717,36 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
         size="small"
         // The input IS the data: a program reading two lines must get two lines, so nothing
         // here trims or reflows what was typed.
+        InputProps={{ sx: { fontFamily: "monospace", fontSize: "0.8rem" } }}
+      />
+
+      <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Typography sx={{ fontSize: "0.7rem", [PHONE]: { fontSize: "0.75rem" }, fontWeight: 700, color: "text.secondary" }}>
+          EXPECTED OUTPUT <Box component="span" sx={{ fontWeight: 600, opacity: 0.8 }}>(optional)</Box>
+        </Typography>
+        <Box sx={{ flex: 1 }} />
+        {sampleCase && (
+          <Button
+            onClick={() => {
+              setCustomInput(sampleCase.sample_input ?? "");
+              setCustomExpected(sampleCase.sample_output ?? "");
+            }}
+            size="small"
+            sx={{ textTransform: "none", fontWeight: 700, fontSize: "0.72rem" }}
+          >
+            Use the sample case
+          </Button>
+        )}
+      </Box>
+
+      <TextField
+        value={customExpected}
+        onChange={(e) => setCustomExpected(e.target.value)}
+        placeholder={"Leave blank to just see what your code prints.\nFill it in and the run is checked against it."}
+        multiline
+        minRows={2}
+        fullWidth
+        size="small"
         InputProps={{ sx: { fontFamily: "monospace", fontSize: "0.8rem" } }}
       />
 
@@ -733,8 +785,46 @@ export function AdaptiveCodingSolve({ configId, problemId, onBack, onSolved }: A
               {customResult.compile_output || customResult.stderr}
             </Box>
           )}
+          {customVerdict !== null && (
+            <Box
+              sx={{
+                display: "flex", alignItems: "center", gap: 0.6, px: 1.25, py: 0.85, borderRadius: 1.5,
+                color: customVerdict ? "#10b981" : "#ef4444",
+                background: `color-mix(in srgb, ${customVerdict ? "#10b981" : "#ef4444"} 8%, transparent)`,
+                border: `1px solid color-mix(in srgb, ${customVerdict ? "#10b981" : "#ef4444"} 28%, transparent)`,
+              }}
+            >
+              <Icon
+                icon={customVerdict ? "mdi:check-circle-outline" : "mdi:close-circle-outline"}
+                width={15}
+              />
+              <Typography sx={{ fontSize: "0.75rem", [PHONE]: { fontSize: "0.8rem" }, fontWeight: 800 }}>
+                {customVerdict
+                  ? "Matches your expected output"
+                  : "Differs from your expected output"}
+              </Typography>
+            </Box>
+          )}
+
+          {/* On a mismatch, show the two side by side. "It differs" without saying how is the
+              kind of feedback that sends a learner back to guessing. */}
+          {customVerdict === false && (
+            <Box
+              component="pre"
+              sx={{
+                m: 0, p: 1.25, borderRadius: 1.5, overflowX: "auto", whiteSpace: "pre-wrap",
+                fontFamily: "monospace", fontSize: "0.75rem",
+                backgroundColor: "rgba(15,23,42,0.06)",
+              }}
+            >
+              {`Expected\n${customExpected}\n\nGot\n${customResult.stdout}`}
+            </Box>
+          )}
+
           <Typography sx={{ fontSize: "0.68rem", [PHONE]: { fontSize: "0.75rem" }, color: "text.secondary" }}>
-            Nothing here is graded - this is only what your code prints for this input.
+            {customVerdict !== null
+              ? "Checked against the expected output you typed - this still does not count towards your score."
+              : "Nothing here is graded - this is only what your code prints for this input."}
           </Typography>
         </Box>
       )}
