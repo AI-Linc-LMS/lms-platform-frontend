@@ -177,105 +177,119 @@ function GhostAddRow({
       onClick={(e) => e.stopPropagation()}
       sx={{
         display: "flex",
-        alignItems: "center",
+        alignItems: "flex-start",
         gap: 1,
         width: "100%",
-        pl: dense ? 1 : 1.5,
-        pr: 1,
-        py: 0.5,
+        px: dense ? 1 : 1.5,
+        py: 1,
         border: `1px dashed ${INDIGO}`,
         borderRadius: "10px",
         bgcolor: "var(--card-bg)",
         boxShadow: "0 0 0 3px rgba(99, 102, 241, 0.10)",
       }}
     >
-      <Icon icon="mdi:plus" width={16} color={INDIGO} />
-      <Box sx={{ flex: 1, minWidth: 0 }}>
-      <TextField
-        inputRef={inputRef}
-        autoFocus
-        fullWidth
-        size="small"
-        // Multiline so a syllabus can be pasted straight in, one row per line. Enter still
-        // submits, so the old type-Enter-type-Enter rhythm is unchanged; Shift+Enter is the
-        // new line. maxRows keeps a forty-line paste from pushing the tree off screen.
-        multiline
-        maxRows={10}
-        value={value}
-        placeholder={placeholder}
-        disabled={saving}
-        onChange={(e) => setValue(e.target.value)}
-        onKeyDown={(e) => {
-          // The surrounding tree binds Enter/Escape/arrows for navigation, so every
-          // key we handle has to stop here or it fires twice with two meanings.
-          if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            e.stopPropagation();
-            void submit();
-          } else if (e.key === "Enter") {
-            // Shift+Enter writes a new line. Stopped here all the same, or the tree's own
-            // Enter binding fires alongside it.
-            e.stopPropagation();
-          } else if (e.key === "Escape") {
-            e.preventDefault();
-            e.stopPropagation();
-            cancel();
-          }
-        }}
-        onBlur={() => {
-          // Only an empty field collapses. Typed text survives a stray click, and
-          // clicking Add cannot self-cancel because Add requires non-empty text.
-          if (!saving && !titles.length) setEditing(false);
-        }}
-        sx={{
-          "& .MuiOutlinedInput-root": {
-            bgcolor: "transparent",
-            color: "var(--font-primary)",
-            fontSize: dense ? "0.8125rem" : "0.875rem",
-            "& fieldset": { border: "none" },
-            "&:hover fieldset": { border: "none" },
-            "&.Mui-focused fieldset": { border: "none" },
-          },
-          "& .MuiOutlinedInput-input::placeholder": {
-            color: "var(--font-secondary)",
-            opacity: 0.75,
-          },
-        }}
-      />
-      {titles.length > 1 && (
-        // Shown rather than silently deduplicated: a doubled line is usually a paste slip, but
-        // it is sometimes two real sections with the same name, so the admin decides.
-        <Typography
-          sx={{ px: 1.5, pb: 0.5, fontSize: "0.75rem", color: "var(--font-secondary)" }}
+      <Icon icon="mdi:plus" width={16} color={INDIGO} style={{ flexShrink: 0, marginTop: 10 }} />
+      <Box sx={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 0.5 }}>
+        <TextField
+          inputRef={inputRef}
+          autoFocus
+          fullWidth
+          size="small"
+          // Opens at three rows, not one. The field has accepted a pasted list since #1843, but
+          // a box one line tall says "one title" no matter what the placeholder underneath it
+          // claims - the affordance was invisible, so the feature may as well not have shipped.
+          // Enter still submits, so the old type-Enter-type-Enter rhythm is unchanged;
+          // Shift+Enter is the new line. maxRows keeps a forty-line paste on screen.
+          multiline
+          minRows={3}
+          maxRows={12}
+          value={value}
+          placeholder={placeholder}
+          disabled={saving}
+          onChange={(e) => setValue(e.target.value)}
+          onKeyDown={(e) => {
+            // The surrounding tree binds Enter/Escape/arrows for navigation, so every
+            // key we handle has to stop here or it fires twice with two meanings.
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              e.stopPropagation();
+              void submit();
+            } else if (e.key === "Enter") {
+              // Shift+Enter writes a new line. Stopped here all the same, or the tree's own
+              // Enter binding fires alongside it.
+              e.stopPropagation();
+            } else if (e.key === "Escape") {
+              e.preventDefault();
+              e.stopPropagation();
+              cancel();
+            }
+          }}
+          onBlur={() => {
+            // Only an empty field collapses. Typed text survives a stray click, and
+            // clicking Add cannot self-cancel because Add requires non-empty text.
+            if (!saving && !titles.length) setEditing(false);
+          }}
+          sx={{
+            "& .MuiOutlinedInput-root": {
+              bgcolor: "transparent",
+              color: "var(--font-primary)",
+              fontSize: dense ? "0.8125rem" : "0.875rem",
+              p: 0,
+              "& fieldset": { border: "none" },
+              "&:hover fieldset": { border: "none" },
+              "&.Mui-focused fieldset": { border: "none" },
+            },
+            "& .MuiOutlinedInput-input": { p: 0, lineHeight: 1.6 },
+            "& .MuiOutlinedInput-input::placeholder": {
+              color: "var(--font-secondary)",
+              opacity: 0.75,
+            },
+          }}
+        />
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 1,
+            flexWrap: "wrap",
+          }}
         >
-          {titles.length} rows, one per line — they are added in this order.
-        </Typography>
-      )}
+          <Typography sx={{ fontSize: "0.75rem", color: "var(--font-secondary)", minWidth: 0 }}>
+            {titles.length > 1
+              ? // Shown rather than silently deduplicated: a doubled line is usually a paste slip,
+                // but it is sometimes two real sections with the same name, so the admin decides.
+                `${titles.length} rows, one per line — they are added in this order.`
+              : // Said up front, before anything is typed. This line and the three-row box are the
+                // only things telling an admin a list is allowed at all.
+                "One per line. Enter adds, Shift+Enter starts a new line."}
+          </Typography>
+          <LoadingButton
+            variant="contained"
+            loading={saving}
+            loadingText={
+              progress && progress.total > 1
+                ? `Adding ${Math.min(progress.done + 1, progress.total)} of ${progress.total}`
+                : "Adding"
+            }
+            disabled={titles.length === 0}
+            onClick={() => void submit()}
+            sx={{
+              flexShrink: 0,
+              textTransform: "none",
+              fontWeight: 600,
+              fontSize: "0.8125rem",
+              px: 2,
+              borderRadius: "8px",
+              bgcolor: INDIGO,
+              "&:hover": { bgcolor: "#4f46e5" },
+              [PHONE]: { minHeight: TAP },
+            }}
+          >
+            {titles.length > 1 ? `Add ${titles.length}` : "Add"}
+          </LoadingButton>
+        </Box>
       </Box>
-      <LoadingButton
-        variant="contained"
-        loading={saving}
-        loadingText={
-          progress && progress.total > 1
-            ? `Adding ${Math.min(progress.done + 1, progress.total)} of ${progress.total}`
-            : "Adding"
-        }
-        disabled={titles.length === 0}
-        onClick={() => void submit()}
-        sx={{
-          flexShrink: 0,
-          textTransform: "none",
-          fontWeight: 600,
-          fontSize: "0.8125rem",
-          px: 2,
-          borderRadius: "8px",
-          bgcolor: INDIGO,
-          "&:hover": { bgcolor: "#4f46e5" },
-          [PHONE]: { minHeight: TAP },
-        }}
-      >
-        {titles.length > 1 ? `Add ${titles.length}` : "Add"}
-      </LoadingButton>
     </Box>
   );
 }
