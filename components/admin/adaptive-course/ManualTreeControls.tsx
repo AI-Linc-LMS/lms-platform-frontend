@@ -10,6 +10,7 @@ import { adminAdaptiveCourseService } from "@/lib/services/admin/admin-adaptive-
 import { getAxiosErrorDetail } from "@/lib/utils/api-error";
 import { PHONE } from "@/components/common/mobile/phone";
 import { TAP } from "./coursePhone";
+import { parseTitles } from "./parseTitles";
 
 const INDIGO = "#6366f1";
 
@@ -45,6 +46,8 @@ function GhostAddRow({
   const [editing, setEditing] = useState(false);
   const [value, setValue] = useState("");
   const [saving, setSaving] = useState(false);
+  // Non-null only during a batch, so the button can count up instead of freezing.
+  const [progress, setProgress] = useState<{ done: number; total: number } | null>(null);
   const inputRef = useRef<HTMLInputElement | null>(null);
   const refocusAfterSave = useRef(false);
 
@@ -58,40 +61,69 @@ function GhostAddRow({
   }, [saving]);
 
   const submit = useCallback(async () => {
-    const title = value.trim();
+    const titles = parseTitles(value);
     // The `saving` half of this guard is load-bearing: holding Enter, or hitting it
     // twice while the POST is in flight, would otherwise create duplicate rows that
     // the admin then has to delete one by one.
-    if (!title || saving) return;
+    if (!titles.length || saving) return;
 
     setSaving(true);
-    try {
-      await onCreate(title);
-      // Clear before notifying the parent: onAdded triggers a tree refetch and
-      // re-render, and we do not want the just-submitted text flashing back.
-      setValue("");
-      // Success is confirmed OUT LOUD. Only the error path toasted, and the backend appends a
-      // new week at the END of the course — so past MODULES_PER_PAGE it lands on a page the
-      // admin is not looking at and the screen does not change at all. Silence there reads as
-      // "nothing happened", and the next move is to type it again.
-      showToast(successMessage, "success");
-      onAdded();
-      // Stay in input mode and keep the caret so the next topic is type-Enter-type-Enter.
-      // The actual focus() fires from the effect above, once the field is enabled again.
-      refocusAfterSave.current = true;
-    } catch (e) {
-      // Keep `value` untouched on failure - retyping a title the admin already
-      // typed is the most annoying possible response to a server error.
-      showToast(getAxiosErrorDetail(e, errorFallback), "error");
-    } finally {
-      setSaving(false);
+    setProgress({ done: 0, total: titles.length });
+
+    // Sequential, and in the order typed. The backend appends each new row at the END of the
+    // course, so firing these in parallel would file them in whatever order the responses
+    // happened to come back - which for a pasted syllabus is the one thing that must not happen.
+    let created = 0;
+    let failure: unknown = null;
+    for (const title of titles) {
+      try {
+        await onCreate(title);
+        created += 1;
+        setProgress({ done: created, total: titles.length });
+      } catch (e) {
+        failure = e;
+        break;
+      }
     }
+
+    // Whatever did not get created stays in the box. Retyping a list the admin already pasted
+    // is the most annoying possible response to a server error.
+    const remaining = titles.slice(created);
+    setValue(remaining.join("\n"));
+
+    if (created > 0) {
+      // Success is confirmed OUT LOUD. The backend appends at the END of the course, so past
+      // MODULES_PER_PAGE it lands on a page the admin is not looking at and the screen does not
+      // change at all. Silence there reads as "nothing happened", and the next move is to type
+      // it again.
+      showToast(
+        titles.length === 1
+          ? successMessage
+          : `${created} of ${titles.length} added.${remaining.length ? " The rest are still in the box." : ""}`,
+        remaining.length ? "warning" : "success"
+      );
+      // ONE refetch for the whole batch rather than one per row. Refetching and re-rendering
+      // the tree is the slow part, and doing it twelve times is why adding a week by hand felt
+      // like it did.
+      onAdded();
+    }
+    if (failure) showToast(getAxiosErrorDetail(failure, errorFallback), "error");
+
+    setProgress(null);
+    setSaving(false);
+    // Stay in input mode and keep the caret so the next topic is type-Enter-type-Enter.
+    // The actual focus() fires from the effect above, once the field is enabled again.
+    refocusAfterSave.current = true;
   }, [value, saving, onCreate, onAdded, errorFallback, successMessage, showToast]);
 
   const cancel = useCallback(() => {
     setValue("");
     setEditing(false);
   }, []);
+
+  // What pressing Add would actually create, recomputed per render so the count on the button
+  // and the line under the field can never disagree with what gets sent.
+  const titles = parseTitles(value);
 
   if (!editing) {
     return (
@@ -158,11 +190,17 @@ function GhostAddRow({
       }}
     >
       <Icon icon="mdi:plus" width={16} color={INDIGO} />
+      <Box sx={{ flex: 1, minWidth: 0 }}>
       <TextField
         inputRef={inputRef}
         autoFocus
         fullWidth
         size="small"
+        // Multiline so a syllabus can be pasted straight in, one row per line. Enter still
+        // submits, so the old type-Enter-type-Enter rhythm is unchanged; Shift+Enter is the
+        // new line. maxRows keeps a forty-line paste from pushing the tree off screen.
+        multiline
+        maxRows={10}
         value={value}
         placeholder={placeholder}
         disabled={saving}
@@ -170,10 +208,14 @@ function GhostAddRow({
         onKeyDown={(e) => {
           // The surrounding tree binds Enter/Escape/arrows for navigation, so every
           // key we handle has to stop here or it fires twice with two meanings.
-          if (e.key === "Enter") {
+          if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             e.stopPropagation();
             void submit();
+          } else if (e.key === "Enter") {
+            // Shift+Enter writes a new line. Stopped here all the same, or the tree's own
+            // Enter binding fires alongside it.
+            e.stopPropagation();
           } else if (e.key === "Escape") {
             e.preventDefault();
             e.stopPropagation();
@@ -183,7 +225,7 @@ function GhostAddRow({
         onBlur={() => {
           // Only an empty field collapses. Typed text survives a stray click, and
           // clicking Add cannot self-cancel because Add requires non-empty text.
-          if (!saving && !value.trim()) setEditing(false);
+          if (!saving && !titles.length) setEditing(false);
         }}
         sx={{
           "& .MuiOutlinedInput-root": {
@@ -200,11 +242,25 @@ function GhostAddRow({
           },
         }}
       />
+      {titles.length > 1 && (
+        // Shown rather than silently deduplicated: a doubled line is usually a paste slip, but
+        // it is sometimes two real sections with the same name, so the admin decides.
+        <Typography
+          sx={{ px: 1.5, pb: 0.5, fontSize: "0.75rem", color: "var(--font-secondary)" }}
+        >
+          {titles.length} rows, one per line — they are added in this order.
+        </Typography>
+      )}
+      </Box>
       <LoadingButton
         variant="contained"
         loading={saving}
-        loadingText="Adding"
-        disabled={!value.trim()}
+        loadingText={
+          progress && progress.total > 1
+            ? `Adding ${Math.min(progress.done + 1, progress.total)} of ${progress.total}`
+            : "Adding"
+        }
+        disabled={titles.length === 0}
         onClick={() => void submit()}
         sx={{
           flexShrink: 0,
@@ -218,7 +274,7 @@ function GhostAddRow({
           [PHONE]: { minHeight: TAP },
         }}
       >
-        Add
+        {titles.length > 1 ? `Add ${titles.length}` : "Add"}
       </LoadingButton>
     </Box>
   );
@@ -249,7 +305,7 @@ export function AddModuleRow({
     <GhostAddRow
       ghostLabel={`Add ${unit}`}
       successMessage={`${Unit} added, it goes at the end of the course.`}
-      placeholder={`Name this ${unit}, e.g. Functions and scope`}
+      placeholder={`Name this ${unit} — or paste a list, one per line`}
       onCreate={onCreate}
       onAdded={onAdded}
       errorFallback={`Could not add the ${unit}. Please try again.`}
@@ -278,7 +334,7 @@ export function AddSubmoduleRow({
       dense
       ghostLabel="Add topic"
       successMessage="Topic added."
-      placeholder="Name this topic"
+      placeholder="Name this topic — or paste a list, one per line"
       onCreate={onCreate}
       onAdded={onAdded}
       errorFallback="Could not add the topic. Please try again."
