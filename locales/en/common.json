@@ -770,6 +770,7 @@
     "emailRequired": "Email is required",
     "otpResent": "OTP resent to your email",
     "signUpAsInstructor": "Sign up as an instructor",
+    "googleUnavailableForInstructors": "Google sign-up cannot carry your CV, so instructors sign up with email below.",
     "instructorSignupApprovalTitle": "Your account gets a quick admin check",
     "instructorSignupApprovalNote": "Kindly verify your email address and await administrative approval. You will be able to sign in once your account has been approved.",
     "passwordResetOtpResent": "A new verification code has been sent.",
