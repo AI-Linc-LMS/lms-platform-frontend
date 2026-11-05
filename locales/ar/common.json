@@ -373,6 +373,7 @@
     "emailRequired": "البريد الإلكتروني مطلوب",
     "otpResent": "تم إعادة إرسال OTP إلى بريدك",
     "signUpAsInstructor": "التسجيل كمعلم",
+    "googleUnavailableForInstructors": "لا يمكن لتسجيل الدخول عبر Google إرفاق سيرتك الذاتية، لذا يسجّل المدربون باستخدام البريد الإلكتروني أدناه.",
     "instructorSignupApprovalTitle": "سيُراجع حسابك من قِبل المسؤول",
     "instructorSignupApprovalNote": "تحقّق من بريدك، ثم انتظر موافقة أحد المسؤولين على حسابك. يمكنك تسجيل الدخول بعد الموافقة.",
     "passwordResetOtpResent": "تم إرسال رمز تحقق جديد.",
