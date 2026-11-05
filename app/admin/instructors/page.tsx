@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import {
   Avatar,
   Badge,
@@ -43,6 +43,21 @@ import {
   ModulePageHeader,
 } from "@/components/common/ModulePageHeader";
 import { AddInstructorDialog } from "@/components/admin/instructors/AddInstructorDialog";
+import {
+  InstructorFilterBar,
+  type CourseChoice,
+} from "@/components/admin/instructors/InstructorFilterBar";
+import {
+  InstructorBulkBar,
+  type BulkAction,
+  type BulkProgress,
+} from "@/components/admin/instructors/InstructorBulkBar";
+import {
+  EMPTY_FILTERS,
+  matchesFilters,
+  scopeFiltersToTab,
+  type InstructorFilters,
+} from "@/components/admin/instructors/instructorFilters";
 import { useToast } from "@/components/common/Toast";
 import { IconWrapper } from "@/components/common/IconWrapper";
 import {
@@ -155,6 +170,25 @@ export default function InstructorsPage() {
     Record<InstructorListStatus, boolean>
   >({ pending: true, approved: true, rejected: true });
   const [searchTerm, setSearchTerm] = useState("");
+  const [filters, setFilters] = useState<InstructorFilters>(EMPTY_FILTERS);
+
+  /**
+   * Bulk selection, as profile ids.
+   *
+   * Pruned to the rows actually on screen (see the effect below), so an action can never
+   * reach a row the admin cannot see. The alternative - remembering selections across a tab
+   * switch or a filter change - means "Reject 12" sometimes rejects somebody who scrolled
+   * out of existence three filters ago.
+   */
+  const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [bulkProgress, setBulkProgress] = useState<BulkProgress | null>(null);
+  const [bulkConfirm, setBulkConfirm] = useState<
+    null | "approve" | "reopen" | "remove"
+  >(null);
+  const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
+  const [bulkRejectReason, setBulkRejectReason] = useState("");
+  const [bulkAssignOpen, setBulkAssignOpen] = useState(false);
+  const [bulkAssignMode, setBulkAssignMode] = useState<"add" | "remove">("add");
 
   const [busyId, setBusyId] = useState<number | null>(null);
 
@@ -269,16 +303,294 @@ export default function InstructorsPage() {
     [dataByStatus]
   );
 
+  const tabRows = useMemo(
+    () => dataByStatus[activeTab] ?? [],
+    [dataByStatus, activeTab]
+  );
+
   const visibleRows = useMemo(() => {
-    const list = dataByStatus[activeTab] ?? [];
     const q = searchTerm.trim().toLowerCase();
-    if (!q) return list;
-    return list.filter(
-      (r) =>
-        r.full_name.toLowerCase().includes(q) ||
-        r.email.toLowerCase().includes(q)
+    const scoped = scopeFiltersToTab(filters, activeTab);
+    const ctx = {
+      codeById,
+      now: Date.now(),
+      assignedKeys: (r: InstructorRow) => assignedForDisplay(r).map(courseKey),
+    };
+    return tabRows.filter((r) => {
+      if (
+        q &&
+        !r.full_name.toLowerCase().includes(q) &&
+        !r.email.toLowerCase().includes(q)
+      ) {
+        return false;
+      }
+      return matchesFilters(r, scoped, ctx);
+    });
+  }, [tabRows, activeTab, searchTerm, filters, codeById]);
+
+  const visibleIds = useMemo(() => visibleRows.map((r) => r.id), [visibleRows]);
+
+  /**
+   * Keep the selection inside the visible set.
+   *
+   * Returns the previous array unchanged when nothing was dropped - a fresh array every
+   * time would re-run this effect forever, since `selectedIds` feeds the memo that feeds it.
+   */
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      const visible = new Set(visibleIds);
+      const keep = prev.filter((id) => visible.has(id));
+      return keep.length === prev.length ? prev : keep;
+    });
+  }, [visibleIds]);
+
+  const selectedRows = useMemo(
+    () => visibleRows.filter((r) => selectedIds.includes(r.id)),
+    [visibleRows, selectedIds]
+  );
+
+  const allVisibleSelected =
+    visibleRows.length > 0 && selectedIds.length === visibleRows.length;
+  const someVisibleSelected =
+    selectedIds.length > 0 && selectedIds.length < visibleRows.length;
+
+  const toggleAllVisible = () => {
+    setSelectedIds(allVisibleSelected ? [] : visibleIds);
+  };
+
+  const toggleRow = (id: number) => {
+    setSelectedIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
-  }, [dataByStatus, activeTab, searchTerm]);
+  };
+
+  /**
+   * Courses offered by the "assigned to" facet.
+   *
+   * Built from what the instructors on screen are ACTUALLY assigned, not from the full
+   * catalogue: a dropdown of 300 courses where 290 match nobody is a worse control than a
+   * short one that always returns rows.
+   */
+  const courseChoices = useMemo<CourseChoice[]>(() => {
+    const byKey = new Map<string, string>();
+    tabRows.forEach((r) =>
+      assignedForDisplay(r).forEach((c) => byKey.set(courseKey(c), c.title))
+    );
+    return Array.from(byKey, ([key, title]) => ({ key, title })).sort((a, b) =>
+      a.title.localeCompare(b.title)
+    );
+  }, [tabRows]);
+
+  /**
+   * Run a per-instructor endpoint across the selection, one at a time.
+   *
+   * There is no bulk endpoint behind any of these actions, so this is a loop over the
+   * single-profile ones. Three things it deliberately does:
+   *
+   *  - It acts on `selectedRows`, which is the selection intersected with what is on
+   *    screen, never on ids alone.
+   *  - It keeps going after a failure and names the rows that failed. A bulk action that
+   *    says "Approved 20" when 3 of them 403'd is worse than one that fails outright,
+   *    because the three look done.
+   *  - It refreshes ONCE, after the loop. Refreshing per row is what made the course
+   *    builder's bulk add feel broken: n refetches of the whole list.
+   */
+  const runBulk = useCallback(
+    async (
+      run: (row: InstructorRow) => Promise<unknown>,
+      refresh: InstructorListStatus[],
+      copy: { done: string; failedAll: string; partial: string }
+    ) => {
+      const rows = selectedRows;
+      if (rows.length === 0) return;
+
+      setBulkProgress({ done: 0, total: rows.length });
+      const failures: Array<{ row: InstructorRow; message: string }> = [];
+
+      for (let i = 0; i < rows.length; i += 1) {
+        const row = rows[i];
+        try {
+          await run(row);
+        } catch (err: unknown) {
+          failures.push({
+            row,
+            message: readApiError(
+              err,
+              t("adminInstructors.bulk.unknownError", {
+                defaultValue: "the server gave no reason",
+              })
+            ),
+          });
+        }
+        setBulkProgress({ done: i + 1, total: rows.length });
+      }
+
+      setBulkProgress(null);
+      setSelectedIds([]);
+      await Promise.all(refresh.map((st) => loadStatus(st)));
+      await loadCodes();
+
+      const ok = rows.length - failures.length;
+      if (failures.length === 0) {
+        showToast(`${copy.done} (${ok})`, "success");
+        return;
+      }
+
+      // Name the failures. Two is enough to act on; the rest are counted so the number
+      // still adds up to the selection.
+      const named = failures
+        .slice(0, 2)
+        .map((f) => `${f.row.full_name || f.row.email}: ${f.message}`)
+        .join("; ");
+      const more =
+        failures.length > 2 ? ` (+${failures.length - 2} more)` : "";
+
+      if (ok === 0) {
+        showToast(`${copy.failedAll} - ${named}${more}`, "error");
+      } else {
+        showToast(
+          `${copy.partial.replace("{ok}", String(ok)).replace("{total}", String(rows.length))} - ${named}${more}`,
+          "warning"
+        );
+      }
+    },
+    [selectedRows, loadStatus, loadCodes, showToast, t]
+  );
+
+  const bulkApprove = () =>
+    runBulk(
+      (row) => adminInstructorsService.approveInstructor(row.id),
+      ["pending", "approved"],
+      {
+        done: t("adminInstructors.bulk.approvedAll", { defaultValue: "Instructors approved" }),
+        failedAll: t("adminInstructors.bulk.approveFailed", { defaultValue: "No instructor could be approved" }),
+        partial: t("adminInstructors.bulk.approvePartial", { defaultValue: "Approved {ok} of {total}" }),
+      }
+    );
+
+  const bulkReject = (reason: string) =>
+    runBulk(
+      (row) => adminInstructorsService.rejectInstructor(row.id, reason || undefined),
+      ["pending", "rejected"],
+      {
+        done: t("adminInstructors.bulk.rejectedAll", { defaultValue: "Instructors rejected" }),
+        failedAll: t("adminInstructors.bulk.rejectFailed", { defaultValue: "No instructor could be rejected" }),
+        partial: t("adminInstructors.bulk.rejectPartial", { defaultValue: "Rejected {ok} of {total}" }),
+      }
+    );
+
+  const bulkReopen = () =>
+    runBulk(
+      (row) => adminInstructorsService.reopenInstructor(row.id),
+      ["pending", "rejected"],
+      {
+        done: t("adminInstructors.bulk.reopenedAll", { defaultValue: "Applications reopened" }),
+        failedAll: t("adminInstructors.bulk.reopenFailed", { defaultValue: "No application could be reopened" }),
+        partial: t("adminInstructors.bulk.reopenPartial", { defaultValue: "Reopened {ok} of {total}" }),
+      }
+    );
+
+  const bulkRemove = () =>
+    runBulk(
+      (row) => adminInstructorsService.removeInstructor(row.id),
+      ["pending", "approved", "rejected"],
+      {
+        done: t("adminInstructors.bulk.removedAll", { defaultValue: "Instructors removed" }),
+        failedAll: t("adminInstructors.bulk.removeFailed", { defaultValue: "No instructor could be removed" }),
+        partial: t("adminInstructors.bulk.removePartial", { defaultValue: "Removed {ok} of {total}" }),
+      }
+    );
+
+  /**
+   * Bulk course assignment uses `add`/`remove`, NEVER `set`.
+   *
+   * `set` is what the per-row dialog sends, because there the admin is looking at that one
+   * instructor's current list. Applied to a selection it would overwrite every assignment
+   * each of them already has with whatever is ticked here - silent data loss across n
+   * people from one button.
+   */
+  const bulkAssignCourses = (mode: "add" | "remove") => {
+    const classic = allCourses
+      .filter((c) => c.kind === "classic" && selectedKeys.includes(courseKey(c)))
+      .map((c) => c.id);
+    const adaptive = allCourses
+      .filter((c) => c.kind === "adaptive" && selectedKeys.includes(courseKey(c)))
+      .map((c) => c.id);
+
+    return runBulk(
+      (row) =>
+        adminInstructorsService.assignCoursesToInstructor(
+          row.id,
+          classic,
+          mode,
+          adaptive
+        ),
+      ["approved"],
+      {
+        done:
+          mode === "add"
+            ? t("adminInstructors.bulk.coursesAdded", { defaultValue: "Courses added" })
+            : t("adminInstructors.bulk.coursesRemoved", { defaultValue: "Courses removed" }),
+        failedAll: t("adminInstructors.bulk.coursesFailed", { defaultValue: "No assignment could be changed" }),
+        partial: t("adminInstructors.bulk.coursesPartial", { defaultValue: "Updated {ok} of {total}" }),
+      }
+    );
+  };
+
+  const bulkActions = useMemo<BulkAction[]>(() => {
+    if (bulkProgress) return [];
+    if (activeTab === "pending") {
+      return [
+        {
+          id: "approve",
+          label: t("adminInstructors.bulk.approve", { defaultValue: "Approve" }),
+          icon: "mdi:check-circle-outline",
+          onRun: () => setBulkConfirm("approve"),
+        },
+        {
+          id: "reject",
+          label: t("adminInstructors.bulk.reject", { defaultValue: "Reject" }),
+          icon: "mdi:close-circle-outline",
+          danger: true,
+          onRun: () => {
+            setBulkRejectReason("");
+            setBulkRejectOpen(true);
+          },
+        },
+      ];
+    }
+    if (activeTab === "approved") {
+      return [
+        {
+          id: "assign",
+          label: t("adminInstructors.bulk.assignCourses", { defaultValue: "Assign courses" }),
+          icon: "mdi:book-plus-outline",
+          onRun: () => {
+            setSelectedKeys([]);
+            setCourseSearch("");
+            setBulkAssignMode("add");
+            setBulkAssignOpen(true);
+            void refreshCourses();
+          },
+        },
+        {
+          id: "remove",
+          label: t("adminInstructors.bulk.removeInstructor", { defaultValue: "Remove as instructor" }),
+          icon: "mdi:account-off-outline",
+          danger: true,
+          onRun: () => setBulkConfirm("remove"),
+        },
+      ];
+    }
+    return [
+      {
+        id: "reopen",
+        label: t("adminInstructors.bulk.reopen", { defaultValue: "Reopen" }),
+        icon: "mdi:restore",
+        onRun: () => setBulkConfirm("reopen"),
+      },
+    ];
+  }, [activeTab, bulkProgress, t, refreshCourses]);
 
   const openMenu = (row: InstructorRow, anchor: HTMLElement) => {
     setMenuRow(row);
@@ -631,6 +943,27 @@ export default function InstructorsPage() {
 
   const phoneCards = (
     <Stack spacing={1.25} data-testid="instructor-cards">
+      {visibleRows.length > 0 && (
+        <Stack direction="row" alignItems="center" sx={{ px: 0.5 }}>
+          <Checkbox
+            checked={allVisibleSelected}
+            indeterminate={someVisibleSelected}
+            onChange={toggleAllVisible}
+            disabled={bulkProgress !== null}
+            sx={{ width: TAP, height: TAP }}
+            inputProps={{
+              "aria-label": t("adminInstructors.bulk.selectAll", {
+                defaultValue: "Select all instructors shown",
+              }) as string,
+            }}
+          />
+          <Typography sx={{ fontSize: "0.8125rem", color: "var(--font-secondary)" }}>
+            {t("adminInstructors.bulk.selectAll", {
+              defaultValue: "Select all instructors shown",
+            })}
+          </Typography>
+        </Stack>
+      )}
       {loading && (dataByStatus[activeTab]?.length ?? 0) === 0 ? (
         <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
           <CircularProgress size={32} />
@@ -651,6 +984,18 @@ export default function InstructorsPage() {
             }}
           >
             <Stack direction="row" spacing={1.5} alignItems="center" sx={{ minWidth: 0 }}>
+              <Checkbox
+                checked={selectedIds.includes(row.id)}
+                onChange={() => toggleRow(row.id)}
+                disabled={bulkProgress !== null}
+                sx={{ ml: -1, width: TAP, height: TAP, flexShrink: 0 }}
+                inputProps={{
+                  "aria-label": t("adminInstructors.bulk.selectOne", {
+                    defaultValue: `Select ${row.full_name || row.email}`,
+                    name: row.full_name || row.email,
+                  }) as string,
+                }}
+              />
               <Avatar
                 sx={{
                   width: 40,
@@ -832,10 +1177,10 @@ export default function InstructorsPage() {
     }
   };
 
-  const assignBody = (
+  const assignPicker = (intro: ReactNode) => (
     <>
     <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 2 }}>
-      {t("adminInstructors.assignDialog.body")}
+      {intro}
     </Typography>
 
     {coursesLoading ? (
@@ -1232,6 +1577,24 @@ export default function InstructorsPage() {
           />
         </Box>
 
+        <Box sx={{ mb: 2 }}>
+          <InstructorFilterBar
+            tab={activeTab}
+            filters={filters}
+            onChange={setFilters}
+            courseChoices={courseChoices}
+            shownCount={visibleRows.length}
+            totalCount={tabRows.length}
+          />
+        </Box>
+
+        <InstructorBulkBar
+          count={selectedIds.length}
+          actions={bulkActions}
+          onClear={() => setSelectedIds([])}
+          progress={bulkProgress}
+        />
+
         {/* Table on desktop; one card per instructor on a phone. */}
         {isPhone ? phoneCards : (
         <TableContainer
@@ -1252,6 +1615,25 @@ export default function InstructorsPage() {
               }}
             >
               <TableRow>
+                <TableCell
+                  padding="checkbox"
+                  sx={{ borderColor: "var(--border-default)" }}
+                >
+                  {/* Selects the FILTERED rows, not the whole tab. "Reject all" after
+                      narrowing to 3 must mean those 3. */}
+                  <Checkbox
+                    size="small"
+                    checked={allVisibleSelected}
+                    indeterminate={someVisibleSelected}
+                    onChange={toggleAllVisible}
+                    disabled={visibleRows.length === 0 || bulkProgress !== null}
+                    inputProps={{
+                      "aria-label": t("adminInstructors.bulk.selectAll", {
+                        defaultValue: "Select all instructors shown",
+                      }) as string,
+                    }}
+                  />
+                </TableCell>
                 {columns.map((c, i) => (
                   <TableCell
                     key={c + i}
@@ -1273,13 +1655,13 @@ export default function InstructorsPage() {
             <TableBody>
               {loading && (dataByStatus[activeTab]?.length ?? 0) === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={columns.length} align="center" sx={{ py: 6 }}>
+                  <TableCell colSpan={columns.length + 1} align="center" sx={{ py: 6 }}>
                     <CircularProgress size={32} />
                   </TableCell>
                 </TableRow>
               ) : visibleRows.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={columns.length} align="center" sx={{ py: 8 }}>
+                  <TableCell colSpan={columns.length + 1} align="center" sx={{ py: 8 }}>
                     {emptyState}
                   </TableCell>
                 </TableRow>
@@ -1288,6 +1670,7 @@ export default function InstructorsPage() {
                   <TableRow
                     key={row.id}
                     hover
+                    selected={selectedIds.includes(row.id)}
                     sx={{
                       "& td": { borderColor: "var(--border-default)" },
                       "&:hover": {
@@ -1296,6 +1679,20 @@ export default function InstructorsPage() {
                       },
                     }}
                   >
+                    <TableCell padding="checkbox">
+                      <Checkbox
+                        size="small"
+                        checked={selectedIds.includes(row.id)}
+                        onChange={() => toggleRow(row.id)}
+                        disabled={bulkProgress !== null}
+                        inputProps={{
+                          "aria-label": t("adminInstructors.bulk.selectOne", {
+                            defaultValue: `Select ${row.full_name || row.email}`,
+                            name: row.full_name || row.email,
+                          }) as string,
+                        }}
+                      />
+                    </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={1.5} alignItems="center">
                         <Avatar
@@ -1761,7 +2158,7 @@ export default function InstructorsPage() {
             confirmDisabled={coursesLoading}
             onConfirm={() => void handleAssignSave()}
           >
-            {assignBody}
+            {assignPicker(t("adminInstructors.assignDialog.body"))}
           </PhoneSheet>
         ) : (
         <Dialog
@@ -1794,7 +2191,7 @@ export default function InstructorsPage() {
             {t("adminInstructors.assignDialog.title", { name: assignRow?.full_name ?? "" })}
           </DialogTitle>
           <DialogContent>
-            {assignBody}
+            {assignPicker(t("adminInstructors.assignDialog.body"))}
           </DialogContent>
           <DialogActions sx={{ px: 3, pb: 2 }}>
             <Button
@@ -1879,6 +2276,208 @@ export default function InstructorsPage() {
           </DialogActions>
         </Dialog>
         )}
+
+        {/* ---- Bulk confirmations -------------------------------------------------
+            One ConfirmDialog for the three actions that need nothing but a yes, each
+            naming the count, because "Approve" on a toolbar is the one place an admin
+            cannot see how many rows they are about to change. */}
+        <ConfirmDialog
+          open={bulkConfirm !== null}
+          title={
+            bulkConfirm === "approve"
+              ? t("adminInstructors.bulk.confirmApproveTitle", {
+                  defaultValue: `Approve ${selectedIds.length} instructors?`,
+                  n: selectedIds.length,
+                })
+              : bulkConfirm === "reopen"
+                ? t("adminInstructors.bulk.confirmReopenTitle", {
+                    defaultValue: `Reopen ${selectedIds.length} applications?`,
+                    n: selectedIds.length,
+                  })
+                : t("adminInstructors.bulk.confirmRemoveTitle", {
+                    defaultValue: `Remove ${selectedIds.length} instructors?`,
+                    n: selectedIds.length,
+                  })
+          }
+          message={
+            bulkConfirm === "approve"
+              ? t("adminInstructors.bulk.confirmApproveBody", {
+                  defaultValue:
+                    "They will be able to sign in and will appear to students as instructors.",
+                })
+              : bulkConfirm === "reopen"
+                ? t("adminInstructors.bulk.confirmReopenBody", {
+                    defaultValue:
+                      "Each application goes back to the pending queue for review.",
+                  })
+                : t("adminInstructors.bulk.confirmRemoveBody", {
+                    defaultValue:
+                      "Each one becomes a student again and loses their instructor code and every course assignment. Their account is not deleted.",
+                  })
+          }
+          confirmText={
+            bulkConfirm === "approve"
+              ? t("adminInstructors.bulk.approve", { defaultValue: "Approve" })
+              : bulkConfirm === "reopen"
+                ? t("adminInstructors.bulk.reopen", { defaultValue: "Reopen" })
+                : t("adminInstructors.bulk.removeInstructor", {
+                    defaultValue: "Remove as instructor",
+                  })
+          }
+          cancelText={t("adminInstructors.confirm.cancel")}
+          confirmColor={bulkConfirm === "remove" ? "error" : "primary"}
+          busy={bulkProgress !== null}
+          onCancel={() => setBulkConfirm(null)}
+          onConfirm={() => {
+            const which = bulkConfirm;
+            setBulkConfirm(null);
+            if (which === "approve") void bulkApprove();
+            else if (which === "reopen") void bulkReopen();
+            else if (which === "remove") void bulkRemove();
+          }}
+        />
+
+        {/* ---- Bulk reject, which carries one shared reason --------------------- */}
+        <Dialog
+          open={bulkRejectOpen}
+          onClose={() => setBulkRejectOpen(false)}
+          fullWidth
+          maxWidth="xs"
+          PaperProps={{ sx: { backgroundColor: "var(--card-bg)", borderRadius: 3 } }}
+        >
+          <DialogTitle sx={{ fontWeight: 800 }}>
+            {t("adminInstructors.bulk.confirmRejectTitle", {
+              defaultValue: `Reject ${selectedIds.length} instructors?`,
+              n: selectedIds.length,
+            })}
+          </DialogTitle>
+          <DialogContent>
+            <Typography variant="body2" sx={{ color: "var(--font-secondary)", mb: 2 }}>
+              {t("adminInstructors.bulk.confirmRejectBody", {
+                defaultValue:
+                  "The same reason is recorded against every one of them, so keep it general.",
+              })}
+            </Typography>
+            <TextField
+              fullWidth
+              multiline
+              minRows={3}
+              value={bulkRejectReason}
+              onChange={(e) => setBulkRejectReason(e.target.value)}
+              placeholder={
+                t("adminInstructors.confirm.rejectReasonPlaceholder", {
+                  defaultValue: "Reason (optional)",
+                }) as string
+              }
+              sx={PHONE_FIELD_SX}
+              inputProps={{ "data-testid": "bulk-reject-reason" }}
+            />
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button
+              onClick={() => setBulkRejectOpen(false)}
+              sx={{ color: "var(--font-secondary)", textTransform: "none" }}
+            >
+              {t("adminInstructors.confirm.cancel")}
+            </Button>
+            <Button
+              variant="contained"
+              color="error"
+              data-testid="bulk-reject-confirm"
+              onClick={() => {
+                const reason = bulkRejectReason.trim();
+                setBulkRejectOpen(false);
+                void bulkReject(reason);
+              }}
+              sx={{ textTransform: "none" }}
+            >
+              {t("adminInstructors.bulk.reject", { defaultValue: "Reject" })}
+            </Button>
+          </DialogActions>
+        </Dialog>
+
+        {/* ---- Bulk course assignment ------------------------------------------
+            Add or remove, never replace. The mode is a visible choice rather than a
+            hidden default, because "Assign courses" over a selection is ambiguous in
+            exactly the way that loses data. */}
+        <Dialog
+          open={bulkAssignOpen}
+          onClose={() => setBulkAssignOpen(false)}
+          fullWidth
+          maxWidth="sm"
+          PaperProps={{ sx: { backgroundColor: "var(--card-bg)", borderRadius: 3 } }}
+        >
+          <DialogTitle sx={{ fontWeight: 800 }}>
+            {t("adminInstructors.bulk.assignTitle", {
+              defaultValue: `Courses for ${selectedIds.length} instructors`,
+              n: selectedIds.length,
+            })}
+          </DialogTitle>
+          <DialogContent>
+            <TextField
+              select
+              fullWidth
+              size="small"
+              label={t("adminInstructors.bulk.mode", { defaultValue: "What to do" })}
+              value={bulkAssignMode}
+              onChange={(e) => setBulkAssignMode(e.target.value as "add" | "remove")}
+              sx={{ mb: 2, ...PHONE_FIELD_SX }}
+              inputProps={{ "data-testid": "bulk-assign-mode" }}
+            >
+              <MenuItem value="add">
+                {t("adminInstructors.bulk.modeAdd", {
+                  defaultValue: "Add these courses (keeps what they already have)",
+                })}
+              </MenuItem>
+              <MenuItem value="remove">
+                {t("adminInstructors.bulk.modeRemove", {
+                  defaultValue: "Remove these courses",
+                })}
+              </MenuItem>
+            </TextField>
+            {assignPicker(
+              bulkAssignMode === "add"
+                ? t("adminInstructors.bulk.assignBodyAdd", {
+                    defaultValue:
+                      "Every instructor selected gets these courses on top of their current assignments. Nothing is taken away.",
+                  })
+                : t("adminInstructors.bulk.assignBodyRemove", {
+                    defaultValue:
+                      "These courses are taken off every instructor selected. Their other assignments are left alone.",
+                  })
+            )}
+          </DialogContent>
+          <DialogActions sx={{ px: 3, pb: 2 }}>
+            <Button
+              onClick={() => setBulkAssignOpen(false)}
+              sx={{ color: "var(--font-secondary)", textTransform: "none" }}
+            >
+              {t("adminInstructors.confirm.cancel")}
+            </Button>
+            <Button
+              variant="contained"
+              color={bulkAssignMode === "remove" ? "error" : "primary"}
+              disabled={selectedKeys.length === 0}
+              data-testid="bulk-assign-confirm"
+              onClick={() => {
+                const mode = bulkAssignMode;
+                setBulkAssignOpen(false);
+                void bulkAssignCourses(mode);
+              }}
+              sx={{ textTransform: "none" }}
+            >
+              {bulkAssignMode === "add"
+                ? t("adminInstructors.bulk.applyAdd", {
+                    defaultValue: `Add to ${selectedIds.length}`,
+                    n: selectedIds.length,
+                  })
+                : t("adminInstructors.bulk.applyRemove", {
+                    defaultValue: `Remove from ${selectedIds.length}`,
+                    n: selectedIds.length,
+                  })}
+            </Button>
+          </DialogActions>
+        </Dialog>
     </PageShell>
   );
 }
